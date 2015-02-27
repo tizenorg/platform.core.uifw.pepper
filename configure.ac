@@ -20,12 +20,13 @@ AC_PROG_CC
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
-# Compositor build requirements
-COMPOSITOR_MODULES="wayland-server >= 1.6.00 pixman-1 >= 0.25.2"
+# Pepper build requirements
+PEPPER_MODULES="wayland-server >= 1.6.00 pixman-1 >= 0.25.2"
 
-# Check compositor modules
-PKG_CHECK_MODULES(COMPOSITOR, [$COMPOSITOR_MODULES])
+# Check pepper modules
+PKG_CHECK_MODULES(PEPPER, [$PEPPER_MODULES])
 
+# Check pepper server modules
 # Output files
 AC_CONFIG_FILES([
 Makefile
