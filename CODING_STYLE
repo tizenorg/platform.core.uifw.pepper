@@ -1,0 +1,8 @@
+set sw=4
+set sts=4
+set ts=8
+set tw=100
+set fo=tcroq
+set cindent
+set cino=\:0,(0
+set isk=a-z,A-Z,48-57,_,.,-,>
