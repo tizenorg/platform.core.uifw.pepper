@@ -1,5 +1,84 @@
 #include "pepper_internal.h"
 
+extern const struct wl_surface_interface surface_implementation;
+
+void
+bind_shell(struct wl_client *, void *, uint32_t, uint32_t);
+
+
+/* compositor interface */
+static void
+compositor_create_surface(struct wl_client   *client,
+				 struct wl_resource *resource,
+				 uint32_t            id)
+{
+    pepper_compositor_t *compositor = wl_resource_get_user_data(resource);
+    pepper_surface_t    *surface;
+
+    PEPPER_TRACE("%s\n", __FUNCTION__);
+
+    surface = (pepper_surface_t *)calloc(1, sizeof(pepper_surface_t));
+    if (!surface)
+    {
+	PEPPER_ERROR("%s Surface memory allocation failed\n", __FUNCTION__);
+	wl_resource_post_no_memory(resource);
+    }
+
+    surface->resource = wl_resource_create(client, &wl_surface_interface,
+					   wl_resource_get_version(resource), id);
+    if (!surface->resource)
+    {
+	PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
+	free(surface);
+	wl_resource_post_no_memory(resource);
+	return ;
+    }
+
+    wl_resource_set_implementation(surface->resource, &surface_implementation, surface, NULL);
+}
+
+
+static void
+compositor_create_region(struct wl_client   *client,
+			 struct wl_resource *resource,
+			 uint32_t            id)
+{
+    PEPPER_TRACE("%s\n", __FUNCTION__);
+}
+
+
+static const struct wl_compositor_interface compositor_interface =
+{
+    compositor_create_surface,
+    compositor_create_region
+};
+
+static void
+bind_compositor(struct wl_client *client,
+		void             *data,
+		uint32_t          version,
+		uint32_t          id)
+{
+    pepper_compositor_t *compositor = (pepper_compositor_t *)data;
+    struct wl_resource  *resource;
+
+    PEPPER_TRACE("%s\n", __FUNCTION__);
+
+    resource = wl_resource_create(client, &wl_compositor_interface, version, id);
+    if (!resource)
+    {
+	PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
+
+	wl_client_post_no_memory(client);
+	return;
+    }
+    PEPPER_TRACE("%s wl_resource_create success\n", __FUNCTION__);
+
+    wl_resource_set_implementation(resource, &compositor_interface, compositor, NULL);
+}
+
+
+
 pepper_compositor_t *
 pepper_compositor_create(const char *socket_name,
 			 const char *backend_name,
@@ -32,7 +111,15 @@ pepper_compositor_create(const char *socket_name,
 	goto error;
     }
 
+    wl_global_create(compositor->display, &wl_compositor_interface, 3, compositor,
+		     bind_compositor);
+
     /* TODO: Load modules. */
+
+    wl_global_create(compositor->display, &wl_shell_interface, 1, compositor,
+		     bind_shell);
+
+    wl_display_init_shm(compositor->display);
 
     return compositor;
 
@@ -108,5 +195,9 @@ pepper_compositor_get_output(pepper_compositor_t *compositor, int index)
 void
 pepper_compositor_frame(pepper_compositor_t *compositor)
 {
-    /* TODO: */
+    if (compositor)
+    {
+	wl_display_flush_clients(compositor->display);
+	wl_event_loop_dispatch(wl_display_get_event_loop(compositor->display), -1);
+    }
 }

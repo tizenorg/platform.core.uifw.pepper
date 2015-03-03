@@ -13,6 +13,7 @@ typedef struct pepper_output	    pepper_output_t;
 typedef struct pepper_output_info   pepper_output_info_t;
 typedef struct pepper_client	    pepper_client_t;
 typedef struct pepper_surface	    pepper_surface_t;
+typedef struct pepper_shell_surface pepper_shell_surface_t;
 
 struct pepper_output_info
 {

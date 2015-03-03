@@ -13,4 +13,7 @@
     } while (0)
 
 
+
+#define PEPPER_TRACE	PEPPER_ERROR
+
 #endif /* COMMON_H */

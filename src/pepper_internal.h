@@ -28,7 +28,14 @@ struct pepper_client
 
 struct pepper_surface
 {
-    void    *buffer;
+    struct wl_resource *resource;
+    void               *buffer;
+};
+
+struct pepper_shell_surface
+{
+    struct wl_resource *resource;
+    pepper_surface_t   *surface;
 };
 
 #endif /* PEPPER_INTERNAL_H */

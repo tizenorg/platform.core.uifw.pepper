@@ -11,6 +11,7 @@ libpepper_la_SOURCES = pepper.h			\
 		       compositor.c		\
 		       output.c			\
 		       client.c			\
+		       shell.c			\
 		       surface.c
 
 # Pepper server executable
