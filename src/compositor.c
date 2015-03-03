@@ -5,7 +5,6 @@ extern const struct wl_surface_interface surface_implementation;
 void
 bind_shell(struct wl_client *, void *, uint32_t, uint32_t);
 
-
 /* compositor interface */
 static void
 compositor_create_surface(struct wl_client   *client,
@@ -17,7 +16,7 @@ compositor_create_surface(struct wl_client   *client,
 
     PEPPER_TRACE("%s\n", __FUNCTION__);
 
-    surface = (pepper_surface_t *)calloc(1, sizeof(pepper_surface_t));
+    surface = (pepper_surface_t *)pepper_calloc(1, sizeof(pepper_surface_t));
     if (!surface)
     {
 	PEPPER_ERROR("%s Surface memory allocation failed\n", __FUNCTION__);
@@ -29,14 +28,13 @@ compositor_create_surface(struct wl_client   *client,
     if (!surface->resource)
     {
 	PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
-	free(surface);
+	pepper_free(surface);
 	wl_resource_post_no_memory(resource);
 	return ;
     }
 
     wl_resource_set_implementation(surface->resource, &surface_implementation, surface, NULL);
 }
-
 
 static void
 compositor_create_region(struct wl_client   *client,
@@ -45,7 +43,6 @@ compositor_create_region(struct wl_client   *client,
 {
     PEPPER_TRACE("%s\n", __FUNCTION__);
 }
-
 
 static const struct wl_compositor_interface compositor_interface =
 {
@@ -77,8 +74,6 @@ bind_compositor(struct wl_client *client,
     wl_resource_set_implementation(resource, &compositor_interface, compositor, NULL);
 }
 
-
-
 pepper_compositor_t *
 pepper_compositor_create(const char *socket_name,
 			 const char *backend_name,
@@ -88,13 +83,10 @@ pepper_compositor_create(const char *socket_name,
 {
     pepper_compositor_t	*compositor = NULL;
 
-    compositor = (pepper_compositor_t *)calloc(1, sizeof (pepper_compositor_t));
+    compositor = (pepper_compositor_t *)pepper_calloc(1, sizeof (pepper_compositor_t));
 
     if (!compositor)
-    {
-	PEPPER_ERROR("Memory allocation failed!!!\n");
 	goto error;
-    }
 
     compositor->display = wl_display_create();
 
@@ -136,7 +128,7 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
     if (compositor->display)
 	wl_display_destroy(compositor->display);
 
-    free(compositor);
+    pepper_free(compositor);
 }
 
 pepper_output_t *
@@ -145,15 +137,12 @@ pepper_compositor_add_output(pepper_compositor_t  *compositor,
 {
     pepper_output_t *output = NULL;
 
-    output = (pepper_output_t *)calloc(1, sizeof (pepper_output_t));
+    output = (pepper_output_t *)pepper_calloc(1, sizeof (pepper_output_t));
 
     if (!output)
-    {
-	PEPPER_ERROR("Memory allocation failed!!!\n");
-	goto error;
-    }
+	return NULL;
 
-    /* TODO: Backend-size output initialization. */
+    /* TODO: Backend-side output initialization. */
 
     output->x = info->x;
     output->y = info->y;
@@ -163,12 +152,6 @@ pepper_compositor_add_output(pepper_compositor_t  *compositor,
     /* TODO: Add to compositor's output list. */
 
     return output;
-
-error:
-    if (output)
-	pepper_output_destroy(output);
-
-    return NULL;
 }
 
 pepper_client_t *

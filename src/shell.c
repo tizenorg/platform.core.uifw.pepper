@@ -1,6 +1,5 @@
 #include "pepper_internal.h"
 
-
 /* shell surface interface */
 static void
 shell_surface_pong(struct wl_client   *client,
@@ -34,8 +33,6 @@ shell_surface_resize(struct wl_client   *client,
 
     PEPPER_TRACE("%s\n", __FUNCTION__);
 }
-
-
 
 static void
 shell_surface_set_toplevel(struct wl_client   *client,
@@ -119,8 +116,6 @@ shell_surface_set_class(struct wl_client   *client,
     PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
-
-
 static const struct wl_shell_surface_interface pepper_shell_surface_implementation =
 {
     shell_surface_pong,
@@ -135,8 +130,6 @@ static const struct wl_shell_surface_interface pepper_shell_surface_implementati
     shell_surface_set_class
 };
 
-
-
 /* shell interface */
 static void
 shell_get_shell_surface(struct wl_client   *client,
@@ -150,7 +143,7 @@ shell_get_shell_surface(struct wl_client   *client,
 
     PEPPER_TRACE("%s\n", __FUNCTION__);
 
-    shsurface = (pepper_shell_surface_t *)calloc(1, sizeof(pepper_shell_surface_t));
+    shsurface = (pepper_shell_surface_t *)pepper_calloc(1, sizeof(pepper_shell_surface_t));
 
     if (!shsurface)
     {
@@ -164,7 +157,7 @@ shell_get_shell_surface(struct wl_client   *client,
     if (!shsurface->resource)
     {
 	PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
-	free(shsurface);
+	pepper_free(shsurface);
 	wl_client_post_no_memory(client);
 	return ;
     }
@@ -174,12 +167,10 @@ shell_get_shell_surface(struct wl_client   *client,
 
 }
 
-
 static const struct wl_shell_interface shell_implementation =
 {
     shell_get_shell_surface
 };
-
 
 void
 bind_shell(struct wl_client *client, void *data, uint32_t version, uint32_t id)
@@ -200,5 +191,3 @@ bind_shell(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 
     wl_resource_set_implementation(resource, &shell_implementation, compositor, NULL);
 }
-
-
