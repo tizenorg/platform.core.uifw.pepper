@@ -11,16 +11,16 @@ void
 pepper_output_get_geometry(pepper_output_t *output, int *x, int *y, int *w, int *h)
 {
     if (x)
-	*x = output->x;
+        *x = output->x;
 
     if (y)
-	*y = output->y;
+        *y = output->y;
 
     if (w)
-	*w = output->w;
+        *w = output->w;
 
     if (h)
-	*h = output->h;
+        *h = output->h;
 }
 
 pepper_compositor_t *

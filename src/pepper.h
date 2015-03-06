@@ -3,16 +3,16 @@
 
 #include <stdint.h>
 
-#define PEPPER_FALSE	0
-#define PEPPER_TRUE	1
+#define PEPPER_FALSE    0
+#define PEPPER_TRUE     1
 
-typedef uint32_t		    pepper_bool_t;
+typedef uint32_t                    pepper_bool_t;
 
 typedef struct pepper_compositor    pepper_compositor_t;
-typedef struct pepper_output	    pepper_output_t;
+typedef struct pepper_output        pepper_output_t;
 typedef struct pepper_output_info   pepper_output_info_t;
-typedef struct pepper_client	    pepper_client_t;
-typedef struct pepper_surface	    pepper_surface_t;
+typedef struct pepper_client        pepper_client_t;
+typedef struct pepper_surface       pepper_surface_t;
 typedef struct pepper_shell_surface pepper_shell_surface_t;
 
 struct pepper_output_info
@@ -24,17 +24,17 @@ struct pepper_output_info
 /* Compositor functions. */
 pepper_compositor_t *
 pepper_compositor_create(const char *socket_name,
-			 const char *backend_name,
-			 const char *input_name,
-			 const char *shell_name,
-			 const char *renderer_name);
+                         const char *backend_name,
+                         const char *input_name,
+                         const char *shell_name,
+                         const char *renderer_name);
 
 void
 pepper_compositor_destroy(pepper_compositor_t *compositor);
 
 pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t  *compositor,
-			     pepper_output_info_t *info);
+                             pepper_output_info_t *info);
 
 int
 pepper_compositor_get_output_count(pepper_compositor_t *compositor);

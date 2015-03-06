@@ -15,7 +15,7 @@ pepper_string_copy(const char *str)
     char *ret = pepper_string_alloc(len);
 
     if (ret)
-	memcpy(ret, str, (len + 1) * sizeof (char));
+        memcpy(ret, str, (len + 1) * sizeof (char));
 
     return ret;
 }

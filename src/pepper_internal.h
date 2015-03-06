@@ -7,15 +7,15 @@
 
 struct pepper_compositor
 {
-    char		*socket_name;
-    struct wl_display	*display;
+    char                *socket_name;
+    struct wl_display   *display;
 };
 
 struct pepper_output
 {
-    pepper_compositor_t	*compositor;
+    pepper_compositor_t *compositor;
 
-    int	x;
+    int x;
     int y;
     int w;
     int h;
