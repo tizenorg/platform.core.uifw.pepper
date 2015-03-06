@@ -26,6 +26,9 @@ PEPPER_MODULES="wayland-server >= 1.6.00 pixman-1 >= 0.25.2"
 # Check pepper modules
 PKG_CHECK_MODULES(PEPPER, [$PEPPER_MODULES])
 
+# Check libinput
+PKG_CHECK_MODULES(LIBINPUT, [libinput >= 0.6.0])
+
 # Check pepper server modules
 # Output files
 AC_CONFIG_FILES([

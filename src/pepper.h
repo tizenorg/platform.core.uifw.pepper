@@ -15,6 +15,11 @@ typedef struct pepper_client        pepper_client_t;
 typedef struct pepper_surface       pepper_surface_t;
 typedef struct pepper_shell_surface pepper_shell_surface_t;
 
+typedef struct pepper_seat          pepper_seat_t;
+typedef struct pepper_pointer       pepper_pointer_t;
+typedef struct pepper_keyboard      pepper_keyboard_t;
+typedef struct pepper_touch         pepper_touch_t;
+
 struct pepper_output_info
 {
     int x, y, w, h;

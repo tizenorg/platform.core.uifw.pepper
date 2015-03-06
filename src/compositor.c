@@ -5,6 +5,15 @@ extern const struct wl_surface_interface surface_implementation;
 void
 bind_shell(struct wl_client *, void *, uint32_t, uint32_t);
 
+int
+load_input_module(pepper_compositor_t *, const char *);
+
+pepper_seat_t *
+pepper_seat_create();
+
+void
+bind_seat(struct wl_client *, void *, uint32_t, uint32_t);
+
 /* compositor interface */
 static void
 compositor_create_surface(struct wl_client   *client,
@@ -108,6 +117,11 @@ pepper_compositor_create(const char *socket_name,
 
     /* TODO: Load modules. */
 
+    /* input */
+    load_input_module(compositor, input_name);
+    compositor->seat = pepper_seat_create();
+    wl_global_create(compositor->display, &wl_seat_interface, 4, compositor->seat, bind_seat);
+
     wl_global_create(compositor->display, &wl_shell_interface, 1, compositor,
                      bind_shell);
 
@@ -184,3 +198,4 @@ pepper_compositor_frame(pepper_compositor_t *compositor)
         wl_event_loop_dispatch(wl_display_get_event_loop(compositor->display), -1);
     }
 }
+

@@ -5,10 +5,103 @@
 #include "pepper.h"
 #include <wayland-server.h>
 
+/* input */
+enum pepper_input_event_type
+{
+    PEPPER_INPUT_POINTER,
+    PEPPER_INPUT_KEYBOARD,
+    PEPPER_INPUT_TOUCH
+};
+
+typedef struct pepper_input_event           pepper_input_event_t;
+typedef struct pepper_input_event_pointer   pepper_input_event_pointer_t;
+typedef struct pepper_input_event_keyboard  pepper_input_event_keyboard_t;
+typedef struct pepper_input_event_touch     pepper_input_event_touch_t;
+
+struct pepper_input_event
+{
+    enum pepper_input_event_type type;
+};
+
+struct pepper_input_event_pointer
+{
+    pepper_input_event_t    base;
+
+    uint32_t                button;
+    uint32_t                time;
+    double                  x;
+    double                  y;
+};
+
+struct pepper_input_event_keyboard
+{
+    pepper_input_event_t    base;
+
+    uint32_t                key;
+    uint32_t                time;
+};
+
+struct pepper_input_event_touch
+{
+    pepper_input_event_t    base;
+
+    uint32_t                index;
+    uint32_t                time;
+    double                  x;
+    double                  y;
+};
+
+struct pepper_input_module_interface
+{
+    int (*get_event_fd)();
+    void (*dispatch_events)();
+    pepper_input_event_t *(*get_next_event)();
+    /* TODO: */
+};
+typedef struct pepper_input_module_interface    pepper_input_module_interface_t;
+
+struct pepper_pointer
+{
+    struct wl_resource *resource;
+    /* TODO: */
+};
+
+struct pepper_keyboard
+{
+    struct wl_resource *resource;
+    /* TODO: */
+};
+
+struct pepper_touch
+{
+    struct wl_resource *resource;
+    /* TODO: */
+};
+
+struct pepper_seat
+{
+    struct wl_resource  *resource;
+
+    char                *name;
+
+    pepper_pointer_t    *pointer;
+    pepper_keyboard_t   *keyboard;
+    pepper_touch_t      *touch;
+
+    /* TODO: */
+};
+
+
+/* compositor */
 struct pepper_compositor
 {
-    char                *socket_name;
-    struct wl_display   *display;
+    char                            *socket_name;
+    struct wl_display               *display;
+
+    pepper_input_module_interface_t input_module_interface;
+    void                            *input_module_data;
+
+    pepper_seat_t                   *seat;
 };
 
 struct pepper_output
@@ -37,5 +130,4 @@ struct pepper_shell_surface
     struct wl_resource *resource;
     pepper_surface_t   *surface;
 };
-
 #endif /* PEPPER_INTERNAL_H */
