@@ -19,59 +19,87 @@ dispatch_events(void *data)
     return;
 }
 
-static pepper_input_event_t *
-create_pointer_event(struct libinput_event *li_event, int type)
+static void
+set_input_event_data_pointer(pepper_input_event_t *event, struct libinput_event *e, int type)
 {
-    /* TODO: */
+    struct libinput_event_pointer *li_event = libinput_event_get_pointer_event(e);
+
+    event->type = type;
+    event->data.pointer.button = libinput_event_pointer_get_button(li_event);
+    event->data.pointer.time = libinput_event_pointer_get_time(li_event);
+    event->data.pointer.x = libinput_event_pointer_get_dx(li_event);
+    event->data.pointer.y = libinput_event_pointer_get_dy(li_event);
+
+    return;
 }
 
-static pepper_input_event_t *
-create_keyboard_event(struct libinput_event *li_event, int type)
+static void
+set_input_event_data_keyboard(pepper_input_event_t *event, struct libinput_event *e, int type)
 {
-    /* TODO: */
+    struct libinput_event_keyboard *li_event = libinput_event_get_keyboard_event(e);
+
+    event->type = type;
+    event->data.keyboard.key = libinput_event_keyboard_get_key(li_event);
+    event->data.keyboard.time = libinput_event_keyboard_get_time(li_event);
+
+    return;
 }
 
-static pepper_input_event_t *
-create_touch_event(struct libinput_event *li_event, int type)
+static void
+set_input_event_data_touch(pepper_input_event_t *event, struct libinput_event *e, int type)
 {
-    /* TODO: */
+    struct libinput_event_touch *li_event = libinput_event_get_touch_event(e);
+
+    event->type = type;
+    event->data.touch.index = libinput_event_touch_get_slot(li_event);
+    event->data.touch.time = libinput_event_touch_get_time(li_event);
+    event->data.touch.x = libinput_event_touch_get_x(li_event);
+    event->data.touch.y = libinput_event_touch_get_y(li_event);
+
+    return;
 }
 
-static pepper_input_event_t *
-get_next_event(void *data)
+static int
+get_next_event(pepper_input_event_t *event, void *data)
 {
-    pepper_input_event_t        *event;
-    struct libinput             *li = (struct libinput *)data;
-    struct libinput_event       *li_event = libinput_get_event(li);
-    enum libinput_event_type    type = libinput_event_get_type(li_event);
+    struct libinput             *li;
+    struct libinput_event       *li_event;
+    enum libinput_event_type    type;
 
+    if (!event)
+        return -1;
+
+    li = (struct libinput *)data;
+    li_event = libinput_get_event(li);
+    if (!li_event)
+        return -1;
+
+    type = libinput_event_get_type(li_event);
     switch (type)
     {
     case LIBINPUT_EVENT_POINTER_MOTION:
     case LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE:
     case LIBINPUT_EVENT_POINTER_BUTTON:
     case LIBINPUT_EVENT_POINTER_AXIS:
-        create_pointer_event(li_event, type);
+        set_input_event_data_pointer(event, li_event, type);
         break;
     case LIBINPUT_EVENT_KEYBOARD_KEY:
-        create_keyboard_event(li_event, type);
+        set_input_event_data_keyboard(event, li_event, type);
         break;
     case LIBINPUT_EVENT_TOUCH_DOWN:
     case LIBINPUT_EVENT_TOUCH_MOTION:
     case LIBINPUT_EVENT_TOUCH_UP:
     case LIBINPUT_EVENT_TOUCH_FRAME:
-        create_touch_event(li_event, type);
+        set_input_event_data_touch(event, li_event, type);
         break;
     default:
-        /* TODO: */
-        break;
+        PEPPER_ERROR("%s Undefined event type!!\n", __FUNCTION__);
+        return -1;
     }
 
     libinput_event_destroy(li_event);
 
-    /* TODO: */
-
-    return event;
+    return 0;
 };
 
 static int

@@ -13,49 +13,42 @@ enum pepper_input_event_type
     PEPPER_INPUT_TOUCH
 };
 
-typedef struct pepper_input_event           pepper_input_event_t;
-typedef struct pepper_input_event_pointer   pepper_input_event_pointer_t;
-typedef struct pepper_input_event_keyboard  pepper_input_event_keyboard_t;
-typedef struct pepper_input_event_touch     pepper_input_event_touch_t;
+typedef struct pepper_input_event   pepper_input_event_t;
 
 struct pepper_input_event
 {
-    enum pepper_input_event_type type;
-};
+    enum pepper_input_event_type    type;
+    union
+    {
+        struct
+        {
+            uint32_t    button;
+            uint32_t    time;
+            double      x;
+            double      y;
+        } pointer;
 
-struct pepper_input_event_pointer
-{
-    pepper_input_event_t    base;
+        struct
+        {
+            uint32_t    key;
+            uint32_t    time;
+        } keyboard;
 
-    uint32_t                button;
-    uint32_t                time;
-    double                  x;
-    double                  y;
-};
-
-struct pepper_input_event_keyboard
-{
-    pepper_input_event_t    base;
-
-    uint32_t                key;
-    uint32_t                time;
-};
-
-struct pepper_input_event_touch
-{
-    pepper_input_event_t    base;
-
-    uint32_t                index;
-    uint32_t                time;
-    double                  x;
-    double                  y;
+        struct
+        {
+            uint32_t    index;
+            uint32_t    time;
+            double      x;
+            double      y;
+        } touch;
+    } data;
 };
 
 struct pepper_input_module_interface
 {
-    int (*get_event_fd)();
-    void (*dispatch_events)();
-    pepper_input_event_t *(*get_next_event)();
+    int     (*get_event_fd)();
+    void    (*dispatch_events)();
+    int     (*get_next_event)(pepper_input_event_t *, void *);
     /* TODO: */
 };
 typedef struct pepper_input_module_interface    pepper_input_module_interface_t;
