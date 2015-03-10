@@ -1,4 +1,7 @@
 #include "pepper_internal.h"
+#include "debug_ch.h"
+
+DECLARE_DEBUG_CHANNEL(compositor);
 
 extern const struct wl_surface_interface surface_implementation;
 
@@ -23,12 +26,12 @@ compositor_create_surface(struct wl_client   *client,
     pepper_compositor_t *compositor = wl_resource_get_user_data(resource);
     pepper_surface_t    *surface;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     surface = (pepper_surface_t *)pepper_calloc(1, sizeof(pepper_surface_t));
     if (!surface)
     {
-        PEPPER_ERROR("%s Surface memory allocation failed\n", __FUNCTION__);
+        ERR("Surface memory allocation failed\n");
         wl_resource_post_no_memory(resource);
     }
 
@@ -36,7 +39,7 @@ compositor_create_surface(struct wl_client   *client,
                                            wl_resource_get_version(resource), id);
     if (!surface->resource)
     {
-        PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
+        ERR("wl_resource_create failed\n");
         pepper_free(surface);
         wl_resource_post_no_memory(resource);
         return ;
@@ -50,7 +53,7 @@ compositor_create_region(struct wl_client   *client,
                          struct wl_resource *resource,
                          uint32_t            id)
 {
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static const struct wl_compositor_interface compositor_interface =
@@ -68,17 +71,17 @@ bind_compositor(struct wl_client *client,
     pepper_compositor_t *compositor = (pepper_compositor_t *)data;
     struct wl_resource  *resource;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     resource = wl_resource_create(client, &wl_compositor_interface, version, id);
     if (!resource)
     {
-        PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
+        ERR("wl_resource_create failed\n");
 
         wl_client_post_no_memory(client);
         return;
     }
-    PEPPER_TRACE("%s wl_resource_create success\n", __FUNCTION__);
+    TRACE("wl_resource_create success\n");
 
     wl_resource_set_implementation(resource, &compositor_interface, compositor, NULL);
 }
@@ -92,6 +95,9 @@ pepper_compositor_create(const char *socket_name,
 {
     pepper_compositor_t *compositor = NULL;
 
+
+    pepper_log_init(NULL);  /* log filename, NULL is stderr */
+
     compositor = (pepper_compositor_t *)pepper_calloc(1, sizeof (pepper_compositor_t));
 
     if (!compositor)
@@ -101,13 +107,13 @@ pepper_compositor_create(const char *socket_name,
 
     if (!compositor->display)
     {
-        PEPPER_ERROR("Failed to create wayland display object.\n");
+        ERR("Failed to create wayland display object.\n");
         goto error;
     }
 
     if (wl_display_add_socket(compositor->display, socket_name) != 0)
     {
-        PEPPER_ERROR("Failed to add socket display = %p socket_name = %s\n",
+        ERR("Failed to add socket display = %p socket_name = %s\n",
                      compositor->display, socket_name);
         goto error;
     }

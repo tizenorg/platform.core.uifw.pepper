@@ -1,4 +1,7 @@
 #include "pepper_internal.h"
+#include "debug_ch.h"
+
+DECLARE_DEBUG_CHANNEL(surface);
 
 void *
 pepper_surface_get_buffer(pepper_surface_t *surface)
@@ -10,7 +13,7 @@ pepper_surface_get_buffer(pepper_surface_t *surface)
 static void
 surface_destroy(struct wl_client *client, struct wl_resource *resource)
 {
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     wl_resource_destroy(resource);
 }
@@ -24,7 +27,7 @@ surface_attach(struct wl_client   *client,
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -37,7 +40,7 @@ surface_damage(struct wl_client   *client,
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -47,7 +50,7 @@ surface_frame(struct wl_client   *client,
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -57,7 +60,7 @@ surface_set_opaque_region(struct wl_client   *client,
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -67,7 +70,7 @@ surface_set_input_region(struct wl_client   *client,
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -75,7 +78,7 @@ surface_commit(struct wl_client *client, struct wl_resource *resource)
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -85,7 +88,7 @@ surface_set_buffer_transform(struct wl_client   *client,
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -95,7 +98,7 @@ surface_set_buffer_scale(struct wl_client   *client,
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 const struct wl_surface_interface surface_implementation =

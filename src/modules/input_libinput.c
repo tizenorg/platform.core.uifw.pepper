@@ -3,6 +3,9 @@
 
 #include "common.h"
 #include "pepper_internal.h"
+#include "debug_ch.h"
+
+DECLARE_DEBUG_CHANNEL(input);
 
 static int
 get_event_fd(void *data)
@@ -93,7 +96,7 @@ get_next_event(pepper_input_event_t *event, void *data)
         set_input_event_data_touch(event, li_event, type);
         break;
     default:
-        PEPPER_ERROR("%s Undefined event type!!\n", __FUNCTION__);
+        ERR("Undefined event type!!\n");
         return -1;
     }
 
@@ -128,19 +131,19 @@ module_init(pepper_compositor_t *compositor)
     struct udev     *udev;
     struct libinput *li;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     udev = udev_new();
     if (!udev)
     {
-        PEPPER_ERROR("%s udev_new failed\n", __FUNCTION__);
+        ERR("udev_new failed\n");
         goto err;
     }
 
     li = libinput_udev_create_context(&libinput_interface, NULL/* user_data */, udev);
     if (!li)
     {
-        PEPPER_ERROR("%s libinput_udev_create_context failed\n", __FUNCTION__);
+        ERR("libinput_udev_create_context failed\n");
         goto err;
     }
 

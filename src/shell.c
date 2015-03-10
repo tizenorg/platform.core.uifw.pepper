@@ -1,4 +1,7 @@
 #include "pepper_internal.h"
+#include "debug_ch.h"
+
+DECLARE_DEBUG_CHANNEL(shell);
 
 /* shell surface interface */
 static void
@@ -8,7 +11,7 @@ shell_surface_pong(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -19,7 +22,7 @@ shell_surface_move(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -31,7 +34,7 @@ shell_surface_resize(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -40,7 +43,7 @@ shell_surface_set_toplevel(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 
@@ -55,7 +58,7 @@ shell_surface_set_transient(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -67,7 +70,7 @@ shell_surface_set_fullscreen(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -82,7 +85,7 @@ shell_surface_set_popup(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -92,7 +95,7 @@ shell_surface_set_maximized(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 
@@ -103,7 +106,7 @@ shell_surface_set_title(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static void
@@ -113,7 +116,7 @@ shell_surface_set_class(struct wl_client   *client,
 {
     pepper_shell_surface_t *shsurface = wl_resource_get_user_data(resource);
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 }
 
 static const struct wl_shell_surface_interface pepper_shell_surface_implementation =
@@ -141,13 +144,13 @@ shell_get_shell_surface(struct wl_client   *client,
     pepper_surface_t       *surface    = wl_resource_get_user_data(surface_resource);
     pepper_shell_surface_t *shsurface;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     shsurface = (pepper_shell_surface_t *)pepper_calloc(1, sizeof(pepper_shell_surface_t));
 
     if (!shsurface)
     {
-        PEPPER_ERROR("%s Shell surface memory allocation failed\n", __FUNCTION__);
+        ERR("Shell surface memory allocation failed\n");
         wl_client_post_no_memory(client);
         return ;
     }
@@ -156,7 +159,7 @@ shell_get_shell_surface(struct wl_client   *client,
                                              wl_resource_get_version(resource), id);
     if (!shsurface->resource)
     {
-        PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
+        ERR("wl_resource_create failed\n");
         pepper_free(shsurface);
         wl_client_post_no_memory(client);
         return ;
@@ -178,12 +181,12 @@ bind_shell(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     pepper_compositor_t *compositor = (pepper_compositor_t *)data;
     struct wl_resource  *resource;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     resource = wl_resource_create(client, &wl_shell_interface, version, id);
     if (!resource)
     {
-        PEPPER_ERROR("%s wl_resource_create failed\n", __FUNCTION__);
+        ERR("wl_resource_create failed\n");
 
         wl_client_post_no_memory(client);
         return;

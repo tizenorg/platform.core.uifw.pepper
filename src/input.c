@@ -1,5 +1,8 @@
 #include <dlfcn.h>
 #include "pepper_internal.h"
+#include "debug_ch.h"
+
+DECLARE_DEBUG_CHANNEL(input);
 
 #define PATH_MAX_LEN 128
 int
@@ -62,28 +65,28 @@ pepper_seat_create()
     seat = (pepper_seat_t *)pepper_calloc(1, sizeof(pepper_seat_t));
     if (!seat)
     {
-        PEPPER_ERROR("%s Memory allocation failed\n", __FUNCTION__);
+        ERR("Memory allocation failed\n");
         goto err;
     }
 
     pointer = (pepper_pointer_t *)pepper_calloc(1, sizeof(pepper_pointer_t));
     if (!pointer)
     {
-        PEPPER_ERROR("%s Memory allocation failed\n", __FUNCTION__);
+        ERR("Memory allocation failed\n");
         goto err;
     }
 
     keyboard = (pepper_keyboard_t *)pepper_calloc(1, sizeof(pepper_keyboard_t));
     if (!keyboard)
     {
-        PEPPER_ERROR("%s Memory allocation failed\n", __FUNCTION__);
+        ERR("Memory allocation failed\n");
         goto err;
     }
 
     touch = (pepper_touch_t *)pepper_calloc(1, sizeof(pepper_touch_t));
     if (!touch)
     {
-        PEPPER_ERROR("%s Memory allocation failed\n", __FUNCTION__);
+        ERR("Memory allocation failed\n");
         goto err;
     }
 
@@ -110,28 +113,28 @@ static void
 pointer_set_cursor(struct wl_client *client, struct wl_resource *resource, uint32_t serial,
                    struct wl_resource *surface_resource, int32_t x, int32_t y)
 {
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
     /* TODO: */
 }
 
 static void
 pointer_release(struct wl_client *client, struct wl_resource *resource)
 {
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
     wl_resource_destroy(resource);
 }
 
 static void
 keyboard_release(struct wl_client *client, struct wl_resource *resource)
 {
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
     wl_resource_destroy(resource);
 }
 
 static void
 touch_release(struct wl_client *client, struct wl_resource *resource)
 {
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
     wl_resource_destroy(resource);
 }
 
@@ -157,7 +160,7 @@ seat_get_pointer(struct wl_client *client, struct wl_resource *resource, uint32_
     pepper_seat_t       *seat = wl_resource_get_user_data(resource);
     pepper_pointer_t    *pointer = seat->pointer;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     pointer->resource = wl_resource_create(client, &wl_pointer_interface,
                                            wl_resource_get_version(resource), id);
@@ -178,7 +181,7 @@ seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32
     pepper_seat_t       *seat = wl_resource_get_user_data(resource);
     pepper_keyboard_t   *keyboard = seat->keyboard;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     keyboard->resource = wl_resource_create(client, &wl_keyboard_interface,
                                             wl_resource_get_version(resource), id);
@@ -199,7 +202,7 @@ seat_get_touch(struct wl_client *client, struct wl_resource *resource, uint32_t 
     pepper_seat_t   *seat = wl_resource_get_user_data(resource);
     pepper_touch_t  *touch = seat->touch;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     touch->resource = wl_resource_create(client, &wl_touch_interface,
                                          wl_resource_get_version(resource), id);
@@ -227,7 +230,7 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     pepper_seat_t           *seat = (pepper_seat_t *)data;
     enum wl_seat_capability caps = 0;
 
-    PEPPER_TRACE("%s\n", __FUNCTION__);
+    TRACE("enter\n");
 
     seat->resource = wl_resource_create(client, &wl_seat_interface,
                                         (version < 4) ? version : 4, id);

@@ -7,16 +7,18 @@ module_LTLIBRARIES =
 lib_LTLIBRARIES += libpepper.la
 libpepper_la_CFLAGS = $(PEPPER_CFLAGS) -DMODULEDIR='"$(moduledir)"'
 libpepper_la_LIBADD = $(PEPPER_LIBS)
-libpepper_la_SOURCES = pepper.h			\
-		       pepper_internal.h	\
-		       common.h			\
-		       common.c			\
-		       compositor.c		\
-		       output.c			\
-		       input.c			\
-		       client.c			\
-		       shell.c			\
-		       surface.c
+libpepper_la_SOURCES = pepper.h                 \
+                       pepper_internal.h        \
+                       common.h                 \
+                       common.c                 \
+                       compositor.c             \
+                       output.c                 \
+                       input.c                  \
+                       client.c                 \
+                       shell.c                  \
+                       surface.c                \
+                       debug_ch.c               \
+                       log.c
 
 # input module library
 module_LTLIBRARIES += input_libinput.la
