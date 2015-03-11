@@ -7,10 +7,14 @@
 
 typedef struct pepper_surface       pepper_surface_t;
 typedef struct pepper_shell_surface pepper_shell_surface_t;
+
 typedef struct pepper_seat          pepper_seat_t;
 typedef struct pepper_pointer       pepper_pointer_t;
 typedef struct pepper_keyboard      pepper_keyboard_t;
 typedef struct pepper_touch         pepper_touch_t;
+
+typedef struct pepper_input_event   pepper_input_event_t;
+typedef struct pepper_input_module  pepper_input_module_t;
 
 /* input */
 enum pepper_input_event_type
@@ -19,8 +23,6 @@ enum pepper_input_event_type
     PEPPER_INPUT_KEYBOARD,
     PEPPER_INPUT_TOUCH
 };
-
-typedef struct pepper_input_event   pepper_input_event_t;
 
 struct pepper_input_event
 {
@@ -51,14 +53,15 @@ struct pepper_input_event
     } data;
 };
 
-struct pepper_input_module_interface
+struct pepper_input_module
 {
+    void    *data;
+
     int     (*get_event_fd)();
     void    (*dispatch_events)();
     int     (*get_next_event)(pepper_input_event_t *, void *);
     /* TODO: */
 };
-typedef struct pepper_input_module_interface    pepper_input_module_interface_t;
 
 struct pepper_pointer
 {
@@ -94,13 +97,11 @@ struct pepper_seat
 /* compositor */
 struct pepper_compositor
 {
-    char                            *socket_name;
-    struct wl_display               *display;
+    char                    *socket_name;
+    struct wl_display       *display;
 
-    pepper_input_module_interface_t input_module_interface;
-    void                            *input_module_data;
-
-    pepper_seat_t                   *seat;
+    pepper_input_module_t   input_module;
+    pepper_seat_t           *seat;
 };
 
 struct pepper_surface

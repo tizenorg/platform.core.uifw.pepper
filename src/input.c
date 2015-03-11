@@ -11,7 +11,7 @@ load_input_module(pepper_compositor_t *compositor, const char *input_name)
     char path[PATH_MAX_LEN];
 
     void *module;
-    int (*init)(pepper_compositor_t *);
+    int (*init)(pepper_input_module_t *);
 
     if (input_name)
     {
@@ -45,7 +45,7 @@ load_input_module(pepper_compositor_t *compositor, const char *input_name)
         return -1;
     }
 
-    init(compositor);
+    init(&compositor->input_module);
 
     /* TODO: add input_fd to compositor loop */
 

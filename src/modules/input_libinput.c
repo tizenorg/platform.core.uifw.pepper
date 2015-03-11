@@ -124,10 +124,8 @@ const struct libinput_interface libinput_interface =
 };
 
 int
-module_init(pepper_compositor_t *compositor)
+module_init(pepper_input_module_t *input_module)
 {
-    pepper_input_module_interface_t *interface;
-
     struct udev     *udev;
     struct libinput *li;
 
@@ -147,11 +145,10 @@ module_init(pepper_compositor_t *compositor)
         goto err;
     }
 
-    compositor->input_module_data = li;
-    interface = &compositor->input_module_interface;
-    interface->get_event_fd = get_event_fd;
-    interface->dispatch_events = dispatch_events;
-    interface->get_next_event = get_next_event;
+    input_module->data = li;
+    input_module->get_event_fd = get_event_fd;
+    input_module->dispatch_events = dispatch_events;
+    input_module->get_next_event = get_next_event;
 
     return 0;
 
