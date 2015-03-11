@@ -8,10 +8,8 @@ main(int argc, char **argv)
 
     compositor = pepper_compositor_create("wayland-0", NULL, NULL, NULL, NULL);
 
-    while (1)
-    {
-        pepper_compositor_frame(compositor);
-    }
+    /* Enter main loop. */
+    pepper_compositor_run(compositor);
 
     pepper_compositor_destroy(compositor);
 

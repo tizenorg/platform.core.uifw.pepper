@@ -145,57 +145,9 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
     pepper_free(compositor);
 }
 
-pepper_output_t *
-pepper_compositor_add_output(pepper_compositor_t  *compositor,
-                             pepper_output_info_t *info)
-{
-    pepper_output_t *output = NULL;
-
-    output = (pepper_output_t *)pepper_calloc(1, sizeof (pepper_output_t));
-
-    if (!output)
-        return NULL;
-
-    /* TODO: Backend-side output initialization. */
-
-    output->x = info->x;
-    output->y = info->y;
-    output->w = info->w;
-    output->h = info->h;
-
-    /* TODO: Add to compositor's output list. */
-
-    return output;
-}
-
-pepper_client_t *
-pepper_compositor_get_client(pepper_compositor_t *compositor, int index)
-{
-    /* TODO: */
-    return NULL;
-}
-
-int
-pepper_compositor_get_output_count(pepper_compositor_t *compositor)
-{
-    /* TODO: */
-    return 0;
-}
-
-pepper_output_t *
-pepper_compositor_get_output(pepper_compositor_t *compositor, int index)
-{
-    /* TODO: */
-    return NULL;
-}
-
 void
-pepper_compositor_frame(pepper_compositor_t *compositor)
+pepper_compositor_run(pepper_compositor_t *compositor)
 {
-    if (compositor)
-    {
-        wl_display_flush_clients(compositor->display);
-        wl_event_loop_dispatch(wl_display_get_event_loop(compositor->display), -1);
-    }
+    wl_display_run(compositor->display);
 }
 

@@ -5,6 +5,13 @@
 #include "pepper.h"
 #include <wayland-server.h>
 
+typedef struct pepper_surface       pepper_surface_t;
+typedef struct pepper_shell_surface pepper_shell_surface_t;
+typedef struct pepper_seat          pepper_seat_t;
+typedef struct pepper_pointer       pepper_pointer_t;
+typedef struct pepper_keyboard      pepper_keyboard_t;
+typedef struct pepper_touch         pepper_touch_t;
+
 /* input */
 enum pepper_input_event_type
 {
@@ -84,7 +91,6 @@ struct pepper_seat
     /* TODO: */
 };
 
-
 /* compositor */
 struct pepper_compositor
 {
@@ -95,21 +101,6 @@ struct pepper_compositor
     void                            *input_module_data;
 
     pepper_seat_t                   *seat;
-};
-
-struct pepper_output
-{
-    pepper_compositor_t *compositor;
-
-    int x;
-    int y;
-    int w;
-    int h;
-};
-
-struct pepper_client
-{
-    pepper_compositor_t *compositor;
 };
 
 struct pepper_surface
@@ -123,4 +114,5 @@ struct pepper_shell_surface
     struct wl_resource *resource;
     pepper_surface_t   *surface;
 };
+
 #endif /* PEPPER_INTERNAL_H */
