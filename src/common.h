@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #include <stdio.h>
+#include <assert.h>
 #include "pepper.h"
 
 #define PEPPER_ASSERT(expr)	assert(expr)

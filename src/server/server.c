@@ -4,12 +4,14 @@
 int
 main(int argc, char **argv)
 {
+    struct wl_display   *display;
     pepper_compositor_t *compositor;
 
-    compositor = pepper_compositor_create("wayland-0", NULL, NULL, NULL, NULL);
+    compositor = pepper_compositor_create("wayland-0");
+    display = pepper_compositor_get_display(compositor);
 
     /* Enter main loop. */
-    pepper_compositor_run(compositor);
+    wl_display_run(display);
 
     pepper_compositor_destroy(compositor);
 

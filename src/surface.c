@@ -1,21 +1,9 @@
-#include "pepper_internal.h"
-#include "debug_ch.h"
+#include "pepper-internal.h"
 
-DECLARE_DEBUG_CHANNEL(surface);
-
-void *
-pepper_surface_get_buffer(pepper_surface_t *surface)
-{
-    return surface->buffer;
-}
-
-/* surface interface */
 static void
 surface_destroy(struct wl_client *client, struct wl_resource *resource)
 {
-    TRACE("enter\n");
-
-    wl_resource_destroy(resource);
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
@@ -25,9 +13,7 @@ surface_attach(struct wl_client   *client,
                int32_t x,
                int32_t y)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
@@ -38,9 +24,7 @@ surface_damage(struct wl_client   *client,
                int32_t width,
                int32_t height)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
@@ -48,9 +32,7 @@ surface_frame(struct wl_client   *client,
               struct wl_resource *resource,
               uint32_t           callback)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
@@ -58,9 +40,7 @@ surface_set_opaque_region(struct wl_client   *client,
                           struct wl_resource *resource,
                           struct wl_resource *region)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
@@ -68,17 +48,13 @@ surface_set_input_region(struct wl_client   *client,
                          struct wl_resource *resource,
                          struct wl_resource *region)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
 surface_commit(struct wl_client *client, struct wl_resource *resource)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
@@ -86,9 +62,7 @@ surface_set_buffer_transform(struct wl_client   *client,
                              struct wl_resource *resource,
                              int                 transform)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
 static void
@@ -96,12 +70,10 @@ surface_set_buffer_scale(struct wl_client   *client,
                          struct wl_resource *resource,
                          int32_t             scale)
 {
-    pepper_surface_t *surface = wl_resource_get_user_data(resource);
-
-    TRACE("enter\n");
+    PEPPER_TRACE("%s\n", __FUNCTION__);
 }
 
-const struct wl_surface_interface surface_implementation =
+static const struct wl_surface_interface surface_implementation =
 {
     surface_destroy,
     surface_attach,
@@ -113,3 +85,38 @@ const struct wl_surface_interface surface_implementation =
     surface_set_buffer_transform,
     surface_set_buffer_scale
 };
+
+pepper_surface_t *
+pepper_surface_create(pepper_compositor_t *compositor,
+                      struct wl_client *client,
+                      struct wl_resource *resource,
+                      uint32_t id)
+{
+    pepper_surface_t *surface;
+
+    surface = (pepper_surface_t *)pepper_calloc(1, sizeof(pepper_surface_t));
+
+    if (!surface)
+    {
+        PEPPER_ERROR("Surface memory allocation failed\n");
+        wl_resource_post_no_memory(resource);
+        return NULL;
+    }
+
+    surface->resource = wl_resource_create(client, &wl_surface_interface,
+                                           wl_resource_get_version(resource), id);
+
+    if (!surface->resource)
+    {
+        PEPPER_ERROR("wl_resource_create failed\n");
+        pepper_free(surface);
+        wl_resource_post_no_memory(resource);
+        pepper_free(surface);
+        return NULL;
+    }
+
+    wl_resource_set_implementation(surface->resource, &surface_implementation, surface, NULL);
+    wl_list_insert(&compositor->surfaces, wl_resource_get_link(surface->resource));
+
+    return surface;
+}

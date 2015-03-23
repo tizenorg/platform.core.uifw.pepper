@@ -21,15 +21,47 @@ LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
 # Pepper build requirements
-PEPPER_MODULES="wayland-server >= 1.6.00 pixman-1 >= 0.25.2"
+LIB_PEPPER_MODULES="wayland-server >= 1.6.00 pixman-1 >= 0.25.2"
 
 # Check pepper modules
-PKG_CHECK_MODULES(PEPPER, [$PEPPER_MODULES])
+PKG_CHECK_MODULES(LIB_PEPPER, [$LIB_PEPPER_MODULES])
 
-# Check libinput
-PKG_CHECK_MODULES(LIBINPUT, [libinput >= 0.6.0])
+# wayland backend
+AC_ARG_ENABLE(wayland-backend,
+              AC_HELP_STRING([--enable-wayland-backend], [enable wayland backend]),
+              [enable_wayland_backend=$enableval], [enable_wayland_backend=no])
 
-# Check pepper server modules
+AM_CONDITIONAL(ENABLE_WAYLAND_BACKEND, test $enable_wayland_backend = yes)
+
+if test $enable_wayland_backend = yes; then
+    AC_DEFINE(ENABLE_WAYLAND_BACKEND, 1, [Enable wayland backend])
+    PKG_CHECK_MODULES(WAYLAND_BACKEND, [wayland-client >= 1.6.00])
+fi
+
+# drm backend
+AC_ARG_ENABLE(drm-backend,
+              AC_HELP_STRING([--enable-drm-backend], [enable drm backend]),
+              [enable_drm_backend=$enableval], [enable_drm_backend=no])
+
+AM_CONDITIONAL(ENABLE_DRM_BACKEND, test $enable_drm_backend = yes)
+
+if test $enable_drm_backend = yes; then
+    AC_DEFINE(ENABLE_DRM_BACKEND, 1, [Enable drm backend])
+    PKG_CHECK_MODULES(DRM_BACKEND, [libinput >= 0.6.0])
+fi
+
+# pepper server
+AC_ARG_ENABLE(pepper-server,
+              AC_HELP_STRING([--enable-pepper-server], [build pepper reference server]),
+              [enable_pepper_server=$enableval], [enable_pepper_server=yes])
+
+AM_CONDITIONAL(ENABLE_PEPPER_SERVER, test $enable_pepper_server = yes)
+
+if test $enable_pepper_server = yes; then
+    AC_DEFINE(ENABLE_PEPPER_SERVER, 1, [Build pepper reference server])
+    PKG_CHECK_MODULES(PEPPER_SERVER, [wayland-server >= 1.6.00])
+fi
+
 # Output files
 AC_CONFIG_FILES([
 Makefile
