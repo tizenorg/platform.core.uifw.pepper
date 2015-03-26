@@ -15,7 +15,8 @@ compositor_create_region(struct wl_client   *client,
                          struct wl_resource *resource,
                          uint32_t            id)
 {
-    PEPPER_TRACE("TODO: %s\n", __FUNCTION__);
+    pepper_compositor_t *compositor = wl_resource_get_user_data(resource);
+    pepper_region_create(compositor, client, resource, id);
 }
 
 static const struct wl_compositor_interface compositor_interface =
