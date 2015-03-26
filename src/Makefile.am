@@ -20,7 +20,8 @@ libpepper_la_SOURCES = pepper.h                 \
                        client.c                 \
                        shell.c                  \
                        surface.c                \
-                       region.c
+                       region.c                 \
+                       buffer.c
 
 # wayland backend
 if ENABLE_WAYLAND_BACKEND
