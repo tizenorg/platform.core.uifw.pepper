@@ -75,6 +75,12 @@ pepper_compositor_create(const char *socket_name)
                      compositor_bind);
     wl_list_init(&compositor->surfaces);
 
+    if (wl_display_init_shm(compositor->display) != 0)
+    {
+        PEPPER_ERROR("Failed to initialze shm.\n");
+        goto error;
+    }
+
     return compositor;
 
 error:
