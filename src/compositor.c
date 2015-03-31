@@ -98,16 +98,3 @@ pepper_compositor_get_display(pepper_compositor_t *compositor)
 {
     return compositor->display;
 }
-
-PEPPER_API void
-pepper_compositor_set_user_data(pepper_compositor_t *compositor, uint32_t key, void *data)
-{
-    PEPPER_TRACE("TODO: %s\n", __FUNCTION__);
-}
-
-PEPPER_API void *
-pepper_compositor_get_user_data(pepper_compositor_t *compositor, uint32_t key)
-{
-    PEPPER_TRACE("TODO: %s\n", __FUNCTION__);
-    return NULL;
-}

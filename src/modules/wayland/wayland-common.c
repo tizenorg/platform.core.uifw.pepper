@@ -1,12 +1,10 @@
 #include "wayland-internal.h"
 
-#define WAYLAND_DATA_KEY    0x721dfa02
-
 static void
 handle_global(void *data, struct wl_registry *registry,
               uint32_t name, const char *interface, uint32_t version)
 {
-    wayland_connection_t *conn = data;
+    pepper_wayland_t *conn = data;
 
     if (strcmp(interface, "wl_compositor") == 0)
     {
@@ -37,7 +35,7 @@ static const struct wl_registry_listener registry_listener =
 static int
 handle_wayland_event(int fd, uint32_t mask, void *data)
 {
-    wayland_connection_t *conn = data;
+    pepper_wayland_t *conn = data;
     int count = 0;
 
     if ((mask & WL_EVENT_HANGUP) || (mask & WL_EVENT_ERROR))
@@ -58,80 +56,66 @@ handle_wayland_event(int fd, uint32_t mask, void *data)
     return count;
 }
 
-wayland_connection_t *
-wayland_get_connection(pepper_compositor_t *compositor, const char *socket_name)
+PEPPER_API pepper_wayland_t *
+pepper_wayland_connect(const char *socket_name, pepper_compositor_t *compositor)
 {
-    wayland_data_t          *data;
-    wayland_connection_t    *conn = NULL;
+    pepper_wayland_t        *conn;
+    struct wl_display       *compositor_display;
+    struct wl_event_loop    *loop;
 
-    data = pepper_compositor_get_user_data(compositor, WAYLAND_DATA_KEY);
-    if (!data)
-    {
-        PEPPER_ERROR("Wayland module is not initialized. Call pepper_wayland_init() first.\n");
-        return NULL;
-    }
-
-    if (!wl_list_empty(&data->connections))
-    {
-        wayland_connection_t *c;
-        wl_list_for_each(c, &data->connections, link)
-        {
-            if (strcmp(c->socket_name, socket_name) == 0)
-            {
-                conn = c;
-                break;
-            }
-        }
-    }
-
+    conn = pepper_calloc(1, sizeof(pepper_wayland_t));
     if (!conn)
-    {
-        struct wl_display       *display;
-        struct wl_event_loop    *loop;
+        return NULL;
 
-        conn = (wayland_connection_t *)pepper_calloc(1, sizeof(wayland_connection_t));
-        if (!conn)
-            return NULL;
+    conn->compositor = compositor;
 
-        conn->data = data;
-        conn->display = wl_display_connect(socket_name);
-        conn->fd = wl_display_get_fd(conn->display);
-        conn->socket_name = pepper_string_copy(socket_name);
+    conn->socket_name = pepper_string_copy(socket_name);
+    conn->display = wl_display_connect(socket_name);
+    conn->fd = wl_display_get_fd(conn->display);
 
-        display = pepper_compositor_get_display(compositor);
-        loop = wl_display_get_event_loop(display);
+    compositor_display = pepper_compositor_get_display(compositor);
+    loop = wl_display_get_event_loop(compositor_display);
+    conn->event_source = wl_event_loop_add_fd(loop, conn->fd, WL_EVENT_READABLE,
+                                              handle_wayland_event, conn);
 
-        conn->event_source = wl_event_loop_add_fd(loop, conn->fd, WL_EVENT_READABLE,
-                                                  handle_wayland_event, conn);
+    wl_signal_init(&conn->destroy_signal);
 
-        conn->registry = wl_display_get_registry(conn->display);
-        wl_registry_add_listener(conn->registry, &registry_listener, conn);
-        wl_display_roundtrip(conn->display);
-
-        wl_list_insert(&data->connections, &conn->link);
-    }
+    conn->registry = wl_display_get_registry(conn->display);
+    wl_registry_add_listener(conn->registry, &registry_listener, conn);
+    wl_display_roundtrip(conn->display);
 
     return conn;
 }
 
-PEPPER_API pepper_bool_t
-pepper_wayland_init(pepper_compositor_t *compositor)
+PEPPER_API void
+pepper_wayland_destroy(pepper_wayland_t *conn)
 {
-    wayland_data_t *data = pepper_compositor_get_user_data(compositor, WAYLAND_DATA_KEY);
+    wl_signal_emit(&conn->destroy_signal);
 
-    if (data)
-    {
-        PEPPER_ERROR("Wayland key is already used by another module.\n");
-        return PEPPER_FALSE;
-    }
+    if (conn->socket_name)
+        pepper_string_free(conn->socket_name);
 
-    data = (wayland_data_t *)pepper_calloc(1, sizeof(wayland_data_t));
-    if (!data)
-        return PEPPER_FALSE;
+    if (conn->event_source)
+        wl_event_source_remove(conn->event_source);
 
-    data->compositor = compositor;
-    wl_list_init(&data->connections);
-    pepper_compositor_set_user_data(compositor, WAYLAND_DATA_KEY, data);
+    if (conn->registry)
+        wl_registry_destroy(conn->registry);
 
-    return PEPPER_TRUE;
+    if (conn->compositor)
+        wl_compositor_destroy(conn->compositor);
+
+    if (conn->seat)
+        wl_seat_destroy(conn->seat);
+
+    if (conn->pointer)
+        wl_pointer_destroy(conn->pointer);
+
+    if (conn->keyboard)
+        wl_keyboard_destroy(conn->keyboard);
+
+    if (conn->touch)
+        wl_touch_destroy(conn->touch);
+
+    if (conn->shell)
+        wl_shell_destroy(conn->shell);
 }

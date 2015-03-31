@@ -35,8 +35,12 @@ struct pepper_output
     pepper_output_mode_t       *current_mode;
 
     /* Backend-specific variables. */
-    pepper_output_interface_t   interface;
+    pepper_output_interface_t  *interface;
     void                       *data;
+
+    /* Listeners for backend-side events. */
+    struct wl_listener          data_destroy_listener;
+    struct wl_listener          mode_change_listener;
 };
 
 struct pepper_buffer

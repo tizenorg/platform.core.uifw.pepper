@@ -25,23 +25,13 @@ typedef struct pepper_output_mode       pepper_output_mode_t;
 typedef struct pepper_output            pepper_output_t;
 typedef struct pepper_output_interface  pepper_output_interface_t;
 
-/* Compositor functions. */
-PEPPER_API pepper_compositor_t *
-pepper_compositor_create(const char *socket_name);
+typedef enum
+{
+    PEPPER_RENDER_METHOD_NONE,
+    PEPPER_RENDER_METHOD_PIXMAN,
+    PEPPER_RENDER_METHOD_NATIVE,
+} pepper_render_method_t;
 
-PEPPER_API void
-pepper_compositor_destroy(pepper_compositor_t *compositor);
-
-PEPPER_API struct wl_display *
-pepper_compositor_get_display(pepper_compositor_t *compositor);
-
-PEPPER_API void
-pepper_compositor_set_user_data(pepper_compositor_t *compositor, uint32_t key, void *data);
-
-PEPPER_API void *
-pepper_compositor_get_user_data(pepper_compositor_t *compositor, uint32_t key);
-
-/* Output. */
 struct pepper_output_geometry
 {
     int32_t     x;
@@ -57,28 +47,40 @@ struct pepper_output_geometry
 struct pepper_output_mode
 {
     uint32_t    flags;
-    int32_t     width;
-    int32_t     height;
+    int32_t     w, h;
     int32_t     refresh;
 };
 
 struct pepper_output_interface
 {
-    void *          (*create)(pepper_compositor_t *compositor, int32_t w, int32_t h, void *data);
     void            (*destroy)(void *output);
+
+    void            (*add_destroy_listener)(void *output, struct wl_listener *listener);
+    void            (*add_mode_change_listener)(void *output, struct wl_listener *listener);
 
     int32_t         (*get_subpixel_order)(void *output);
     const char *    (*get_maker_name)(void *output);
     const char *    (*get_model_name)(void *output);
-    int32_t         (*get_scale)(void *output);
+
     int             (*get_mode_count)(void *output);
     void            (*get_mode)(void *output, int index, pepper_output_mode_t *mode);
+    pepper_bool_t   (*set_mode)(void *output, const pepper_output_mode_t *mode);
 };
 
-PEPPER_API pepper_output_t *
-pepper_output_create(pepper_compositor_t *compositor,
-                     int32_t x, int32_t y, int32_t w, int32_t h, int32_t transform, int32_t scale,
-                     const pepper_output_interface_t *interface, void *data);
+/* Compositor functions. */
+PEPPER_API pepper_compositor_t *
+pepper_compositor_create(const char *socket_name);
+
+PEPPER_API void
+pepper_compositor_destroy(pepper_compositor_t *compositor);
+
+PEPPER_API struct wl_display *
+pepper_compositor_get_display(pepper_compositor_t *compositor);
+
+PEPPER_API pepper_bool_t
+pepper_compositor_add_output(pepper_compositor_t *compositor,
+                             pepper_output_interface_t *interface,
+                             void *data);
 
 PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output);
@@ -103,9 +105,6 @@ pepper_output_get_mode(pepper_output_t *output, int index);
 
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode);
-
-PEPPER_API void
-pepper_output_update_mode(pepper_output_t *output);
 
 /* Input. */
 

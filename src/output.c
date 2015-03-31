@@ -1,6 +1,49 @@
 #include "pepper-internal.h"
 
 static void
+output_update_mode(pepper_output_t *output)
+{
+    int                 i;
+    struct wl_resource  *resource;
+
+    output->current_mode = NULL;
+
+    if (output->modes)
+        pepper_free(output->modes);
+
+    output->mode_count = output->interface->get_mode_count(output->data);
+    PEPPER_ASSERT(output->mode_count > 0);
+
+    output->modes = pepper_calloc(output->mode_count, sizeof(pepper_output_mode_t));
+    if (!output->modes)
+    {
+        pepper_output_destroy(output);
+        return;
+    }
+
+    for (i = 0; i < output->mode_count; i++)
+    {
+        output->interface->get_mode(output->data, i, &output->modes[i]);
+
+        if (output->modes[i].flags & WL_OUTPUT_MODE_CURRENT)
+            output->current_mode = &output->modes[i];
+
+    }
+
+    wl_resource_for_each(resource, &output->resources)
+    {
+        for (i = 0; i < output->mode_count; i++)
+        {
+            wl_output_send_mode(resource, output->modes[i].flags,
+                                output->modes[i].w, output->modes[i].h,
+                                output->modes[i].refresh);
+        }
+
+        wl_output_send_done(resource);
+    }
+}
+
+static void
 output_send_geometry(pepper_output_t *output)
 {
     struct wl_resource *resource;
@@ -52,23 +95,38 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     for (i = 0; i < output->mode_count; i++)
     {
         wl_output_send_mode(resource, output->modes[i].flags,
-                            output->modes[i].width, output->modes[i].height,
+                            output->modes[i].w, output->modes[i].h,
                             output->modes[i].refresh);
     }
 
     wl_output_send_done(resource);
 }
 
-PEPPER_API pepper_output_t *
-pepper_output_create(pepper_compositor_t *compositor,
-                     int32_t x, int32_t y, int32_t w, int32_t h, int32_t transform, int32_t scale,
-                     const pepper_output_interface_t *interface, void *data)
+static void
+handle_output_data_destroy(struct wl_listener *listener, void *data)
+{
+    pepper_output_t *output = wl_container_of(listener, output, data_destroy_listener);
+    output->data = NULL;
+    output->interface = NULL;
+    pepper_output_destroy(output);
+}
+
+static void
+handle_mode_change(struct wl_listener *listener, void *data)
+{
+    pepper_output_t *output = wl_container_of(listener, output, data_destroy_listener);
+    output_update_mode(output);
+}
+
+PEPPER_API pepper_bool_t
+pepper_compositor_add_output(pepper_compositor_t *compositor,
+                             pepper_output_interface_t *interface, void *data)
 {
     pepper_output_t     *output;
 
     output = pepper_calloc(1, sizeof(pepper_output_t));
     if (!output)
-        return NULL;
+        return PEPPER_FALSE;
 
     wl_list_init(&output->resources);
     output->compositor = compositor;
@@ -77,27 +135,40 @@ pepper_output_create(pepper_compositor_t *compositor,
     output->global = wl_global_create(compositor->display, &wl_output_interface, 2, output,
                                       output_bind);
 
+    if (!output->global)
+    {
+        pepper_free(output);
+        return PEPPER_FALSE;
+    }
+
     /* Create backend-side object. */
-    output->interface = *interface;
-    output->data = interface->create(compositor, w, h, data);
-
-    /* Initialize output geometry. */
-    output->geometry.x = x;
-    output->geometry.y = y;
-    output->geometry.w = w;
-    output->geometry.h = h;
-    output->geometry.transform;
-    output->geometry.subpixel = interface->get_subpixel_order(output->data);
-    output->geometry.maker = interface->get_maker_name(output->data);
-    output->geometry.model = interface->get_model_name(output->data);
-
-    /* Initialize output scale. */
-    output->scale = interface->get_scale(output->data);
+    output->interface = interface;
+    output->data = data;
 
     /* Initialize output modes. */
-    pepper_output_update_mode(output);
+    output_update_mode(output);
 
-    return output;
+    /* TODO: Set scale value according to the config or something. */
+    output->scale = 1;
+
+    /* Initialize geometry. TODO: Calculate position and size of the output. */
+    output->geometry.transform;
+    output->geometry.subpixel = interface->get_subpixel_order(data);
+    output->geometry.maker = interface->get_maker_name(data);
+    output->geometry.model = interface->get_model_name(data);
+    output->geometry.x = 0;
+    output->geometry.y = 0;
+    output->geometry.w = output->current_mode->w;
+    output->geometry.h = output->current_mode->h;
+
+    /* Install listeners. */
+    output->data_destroy_listener.notify = handle_output_data_destroy;
+    interface->add_destroy_listener(data, &output->data_destroy_listener);
+
+    output->mode_change_listener.notify = handle_mode_change;
+    interface->add_mode_change_listener(data, &output->mode_change_listener);
+
+    return PEPPER_TRUE;
 }
 
 PEPPER_API pepper_compositor_t *
@@ -109,7 +180,15 @@ pepper_output_get_compositor(pepper_output_t *output)
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output)
 {
-    output->interface.destroy(output->data);
+    if (output->interface && output->data)
+        output->interface->destroy(output->data);
+
+    wl_global_destroy(output->global);
+    wl_list_remove(&output->data_destroy_listener.link);
+    wl_list_remove(&output->mode_change_listener.link);
+
+    /* TODO: Handle removal of this output. e.g. Re-position outputs. */
+
     pepper_free(output);
 }
 
@@ -157,49 +236,5 @@ pepper_output_get_mode(pepper_output_t *output, int index)
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode)
 {
-    PEPPER_TRACE("TODO: %s\n", __FUNCTION__);
-    return PEPPER_FALSE;
-}
-
-PEPPER_API void
-pepper_output_update_mode(pepper_output_t *output)
-{
-    int                 i;
-    struct wl_resource  *resource;
-
-    output->current_mode = NULL;
-
-    if (output->modes)
-        pepper_free(output->modes);
-
-    output->mode_count = output->interface.get_mode_count(output->data);
-    PEPPER_ASSERT(output->mode_count > 0);
-
-    output->modes = pepper_calloc(output->mode_count, sizeof(pepper_output_mode_t));
-    if (!output->modes)
-    {
-        pepper_output_destroy(output);
-        return;
-    }
-
-    for (i = 0; i < output->mode_count; i++)
-    {
-        output->interface.get_mode(output->data, i, &output->modes[i]);
-
-        if (output->modes[i].flags & WL_OUTPUT_MODE_CURRENT)
-            output->current_mode = &output->modes[i];
-
-    }
-
-    wl_resource_for_each(resource, &output->resources)
-    {
-        for (i = 0; i < output->mode_count; i++)
-        {
-            wl_output_send_mode(resource, output->modes[i].flags,
-                                output->modes[i].width, output->modes[i].height,
-                                output->modes[i].refresh);
-        }
-
-        wl_output_send_done(resource);
-    }
+    return output->interface->set_mode(output->data, mode);
 }

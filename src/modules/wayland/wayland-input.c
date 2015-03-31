@@ -145,7 +145,7 @@ static const struct wl_touch_listener touch_listener =
 static void
 seat_handle_caps(void *data, struct wl_seat *seat, enum wl_seat_capability caps)
 {
-    wayland_connection_t *conn = data;
+    pepper_wayland_t *conn = data;
 
     if ((caps & WL_SEAT_CAPABILITY_POINTER) && (!conn->pointer))
     {
@@ -200,38 +200,9 @@ static const struct wl_seat_listener seat_listener =
 };
 
 void
-wayland_handle_global_seat(wayland_connection_t *conn, struct wl_registry *registry,
+wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
                            uint32_t name, uint32_t version)
 {
     conn->seat = wl_registry_bind(registry, name, &wl_seat_interface, 1);
     wl_seat_add_listener(conn->seat, &seat_listener, conn);
 }
-
-#if 0
-PEPPER_API pepper_seat_t *
-pepper_compositor_add_wayland_seat(pepper_compositor_t *compositor,
-                                   const char *socket_name)
-{
-    wayland_connection_t    *conn;
-    pepper_seat_t           *seat;
-
-    conn = wayland_get_connection(compositor, socket_name);
-    if (!conn)
-        return NULL;
-
-    seat = pepper_seat_create(compositor);
-
-    if (conn->pointer)
-        wl_pointer_add_listener(conn->pointer, &pointer_listener, seat);
-
-    if (conn->keyboard)
-        wl_pointer_add_listener(conn->keyboard, &keyboard_listener, seat);
-
-    if (conn->touch)
-        wl_pointer_add_listener(conn->touch, &touch_listener, seat);
-
-    conn->seat = seat;
-
-    return seat;
-}
-#endif

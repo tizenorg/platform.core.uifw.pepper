@@ -7,18 +7,16 @@
 extern "C" {
 #endif
 
-typedef struct pepper_wayland_output_info   pepper_wayland_output_info_t;
+typedef struct pepper_wayland   pepper_wayland_t;
 
-struct pepper_wayland_output_info
-{
-    const char  *socket_name;
-};
+PEPPER_API pepper_wayland_t *
+pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name);
+
+PEPPER_API void
+pepper_wayland_destroy(pepper_wayland_t *conn);
 
 PEPPER_API pepper_bool_t
-pepper_wayland_init(pepper_compositor_t *compositor);
-
-PEPPER_API const pepper_output_interface_t *
-pepper_wayland_get_output_interface();
+pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h);
 
 #ifdef __cplusplus
 }
