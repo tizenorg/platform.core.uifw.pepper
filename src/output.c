@@ -118,7 +118,7 @@ handle_mode_change(struct wl_listener *listener, void *data)
     output_update_mode(output);
 }
 
-PEPPER_API pepper_bool_t
+PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
                              const pepper_output_interface_t *interface, void *data)
 {
@@ -126,7 +126,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 
     output = pepper_calloc(1, sizeof(pepper_output_t));
     if (!output)
-        return PEPPER_FALSE;
+        return NULL;
 
     wl_list_init(&output->resources);
     output->compositor = compositor;
@@ -138,7 +138,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     if (!output->global)
     {
         pepper_free(output);
-        return PEPPER_FALSE;
+        return NULL;
     }
 
     /* Create backend-side object. */
@@ -168,7 +168,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     output->mode_change_listener.notify = handle_mode_change;
     interface->add_mode_change_listener(data, &output->mode_change_listener);
 
-    return PEPPER_TRUE;
+    return output;
 }
 
 PEPPER_API pepper_compositor_t *

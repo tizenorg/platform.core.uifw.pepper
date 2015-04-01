@@ -148,14 +148,22 @@ static const pepper_output_interface_t wayland_output_interface =
     wayland_output_set_mode,
 };
 
-PEPPER_API pepper_bool_t
+static void
+handle_connection_destroy(struct wl_listener *listener, void *data)
+{
+    wayland_output_t *output = wl_container_of(listener, output, conn_destroy_listener);
+    wayland_output_destroy(output);
+}
+
+PEPPER_API pepper_output_t *
 pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h)
 {
-    wayland_output_t *output;
+    pepper_output_t    *base;
+    wayland_output_t   *output;
 
     output = pepper_calloc(1, sizeof(wayland_output_t));
     if (!output)
-        return PEPPER_FALSE;
+        return NULL;
 
     output->conn = conn;
 
@@ -171,11 +179,15 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h)
     wl_shell_surface_add_listener(output->shell_surface, &shell_surface_listener, output);
 
     /* Add compositor base class output object for this output. */
-    if (!pepper_compositor_add_output(conn->pepper, &wayland_output_interface, output))
+    base = pepper_compositor_add_output(conn->pepper, &wayland_output_interface, output);
+    if (!base)
     {
         wayland_output_destroy(output);
-        return PEPPER_FALSE;
+        return NULL;
     }
 
-    return PEPPER_TRUE;
+    output->conn_destroy_listener.notify = handle_connection_destroy;
+    wl_signal_add(&conn->destroy_signal, &output->conn_destroy_listener);
+
+    return base;
 }

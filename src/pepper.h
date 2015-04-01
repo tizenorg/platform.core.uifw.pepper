@@ -77,7 +77,7 @@ pepper_compositor_destroy(pepper_compositor_t *compositor);
 PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_compositor_t *compositor);
 
-PEPPER_API pepper_bool_t
+PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
                              const pepper_output_interface_t *interface,
                              void *data);

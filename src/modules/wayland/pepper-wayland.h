@@ -15,7 +15,7 @@ pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name)
 PEPPER_API void
 pepper_wayland_destroy(pepper_wayland_t *conn);
 
-PEPPER_API pepper_bool_t
+PEPPER_API pepper_output_t *
 pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h);
 
 #ifdef __cplusplus
