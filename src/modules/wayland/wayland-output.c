@@ -43,7 +43,7 @@ wayland_output_destroy(void *o)
 
     wl_signal_emit(&output->destroy_signal, output);
 
-    wl_list_remove(&conn_destroy_listener.link);
+    wl_list_remove(&output->conn_destroy_listener.link);
 
     wl_surface_destroy(output->surface);
     wl_shell_surface_destroy(output->shell_surface);
@@ -120,10 +120,10 @@ wayland_output_set_mode(void *o, const pepper_output_mode_t *mode)
     if (mode->refresh != 60000)
         return PEPPER_FALSE;
 
-    if (output->w != w || output->h != h)
+    if (output->w != mode->w || output->h != mode->h)
     {
-        output->w = w;
-        output->h = h;
+        output->w = mode->w;
+        output->h = mode->h;
 
         /* TODO: Handle resize here. */
 
@@ -171,7 +171,7 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h)
     wl_shell_surface_add_listener(output->shell_surface, &shell_surface_listener, output);
 
     /* Add compositor base class output object for this output. */
-    if (!pepper_compositor_add_output(conn->compositor, &wayland_output_interface, output))
+    if (!pepper_compositor_add_output(conn->pepper, &wayland_output_interface, output))
     {
         wayland_output_destroy(output);
         return PEPPER_FALSE;

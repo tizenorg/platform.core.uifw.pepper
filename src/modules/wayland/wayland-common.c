@@ -57,7 +57,7 @@ handle_wayland_event(int fd, uint32_t mask, void *data)
 }
 
 PEPPER_API pepper_wayland_t *
-pepper_wayland_connect(const char *socket_name, pepper_compositor_t *compositor)
+pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name)
 {
     pepper_wayland_t        *conn;
     struct wl_display       *compositor_display;
@@ -67,7 +67,7 @@ pepper_wayland_connect(const char *socket_name, pepper_compositor_t *compositor)
     if (!conn)
         return NULL;
 
-    conn->compositor = compositor;
+    conn->pepper = compositor;
 
     conn->socket_name = pepper_string_copy(socket_name);
     conn->display = wl_display_connect(socket_name);
@@ -90,7 +90,7 @@ pepper_wayland_connect(const char *socket_name, pepper_compositor_t *compositor)
 PEPPER_API void
 pepper_wayland_destroy(pepper_wayland_t *conn)
 {
-    wl_signal_emit(&conn->destroy_signal);
+    wl_signal_emit(&conn->destroy_signal, conn);
 
     if (conn->socket_name)
         pepper_string_free(conn->socket_name);

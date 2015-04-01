@@ -29,7 +29,7 @@ PKG_CHECK_MODULES(LIB_PEPPER, [$LIB_PEPPER_MODULES])
 # wayland backend
 AC_ARG_ENABLE(wayland-backend,
               AC_HELP_STRING([--enable-wayland-backend], [enable wayland backend]),
-              [enable_wayland_backend=$enableval], [enable_wayland_backend=no])
+              [enable_wayland_backend=$enableval], [enable_wayland_backend=yes])
 
 AM_CONDITIONAL(ENABLE_WAYLAND_BACKEND, test $enable_wayland_backend = yes)
 
@@ -41,7 +41,7 @@ fi
 # drm backend
 AC_ARG_ENABLE(drm-backend,
               AC_HELP_STRING([--enable-drm-backend], [enable drm backend]),
-              [enable_drm_backend=$enableval], [enable_drm_backend=no])
+              [enable_drm_backend=$enableval], [enable_drm_backend=yes])
 
 AM_CONDITIONAL(ENABLE_DRM_BACKEND, test $enable_drm_backend = yes)
 

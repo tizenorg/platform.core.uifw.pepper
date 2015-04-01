@@ -120,7 +120,7 @@ handle_mode_change(struct wl_listener *listener, void *data)
 
 PEPPER_API pepper_bool_t
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-                             pepper_output_interface_t *interface, void *data)
+                             const pepper_output_interface_t *interface, void *data)
 {
     pepper_output_t     *output;
 
@@ -142,7 +142,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     }
 
     /* Create backend-side object. */
-    output->interface = interface;
+    output->interface = (pepper_output_interface_t *)interface;
     output->data = data;
 
     /* Initialize output modes. */

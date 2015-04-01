@@ -79,7 +79,7 @@ pepper_compositor_get_display(pepper_compositor_t *compositor);
 
 PEPPER_API pepper_bool_t
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-                             pepper_output_interface_t *interface,
+                             const pepper_output_interface_t *interface,
                              void *data);
 
 PEPPER_API pepper_compositor_t *

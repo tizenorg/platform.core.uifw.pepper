@@ -6,7 +6,7 @@ typedef struct wayland_output       wayland_output_t;
 
 struct pepper_wayland
 {
-    pepper_compositor_t    *compositor;
+    pepper_compositor_t    *pepper;
 
     char                   *socket_name;
     struct wl_display      *display;
