@@ -114,7 +114,7 @@ handle_output_data_destroy(struct wl_listener *listener, void *data)
 static void
 handle_mode_change(struct wl_listener *listener, void *data)
 {
-    pepper_output_t *output = wl_container_of(listener, output, data_destroy_listener);
+    pepper_output_t *output = wl_container_of(listener, output, mode_change_listener);
     output_update_mode(output);
 }
 
