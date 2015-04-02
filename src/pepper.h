@@ -25,6 +25,14 @@ typedef struct pepper_output_mode       pepper_output_mode_t;
 typedef struct pepper_output            pepper_output_t;
 typedef struct pepper_output_interface  pepper_output_interface_t;
 
+typedef struct pepper_seat_interface    pepper_seat_interface_t;
+typedef struct pepper_seat              pepper_seat_t;
+typedef struct pepper_pointer           pepper_pointer_t;
+typedef struct pepper_keyboard          pepper_keyboard_t;
+typedef struct pepper_touch             pepper_touch_t;
+
+typedef struct pepper_input_event       pepper_input_event_t;
+
 typedef enum
 {
     PEPPER_RENDER_METHOD_NONE,
@@ -82,6 +90,11 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
                              const pepper_output_interface_t *interface,
                              void *data);
 
+PEPPER_API pepper_seat_t *
+pepper_compositor_add_seat(pepper_compositor_t *compositor,
+                           const pepper_seat_interface_t *interface,
+                           void *data);
+
 PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output);
 
@@ -107,6 +120,55 @@ PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode);
 
 /* Input. */
+struct pepper_seat_interface
+{
+    void            (*destroy)(void *data);
+    void            (*add_capabilities_listener)(void *data, struct wl_listener *listener);
+    void            (*add_name_listener)(void *data, struct wl_listener *listener);
+
+    uint32_t        (*get_capabilities)(void *data);
+    const char *    (*get_name)(void *data);
+};
+
+enum pepper_input_event_type
+{
+    PEPPER_INPUT_EVENT_POINTER_BUTTON,
+    PEPPER_INPUT_EVENT_POINTER_MOTION,
+    PEPPER_INPUT_EVENT_POINTER_AXIS,
+    PEPPER_INPUT_EVENT_KEYBOARD_KEY,
+    PEPPER_INPUT_EVENT_TOUCH_DOWN,
+    PEPPER_INPUT_EVENT_TOUCH_UP,
+    PEPPER_INPUT_EVENT_TOUCH_MOTION,
+    PEPPER_INPUT_EVENT_TOUCH_FRAME,
+    PEPPER_INPUT_EVENT_TOUCH_CANCEL,
+};
+
+enum pepper_input_event_state
+{
+    PEPPER_INPUT_EVENT_STATE_RELEASED,
+    PEPPER_INPUT_EVENT_STATE_PRESSED,
+};
+
+enum pepper_input_event_axis
+{
+    PEPPER_INPUT_EVENT_AXIS_VERTICAL,
+    PEPPER_INPUT_EVENT_AXIS_HORIZONTAL,
+};
+
+struct pepper_input_event
+{
+    uint32_t        type;
+    uint32_t        time;
+    uint32_t        serial;
+    uint32_t        index;  /* button, key, touch id or axis */
+    uint32_t        state;
+    wl_fixed_t      value;
+    wl_fixed_t      x;
+    wl_fixed_t      y;
+};
+
+PEPPER_API pepper_bool_t
+pepper_seat_handle_event(pepper_seat_t *seat, pepper_input_event_t *event);
 
 #ifdef __cplusplus
 }

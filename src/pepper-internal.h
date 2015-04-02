@@ -18,6 +18,7 @@ struct pepper_compositor
     struct wl_display  *display;
     struct wl_list      surfaces;
     struct wl_list      regions;
+    struct wl_list      seat_list;
 };
 
 struct pepper_output
@@ -129,5 +130,46 @@ pepper_buffer_reference(pepper_buffer_t *buffer);
 
 void
 pepper_buffer_unreference(pepper_buffer_t *buffer);
+
+/* Input */
+struct pepper_seat
+{
+    pepper_compositor_t        *compositor;
+    pepper_pointer_t           *pointer;
+    pepper_keyboard_t          *keyboard;
+    pepper_touch_t             *touch;
+
+    struct wl_global           *global;
+    struct wl_list              resources;
+    struct wl_list              link;
+
+    struct wl_listener          capabilities_listener;
+    struct wl_listener          name_listener;
+
+    enum wl_seat_capability     caps;
+    const char                 *name;
+
+    /* Backend-specific variables. */
+    pepper_seat_interface_t    *interface;
+    void                       *data;
+};
+
+struct pepper_pointer
+{
+    pepper_seat_t              *seat;
+    struct wl_list              resources;
+};
+
+struct pepper_keyboard
+{
+    pepper_seat_t              *seat;
+    struct wl_list              resources;
+};
+
+struct pepper_touch
+{
+    pepper_seat_t              *seat;
+    struct wl_list              resources;
+};
 
 #endif /* PEPPER_INTERNAL_H */

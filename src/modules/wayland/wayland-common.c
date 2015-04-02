@@ -104,18 +104,6 @@ pepper_wayland_destroy(pepper_wayland_t *conn)
     if (conn->compositor)
         wl_compositor_destroy(conn->compositor);
 
-    if (conn->seat)
-        wl_seat_destroy(conn->seat);
-
-    if (conn->pointer)
-        wl_pointer_destroy(conn->pointer);
-
-    if (conn->keyboard)
-        wl_keyboard_destroy(conn->keyboard);
-
-    if (conn->touch)
-        wl_touch_destroy(conn->touch);
-
     if (conn->shell)
         wl_shell_destroy(conn->shell);
 }
