@@ -260,6 +260,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
     pixman_region32_init(&surface->input_region);
 
     wl_list_init(&surface->frame_callbacks);
+    wl_signal_init(&surface->destroy_signal);
 
     return surface;
 }
@@ -268,6 +269,8 @@ void
 pepper_surface_destroy(pepper_surface_t *surface)
 {
     struct wl_resource *callback, *next;
+
+    wl_signal_emit(&surface->destroy_signal, NULL /* FIXME */);
 
     pepper_surface_state_fini(&surface->pending);
 
