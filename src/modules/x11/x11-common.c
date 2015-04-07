@@ -2,6 +2,8 @@
 #include <common.h>
 #include "x11-internal.h"
 
+#include <stdlib.h>
+
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof (a)[0])
 
 /*
@@ -15,9 +17,6 @@ x11_get_next_event(xcb_connection_t *xcb_conn, xcb_generic_event_t **event, uint
     if (mask & WL_EVENT_READABLE)
         *event = xcb_poll_for_event(xcb_conn);
 
-    if (mask & WL_EVENT_WRITABLE)
-        PEPPER_ERROR("WL_EVENT_WRITABLE\n");
-
     return *event != NULL;
 }
 
@@ -28,7 +27,7 @@ x11_handle_event(int fd, uint32_t mask, void *data)
     x11_seat_t                  *seat;
     xcb_generic_event_t         *event = NULL;
 
-    uint32_t            count = 0;
+    uint32_t                    count = 0;
 
     if ((mask & WL_EVENT_HANGUP) || (mask & WL_EVENT_ERROR))
         return 0;

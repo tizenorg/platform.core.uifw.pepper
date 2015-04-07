@@ -18,7 +18,7 @@ typedef struct x11_seat     x11_seat_t;
 
 struct x11_output
 {
-    pepper_x11_connection_t* connection;
+    pepper_x11_connection_t *connection;
 
     int32_t             x, y;
     uint32_t            w, h;

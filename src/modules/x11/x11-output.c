@@ -274,7 +274,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection, int32_t w, int32_t
     wl_signal_init(&output->destroy_signal);
     wl_signal_init(&output->mode_change_signal);
 
-    /*x11_output_visual_iterate(output);*/
+    x11_output_visual_iterate(output);
 
     base = pepper_compositor_add_output(connection->compositor,
                                         &x11_output_interface,
