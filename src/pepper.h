@@ -33,12 +33,46 @@ typedef struct pepper_touch             pepper_touch_t;
 
 typedef struct pepper_input_event       pepper_input_event_t;
 
+typedef struct pepper_renderer          pepper_renderer_t;
+
+#define PEPPER_FORMAT(type, bpp, a, r, g, b)    \
+    ((((type) & 0xff) << 24)    |               \
+     (( (bpp) & 0xff) << 16)    |               \
+     ((   (a) & 0x0f) << 12)    |               \
+     ((   (r) & 0x0f) <<  8)    |               \
+     ((   (g) & 0x0f) <<  4)    |               \
+     ((   (b) & 0x0f) <<  0))
+
+#define PEPPER_FORMAT_TYPE(format)  (((format) & 0xff000000) >> 24)
+#define PEPPER_FORMAT_BPP(format)   (((format) & 0x00ff0000) >> 16)
+#define PEPPER_FORMAT_A(format)     (((format) & 0x0000f000) >> 12)
+#define PEPPER_FORMAT_R(format)     (((format) & 0x00000f00) >>  8)
+#define PEPPER_FORMAT_G(format)     (((format) & 0x000000f0) >>  4)
+#define PEPPER_FORMAT_B(format)     (((format) & 0x0000000f) >>  0)
+
 typedef enum
 {
-    PEPPER_RENDER_METHOD_NONE,
-    PEPPER_RENDER_METHOD_PIXMAN,
-    PEPPER_RENDER_METHOD_NATIVE,
-} pepper_render_method_t;
+    PEPPER_FORMAT_TYPE_UNKNOWN,
+    PEPPER_FORMAT_TYPE_ARGB,
+    PEPPER_FORMAT_TYPE_ABGR,
+} pepper_format_type_t;
+
+typedef enum
+{
+    PEPPER_FORMAT_UNKNOWN       = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_UNKNOWN,  0,  0,  0,  0,  0),
+
+    PEPPER_FORMAT_ARGB8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    32,  8,  8,  8,  8),
+    PEPPER_FORMAT_XRGB8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    32,  0,  8,  8,  8),
+    PEPPER_FORMAT_RGB888        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    24,  0,  8,  8,  8),
+    PEPPER_FORMAT_RGB565        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    16,  0,  5,  6,  5),
+
+    PEPPER_FORMAT_ABGR8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    32,  8,  8,  8,  8),
+    PEPPER_FORMAT_XBGR8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    32,  0,  8,  8,  8),
+    PEPPER_FORMAT_BGR888        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    24,  0,  8,  8,  8),
+    PEPPER_FORMAT_BGR565        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    16,  0,  5,  6,  5),
+
+    PEPPER_FORMAT_ALPHA         = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,     8,  8,  0,  0,  0),
+} pepper_format_t;
 
 struct pepper_output_geometry
 {
@@ -73,6 +107,8 @@ struct pepper_output_interface
     int             (*get_mode_count)(void *output);
     void            (*get_mode)(void *output, int index, pepper_output_mode_t *mode);
     pepper_bool_t   (*set_mode)(void *output, const pepper_output_mode_t *mode);
+
+    void            (*schedule_repaint)(void *output, void *data /* TODO: view list or scene graph data. */);
 };
 
 /* Compositor functions. */
@@ -169,6 +205,24 @@ struct pepper_input_event
 
 PEPPER_API pepper_bool_t
 pepper_seat_handle_event(pepper_seat_t *seat, pepper_input_event_t *event);
+
+/* Renderer. */
+struct pepper_renderer
+{
+    void            (*destroy)(pepper_renderer_t *renderer);
+
+    pepper_bool_t   (*read_pixels)(pepper_renderer_t *renderer, int x, int y, int w, int h,
+                                   void *pixels, pepper_format_t format);
+
+    pepper_bool_t   (*set_render_target)(pepper_renderer_t *renderer, void *target);
+    void            (*draw)(pepper_renderer_t *renderer, void *data /* TODO: */);
+};
+
+PEPPER_API void
+pepper_renderer_init(pepper_renderer_t *renderer);
+
+PEPPER_API void
+pepper_renderer_destroy(pepper_renderer_t *renderer);
 
 #ifdef __cplusplus
 }

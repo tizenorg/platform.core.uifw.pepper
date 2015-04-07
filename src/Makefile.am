@@ -21,7 +21,18 @@ libpepper_la_SOURCES = pepper.h                 \
                        shell.c                  \
                        surface.c                \
                        region.c                 \
-                       buffer.c
+                       buffer.c                 \
+                       renderer.c
+
+# gl renderer
+if ENABLE_GL_RENDERER
+include_HEADERS += pepper-gl-renderer.h
+
+libpepper_la_CFLAGS += $(GL_RENDERER_CFLAGS)
+libpepper_la_LIBADD += $(GL_RENDERER_LIBS)
+
+libpepper_la_SOURCES += gl-renderer.c
+endif
 
 # wayland backend
 if ENABLE_WAYLAND_BACKEND
