@@ -1,4 +1,5 @@
 #include "wayland-internal.h"
+#include <string.h>
 
 static void
 handle_global(void *data, struct wl_registry *registry,

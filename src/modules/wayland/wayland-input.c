@@ -37,8 +37,6 @@ pointer_handle_motion(void *data, struct wl_pointer *pointer,
     event.y = seat->pointer_y_last = surface_y;
 
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static void
@@ -58,8 +56,6 @@ pointer_handle_button(void *data, struct wl_pointer *pointer,
     event.y = seat->pointer_y_last;
 
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static void
@@ -79,8 +75,6 @@ pointer_handle_axis(void *data, struct wl_pointer *pointer,
     event.y = 0;
 
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static const struct wl_pointer_listener pointer_listener =
@@ -131,8 +125,6 @@ keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
     event.y = 0;
 
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static void
@@ -178,8 +170,6 @@ touch_handle_down(void *data, struct wl_touch *touch,
     event.y = seat->touch_y_last = y;
 
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static void
@@ -199,8 +189,6 @@ touch_handle_up(void *data, struct wl_touch *touch,
     event.y = seat->touch_y_last;
 
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static void
@@ -220,8 +208,6 @@ touch_handle_motion(void *data, struct wl_touch *touch,
     event.y = seat->touch_y_last = y;
 
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static void
@@ -232,8 +218,6 @@ touch_handle_frame(void *data, struct wl_touch *touch)
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_FRAME;
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static void
@@ -244,8 +228,6 @@ touch_handle_cancel(void *data, struct wl_touch *touch)
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_CANCEL;
     pepper_seat_handle_event(seat->base, &event);
-
-    return;
 }
 
 static const struct wl_touch_listener touch_listener =
@@ -315,8 +297,6 @@ seat_handle_name(void *data, struct wl_seat *s, const char *name)
 
     seat->name = pepper_string_copy(name);
     wl_signal_emit(&seat->name_signal, seat);
-
-    return;
 }
 
 static const struct wl_seat_listener seat_listener =
@@ -328,9 +308,7 @@ static const struct wl_seat_listener seat_listener =
 static void
 wayland_seat_destroy(void *data)
 {
-    wayland_seat_t *seat = (wayland_seat_t *)data;
     /* TODO: */
-    return;
 }
 
 static void
@@ -338,7 +316,6 @@ wayland_seat_add_capability_listener(void *data, struct wl_listener *listener)
 {
     wayland_seat_t *seat = (wayland_seat_t *)data;
     wl_signal_add(&seat->capability_signal, listener);
-    return;
 }
 
 static void
@@ -346,7 +323,6 @@ wayland_seat_add_name_listener(void *data, struct wl_listener *listener)
 {
     wayland_seat_t *seat = (wayland_seat_t *)data;
     wl_signal_add(&seat->name_signal, listener);
-    return;
 }
 
 static uint32_t
@@ -396,6 +372,4 @@ wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
 
     wl_list_init(&seat->link);
     wl_list_insert(&conn->seat_list, &seat->link);
-
-    return;
 }

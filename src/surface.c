@@ -3,7 +3,6 @@
 static void
 buffer_destroy_handler(struct wl_listener *listener, void *data)
 {
-    pepper_buffer_t        *buffer = data;
     pepper_surface_state_t *state = wl_container_of(listener, state, buffer_destroy_listener);
 
     state->buffer = NULL;
@@ -288,8 +287,6 @@ pepper_surface_destroy(pepper_surface_t *surface)
 void
 pepper_surface_commit(pepper_surface_t *surface)
 {
-    pepper_bool_t need_redraw = PEPPER_FALSE;
-
     pepper_buffer_reference(surface->pending.buffer);
 
     if (surface->buffer)

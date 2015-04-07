@@ -205,4 +205,7 @@ struct pepper_shell_surface
 pepper_shell_t *
 pepper_shell_create(pepper_compositor_t *compositor);
 
+void
+pepper_shell_destroy(pepper_shell_t *shell);
+
 #endif /* PEPPER_INTERNAL_H */

@@ -110,9 +110,7 @@ x11_window_input_property_change(xcb_connection_t *conn, xcb_window_t window)
 static void
 x11_seat_destroy(void *data)
 {
-    PEPPER_IGNORE(data);
     /* TODO : x11_seat_t *seat = (x11_seat_t *)data; */
-    return;
 }
 
 static void
@@ -120,7 +118,6 @@ x11_seat_add_capability_listener(void *data, struct wl_listener *listener)
 {
     x11_seat_t *seat = (x11_seat_t *)data;
     wl_signal_add(&seat->capability_signal, listener);
-    return;
 }
 
 static void
@@ -128,7 +125,6 @@ x11_seat_add_name_listener(void *data, struct wl_listener *listener)
 {
     x11_seat_t *seat = (x11_seat_t *)data;
     wl_signal_add(&seat->name_signal, listener);
-    return;
 }
 
 static uint32_t

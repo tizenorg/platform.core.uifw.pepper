@@ -152,7 +152,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     output->scale = 1;
 
     /* Initialize geometry. TODO: Calculate position and size of the output. */
-    output->geometry.transform;
+    output->geometry.transform = WL_OUTPUT_TRANSFORM_NORMAL;
     output->geometry.subpixel = interface->get_subpixel_order(data);
     output->geometry.maker = interface->get_maker_name(data);
     output->geometry.model = interface->get_model_name(data);
