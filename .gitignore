@@ -28,3 +28,5 @@ Makefile
 stamp-h1
 
 pepper
+
+.vim.custom
