@@ -177,7 +177,7 @@ init_egl(gl_renderer_t *renderer, void *dpy, void *win,
             /* Native visual id have privilege. */
             if (eglGetConfigAttrib(display, configs[i], EGL_NATIVE_VISUAL_ID, &attrib))
             {
-                if ((void *)attrib == (void *)(*native_visual_id))
+                if (attrib == (EGLint)(*native_visual_id))
                 {
                     config = configs[i];
                     break;
