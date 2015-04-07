@@ -74,6 +74,7 @@ pepper_compositor_create(const char *socket_name)
     wl_global_create(compositor->display, &wl_compositor_interface, 3, compositor,
                      compositor_bind);
     wl_list_init(&compositor->surfaces);
+    wl_list_init(&compositor->seat_list);
 
     compositor->shell = pepper_shell_create(compositor);
     if (!compositor->shell)

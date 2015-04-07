@@ -7,7 +7,7 @@ noinst_LTLIBRARIES =
 lib_LTLIBRARIES += libpepper.la
 include_HEADERS += pepper.h
 
-libpepper_la_CFLAGS = $(LIB_PEPPER_CFLAGS)
+libpepper_la_CFLAGS = $(LIB_PEPPER_CFLAGS) -Wall
 libpepper_la_LIBADD = $(LIB_PEPPER_LIBS)
 
 libpepper_la_SOURCES = pepper.h                 \
@@ -45,6 +45,20 @@ libpepper_la_LIBADD += $(DRM_BACKEND_LIBS)
 
 libpepper_la_SOURCES += modules/drm/drm-internal.h
 endif
+
+# x11 backend
+if ENABLE_X11_BACKEND
+include_HEADERS += modules/x11/pepper-x11.h
+
+libpepper_la_CFLAGS += $(X11_BACKEND_CFLAGS)
+libpepper_la_LIBADD += $(X11_BACKEND_LIBS)
+
+libpepper_la_SOURCES += modules/x11/x11-common.c    \
+                        modules/x11/x11-output.c    \
+                        modules/x11/x11-input.c     \
+                        modules/x11/x11-internal.h
+endif
+
 
 # Pepper server executable
 if ENABLE_PEPPER_SERVER

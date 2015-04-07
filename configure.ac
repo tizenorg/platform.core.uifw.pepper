@@ -50,6 +50,19 @@ if test $enable_drm_backend = yes; then
     PKG_CHECK_MODULES(DRM_BACKEND, [libinput >= 0.6.0])
 fi
 
+# x11 backend
+AC_ARG_ENABLE(x11-backend,
+              AC_HELP_STRING([--enable-x11-backend], [enable x11 backend]),
+              [enable_x11_backend=$enableval], [enable_x11_backend=yes])
+#              [enable_x11_backend=$enableval], [enable_x11_backend=no])
+
+AM_CONDITIONAL(ENABLE_X11_BACKEND, test $enable_x11_backend = yes)
+
+if test $enable_x11_backend = yes; then
+    AC_DEFINE(ENABLE_X11_BACKEND, 1, [Enable x11 backend])
+    PKG_CHECK_MODULES(X11_BACKEND, [x11 xcb-shm x11-xcb])
+fi
+
 # pepper server
 AC_ARG_ENABLE(pepper-server,
               AC_HELP_STRING([--enable-pepper-server], [build pepper reference server]),
