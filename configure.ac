@@ -104,6 +104,7 @@ AC_CONFIG_FILES([
 Makefile
 shared/Makefile
 src/Makefile
+test/Makefile
 ])
 
 AC_OUTPUT

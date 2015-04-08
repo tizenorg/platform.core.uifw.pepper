@@ -1,1 +1,1 @@
-SUBDIRS = shared src
+SUBDIRS = shared src test
