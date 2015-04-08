@@ -236,6 +236,9 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
 
     output->conn = conn;
 
+    wl_signal_init(&output->destroy_signal);
+    wl_signal_init(&output->mode_change_signal);
+
     output->w = w;
     output->h = h;
 

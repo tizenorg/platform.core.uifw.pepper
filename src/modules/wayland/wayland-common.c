@@ -79,6 +79,7 @@ pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name)
     conn->event_source = wl_event_loop_add_fd(loop, conn->fd, WL_EVENT_READABLE,
                                               handle_wayland_event, conn);
 
+    wl_list_init(&conn->seat_list);
     wl_signal_init(&conn->destroy_signal);
 
     conn->registry = wl_display_get_registry(conn->display);
