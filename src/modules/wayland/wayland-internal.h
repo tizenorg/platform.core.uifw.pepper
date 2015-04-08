@@ -1,9 +1,18 @@
+#include <config.h>
 #include "pepper-wayland.h"
 #include <wayland-client.h>
 #include <common.h>
+#include <pixman.h>
+
+#if ENABLE_WAYLAND_BACKEND_EGL
+#include <wayland-egl.h>
+#endif
+
+#define NUM_SHM_BUFFERS 2
 
 typedef struct wayland_output       wayland_output_t;
 typedef struct wayland_seat         wayland_seat_t;
+typedef struct wayland_shm_buffer   wayland_shm_buffer_t;
 
 struct pepper_wayland
 {
@@ -24,6 +33,18 @@ struct pepper_wayland
 
 };
 
+struct wayland_shm_buffer
+{
+    struct wl_buffer   *buffer;
+    void               *pixels;
+    int                 size;
+    pixman_image_t     *image;
+    pixman_region32_t   damage;
+    void               *data;
+
+    struct wl_list      link;
+};
+
 struct wayland_output
 {
     pepper_wayland_t           *conn;
@@ -38,6 +59,19 @@ struct wayland_output
 
     struct wl_surface          *surface;
     struct wl_shell_surface    *shell_surface;
+
+    pepper_renderer_t          *renderer;
+
+    struct {
+        /* list containing free wl_shm_buffers. */
+        struct wl_list          free_buffers;
+    } shm;
+
+#if ENABLE_WAYLAND_BACKEND_EGL
+    struct {
+        struct wl_egl_window   *window;
+    } egl;
+#endif
 };
 
 struct wayland_seat

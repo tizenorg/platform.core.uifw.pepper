@@ -5,7 +5,7 @@ noinst_LTLIBRARIES =
 
 # pepper library
 lib_LTLIBRARIES += libpepper.la
-include_HEADERS += pepper.h
+include_HEADERS += pepper.h pepper-pixman-renderer.h
 
 libpepper_la_CFLAGS = $(LIB_PEPPER_CFLAGS) -Wall
 libpepper_la_LIBADD = $(LIB_PEPPER_LIBS)
@@ -22,7 +22,8 @@ libpepper_la_SOURCES = pepper.h                 \
                        surface.c                \
                        region.c                 \
                        buffer.c                 \
-                       renderer.c
+                       renderer.c               \
+                       pixman-renderer.c
 
 # gl renderer
 if ENABLE_GL_RENDERER
@@ -38,8 +39,8 @@ endif
 if ENABLE_WAYLAND_BACKEND
 include_HEADERS += modules/wayland/pepper-wayland.h
 
-libpepper_la_CFLAGS += $(WAYLAND_BACKEND_CFLAGS)
-libpepper_la_LIBADD += $(WAYLAND_BACKEND_LIBS)
+libpepper_la_CFLAGS += $(WAYLAND_BACKEND_CFLAGS) -I$(top_srcdir)/shared/
+libpepper_la_LIBADD += $(WAYLAND_BACKEND_LIBS) $(top_builddir)/shared/libshared.la
 
 libpepper_la_SOURCES += modules/wayland/wayland-internal.h  \
                         modules/wayland/wayland-common.c    \

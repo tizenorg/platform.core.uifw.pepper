@@ -48,10 +48,18 @@ AM_CONDITIONAL(ENABLE_WAYLAND_BACKEND, test $enable_wayland_backend = yes)
 if test $enable_wayland_backend = yes; then
     AC_DEFINE(ENABLE_WAYLAND_BACKEND, 1, [Enable wayland backend])
     PKG_CHECK_MODULES(WAYLAND_BACKEND, [wayland-client >= 1.6.00])
+fi
 
-    if test $enable_wayland_backend = yes; then
-        PKG_CHECK_MODULES(WAYLAND_BACKEND, [wayland-egl])
-    fi
+AC_ARG_ENABLE(wayland-backend-egl,
+              AC_HELP_STRING([--enable-wayland-backend-egl], [enable wayland backend EGL support]),
+              [enable_wayland_backend_egl=$enableval -a test $enable_wayland_backend=yes],
+              [enable_wayland_backend_egl=yes])
+
+AM_CONDITIONAL(ENABLE_WAYLAND_BACKEND_EGL, test $enable_wayland_backend_egl = yes)
+
+if test $enable_wayland_backend_egl = yes; then
+    AC_DEFINE(ENABLE_WAYLAND_BACKEND_EGL, 1, [Enable wayland backend EGL support])
+    PKG_CHECK_MODULES(WAYLAND_BACKEND, [wayland-egl])
 fi
 
 # drm backend
@@ -94,6 +102,7 @@ fi
 # Output files
 AC_CONFIG_FILES([
 Makefile
+shared/Makefile
 src/Makefile
 ])
 

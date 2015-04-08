@@ -1,7 +1,15 @@
 #include "wayland-internal.h"
+#include <pepper-os-compat.h>
+#include <string.h>
+#include <pepper-pixman-renderer.h>
 
-static const char *maker_name = "wayland";
-static const char *model_name = "wayland";
+#if ENABLE_WAYLAND_BACKEND_EGL && ENABLE_GL_RENDERER
+#include <pepper-gl-renderer.h>
+#endif
+
+static const char *maker_name       = "wayland";
+static const char *model_name       = "wayland";
+static const char *default_renderer = "pixman";
 
 static void
 shell_surface_ping(void *data, struct wl_shell_surface *shell_surface, uint32_t serial)
@@ -133,6 +141,12 @@ wayland_output_set_mode(void *o, const pepper_output_mode_t *mode)
     return PEPPER_TRUE;
 }
 
+static void
+wayland_output_schedule_repaint(void *o, void *data)
+{
+    /* TODO: */
+}
+
 static const pepper_output_interface_t wayland_output_interface =
 {
     wayland_output_destroy,
@@ -146,6 +160,8 @@ static const pepper_output_interface_t wayland_output_interface =
     wayland_output_get_mode_count,
     wayland_output_get_mode,
     wayland_output_set_mode,
+
+    wayland_output_schedule_repaint,
 };
 
 static void
@@ -155,8 +171,61 @@ handle_connection_destroy(struct wl_listener *listener, void *data)
     wayland_output_destroy(output);
 }
 
+static pepper_bool_t
+init_gl_renderer(wayland_output_t *output)
+{
+#if ENABLE_WAYLAND_BACKEND_EGL
+    output->egl.window = wl_egl_window_create(output->surface, output->w, output->h);
+
+    if (!output->egl.window)
+        return PEPPER_FALSE;
+
+    output->renderer = pepper_gl_renderer_create(output->conn->display,
+                                                 output->egl.window,
+                                                 PEPPER_FORMAT_ARGB8888,
+                                                 NULL);
+
+    if (output->renderer)
+        return PEPPER_TRUE;
+
+    /* Clean up. */
+    wl_egl_window_destroy(output->egl.window);
+    output->egl.window = NULL;
+#endif
+
+    return PEPPER_FALSE;
+}
+
+static pepper_bool_t
+init_pixman_renderer(wayland_output_t *output)
+{
+    wl_list_init(&output->shm.free_buffers);
+
+    output->renderer = pepper_pixman_renderer_create();
+
+    if (output->renderer)
+        return PEPPER_TRUE;
+
+    return PEPPER_FALSE;
+}
+
+static pepper_bool_t
+init_renderer(wayland_output_t *output, const char *name)
+{
+    if (strcmp(name, "gl") == 0)
+    {
+        return init_gl_renderer(output);
+    }
+    else if (strcmp(name, "pixman") == 0)
+    {
+        return init_pixman_renderer(output);
+    }
+
+    return PEPPER_FALSE;
+}
+
 PEPPER_API pepper_output_t *
-pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h)
+pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const char *renderer)
 {
     pepper_output_t    *base;
     wayland_output_t   *output;
@@ -188,6 +257,16 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h)
 
     output->conn_destroy_listener.notify = handle_connection_destroy;
     wl_signal_add(&conn->destroy_signal, &output->conn_destroy_listener);
+
+    /* Create renderer. */
+    if (!renderer)
+        renderer = default_renderer;
+
+    if (!init_renderer(output, renderer))
+    {
+        wayland_output_destroy(output);
+        return NULL;
+    }
 
     return base;
 }

@@ -1,4 +1,4 @@
-#include "pepper.h"
+#include "pepper-gl-renderer.h"
 #include "common.h"
 #include <EGL/egl.h>
 #include <EGL/eglext.h>

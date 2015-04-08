@@ -16,7 +16,7 @@ PEPPER_API void
 pepper_wayland_destroy(pepper_wayland_t *conn);
 
 PEPPER_API pepper_output_t *
-pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h);
+pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const char *renderer);
 
 #ifdef __cplusplus
 }
