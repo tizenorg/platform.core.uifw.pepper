@@ -52,8 +52,12 @@ fi
 
 AC_ARG_ENABLE(wayland-backend-egl,
               AC_HELP_STRING([--enable-wayland-backend-egl], [enable wayland backend EGL support]),
-              [enable_wayland_backend_egl=$enableval -a test $enable_wayland_backend=yes],
-              [enable_wayland_backend_egl=yes])
+              [if test $enableval = yes && test $enable_wayland_backend = yes; then
+                enable_wayland_backend_egl=yes
+               else
+                enable_wayland_backend_egl=no
+               fi],
+              [enable_wayland_backend_egl=no])
 
 AM_CONDITIONAL(ENABLE_WAYLAND_BACKEND_EGL, test $enable_wayland_backend_egl = yes)
 
