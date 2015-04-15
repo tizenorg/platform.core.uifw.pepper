@@ -284,7 +284,7 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
     }
 
     seat->caps = caps;
-    wl_signal_emit(&seat->capability_signal, seat);
+    wl_signal_emit(&seat->capabilities_signal, seat);
 }
 
 static void
@@ -315,7 +315,7 @@ static void
 wayland_seat_add_capability_listener(void *data, struct wl_listener *listener)
 {
     wayland_seat_t *seat = (wayland_seat_t *)data;
-    wl_signal_add(&seat->capability_signal, listener);
+    wl_signal_add(&seat->capabilities_signal, listener);
 }
 
 static void
@@ -364,7 +364,7 @@ wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
     seat->seat = wl_registry_bind(registry, name, &wl_seat_interface, 1);
     wl_seat_add_listener(seat->seat, &seat_listener, seat);
 
-    wl_signal_init(&seat->capability_signal);
+    wl_signal_init(&seat->capabilities_signal);
     wl_signal_init(&seat->name_signal);
 
     seat->base = pepper_compositor_add_seat(conn->pepper, &wayland_seat_interface, seat);

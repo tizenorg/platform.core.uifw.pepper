@@ -117,7 +117,7 @@ static void
 x11_seat_add_capability_listener(void *data, struct wl_listener *listener)
 {
     x11_seat_t *seat = (x11_seat_t *)data;
-    wl_signal_add(&seat->capability_signal, listener);
+    wl_signal_add(&seat->capabilities_signal, listener);
 }
 
 static void
@@ -181,7 +181,7 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     /* XXX: if x-input-module used with out x-output-module,
      * need to create dummy window for input with output-size */
 
-    wl_signal_init(&seat->capability_signal);
+    wl_signal_init(&seat->capabilities_signal);
     wl_signal_init(&seat->name_signal);
 
     seat->base = pepper_compositor_add_seat(conn->compositor, &x11_seat_interface, seat);

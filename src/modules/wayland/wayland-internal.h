@@ -93,7 +93,7 @@ struct wayland_seat
     wl_fixed_t                  touch_y_last;   /* FIXME */
 
     struct wl_list              link;
-    struct wl_signal            capability_signal;
+    struct wl_signal            capabilities_signal;
     struct wl_signal            name_signal;
 };
 
