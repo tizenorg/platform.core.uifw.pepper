@@ -118,6 +118,57 @@ handle_mode_change(struct wl_listener *listener, void *data)
     output_update_mode(output);
 }
 
+static void
+handle_output_frame(struct wl_listener *listener, void *data)
+{
+    pepper_output_t *output = wl_container_of(listener, output, frame.frame_listener);
+
+    output->frame.pending = PEPPER_FALSE;
+
+    /* TODO: Better repaint scheduling by putting a delay before repaint. */
+    if (output->frame.scheduled)
+        pepper_output_repaint(output);
+}
+
+static void
+idle_repaint(void *data)
+{
+    pepper_output_t *output = data;
+
+    if (!output->frame.pending)
+    {
+        /* We can repaint a frame immediately if it is not in pending state. */
+        pepper_output_repaint(output);
+        return;
+    }
+}
+
+void
+pepper_output_schedule_repaint(pepper_output_t *output)
+{
+    struct wl_event_loop *loop;
+
+    if (output->frame.scheduled)
+        return;
+
+    /* Schedule on the next idle loop so that it can accumulate surface commits. */
+    loop = wl_display_get_event_loop(output->compositor->display);
+    wl_event_loop_add_idle(loop, idle_repaint, output);
+    output->frame.scheduled = PEPPER_TRUE;
+}
+
+void
+pepper_output_repaint(pepper_output_t *output)
+{
+    PEPPER_ASSERT(!output->frame.pending);
+
+    output->interface->repaint(output->data);
+    output->frame.pending = PEPPER_TRUE;
+    output->frame.scheduled = PEPPER_FALSE;
+
+    /* TODO: Send frame done to the callback objects of this output. */
+}
+
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
                              const pepper_output_interface_t *interface, void *data)
@@ -168,6 +219,9 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     output->mode_change_listener.notify = handle_mode_change;
     interface->add_mode_change_listener(data, &output->mode_change_listener);
 
+    output->frame.frame_listener.notify = handle_output_frame;
+    interface->add_frame_listener(data, &output->frame.frame_listener);
+
     return output;
 }
 
@@ -186,6 +240,7 @@ pepper_output_destroy(pepper_output_t *output)
     wl_global_destroy(output->global);
     wl_list_remove(&output->data_destroy_listener.link);
     wl_list_remove(&output->mode_change_listener.link);
+    wl_list_remove(&output->frame.frame_listener.link);
 
     /* TODO: Handle removal of this output. e.g. Re-position outputs. */
 

@@ -108,7 +108,8 @@ struct pepper_output_interface
     void            (*get_mode)(void *output, int index, pepper_output_mode_t *mode);
     pepper_bool_t   (*set_mode)(void *output, const pepper_output_mode_t *mode);
 
-    void            (*schedule_repaint)(void *output, void *data /* TODO: view list or scene graph data. */);
+    void            (*repaint)(void *output);
+    void            (*add_frame_listener)(void *output, struct wl_listener *listener);
 };
 
 /* Compositor functions. */

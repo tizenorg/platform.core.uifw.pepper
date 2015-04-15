@@ -51,6 +51,7 @@ struct wayland_output
 
     struct wl_signal            destroy_signal;
     struct wl_signal            mode_change_signal;
+    struct wl_signal            frame_signal;
 
     struct wl_listener          conn_destroy_listener;
 

@@ -142,9 +142,19 @@ wayland_output_set_mode(void *o, const pepper_output_mode_t *mode)
 }
 
 static void
-wayland_output_schedule_repaint(void *o, void *data)
+wayland_output_repaint(void *o)
 {
-    /* TODO: */
+    wayland_output_t *output = o;
+
+    /* TODO: Pass rendering data to the renderer. maybe view list? or scene graph data? */
+    output->renderer->draw(output->renderer, NULL);
+}
+
+static void
+wayland_output_add_frame_listener(void *o, struct wl_listener *listener)
+{
+    wayland_output_t *output = o;
+    wl_signal_add(&output->frame_signal, listener);
 }
 
 static const pepper_output_interface_t wayland_output_interface =
@@ -161,7 +171,8 @@ static const pepper_output_interface_t wayland_output_interface =
     wayland_output_get_mode,
     wayland_output_set_mode,
 
-    wayland_output_schedule_repaint,
+    wayland_output_repaint,
+    wayland_output_add_frame_listener,
 };
 
 static void
@@ -238,6 +249,7 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
 
     wl_signal_init(&output->destroy_signal);
     wl_signal_init(&output->mode_change_signal);
+    wl_signal_init(&output->frame_signal);
 
     output->w = w;
     output->h = h;
