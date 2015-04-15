@@ -19,6 +19,10 @@ handle_global(void *data, struct wl_registry *registry,
     {
         conn->shell = wl_registry_bind(registry, name, &wl_shell_interface, 1);
     }
+    else if (strcmp(interface, "wl_shm") == 0)
+    {
+        conn->shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
+    }
 }
 
 static void
@@ -78,6 +82,7 @@ pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name)
     loop = wl_display_get_event_loop(compositor_display);
     conn->event_source = wl_event_loop_add_fd(loop, conn->fd, WL_EVENT_READABLE,
                                               handle_wayland_event, conn);
+    wl_event_source_check(conn->event_source);
 
     wl_list_init(&conn->seat_list);
     wl_signal_init(&conn->destroy_signal);

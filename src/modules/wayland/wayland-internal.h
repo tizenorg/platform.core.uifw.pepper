@@ -31,18 +31,26 @@ struct pepper_wayland
 
     struct wl_signal        destroy_signal;
 
+    struct wl_shm          *shm;
+
 };
 
 struct wayland_shm_buffer
 {
+    wayland_output_t   *output;
+    struct wl_list      link;
+
     struct wl_buffer   *buffer;
+
     void               *pixels;
+    int                 stride;
     int                 size;
+    int                 w, h;
+
     pixman_image_t     *image;
     pixman_region32_t   damage;
-    void               *data;
 
-    struct wl_list      link;
+    void               *data;
 };
 
 struct wayland_output
@@ -63,9 +71,18 @@ struct wayland_output
 
     pepper_renderer_t          *renderer;
 
+    void    (*render_pre)(wayland_output_t *output);
+    void    (*render_post)(wayland_output_t *output);
+
     struct {
-        /* list containing free wl_shm_buffers. */
+        /* list containing free buffers. */
         struct wl_list          free_buffers;
+
+        /* list containing attached but not released (from the compositor) buffers. */
+        struct wl_list          attached_buffers;
+
+        /* current render target buffer. */
+        wayland_shm_buffer_t   *current_buffer;
     } shm;
 
 #if ENABLE_WAYLAND_BACKEND_EGL
@@ -101,3 +118,9 @@ struct wayland_seat
 void
 wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
                            uint32_t name, uint32_t version);
+
+wayland_shm_buffer_t *
+wayland_shm_buffer_create(wayland_output_t *output);
+
+void
+wayland_shm_buffer_destroy(wayland_shm_buffer_t *buffer);

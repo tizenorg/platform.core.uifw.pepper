@@ -44,7 +44,8 @@ gl_renderer_destroy(pepper_renderer_t *r)
 }
 
 static pepper_bool_t
-gl_renderer_read_pixels(pepper_renderer_t *r, int x, int y, int w, int h,
+gl_renderer_read_pixels(pepper_renderer_t *r, void *target,
+                        int x, int y, int w, int h,
                         void *pixels, pepper_format_t format)
 {
     gl_renderer_t  *renderer = (gl_renderer_t *)r;
@@ -73,15 +74,8 @@ gl_renderer_read_pixels(pepper_renderer_t *r, int x, int y, int w, int h,
     return PEPPER_TRUE;
 }
 
-static pepper_bool_t
-gl_renderer_set_render_target(pepper_renderer_t *r, void *target)
-{
-    /* Can't change gl renderer's render target. */
-    return PEPPER_FALSE;
-}
-
 static void
-gl_renderer_draw(pepper_renderer_t *r, void *data)
+gl_renderer_draw(pepper_renderer_t *r, void *target, void *data)
 {
     gl_renderer_t  *renderer = (gl_renderer_t *)r;
 
@@ -266,7 +260,6 @@ pepper_gl_renderer_create(void *display, void *window,
 
     renderer->base.destroy              =   gl_renderer_destroy;
     renderer->base.read_pixels          =   gl_renderer_read_pixels;
-    renderer->base.set_render_target    =   gl_renderer_set_render_target;
     renderer->base.draw                 =   gl_renderer_draw;
 
     return &renderer->base;

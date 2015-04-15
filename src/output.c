@@ -139,7 +139,6 @@ idle_repaint(void *data)
     {
         /* We can repaint a frame immediately if it is not in pending state. */
         pepper_output_repaint(output);
-        return;
     }
 }
 
@@ -221,6 +220,8 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 
     output->frame.frame_listener.notify = handle_output_frame;
     interface->add_frame_listener(data, &output->frame.frame_listener);
+
+    pepper_output_schedule_repaint(output);
 
     return output;
 }

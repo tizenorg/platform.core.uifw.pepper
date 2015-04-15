@@ -45,7 +45,8 @@ libpepper_la_LIBADD += $(WAYLAND_BACKEND_LIBS) $(top_builddir)/shared/libshared.
 libpepper_la_SOURCES += modules/wayland/wayland-internal.h  \
                         modules/wayland/wayland-common.c    \
                         modules/wayland/wayland-output.c    \
-                        modules/wayland/wayland-input.c
+                        modules/wayland/wayland-input.c     \
+                        modules/wayland/wayland-shm-buffer.c
 endif
 
 # drm backend

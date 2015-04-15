@@ -212,11 +212,11 @@ struct pepper_renderer
 {
     void            (*destroy)(pepper_renderer_t *renderer);
 
-    pepper_bool_t   (*read_pixels)(pepper_renderer_t *renderer, int x, int y, int w, int h,
+    pepper_bool_t   (*read_pixels)(pepper_renderer_t *renderer, void *target,
+                                   int x, int y, int w, int h,
                                    void *pixels, pepper_format_t format);
 
-    pepper_bool_t   (*set_render_target)(pepper_renderer_t *renderer, void *target);
-    void            (*draw)(pepper_renderer_t *renderer, void *data /* TODO: */);
+    void            (*draw)(pepper_renderer_t *renderer, void *data, void *target);
 };
 
 PEPPER_API void

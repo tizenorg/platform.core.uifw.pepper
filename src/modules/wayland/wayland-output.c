@@ -21,7 +21,8 @@ static void
 shell_surface_configure(void *data, struct wl_shell_surface *shell_surface, uint32_t edges,
                         int32_t w, int32_t h)
 {
-    wayland_output_t *output = data;
+    wayland_output_t       *output = data;
+    wayland_shm_buffer_t   *buffer, *next;
 
     PEPPER_IGNORE(shell_surface);
     PEPPER_IGNORE(edges);
@@ -29,6 +30,21 @@ shell_surface_configure(void *data, struct wl_shell_surface *shell_surface, uint
     output->w = w;
     output->h = h;
 
+    /* Destroy free buffers immediately. */
+    wl_list_for_each_safe(buffer, next, &output->shm.free_buffers, link)
+        wayland_shm_buffer_destroy(buffer);
+
+    /* Orphan attached buffers. They will be destroyed when the compositor releases them. */
+    wl_list_for_each_safe(buffer, next, &output->shm.attached_buffers, link)
+    {
+        buffer->output = NULL;
+        wl_list_remove(&buffer->link);
+    }
+
+    PEPPER_ASSERT(wl_list_empty(&output->shm.free_buffers));
+    PEPPER_ASSERT(wl_list_empty(&output->shm.attached_buffers));
+
+    /* We are ready to emit mode change signal. */
     wl_signal_emit(&output->mode_change_signal, NULL);
 }
 
@@ -142,12 +158,38 @@ wayland_output_set_mode(void *o, const pepper_output_mode_t *mode)
 }
 
 static void
+frame_done(void *data, struct wl_callback *callback, uint32_t time)
+{
+    wayland_output_t *output = data;
+
+    wl_callback_destroy(callback);
+    wl_signal_emit(&output->frame_signal, NULL);
+}
+
+static const struct wl_callback_listener frame_listener =
+{
+    frame_done,
+};
+
+static void
 wayland_output_repaint(void *o)
 {
-    wayland_output_t *output = o;
+    wayland_output_t   *output = o;
+    struct wl_callback *callback;
+
+    if (output->render_pre)
+        output->render_pre(output);
 
     /* TODO: Pass rendering data to the renderer. maybe view list? or scene graph data? */
-    output->renderer->draw(output->renderer, NULL);
+    output->renderer->draw(output->renderer, output->shm.current_buffer->image, NULL);
+
+    if (output->render_post)
+        output->render_post(output);
+
+    callback = wl_surface_frame(output->surface);
+    wl_callback_add_listener(callback, &frame_listener, output);
+    wl_surface_commit(output->surface);
+    wl_display_flush(output->conn->display);
 }
 
 static void
@@ -182,6 +224,32 @@ handle_connection_destroy(struct wl_listener *listener, void *data)
     wayland_output_destroy(output);
 }
 
+static void
+pixman_render_pre(wayland_output_t *output)
+{
+    wayland_shm_buffer_t *buffer = NULL;
+
+    if (wl_list_empty(&output->shm.free_buffers))
+    {
+        buffer = wayland_shm_buffer_create(output);
+    }
+    else
+    {
+        buffer = wl_container_of(output->shm.free_buffers.next, buffer, link);
+        wl_list_remove(&buffer->link);
+    }
+
+    wl_list_insert(output->shm.attached_buffers.prev, &buffer->link);
+    output->shm.current_buffer = buffer;
+}
+
+static void
+pixman_render_post(wayland_output_t *output)
+{
+    wl_surface_attach(output->surface, output->shm.current_buffer->buffer, 0, 0);
+    wl_surface_damage(output->surface, 0, 0, output->w, output->h);
+}
+
 static pepper_bool_t
 init_gl_renderer(wayland_output_t *output)
 {
@@ -211,11 +279,16 @@ static pepper_bool_t
 init_pixman_renderer(wayland_output_t *output)
 {
     wl_list_init(&output->shm.free_buffers);
+    wl_list_init(&output->shm.attached_buffers);
 
     output->renderer = pepper_pixman_renderer_create();
 
     if (output->renderer)
+    {
+        output->render_pre  = pixman_render_pre;
+        output->render_post = pixman_render_post;
         return PEPPER_TRUE;
+    }
 
     return PEPPER_FALSE;
 }
@@ -261,6 +334,7 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
     output->surface = wl_compositor_create_surface(conn->compositor);
     output->shell_surface = wl_shell_get_shell_surface(conn->shell, output->surface);
     wl_shell_surface_add_listener(output->shell_surface, &shell_surface_listener, output);
+    wl_shell_surface_set_toplevel(output->shell_surface);
 
     /* Add compositor base class output object for this output. */
     base = pepper_compositor_add_output(conn->pepper, &wayland_output_interface, output);
