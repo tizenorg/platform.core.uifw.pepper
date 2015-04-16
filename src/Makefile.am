@@ -53,10 +53,22 @@ endif
 if ENABLE_DRM_BACKEND
 include_HEADERS += modules/drm/pepper-drm.h
 
-libpepper_la_CFLAGS += $(DRM_BACKEND_CFLAGS)
+libpepper_la_CFLAGS += $(DRM_BACKEND_CFLAGS) -I$(top_srcdir)/src/modules/libinput/
 libpepper_la_LIBADD += $(DRM_BACKEND_LIBS)
 
-libpepper_la_SOURCES += modules/drm/drm-internal.h
+libpepper_la_SOURCES += modules/drm/drm-internal.h  \
+                        modules/drm/drm-common.c
+endif
+
+# libinput module for drm & fbdev backends
+if ENABLE_LIBINPUT
+include_HEADERS += modules/libinput/pepper-libinput.h
+
+libpepper_la_CFLAGS += $(LIBINPUT_CFLAGS)
+libpepper_la_LIBADD += $(LIBINPUT_LIBS)
+
+libpepper_la_SOURCES += modules/libinput/libinput-internal.h  \
+                        modules/libinput/libinput.c
 endif
 
 # x11 backend

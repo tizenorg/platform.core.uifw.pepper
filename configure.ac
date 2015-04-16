@@ -75,7 +75,18 @@ AM_CONDITIONAL(ENABLE_DRM_BACKEND, test $enable_drm_backend = yes)
 
 if test $enable_drm_backend = yes; then
     AC_DEFINE(ENABLE_DRM_BACKEND, 1, [Enable drm backend])
-    PKG_CHECK_MODULES(DRM_BACKEND, [libinput >= 0.6.0])
+fi
+
+# use libinput module
+AC_ARG_ENABLE(libinput,
+              AC_HELP_STRING([--enable-libinput], [enable libinput module]),
+              [enable_libinput=yes], [enable_libinput=yes])
+
+AM_CONDITIONAL(ENABLE_LIBINPUT, test $enable_libinput = yes)
+
+if test $enable_libinput = yes; then
+    AC_DEFINE(ENABLE_LIBINPUT, 1, [Enable libinput module])
+    PKG_CHECK_MODULES(LIBINPUT, [libinput >= 0.6.0])
 fi
 
 # x11 backend
