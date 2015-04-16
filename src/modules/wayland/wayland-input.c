@@ -5,7 +5,7 @@ pointer_handle_enter(void *data, struct wl_pointer *pointer,
                      uint32_t serial, struct wl_surface *surface,
                      wl_fixed_t surface_x, wl_fixed_t surface_y)
 {
-    wayland_seat_t  *seat = (wayland_seat_t *)seat;
+    wayland_seat_t  *seat = (wayland_seat_t *)data;
 
     seat->pointer_x_last = surface_x;
     seat->pointer_y_last = surface_y;
@@ -24,7 +24,7 @@ static void
 pointer_handle_motion(void *data, struct wl_pointer *pointer,
                       uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_POINTER_MOTION;
@@ -43,7 +43,7 @@ static void
 pointer_handle_button(void *data, struct wl_pointer *pointer,
                      uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_POINTER_BUTTON;
@@ -62,7 +62,7 @@ static void
 pointer_handle_axis(void *data, struct wl_pointer *pointer,
                     uint32_t time, uint32_t axis, wl_fixed_t value)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_POINTER_AXIS;
@@ -112,7 +112,7 @@ static void
 keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
                     uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_KEYBOARD_KEY;
@@ -157,7 +157,7 @@ touch_handle_down(void *data, struct wl_touch *touch,
                   uint32_t serial, uint32_t time, struct wl_surface *surface,
                   int32_t id, wl_fixed_t x, wl_fixed_t y)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_DOWN;
@@ -176,7 +176,7 @@ static void
 touch_handle_up(void *data, struct wl_touch *touch,
                 uint32_t serial, uint32_t time, int32_t id)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_UP;
@@ -195,7 +195,7 @@ static void
 touch_handle_motion(void *data, struct wl_touch *touch,
                     uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_MOTION;
@@ -213,7 +213,7 @@ touch_handle_motion(void *data, struct wl_touch *touch,
 static void
 touch_handle_frame(void *data, struct wl_touch *touch)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_FRAME;
@@ -223,7 +223,7 @@ touch_handle_frame(void *data, struct wl_touch *touch)
 static void
 touch_handle_cancel(void *data, struct wl_touch *touch)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)seat;
+    wayland_seat_t         *seat = (wayland_seat_t *)data;
     pepper_input_event_t    event;
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_CANCEL;
