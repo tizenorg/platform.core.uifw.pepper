@@ -103,6 +103,11 @@ if test $enable_pepper_server = yes; then
     PKG_CHECK_MODULES(PEPPER_SERVER, [wayland-server >= 1.6.00])
 fi
 
+# test programs
+TEST_PROGRAM_MODULES="wayland-client wayland-server"
+
+PKG_CHECK_MODULES(TEST_PROGRAM, [$TEST_PROGRAM_MODULES])
+
 # Output files
 AC_CONFIG_FILES([
 Makefile
