@@ -39,6 +39,8 @@
 struct seat {
     struct touch *touch;
     struct wl_seat *seat;
+    struct wl_pointer *wl_pointer;
+    struct wl_keyboard *wl_keyboard;
     struct wl_touch *wl_touch;
 };
 
@@ -55,6 +57,7 @@ struct touch {
     struct wl_buffer *buffer;
     int has_argb;
     int width, height;
+    int x, y;
     void *data;
 };
 
@@ -112,11 +115,9 @@ touch_paint(struct touch *touch, int32_t x, int32_t y, int32_t id)
     uint32_t *p, c;
     static const uint32_t colors[] = {
         0xffff0000,
-        0xffffff00,
         0xff0000ff,
-        0xffff00ff,
         0xff00ff00,
-        0xff00ffff,
+        0xff000000,
     };
 
     if (id < (int32_t) ARRAY_LENGTH(colors))
@@ -154,6 +155,162 @@ touch_paint(struct touch *touch, int32_t x, int32_t y, int32_t id)
      */
     wl_surface_commit(touch->surface);
 }
+
+static uint32_t pointer_state;
+static wl_fixed_t pointer_x;
+static wl_fixed_t pointer_y;
+
+static void
+pointer_handle_enter(void *data,
+                     struct wl_pointer *wl_pointer,
+                     uint32_t serial,
+                     struct wl_surface *surface,
+                     wl_fixed_t surface_x,
+                     wl_fixed_t surface_y)
+{
+    pointer_x = surface_x;
+    pointer_y = surface_y;
+}
+
+static void
+pointer_handle_leave(void *data,
+                     struct wl_pointer *wl_pointer,
+                     uint32_t serial,
+                     struct wl_surface *surface)
+{
+}
+
+static void
+pointer_handle_motion(void *data,
+                      struct wl_pointer *wl_pointer,
+                      uint32_t time,
+                      wl_fixed_t surface_x,
+                      wl_fixed_t surface_y)
+{
+    struct touch *touch = data;
+    float x;
+    float y;
+
+    pointer_x = surface_x;
+    pointer_y = surface_y;
+
+    x = wl_fixed_to_double(pointer_x);
+    y = wl_fixed_to_double(pointer_y);
+
+    if (pointer_state == WL_POINTER_BUTTON_STATE_PRESSED)
+        touch_paint(touch, x, y, 2);
+}
+
+static void
+pointer_handle_button(void *data,
+                      struct wl_pointer *wl_pointer,
+                      uint32_t serial,
+                      uint32_t time,
+                      uint32_t button,
+                      uint32_t state)
+{
+    struct touch *touch = data;
+    float x = wl_fixed_to_double(pointer_x);
+    float y = wl_fixed_to_double(pointer_y);
+
+    pointer_state = state;
+
+    touch_paint(touch, x, y, state);
+}
+
+static void
+pointer_handle_axis(void *data,
+                    struct wl_pointer *wl_pointer,
+                    uint32_t time,
+                    uint32_t axis,
+                    wl_fixed_t value)
+{
+}
+
+static const struct wl_pointer_listener pointer_listener = {
+    pointer_handle_enter,
+    pointer_handle_leave,
+    pointer_handle_motion,
+    pointer_handle_button,
+    pointer_handle_axis,
+};
+
+static void
+keyboard_handle_keymap(void *data,
+                       struct wl_keyboard *wl_keyboard,
+                       uint32_t format,
+                       int32_t fd,
+                       uint32_t size)
+{
+}
+
+static void
+keyboard_handle_enter(void *data,
+                      struct wl_keyboard *wl_keyboard,
+                      uint32_t serial,
+                      struct wl_surface *surface,
+                      struct wl_array *keys)
+{
+}
+
+static void
+keyboard_handle_leave(void *data,
+                      struct wl_keyboard *wl_keyboard,
+                      uint32_t serial,
+                      struct wl_surface *surface)
+{
+}
+
+static void
+keyboard_handle_key(void *data,
+                    struct wl_keyboard *wl_keyboard,
+                    uint32_t serial,
+                    uint32_t time,
+                    uint32_t key,
+                    uint32_t state)
+{
+    struct touch   *touch = data;
+
+    touch_paint(touch, touch->x, touch->y, 3);
+
+    touch->x += 4;
+    if (touch->x >= (touch->width - 2)) {
+        touch->x = 2;
+        touch->y += 4;
+        if (touch->y >= (touch->height - 2))
+        {
+            touch->y = 2;
+        }
+    }
+}
+
+static void
+keyboard_handle_modifiers(void *data,
+                          struct wl_keyboard *wl_keyboard,
+                          uint32_t serial,
+                          uint32_t mods_depressed,
+                          uint32_t mods_latched,
+                          uint32_t mods_locked,
+                          uint32_t group)
+{
+}
+
+static void
+keyboard_handle_repeat_info(void *data,
+                            struct wl_keyboard *wl_keyboard,
+                            int32_t rate,
+                            int32_t delay)
+{
+}
+
+static const struct wl_keyboard_listener keyboard_listener = {
+    keyboard_handle_keymap,
+    keyboard_handle_enter,
+    keyboard_handle_leave,
+    keyboard_handle_key,
+    keyboard_handle_modifiers,
+    keyboard_handle_repeat_info,
+};
 
 static void
 touch_handle_down(void *data, struct wl_touch *wl_touch,
@@ -209,6 +366,24 @@ seat_handle_capabilities(void *data, struct wl_seat *wl_seat,
     struct seat *seat = data;
     struct touch *touch = seat->touch;
 
+    if ((caps & WL_SEAT_CAPABILITY_POINTER) && !seat->wl_pointer) {
+        seat->wl_pointer = wl_seat_get_pointer(wl_seat);
+        wl_pointer_set_user_data(seat->wl_pointer, touch);
+        wl_pointer_add_listener(seat->wl_pointer, &pointer_listener, touch);
+    } else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && seat->wl_pointer) {
+        wl_pointer_destroy(seat->wl_pointer);
+        seat->wl_pointer = NULL;
+    }
+
+    if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && !seat->wl_keyboard) {
+        seat->wl_keyboard = wl_seat_get_keyboard(wl_seat);
+        wl_keyboard_set_user_data(seat->wl_keyboard, touch);
+        wl_keyboard_add_listener(seat->wl_keyboard, &keyboard_listener, touch);
+    } else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->wl_keyboard) {
+        wl_keyboard_destroy(seat->wl_keyboard);
+        seat->wl_keyboard = NULL;
+    }
+
     if ((caps & WL_SEAT_CAPABILITY_TOUCH) && !seat->wl_touch) {
         seat->wl_touch = wl_seat_get_touch(wl_seat);
         wl_touch_set_user_data(seat->wl_touch, touch);
@@ -232,6 +407,8 @@ add_seat(struct touch *touch, uint32_t name, uint32_t version)
     assert(seat);
 
     seat->touch = touch;
+    seat->wl_pointer = NULL;
+    seat->wl_keyboard = NULL;
     seat->wl_touch = NULL;
     seat->seat = wl_registry_bind(touch->registry, name,
                                   &wl_seat_interface, 1);
@@ -321,6 +498,8 @@ touch_create(int width, int height, const char *display_name)
 
     touch->width = width;
     touch->height = height;
+    touch->x = 2;
+    touch->y = 2;
     touch->surface = wl_compositor_create_surface(touch->compositor);
     touch->shell_surface = wl_shell_get_shell_surface(touch->shell,
                                                       touch->surface);
@@ -351,14 +530,16 @@ main(int argc, char **argv)
     const char *display_name;
 
     if (argc == 1)
+    {
         display_name = NULL;
+    }
     else if (argc == 2)
     {
         display_name = argv[1];
     }
     else
     {
-        printf("usage: simple-shm DISPLAY_NAME");
+        printf("usage: simple-touch DISPLAY_NAME");
         return 1;
     }
 
