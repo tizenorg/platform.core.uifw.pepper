@@ -1,4 +1,5 @@
 TESTPROGRAMS = wayland-backend      \
+               x11-backend          \
                simple-touch         \
                simple-shm
 
