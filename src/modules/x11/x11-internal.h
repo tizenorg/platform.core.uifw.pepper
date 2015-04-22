@@ -9,51 +9,70 @@
 #include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>
 #include <string.h>
+#include <pixman.h>
 
-#define X11_BACKEND_INPUT_ID 0x12345678
+#define X11_BACKEND_INPUT_ID    0x12345678
 
-typedef struct x11_output   x11_output_t;
-typedef struct x11_cursor   x11_cursor_t;
-typedef struct x11_seat     x11_seat_t;
+typedef struct x11_output       x11_output_t;
+typedef struct x11_cursor       x11_cursor_t;
+typedef struct x11_seat         x11_seat_t;
+typedef struct x11_shm_image    x11_shm_image_t;
+
+struct x11_shm_image
+{
+    int              shm_id;
+    void            *buf;
+    xcb_shm_seg_t    segment;
+    pixman_image_t  *image;    /* XXX: need double-buffering? */
+};
 
 struct x11_output
 {
-    pepper_x11_connection_t *connection;
+    pepper_output_t *base;
+    pepper_x11_connection_t     *connection;
 
-    int32_t             x, y;
-    uint32_t            w, h;
-    uint32_t            subpixel;
-    uint32_t            scale;
-    uint8_t             depth;
+    int32_t                  x, y;
+    uint32_t                 w, h;
+    uint32_t                 subpixel;
+    uint32_t                 scale;
+    uint8_t                  depth;
+    uint8_t                  bpp;
 
-    xcb_window_t        window;
-    xcb_gc_t            gc;
-    x11_cursor_t        *cursor;
+    xcb_window_t             window;
+    xcb_gc_t                 gc;
+    x11_cursor_t            *cursor;
 
-    struct wl_signal    destroy_signal;
-    struct wl_signal    mode_change_signal;
+    x11_shm_image_t          shm;
 
-    struct wl_listener  conn_destroy_listener;
+    pepper_renderer_t       *renderer;
 
-    struct wl_list      link;
+    struct wl_signal         destroy_signal;
+    struct wl_signal         mode_change_signal;
+    struct wl_signal         frame_signal;
+
+    struct wl_event_source  *frame_done_timer;
+
+    struct wl_listener       conn_destroy_listener;
+
+    struct wl_list           link;
 };
 
 struct x11_seat
 {
-    pepper_seat_t       *base;
+    pepper_seat_t           *base;
 
-    uint32_t            id;
-    uint32_t            caps;
-    char                *name;
+    uint32_t                 id;
+    uint32_t                 caps;
+    char                    *name;
 
-    wl_fixed_t          pointer_x_last;
-    wl_fixed_t          pointer_y_last;
-    wl_fixed_t          touch_x_last;   /* FIXME */
-    wl_fixed_t          touch_y_last;   /* FIXME */
+    wl_fixed_t               pointer_x_last;
+    wl_fixed_t               pointer_y_last;
+    wl_fixed_t               touch_x_last;   /* FIXME */
+    wl_fixed_t               touch_y_last;   /* FIXME */
 
-    struct wl_list      link;
-    struct wl_signal    capabilities_signal;
-    struct wl_signal    name_signal;
+    struct wl_list           link;
+    struct wl_signal         capabilities_signal;
+    struct wl_signal         name_signal;
 };
 
 struct pepper_x11_connection
@@ -72,7 +91,7 @@ struct pepper_x11_connection
     struct wl_list          outputs;
 
     pepper_bool_t           use_xinput;
-    x11_seat_t              *seat;
+    x11_seat_t             *seat;
 
     struct {
         xcb_atom_t          wm_protocols;
@@ -127,5 +146,8 @@ x11_window_input_property_change(xcb_connection_t *conn, xcb_window_t window);
 
 void
 x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev);
+
+void
+x11_output_destroy(void *o);
 
 #endif  /*X11_INTERNAL_H*/

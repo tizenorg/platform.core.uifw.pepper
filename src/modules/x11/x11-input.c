@@ -1,16 +1,26 @@
 #include "x11-internal.h"
 
+/* TODO: debugging */
+#undef  PEPPER_TRACE
+#define PEPPER_TRACE(x)
+
 void
 x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev)
 {
-    pepper_input_event_t        event;
-
-    memset(&event, 0x00, sizeof(pepper_input_event_t));
+    pepper_input_event_t event = {0,};
 
     switch (type)
     {
     case XCB_ENTER_NOTIFY:
+        {
+            PEPPER_TRACE("enter\n");
+            break;
+        }
     case XCB_LEAVE_NOTIFY:
+        {
+            PEPPER_TRACE("leave\n");
+            break;
+        }
     case XCB_KEY_PRESS:
     case XCB_KEY_RELEASE:
         break;
@@ -20,15 +30,15 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
             switch (bp->detail)
             {
             case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
-                PEPPER_ERROR("left click\n");
+                PEPPER_TRACE("left click\n");
                 event.index = 1;
                 break;
             case XCB_BUTTON_INDEX_3:/* FIXME: RIGHT */
-                PEPPER_ERROR("right click\n");
+                PEPPER_TRACE("right click\n");
                 event.index = 3;
                 break;
             default:
-                PEPPER_ERROR("wheel or something pressed\n");
+                PEPPER_TRACE("wheel or something pressed\n");
                 break;
             }
             event.type   = PEPPER_INPUT_EVENT_POINTER_BUTTON;
@@ -46,15 +56,15 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
             switch (br->detail)
             {
             case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
-                PEPPER_ERROR("left released\n");
+                PEPPER_TRACE("left released\n");
                 event.index = 1;
                 break;
             case XCB_BUTTON_INDEX_3:/* FIXME: RIGHT */
-                PEPPER_ERROR("right released\n");
+                PEPPER_TRACE("right released\n");
                 event.index = 3;
                 break;
             default:
-                PEPPER_ERROR("wheel or something pressed\n");
+                PEPPER_TRACE("wheel or something pressed\n");
                 break;
             }
             event.type   = PEPPER_INPUT_EVENT_POINTER_BUTTON;
@@ -69,6 +79,7 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
     case XCB_MOTION_NOTIFY:
         {
             xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
+
             event.type   = PEPPER_INPUT_EVENT_POINTER_MOTION;
             event.time   = motion->time;
             event.serial = motion->sequence;
@@ -80,7 +91,7 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
         }
         break;
     default :
-        PEPPER_ERROR("x11:input: unknown input event\n");
+        PEPPER_ERROR("unknown input event, [0x%x]\n", type);
     }
 
     pepper_seat_handle_event(seat->base, &event);
@@ -157,16 +168,14 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
 
     if (!conn)
     {
-        PEPPER_ERROR("x11:input:%s: connection is null...\n", __FUNCTION__);
+        PEPPER_ERROR("connection is null...\n");
         return ;
     }
-
-    PEPPER_ERROR("x11:input: initialize input module...\n");
 
     seat = pepper_calloc(1, sizeof(x11_seat_t));
     if (!seat)
     {
-        PEPPER_ERROR("x11:input:%s: failed to allocate memory\n", __FUNCTION__);
+        PEPPER_ERROR("failed to allocate memory\n");
         return ;
     }
 

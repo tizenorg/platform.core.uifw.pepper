@@ -1,6 +1,7 @@
 #include <wayland-server.h>
 #include <common.h>
 #include "x11-internal.h"
+#include "pepper-internal.h"
 
 #include <stdlib.h>
 
@@ -11,6 +12,10 @@
  * xcb is faster than xlib
  */
 
+/* TODO: debugging */
+#undef  PEPPER_TRACE
+#define PEPPER_TRACE(x)
+
 static inline pepper_bool_t
 x11_get_next_event(xcb_connection_t *xcb_conn, xcb_generic_event_t **event, uint32_t mask)
 {
@@ -18,6 +23,20 @@ x11_get_next_event(xcb_connection_t *xcb_conn, xcb_generic_event_t **event, uint
         *event = xcb_poll_for_event(xcb_conn);
 
     return *event != NULL;
+}
+
+static x11_output_t *
+x11_find_output_by_window(pepper_x11_connection_t *conn, xcb_window_t window)
+{
+    x11_output_t *output = NULL;
+
+    if (!wl_list_empty(&conn->outputs))
+    {
+        wl_list_for_each(output, &conn->outputs, link)
+            if ( window == output->window )
+                return output;
+    }
+    return NULL;
 }
 
 static int
@@ -28,9 +47,6 @@ x11_handle_event(int fd, uint32_t mask, void *data)
     xcb_generic_event_t         *event = NULL;
 
     uint32_t                    count = 0;
-
-    if ((mask & WL_EVENT_HANGUP) || (mask & WL_EVENT_ERROR))
-        return 0;
 
     if (!connection->use_xinput)
         return 0;
@@ -43,6 +59,7 @@ x11_handle_event(int fd, uint32_t mask, void *data)
     while(x11_get_next_event(connection->xcb_connection, &event, mask))
     {
         uint32_t type = event->response_type & ~0x80;
+
         switch (type)
         {
         case XCB_ENTER_NOTIFY:
@@ -55,10 +72,59 @@ x11_handle_event(int fd, uint32_t mask, void *data)
             x11_handle_input_event(seat, type, event);
             break;
         case XCB_EXPOSE:
-            /*PEPPER_ERROR("x11:event:not input event\n");*/
+            PEPPER_TRACE("XCB_EXPOSE\n");
+            {
+                xcb_expose_event_t *expose = (xcb_expose_event_t *)event;
+                x11_output_t *output = x11_find_output_by_window(connection, expose->window);
+                if (output)
+                    pepper_output_schedule_repaint(output->base);
+            }
+            break;
+        case XCB_FOCUS_IN:
+            /* TODO: Cursor handling */
+            PEPPER_TRACE("XCB_FOCUS_IN\n");
+            break;
+        case XCB_FOCUS_OUT:
+            PEPPER_TRACE("XCB_FOCUS_OUT\n");
+            break;
+        case XCB_KEYMAP_NOTIFY:
+            PEPPER_TRACE("XCB_KEYMAP_NOTIFY\n");
+            break;
+        case XCB_CONFIGURE_NOTIFY:
+            /* Window moved */
+            PEPPER_TRACE("XCB_CONFIGURE_NOTIFY\n");
+            break;
+        case XCB_QUERY_EXTENSION:
+            PEPPER_TRACE("XCB_QUERY_EXTENSION\n");
+            break;
+        case XCB_DESTROY_NOTIFY:
+            PEPPER_TRACE("XCB_DESTROY_NOTIFY\n");
+            break;
+        case XCB_UNMAP_NOTIFY:
+            PEPPER_TRACE("XCB_UNMAP_NOTIFY\n");
+            break;
+        case XCB_CLIENT_MESSAGE:
+            PEPPER_TRACE("XCB_CLIENT_MESSAGE\n");
+            {
+                xcb_client_message_event_t *msg;
+                xcb_atom_t                  atom;
+                xcb_window_t                window;
+                x11_output_t               *output = NULL;
+
+                msg = (xcb_client_message_event_t *)event;
+                atom = msg->data.data32[0];
+                window = msg->window;
+
+                if (atom == connection->atom.wm_delete_window)
+                {
+                    output = x11_find_output_by_window(connection, window);
+                    if (output)
+                        x11_output_destroy(output);
+                }
+            }
             break;
         default :
-            PEPPER_ERROR("x11:common:Unknown event\n");
+            PEPPER_ERROR("unknown event: type [0x%x] \n", type);
             break;
         }
 
@@ -125,21 +191,21 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 
     if (!compositor)
     {
-        PEPPER_ERROR("x11:common:%s: compositor is null\n", __FUNCTION__);
+        PEPPER_ERROR("Compositor is null\n");
         return NULL;
     }
 
     connection = (pepper_x11_connection_t *)pepper_calloc(1, sizeof(pepper_x11_connection_t));
     if (!connection)
     {
-        PEPPER_ERROR("x11:common:%s: memory allocation failed\n", __FUNCTION__);
+        PEPPER_ERROR("Memory allocation failed\n");
         return NULL;
     }
 
     connection->display = XOpenDisplay(display_name);
     if (!connection->display)
     {
-        PEPPER_ERROR("x11:common:%s: XOpenDisplay failed\n", __FUNCTION__);
+        PEPPER_ERROR("XOpenDisplay failed\n");
         pepper_free(connection);
         return NULL;
     }
@@ -149,7 +215,7 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 
     if (xcb_connection_has_error(connection->xcb_connection))
     {
-        PEPPER_ERROR("x11:common:%s: xcb connection has error\n", __FUNCTION__);
+        PEPPER_ERROR("xcb connection has error\n");
         pepper_free(connection);
         return NULL;
     }
