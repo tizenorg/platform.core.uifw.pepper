@@ -89,6 +89,12 @@ pepper_compositor_create(const char *socket_name)
         goto error;
     }
 
+    if (!pepper_data_device_manager_init(compositor->display))
+    {
+        PEPPER_ERROR("Failed to initialze data device manager.\n");
+        goto error;
+    }
+
     return compositor;
 
 error:

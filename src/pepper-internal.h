@@ -12,6 +12,9 @@ typedef struct pepper_surface_state pepper_surface_state_t;
 typedef struct pepper_buffer        pepper_buffer_t;
 typedef struct pepper_shell         pepper_shell_t;
 typedef struct pepper_shell_surface pepper_shell_surface_t;
+typedef struct pepper_data_source   pepper_data_source_t;
+typedef struct pepper_data_device   pepper_data_device_t;
+typedef struct pepper_data_offer    pepper_data_offer_t;
 
 /* compositor */
 struct pepper_compositor
@@ -220,5 +223,29 @@ pepper_shell_create(pepper_compositor_t *compositor);
 
 void
 pepper_shell_destroy(pepper_shell_t *shell);
+
+/* Data device */
+struct pepper_data_source
+{
+    struct wl_resource      *resource;
+    struct wl_signal         destroy_signal;
+    struct wl_array          mime_types;
+};
+
+struct pepper_data_offer
+{
+    struct wl_resource      *resource;
+    pepper_data_source_t    *source;
+    struct wl_listener       source_destroy_listener;
+};
+
+struct pepper_data_device
+{
+    struct wl_resource      *resource;
+    pepper_seat_t           *seat;
+};
+
+pepper_bool_t
+pepper_data_device_manager_init(struct wl_display *display);
 
 #endif /* PEPPER_INTERNAL_H */
