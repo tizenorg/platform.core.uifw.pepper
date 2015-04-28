@@ -76,13 +76,6 @@ pepper_compositor_create(const char *socket_name)
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
 
-    compositor->shell = pepper_shell_create(compositor);
-    if (!compositor->shell)
-    {
-        PEPPER_ERROR("Failed to create shell\n");
-        goto error;
-    }
-
     if (wl_display_init_shm(compositor->display) != 0)
     {
         PEPPER_ERROR("Failed to initialze shm.\n");
@@ -107,9 +100,6 @@ error:
 PEPPER_API void
 pepper_compositor_destroy(pepper_compositor_t *compositor)
 {
-    if (compositor->shell)
-        pepper_shell_destroy(compositor->shell);
-
     if (compositor->display)
         wl_display_destroy(compositor->display);
 

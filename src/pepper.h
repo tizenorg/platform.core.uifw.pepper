@@ -34,6 +34,7 @@ typedef struct pepper_touch             pepper_touch_t;
 typedef struct pepper_input_event       pepper_input_event_t;
 
 typedef struct pepper_renderer          pepper_renderer_t;
+typedef struct pepper_surface           pepper_surface_t;
 
 #define PEPPER_FORMAT(type, bpp, a, r, g, b)    \
     ((((type) & 0xff) << 24)    |               \
@@ -224,6 +225,16 @@ pepper_renderer_init(pepper_renderer_t *renderer);
 
 PEPPER_API void
 pepper_renderer_destroy(pepper_renderer_t *renderer);
+
+/* Surface. */
+PEPPER_API void
+pepper_surface_add_destroy_listener(pepper_surface_t *surface, struct wl_listener *listener);
+
+PEPPER_API const char *
+pepper_surface_get_role(pepper_surface_t *surface);
+
+PEPPER_API pepper_bool_t
+pepper_surface_set_role(pepper_surface_t *surface, const char *role);
 
 #ifdef __cplusplus
 }

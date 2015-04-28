@@ -102,6 +102,18 @@ if test $enable_x11_backend = yes; then
     PKG_CHECK_MODULES(X11_BACKEND, [x11 xcb-shm x11-xcb])
 fi
 
+# desktop-shell module
+AC_ARG_ENABLE(desktop-shell,
+              AC_HELP_STRING([--enable-desktop-shell], [enable desktop shell]),
+              [enable_desktop_shell=$enableval], [enable_desktop_shell=yes])
+
+AM_CONDITIONAL(ENABLE_DESKTOP_SHELL, test $enable_desktop_shell = yes)
+
+if test $enable_desktop_shell = yes; then
+    AC_DEFINE(ENABLE_DESKTOP_SHELL, 1, [Enable desktop shell])
+    PKG_CHECK_MODULES(DESKTOP_SHELL, [wayland-server])
+fi
+
 # pepper server
 AC_ARG_ENABLE(pepper-server,
               AC_HELP_STRING([--enable-pepper-server], [build pepper reference server]),

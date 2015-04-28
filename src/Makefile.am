@@ -18,7 +18,6 @@ libpepper_la_SOURCES = pepper.h                 \
                        output.c                 \
                        input.c                  \
                        client.c                 \
-                       shell.c                  \
                        surface.c                \
                        region.c                 \
                        buffer.c                 \
@@ -85,6 +84,18 @@ libpepper_la_SOURCES += modules/x11/x11-common.c    \
                         modules/x11/x11-internal.h
 endif
 
+# desktop shell
+if ENABLE_DESKTOP_SHELL
+include_HEADERS += modules/desktop-shell/pepper-desktop-shell.h
+
+libpepper_la_CFLAGS += $(DESKTOP_SHELL_CFLAGS)
+libpepper_la_LIBADD += $(DESKTOP_SHELL_LIBS)
+
+libpepper_la_SOURCES += modules/desktop-shell/desktop-shell-internal.h  \
+                        modules/desktop-shell/shell.c                   \
+                        modules/desktop-shell/shell-surface.c           \
+                        modules/desktop-shell/wl-shell.c
+endif
 
 # Pepper server executable
 if ENABLE_PEPPER_SERVER

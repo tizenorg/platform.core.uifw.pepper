@@ -7,11 +7,8 @@
 #include <pixman.h>
 
 typedef struct pepper_region        pepper_region_t;
-typedef struct pepper_surface       pepper_surface_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
 typedef struct pepper_buffer        pepper_buffer_t;
-typedef struct pepper_shell         pepper_shell_t;
-typedef struct pepper_shell_surface pepper_shell_surface_t;
 typedef struct pepper_data_source   pepper_data_source_t;
 typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
@@ -24,8 +21,6 @@ struct pepper_compositor
     struct wl_list      surfaces;
     struct wl_list      regions;
     struct wl_list      seat_list;
-
-    pepper_shell_t     *shell;
 };
 
 struct pepper_output
@@ -113,6 +108,9 @@ struct pepper_surface
 
     struct wl_list          frame_callbacks;
     struct wl_signal        destroy_signal;
+
+    /* Role. */
+    char                   *role;
 };
 
 struct pepper_region
@@ -192,37 +190,6 @@ struct pepper_touch
     pepper_seat_t              *seat;
     struct wl_list              resources;
 };
-
-/* Shell */
-struct pepper_shell
-{
-    pepper_compositor_t    *compositor;
-
-    struct wl_global       *global;
-    struct wl_list          resources;      /* FIXME */
-    struct wl_list          shell_surfaces; /* FIXME */
-
-    /* TODO */
-
-};
-
-struct pepper_shell_surface
-{
-    pepper_surface_t        *surface;
-    struct wl_resource      *resource;
-
-    struct wl_list          link;   /* FIXME */
-    struct wl_listener      surface_destroy_listener;
-
-    /* TODO */
-
-};
-
-pepper_shell_t *
-pepper_shell_create(pepper_compositor_t *compositor);
-
-void
-pepper_shell_destroy(pepper_shell_t *shell);
 
 /* Data device */
 struct pepper_data_source

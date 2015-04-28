@@ -282,6 +282,9 @@ pepper_surface_destroy(pepper_surface_t *surface)
 
     wl_resource_for_each_safe(callback, next, &surface->frame_callbacks)
         wl_resource_destroy(callback);
+
+    if (surface->role)
+        pepper_string_free(surface->role);
 }
 
 void
@@ -344,4 +347,29 @@ pepper_surface_commit(pepper_surface_t *surface)
     pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
 
     /* TODO: Now schedule redraw. */
+}
+
+PEPPER_API void
+pepper_surface_add_destroy_listener(pepper_surface_t *surface, struct wl_listener *listener)
+{
+    wl_signal_add(&surface->destroy_signal, listener);
+}
+
+PEPPER_API const char *
+pepper_surface_get_role(pepper_surface_t *surface)
+{
+    return surface->role;
+}
+
+PEPPER_API pepper_bool_t
+pepper_surface_set_role(pepper_surface_t *surface, const char *role)
+{
+    if (surface->role)
+        return PEPPER_FALSE;
+
+    surface->role = pepper_string_copy(role);
+    if (!surface->role)
+        return PEPPER_FALSE;
+
+    return PEPPER_TRUE;
 }
