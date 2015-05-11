@@ -18,6 +18,9 @@ extern "C" {
 #define PEPPER_TRUE     1
 
 typedef unsigned int                    pepper_bool_t;
+
+#include <pepper-util.h>
+
 typedef struct pepper_compositor        pepper_compositor_t;
 
 typedef struct pepper_output_geometry   pepper_output_geometry_t;

@@ -5,13 +5,13 @@ noinst_LTLIBRARIES =
 
 # pepper library
 lib_LTLIBRARIES += libpepper.la
-include_HEADERS += pepper.h pepper-pixman-renderer.h
+include_HEADERS += pepper.h pepper-util.h pepper-pixman-renderer.h
 
 libpepper_la_CFLAGS = $(LIB_PEPPER_CFLAGS) -Wall
 libpepper_la_LIBADD = $(LIB_PEPPER_LIBS)
 
 libpepper_la_SOURCES = pepper.h                 \
-                       pepper_internal.h        \
+                       pepper-internal.h        \
                        common.h                 \
                        common.c                 \
                        compositor.c             \
