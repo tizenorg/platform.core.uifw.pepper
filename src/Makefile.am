@@ -23,7 +23,9 @@ libpepper_la_SOURCES = pepper.h                 \
                        buffer.c                 \
                        renderer.c               \
                        pixman-renderer.c        \
-                       data-device.c
+                       data-device.c            \
+                       view.c                   \
+                       layer.c
 
 # gl renderer
 if ENABLE_GL_RENDERER

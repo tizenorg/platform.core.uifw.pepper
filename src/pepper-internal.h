@@ -21,6 +21,7 @@ struct pepper_compositor
     struct wl_list      surfaces;
     struct wl_list      regions;
     struct wl_list      seat_list;
+    struct wl_list      layers;
 };
 
 struct pepper_output
@@ -214,5 +215,37 @@ struct pepper_data_device
 
 pepper_bool_t
 pepper_data_device_manager_init(struct wl_display *display);
+
+struct pepper_view
+{
+    pepper_compositor_t    *compositor;
+    struct wl_signal        destroy_signal;
+
+    pepper_surface_t       *surface;
+    pepper_bool_t           mapped;
+    float                   alpha;
+
+    pepper_view_t          *parent;
+    struct wl_list          parent_link;
+    struct wl_listener      parent_destroy_listener;
+    struct wl_list          childs;
+
+    struct {
+        pepper_bool_t       dirty;
+
+        float               x, y;
+        pepper_matrix_t     transform;
+    } geometry;
+
+    pepper_layer_t         *layer;
+    struct wl_list          layer_link;
+};
+
+struct pepper_layer
+{
+    pepper_compositor_t    *compositor;
+    struct wl_list          link;
+    struct wl_list          views;
+};
 
 #endif /* PEPPER_INTERNAL_H */

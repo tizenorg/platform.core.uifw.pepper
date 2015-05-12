@@ -88,6 +88,7 @@ pepper_compositor_create(const char *socket_name)
         goto error;
     }
 
+    wl_list_init(&compositor->layers);
     return compositor;
 
 error:

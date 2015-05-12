@@ -38,6 +38,10 @@ typedef struct pepper_input_event       pepper_input_event_t;
 
 typedef struct pepper_renderer          pepper_renderer_t;
 typedef struct pepper_surface           pepper_surface_t;
+typedef struct pepper_view              pepper_view_t;
+typedef struct pepper_layer             pepper_layer_t;
+
+typedef struct pepper_matrix            pepper_matrix_t;
 
 #define PEPPER_FORMAT(type, bpp, a, r, g, b)    \
     ((((type) & 0xff) << 24)    |               \
@@ -77,6 +81,55 @@ typedef enum
 
     PEPPER_FORMAT_ALPHA         = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,     8,  8,  0,  0,  0),
 } pepper_format_t;
+
+#define PEPPER_MATRIX_IS_IDENTITY   1
+
+struct pepper_matrix
+{
+    float       m[16];
+    uint32_t    flags;
+};
+
+static inline void
+pepper_matrix_load_identity(pepper_matrix_t *matrix)
+{
+    matrix->m[ 0] = 1.0f;
+    matrix->m[ 1] = 0.0f;
+    matrix->m[ 2] = 0.0f;
+    matrix->m[ 3] = 0.0f;
+
+    matrix->m[ 4] = 0.0f;
+    matrix->m[ 5] = 1.0f;
+    matrix->m[ 6] = 0.0f;
+    matrix->m[ 7] = 0.0f;
+
+    matrix->m[ 8] = 0.0f;
+    matrix->m[ 9] = 0.0f;
+    matrix->m[10] = 1.0f;
+    matrix->m[11] = 0.0f;
+
+    matrix->m[12] = 0.0f;
+    matrix->m[13] = 0.0f;
+    matrix->m[14] = 0.0f;
+    matrix->m[15] = 1.0f;
+
+    matrix->flags = PEPPER_MATRIX_IS_IDENTITY;
+}
+
+static inline pepper_bool_t
+pepper_matrix_equal(const pepper_matrix_t *a, const pepper_matrix_t *b)
+{
+    return a->m[ 0] == b->m[ 0] && a->m[ 1] == b->m[ 1] &&
+           a->m[ 2] == b->m[ 2] && a->m[ 3] && b->m[ 3] &&
+           a->m[ 4] == b->m[ 4] && a->m[ 5] && b->m[ 5] &&
+           a->m[ 6] == b->m[ 6] && a->m[ 7] && b->m[ 7] &&
+           a->m[ 8] == b->m[ 8] && a->m[ 9] && b->m[ 9] &&
+           a->m[10] == b->m[10] && a->m[11] && b->m[11] &&
+           a->m[12] == b->m[12] && a->m[13] && b->m[13] &&
+           a->m[14] == b->m[14] && a->m[15] && b->m[15];
+}
+
+/* TODO: Other matrix utility functions. */
 
 struct pepper_output_geometry
 {
@@ -238,6 +291,93 @@ pepper_surface_get_role(pepper_surface_t *surface);
 
 PEPPER_API pepper_bool_t
 pepper_surface_set_role(pepper_surface_t *surface, const char *role);
+
+/* View. */
+PEPPER_API pepper_view_t *
+pepper_view_create(pepper_compositor_t *compositor, pepper_surface_t *surface);
+
+PEPPER_API pepper_compositor_t *
+pepper_view_get_compositor(pepper_view_t *view);
+
+PEPPER_API pepper_surface_t *
+pepper_view_get_surface(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_destroy(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_add_destroy_listener(pepper_view_t *view, struct wl_listener *listener);
+
+PEPPER_API void
+pepper_view_set_transform(pepper_view_t *view, const pepper_matrix_t *matrix);
+
+PEPPER_API const pepper_matrix_t *
+pepper_view_get_transform(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_set_position(pepper_view_t *view, float x, float y);
+
+PEPPER_API void
+pepper_view_get_position(pepper_view_t *view, float *x, float *y);
+
+PEPPER_API void
+pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent);
+
+PEPPER_API pepper_view_t *
+pepper_view_get_parent(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_map(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_unmap(pepper_view_t *view);
+
+PEPPER_API pepper_bool_t
+pepper_view_is_mapped(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_set_alpha(pepper_view_t *view, float alpha);
+
+PEPPER_API float
+pepper_view_get_alpha(pepper_view_t *view);
+
+PEPPER_API pepper_view_t *
+pepper_view_get_above(pepper_view_t *view);
+
+PEPPER_API pepper_view_t *
+pepper_view_get_below(pepper_view_t *view);
+
+/* Layer. */
+PEPPER_API pepper_layer_t *
+pepper_layer_create(pepper_compositor_t *compositor);
+
+PEPPER_API pepper_compositor_t *
+pepper_layer_get_compositor(pepper_layer_t *layer);
+
+PEPPER_API void
+pepper_compositor_stack_layer(pepper_compositor_t *compositor, pepper_layer_t *layer,
+                              pepper_layer_t *below);
+
+PEPPER_API pepper_layer_t *
+pepper_compositor_get_top_layer(pepper_compositor_t *compositor);
+
+PEPPER_API pepper_layer_t *
+pepper_compositor_get_bottom_layer(pepper_compositor_t *compositor);
+
+PEPPER_API pepper_layer_t *
+pepper_layer_get_above(pepper_layer_t *layer);
+
+PEPPER_API pepper_layer_t *
+pepper_layer_get_below(pepper_layer_t *layer);
+
+PEPPER_API void
+pepper_layer_stack_view(pepper_layer_t *layer, pepper_view_t *view, pepper_view_t *below);
+
+PEPPER_API pepper_view_t *
+pepper_layer_get_top_view(pepper_layer_t *layer);
+
+PEPPER_API pepper_view_t *
+pepper_layer_get_bottom_view(pepper_layer_t *layer);
 
 #ifdef __cplusplus
 }
