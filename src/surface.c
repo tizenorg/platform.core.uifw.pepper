@@ -215,6 +215,30 @@ static const struct wl_surface_interface surface_implementation =
     surface_set_buffer_scale
 };
 
+static int
+user_data_hash(const void *key, int key_length)
+{
+#if INTPTR_MAX == INT32_MAX
+    return ((uint32_t)key) >> 2;
+#elif INTPTR_MAX == INT64_MAX
+    return ((uint64_t)key) >> 3;
+#else
+    #error "Not 32 or 64bit system"
+#endif
+}
+
+static int
+user_data_key_length(const void *key)
+{
+    return sizeof(key);
+}
+
+static int
+user_data_key_compare(const void *key0, int key0_length, const void *key1, int key1_length)
+{
+    return (int)(key0 - key1);
+}
+
 pepper_surface_t *
 pepper_surface_create(pepper_compositor_t *compositor,
                       struct wl_client *client,
@@ -232,6 +256,15 @@ pepper_surface_create(pepper_compositor_t *compositor,
         return NULL;
     }
 
+    surface->user_data_map = pepper_map_create(5, user_data_hash, user_data_key_length,
+                                               user_data_key_compare);
+    if (!surface->user_data_map)
+    {
+        PEPPER_ERROR("User data map creation failed. Maybe OOM??\n");
+        pepper_free(surface);
+        return NULL;
+    }
+
     surface->compositor = compositor;
     surface->resource = wl_resource_create(client, &wl_surface_interface,
                                            wl_resource_get_version(resource), id);
@@ -239,8 +272,8 @@ pepper_surface_create(pepper_compositor_t *compositor,
     if (!surface->resource)
     {
         PEPPER_ERROR("wl_resource_create failed\n");
-        pepper_free(surface);
         wl_resource_post_no_memory(resource);
+        pepper_free(surface->user_data_map);
         pepper_free(surface);
         return NULL;
     }
@@ -285,6 +318,11 @@ pepper_surface_destroy(pepper_surface_t *surface)
 
     if (surface->role)
         pepper_string_free(surface->role);
+
+    if (surface->user_data_map)
+        pepper_map_destroy(surface->user_data_map);
+
+    pepper_free(surface);
 }
 
 void
@@ -375,16 +413,16 @@ pepper_surface_set_role(pepper_surface_t *surface, const char *role)
 }
 
 PEPPER_API void
-pepper_surface_set_user_data(pepper_surface_t *surface, uint32_t key, void *data)
+pepper_surface_set_user_data(pepper_surface_t *surface, const void *key, void *data,
+                             pepper_free_func_t free_func)
 {
-    /* TODO: */
+    pepper_map_set(surface->user_data_map, key, data, free_func);
 }
 
 PEPPER_API void *
-pepper_surface_get_user_data(pepper_surface_t *surface, uint32_t key)
+pepper_surface_get_user_data(pepper_surface_t *surface, const void *key)
 {
-    /* TODO: */
-    return NULL;
+    return pepper_map_get(surface->user_data_map, key);
 }
 
 PEPPER_API pepper_buffer_t *

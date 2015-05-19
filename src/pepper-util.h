@@ -6,7 +6,6 @@
 #include <string.h>
 
 typedef struct pepper_list  pepper_list_t;
-typedef void (*pepper_free_func_t)(void *);
 
 #define PEPPER_LIST_FOR_EACH(head, pos)                     \
     for (pos = (head)->next;                                \

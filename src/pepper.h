@@ -17,6 +17,8 @@ extern "C" {
 #define PEPPER_FALSE    0
 #define PEPPER_TRUE     1
 
+typedef void (*pepper_free_func_t)(void *);
+
 typedef unsigned int                    pepper_bool_t;
 
 typedef struct pepper_compositor        pepper_compositor_t;
@@ -292,10 +294,11 @@ PEPPER_API pepper_bool_t
 pepper_surface_set_role(pepper_surface_t *surface, const char *role);
 
 PEPPER_API void
-pepper_surface_set_user_data(pepper_surface_t *surface, uint32_t key, void *data);
+pepper_surface_set_user_data(pepper_surface_t *surface, const void *key, void *data,
+                             pepper_free_func_t free_func);
 
 PEPPER_API void *
-pepper_surface_get_user_data(pepper_surface_t *surface, uint32_t key);
+pepper_surface_get_user_data(pepper_surface_t *surface, const void *key);
 
 PEPPER_API pepper_buffer_t *
 pepper_surface_get_buffer(pepper_surface_t *surface);
