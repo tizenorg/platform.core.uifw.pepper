@@ -8,7 +8,6 @@
 
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
-typedef struct pepper_buffer        pepper_buffer_t;
 typedef struct pepper_data_source   pepper_data_source_t;
 typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
@@ -96,10 +95,12 @@ struct pepper_surface
     /* Surface states. wl_surface.commit will apply the pending state into current. */
     pepper_surface_state_t  pending;
 
-    pepper_buffer_t        *buffer;
-    int32_t                 offset_x, offset_y;
-    int32_t                 transform;
-    int32_t                 scale;
+    struct {
+        pepper_buffer_t    *buffer;
+        int32_t             x, y;
+        int32_t             transform;
+        int32_t             scale;
+    } buffer;
 
     int32_t                 w, h;
 

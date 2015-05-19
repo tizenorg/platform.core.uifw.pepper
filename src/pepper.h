@@ -40,6 +40,7 @@ typedef struct pepper_renderer          pepper_renderer_t;
 typedef struct pepper_surface           pepper_surface_t;
 typedef struct pepper_view              pepper_view_t;
 typedef struct pepper_layer             pepper_layer_t;
+typedef struct pepper_buffer            pepper_buffer_t;
 
 typedef struct pepper_matrix            pepper_matrix_t;
 
@@ -291,6 +292,24 @@ pepper_surface_get_role(pepper_surface_t *surface);
 
 PEPPER_API pepper_bool_t
 pepper_surface_set_role(pepper_surface_t *surface, const char *role);
+
+PEPPER_API void
+pepper_surface_set_user_data(pepper_surface_t *surface, uint32_t key, void *data);
+
+PEPPER_API void *
+pepper_surface_get_user_data(pepper_surface_t *surface, uint32_t key);
+
+PEPPER_API pepper_buffer_t *
+pepper_surface_get_buffer(pepper_surface_t *surface);
+
+PEPPER_API void
+pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x, int32_t *y);
+
+PEPPER_API int32_t
+pepper_surface_get_buffer_scale(pepper_surface_t *surface);
+
+PEPPER_API int32_t
+pepper_surface_get_buffer_transform(pepper_surface_t *surface);
 
 /* View. */
 PEPPER_API pepper_view_t *
