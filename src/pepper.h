@@ -311,6 +311,16 @@ pepper_surface_get_buffer_scale(pepper_surface_t *surface);
 PEPPER_API int32_t
 pepper_surface_get_buffer_transform(pepper_surface_t *surface);
 
+/* Buffer. */
+PEPPER_API void
+pepper_buffer_reference(pepper_buffer_t *buffer);
+
+PEPPER_API void
+pepper_buffer_unreference(pepper_buffer_t *buffer);
+
+PEPPER_API struct wl_resource *
+pepper_buffer_get_resource(pepper_buffer_t *buffer);
+
 /* View. */
 PEPPER_API pepper_view_t *
 pepper_view_create(pepper_compositor_t *compositor, pepper_surface_t *surface);

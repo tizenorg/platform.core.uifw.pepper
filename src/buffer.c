@@ -35,17 +35,23 @@ pepper_buffer_from_resource(struct wl_resource *resource)
     return buffer;
 }
 
-void
+PEPPER_API void
 pepper_buffer_reference(pepper_buffer_t *buffer)
 {
     PEPPER_ASSERT(buffer->ref_count >= 0);
     buffer->ref_count++;
 }
 
-void
+PEPPER_API void
 pepper_buffer_unreference(pepper_buffer_t *buffer)
 {
     PEPPER_ASSERT(buffer->ref_count > 0);
     if (--buffer->ref_count == 0)
         wl_resource_queue_event(buffer->resource, WL_BUFFER_RELEASE);
+}
+
+PEPPER_API struct wl_resource *
+pepper_buffer_get_resource(pepper_buffer_t *buffer)
+{
+    return buffer->resource;
 }
