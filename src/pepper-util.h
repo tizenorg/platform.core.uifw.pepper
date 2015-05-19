@@ -1,7 +1,9 @@
 #ifndef PEPPER_UTIL_H
 #define PEPPER_UTIL_H
 
+#include "common.h"
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct pepper_list  pepper_list_t;
 typedef void (*pepper_free_func_t)(void *);
@@ -129,5 +131,31 @@ pepper_list_insert_list(pepper_list_t *list, pepper_list_t *other)
     list->next->prev = other->prev;
     list->next = other->next;
 }
+
+typedef struct pepper_map_entry pepper_map_entry_t;
+typedef struct pepper_map       pepper_map_t;
+
+typedef int (*pepper_hash_func_t)(const void *key, int key_length);
+typedef int (*pepper_key_length_func_t)(const void *key);
+typedef int (*pepper_key_compare_func_t)(const void *key0, int key0_length,
+                                         const void *key1, int key1_length);
+
+pepper_map_t *
+pepper_map_create(int                       bucket_bits,
+                  pepper_hash_func_t        hash_func,
+                  pepper_key_length_func_t  key_length_func,
+                  pepper_key_compare_func_t key_compare_func);
+
+void
+pepper_map_clear(pepper_map_t *map);
+
+void
+pepper_map_destroy(pepper_map_t *map);
+
+void *
+pepper_map_get(pepper_map_t *map, const void *key);
+
+void
+pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_t free_func);
 
 #endif /* PEPPER_UTIL_H */

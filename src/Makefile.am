@@ -26,7 +26,8 @@ libpepper_la_SOURCES = pepper.h                 \
                        data-device.c            \
                        view.c                   \
                        layer.c                  \
-                       pepper-util.h
+                       pepper-util.h            \
+                       pepper-util.c
 
 # gl renderer
 if ENABLE_GL_RENDERER
