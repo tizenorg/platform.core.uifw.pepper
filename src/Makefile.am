@@ -5,7 +5,7 @@ noinst_LTLIBRARIES =
 
 # pepper library
 lib_LTLIBRARIES += libpepper.la
-include_HEADERS += pepper.h pepper-util.h pepper-pixman-renderer.h
+include_HEADERS += pepper.h pepper-pixman-renderer.h
 
 libpepper_la_CFLAGS = $(LIB_PEPPER_CFLAGS) -Wall
 libpepper_la_LIBADD = $(LIB_PEPPER_LIBS)
@@ -25,7 +25,8 @@ libpepper_la_SOURCES = pepper.h                 \
                        pixman-renderer.c        \
                        data-device.c            \
                        view.c                   \
-                       layer.c
+                       layer.c                  \
+                       pepper-util.h
 
 # gl renderer
 if ENABLE_GL_RENDERER
