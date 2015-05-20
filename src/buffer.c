@@ -36,6 +36,12 @@ pepper_buffer_from_resource(struct wl_resource *resource)
 }
 
 PEPPER_API void
+pepper_buffer_add_destroy_listener(pepper_buffer_t *buffer, struct wl_listener *listener)
+{
+    wl_signal_add(&buffer->destroy_signal, listener);
+}
+
+PEPPER_API void
 pepper_buffer_reference(pepper_buffer_t *buffer)
 {
     PEPPER_ASSERT(buffer->ref_count >= 0);

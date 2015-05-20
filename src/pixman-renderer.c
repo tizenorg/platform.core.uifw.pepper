@@ -2,11 +2,24 @@
 #include "common.h"
 #include <pixman.h>
 
-typedef struct pixman_renderer  pixman_renderer_t;
+typedef struct pixman_renderer      pixman_renderer_t;
+typedef struct pixman_surface_state pixman_surface_state_t;
 
 struct pixman_renderer
 {
     pepper_renderer_t   base;
+};
+
+struct pixman_surface_state
+{
+    pixman_renderer_t  *renderer;
+
+    pepper_surface_t   *surface;
+    pepper_buffer_t    *buffer;
+    pixman_image_t     *image;
+
+    struct wl_listener  buffer_destroy_listener;
+    struct wl_listener  surface_destroy_listener;
 };
 
 static PEPPER_INLINE pixman_format_code_t
@@ -81,6 +94,108 @@ pixman_renderer_read_pixels(pepper_renderer_t *r, void *target,
 }
 
 static void
+release_current_buffer(pixman_surface_state_t *state)
+{
+    if (!state->buffer)
+        return;
+
+    pepper_buffer_unreference(state->buffer);
+    pixman_image_unref(state->image);
+    wl_list_remove(&state->buffer_destroy_listener.link);
+    wl_list_remove(&state->surface_destroy_listener.link);
+
+    state->buffer = NULL;
+    state->image = NULL;
+}
+
+static void
+surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
+{
+    pixman_surface_state_t *state = wl_container_of(listener, state, surface_destroy_listener);
+
+    release_current_buffer(state);
+    pepper_free(state);
+}
+
+static void
+surface_state_handle_buffer_destroy(struct wl_listener *listener, void *data)
+{
+    pixman_surface_state_t *state = wl_container_of(listener, state, buffer_destroy_listener);
+
+    release_current_buffer(state);
+}
+
+static void
+pixman_renderer_attach_surface(pepper_renderer_t *r, pepper_surface_t *surface, int *w, int *h)
+{
+    pixman_surface_state_t *state;
+    struct wl_shm_buffer   *shm_buffer;
+    struct wl_resource     *resource;
+
+    state = pepper_surface_get_user_data(surface, r);
+
+    if (!state)
+    {
+        state = pepper_calloc(1, sizeof(pixman_surface_state_t));
+        if (!state)
+            return;
+
+        state->surface = surface;
+        state->buffer_destroy_listener.notify = surface_state_handle_buffer_destroy;
+        state->surface_destroy_listener.notify = surface_state_handle_surface_destroy;
+
+        pepper_surface_add_destroy_listener(surface, &state->surface_destroy_listener);
+    }
+
+    /* Release previously attached buffer. */
+    release_current_buffer(state);
+
+    state->buffer = pepper_surface_get_buffer(surface);
+    if (!state->buffer)
+        return;
+
+    resource = pepper_buffer_get_resource(state->buffer);
+
+    if ((shm_buffer = wl_shm_buffer_get(resource)) != NULL)
+    {
+        pixman_format_code_t    format;
+        int                     width, height;
+
+        switch (wl_shm_buffer_get_format(shm_buffer))
+        {
+        case WL_SHM_FORMAT_XRGB8888:
+            format = PIXMAN_x8r8g8b8;
+            break;
+        case WL_SHM_FORMAT_ARGB8888:
+            format = PIXMAN_a8r8g8b8;
+            break;
+        case WL_SHM_FORMAT_RGB565:
+            format = PIXMAN_r5g6b5;
+            break;
+        default:
+            PEPPER_ERROR("Unknown shm buffer format.\n");
+            return;
+        }
+
+        width = wl_shm_buffer_get_width(shm_buffer);
+        height = wl_shm_buffer_get_height(shm_buffer);
+
+        pepper_buffer_add_destroy_listener(state->buffer, &state->buffer_destroy_listener);
+        state->image = pixman_image_create_bits(format, width, height,
+                                                wl_shm_buffer_get_data(shm_buffer),
+                                                wl_shm_buffer_get_stride(shm_buffer));
+
+        *w = width;
+        *h = height;
+
+        PEPPER_ASSERT(state->image);
+        return;
+    }
+
+    /* TODO: Other buffer types which can be mapped into CPU address space. i.e. wl_tbm. */
+}
+
+static void
 pixman_renderer_draw(pepper_renderer_t *r, void *target, void *data)
 {
     pixman_image_t     *image = (pixman_image_t *)target;
@@ -109,6 +224,7 @@ pepper_pixman_renderer_create()
 
     renderer->base.destroy              = pixman_renderer_destroy;
     renderer->base.read_pixels          = pixman_renderer_read_pixels;
+    renderer->base.attach_surface       = pixman_renderer_attach_surface;
     renderer->base.draw                 = pixman_renderer_draw;
 
     return &renderer->base;

@@ -274,6 +274,8 @@ struct pepper_renderer
                                    int x, int y, int w, int h,
                                    void *pixels, pepper_format_t format);
 
+    void            (*attach_surface)(pepper_renderer_t *renderer, pepper_surface_t *surface,
+                                      int *w, int *h);
     void            (*draw)(pepper_renderer_t *renderer, void *data, void *target);
 };
 
@@ -313,6 +315,9 @@ PEPPER_API int32_t
 pepper_surface_get_buffer_transform(pepper_surface_t *surface);
 
 /* Buffer. */
+PEPPER_API void
+pepper_buffer_add_destroy_listener(pepper_buffer_t *buffer, struct wl_listener *listener);
+
 PEPPER_API void
 pepper_buffer_reference(pepper_buffer_t *buffer);
 
