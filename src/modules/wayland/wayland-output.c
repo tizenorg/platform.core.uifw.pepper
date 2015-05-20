@@ -261,6 +261,7 @@ init_gl_renderer(wayland_output_t *output)
 
     output->renderer = pepper_gl_renderer_create(output->conn->display,
                                                  output->egl.window,
+                                                 "wayland",
                                                  PEPPER_FORMAT_ARGB8888,
                                                  NULL);
 

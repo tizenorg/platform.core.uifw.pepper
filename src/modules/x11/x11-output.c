@@ -92,6 +92,7 @@ gl_renderer_init(x11_output_t *output)
 
     output->renderer = pepper_gl_renderer_create(output->connection->display,
                                                  (void *)(uintptr_t)output->window,
+                                                 "x11",
                                                  PEPPER_FORMAT_XRGB8888, /* FIXME: */
                                                  &visual);
     if (!output->renderer)

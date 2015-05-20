@@ -36,7 +36,8 @@ include_HEADERS += pepper-gl-renderer.h
 libpepper_la_CFLAGS += $(GL_RENDERER_CFLAGS)
 libpepper_la_LIBADD += $(GL_RENDERER_LIBS)
 
-libpepper_la_SOURCES += gl-renderer.c
+libpepper_la_SOURCES += gl-renderer.c           \
+                        eglextwayland.h
 endif
 
 # wayland backend

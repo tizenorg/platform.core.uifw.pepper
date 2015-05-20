@@ -4,17 +4,59 @@
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include "eglextwayland.h"
+#include <string.h>
 
-typedef struct gl_renderer  gl_renderer_t;
+typedef struct gl_renderer      gl_renderer_t;
+
+#ifndef EGL_EXT_platform_base
+typedef EGLDisplay  (*PFNEGLGETPLATFORMDISPLAYEXTPROC)(EGLenum          platform,
+                                                       void            *native_display,
+                                                       const EGLint    *attrib_list);
+
+typedef EGLSurface  (*PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)(EGLDisplay      display,
+                                                                EGLConfig       config,
+                                                                void           *native_window,
+                                                                const EGLint   *attrib_list);
+#endif
+
+#define EGL_PLATFORM_X11_KHR        0x31d5
+#define EGL_PLATFORM_GBM_KHR        0x31d7
+#define EGL_PLATFORM_WAYLAND_KHR    0x31d8
 
 struct gl_renderer
 {
     pepper_renderer_t   base;
 
+    void               *native_display;
+    void               *native_window;
+
     EGLDisplay          display;
     EGLSurface          surface;
     EGLContext          context;
     EGLConfig           config;
+
+    /* EGL extensions. */
+    PFNEGLCREATEIMAGEKHRPROC    create_image;
+    PFNEGLDESTROYIMAGEKHRPROC   destroy_image;
+
+#ifdef EGL_EXT_swap_buffers_with_damage
+    PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC  swap_buffers_with_damage;
+#endif
+
+    PFNEGLBINDWAYLANDDISPLAYWL      bind_display;
+    PFNEGLUNBINDWAYLANDDISPLAYWL    unbind_display;
+    PFNEGLQUERYWAYLANDBUFFERWL      query_buffer;
+
+    pepper_bool_t   has_buffer_age;
+
+    PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC    create_platform_window_surface;
+
+    /* GL extensions. */
+    PFNGLEGLIMAGETARGETTEXTURE2DOESPROC image_target_texture_2d;
+
+    pepper_bool_t   has_read_format_bgra;
+    pepper_bool_t   has_unpack_subimage;
 };
 
 static pepper_bool_t
@@ -75,6 +117,12 @@ gl_renderer_read_pixels(pepper_renderer_t *r, void *target,
 }
 
 static void
+gl_renderer_attach_surface(pepper_renderer_t *r, pepper_surface_t *surface, int *w, int *h)
+{
+    /* TODO: */
+}
+
+static void
 gl_renderer_draw(pepper_renderer_t *r, void *target, void *data)
 {
     gl_renderer_t  *renderer = (gl_renderer_t *)r;
@@ -87,8 +135,140 @@ gl_renderer_draw(pepper_renderer_t *r, void *target, void *data)
     eglSwapBuffers(renderer->display, renderer->surface);
 }
 
+static PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = NULL;
+
+pepper_bool_t
+gl_renderer_support_platform(const char *platform)
+{
+    const char *extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+    char        str[64];
+
+    if (!extensions)
+    {
+        PEPPER_ERROR("Failed to get EGL extension string.\n");
+        return PEPPER_FALSE;
+    }
+
+    if (!strstr(extensions, "EGL_EXT_platform_base"))
+        return PEPPER_TRUE;
+
+    snprintf(str, sizeof(str), "EGL_KHR_platform_%s", platform);
+    if (strstr(extensions, str))
+        return PEPPER_TRUE;
+
+    snprintf(str, sizeof(str), "EGL_EXT_platform_%s", platform);
+    if (strstr(extensions, str))
+        return PEPPER_TRUE;
+
+    snprintf(str, sizeof(str), "EGL_MESA_platform_%s", platform);
+    if (strstr(extensions, str))
+        return PEPPER_TRUE;
+
+    return PEPPER_FALSE;
+}
+
 static pepper_bool_t
-init_egl(gl_renderer_t *renderer, void *dpy, void *win,
+setup_egl_extensions(gl_renderer_t *renderer)
+{
+    const char *extensions = eglQueryString(renderer->display, EGL_EXTENSIONS);
+
+    if (!extensions)
+    {
+        PEPPER_ERROR("Failed to get EGL extension string.\n");
+        return PEPPER_FALSE;
+    }
+
+    if (strstr(extensions, "EGL_KHR_image"))
+    {
+        renderer->create_image  = (void *)eglGetProcAddress("eglCreateImageKHR");
+        renderer->destroy_image = (void *)eglGetProcAddress("eglDestroyImageKHR");
+    }
+    else
+    {
+        PEPPER_ERROR("EGL_KHR_image not supported.\n");
+        return PEPPER_FALSE;
+    }
+
+#ifdef EGL_EXT_swap_buffers_with_damage
+    if (strstr(extensions, "EGL_EXT_swap_buffers_with_damage"))
+    {
+        renderer->swap_buffers_with_damage =
+            (void *)eglGetProcAddress("eglSwapBuffersWithDamageEXT");
+    }
+    else
+    {
+        PEPPER_ERROR("Performance Warning: EGL_EXT_swap_buffers_with_damage not supported.\n");
+    }
+#endif
+
+    if (strstr(extensions, "EGL_WL_bind_wayland_display"))
+    {
+        renderer->bind_display      = (void *)eglGetProcAddress("eglBindWaylandDisplayWL");
+        renderer->unbind_display    = (void *)eglGetProcAddress("eglUnbindWaylandDisplayWL");
+        renderer->query_buffer      = (void *)eglGetProcAddress("eglQueryWaylandBufferWL");
+
+        if (!renderer->bind_display(renderer->display, renderer->native_display))
+        {
+            renderer->bind_display = NULL;
+            renderer->unbind_display = NULL;
+            renderer->query_buffer = NULL;
+        }
+    }
+
+    if (strstr(extensions, "EGL_EXT_buffer_age"))
+        renderer->has_buffer_age = PEPPER_TRUE;
+    else
+        PEPPER_ERROR("Performance Warning: EGL_EXT_buffer_age not supported.\n");
+
+    if (strstr(extensions, "EGL_EXT_platform_base"))
+    {
+        renderer->create_platform_window_surface =
+            (void *)eglGetProcAddress("eglCreatePlatformWindowSurfaceEXT");
+    }
+    else
+    {
+        PEPPER_ERROR("Warning: EGL_EXT_platform_base not supported.\n");
+    }
+
+    return PEPPER_TRUE;
+}
+
+static pepper_bool_t
+setup_gl_extensions(gl_renderer_t *renderer)
+{
+    const char *extensions = (const char *)glGetString(GL_EXTENSIONS);
+
+    if (!extensions)
+    {
+        PEPPER_ERROR("Failed to get GL extension string.\n");
+        return PEPPER_FALSE;
+    }
+
+    renderer->image_target_texture_2d = (void *)eglGetProcAddress("glEGLImageTargetTexture2DOES");
+
+    if (!renderer->image_target_texture_2d)
+    {
+        PEPPER_ERROR("glEGLImageTargetTexture2DOES not supported.\n");
+        return PEPPER_FALSE;
+    }
+
+    if (strstr(extensions, "GL_EXT_texture_format_BGRA8888"))
+    {
+        PEPPER_ERROR("GL_EXT_texture_format_BGRA8888 not supported.\n");
+        return PEPPER_FALSE;
+    }
+
+    if (strstr(extensions, "GL_EXT_read_format_bgra"))
+        renderer->has_read_format_bgra = PEPPER_TRUE;
+
+    if (strstr(extensions, "GL_EXT_unpack_subimage"))
+        renderer->has_unpack_subimage = PEPPER_TRUE;
+
+    return PEPPER_TRUE;
+}
+
+static pepper_bool_t
+init_egl(gl_renderer_t *renderer, void *dpy, void *win, EGLenum platform,
          pepper_format_t format, const uint32_t *native_visual_id)
 {
     EGLDisplay      display = EGL_NO_DISPLAY;
@@ -123,7 +303,12 @@ init_egl(gl_renderer_t *renderer, void *dpy, void *win,
     config_attribs[7] = PEPPER_FORMAT_B(format);
     config_attribs[9] = PEPPER_FORMAT_A(format);
 
-    if ((display = eglGetDisplay((EGLNativeDisplayType)dpy)) == EGL_NO_DISPLAY)
+    if (get_platform_display)
+        display = get_platform_display(platform, (EGLNativeDisplayType)dpy, NULL);
+    else
+        display = eglGetDisplay((EGLNativeDisplayType)dpy);
+
+    if (display == EGL_NO_DISPLAY)
     {
         PEPPER_ERROR("eglGetDisplay(%p) failed.\n", display);
         goto error;
@@ -225,6 +410,12 @@ init_egl(gl_renderer_t *renderer, void *dpy, void *win,
     renderer->context = context;
     renderer->config  = config;
 
+    if (!setup_egl_extensions(renderer))
+        goto error;
+
+    if (!setup_gl_extensions(renderer))
+        goto error;
+
     return PEPPER_TRUE;
 
 error:
@@ -243,11 +434,40 @@ error:
     return PEPPER_FALSE;
 }
 
+static EGLenum
+platform_string_to_egl(const char *str)
+{
+    if (strcmp(str, "gbm"))
+        return EGL_PLATFORM_GBM_KHR;
+
+    if (strcmp(str, "wayland"))
+        return EGL_PLATFORM_WAYLAND_KHR;
+
+    if (strcmp(str, "x11"))
+        return EGL_PLATFORM_X11_KHR;
+
+    return EGL_NONE;
+}
+
 PEPPER_API pepper_renderer_t *
-pepper_gl_renderer_create(void *display, void *window,
+pepper_gl_renderer_create(void *display, void *window, const char *platform_str,
                           pepper_format_t format, const uint32_t *native_visual_id)
 {
     gl_renderer_t  *renderer;
+    EGLenum         platform;
+
+    if (!gl_renderer_support_platform(platform_str))
+    {
+        PEPPER_ERROR("Unsupported platform %s.\n", platform_str);
+        return NULL;
+    }
+
+    platform = platform_string_to_egl(platform_str);
+    if (platform == EGL_NONE)
+        return NULL;
+
+    if (!get_platform_display)
+        get_platform_display = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
 
     renderer = (gl_renderer_t *)pepper_calloc(1, sizeof(gl_renderer_t));
     if (!renderer)
@@ -255,11 +475,15 @@ pepper_gl_renderer_create(void *display, void *window,
 
     pepper_renderer_init(&renderer->base);
 
-    if (!init_egl(renderer, display, window, format, native_visual_id))
+    renderer->native_display = display;
+    renderer->native_window  = window;
+
+    if (!init_egl(renderer, display, window, platform, format, native_visual_id))
         goto error;
 
     renderer->base.destroy              =   gl_renderer_destroy;
     renderer->base.read_pixels          =   gl_renderer_read_pixels;
+    renderer->base.attach_surface       =   gl_renderer_attach_surface;
     renderer->base.draw                 =   gl_renderer_draw;
 
     return &renderer->base;
