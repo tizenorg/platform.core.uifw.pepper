@@ -274,8 +274,9 @@ struct pepper_renderer
                                    int x, int y, int w, int h,
                                    void *pixels, pepper_format_t format);
 
-    void            (*attach_surface)(pepper_renderer_t *renderer, pepper_surface_t *surface,
-                                      int *w, int *h);
+    void            (*attach_surface)(pepper_renderer_t *renderer,
+                                      pepper_surface_t *surface, int *w, int *h);
+    void            (*flush_surface_damage)(pepper_renderer_t *renderer, pepper_surface_t *surface);
     void            (*draw)(pepper_renderer_t *renderer, void *data, void *target);
 };
 

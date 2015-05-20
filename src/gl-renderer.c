@@ -8,6 +8,7 @@
 #include <string.h>
 
 typedef struct gl_renderer      gl_renderer_t;
+typedef struct gl_surface_state gl_surface_state_t;
 
 #ifndef EGL_EXT_platform_base
 typedef EGLDisplay  (*PFNEGLGETPLATFORMDISPLAYEXTPROC)(EGLenum          platform,
@@ -23,6 +24,13 @@ typedef EGLSurface  (*PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)(EGLDisplay      
 #define EGL_PLATFORM_X11_KHR        0x31d5
 #define EGL_PLATFORM_GBM_KHR        0x31d7
 #define EGL_PLATFORM_WAYLAND_KHR    0x31d8
+
+enum buffer_type
+{
+    BUFFER_TYPE_NONE,
+    BUFFER_TYPE_SHM,
+    BUFFER_TYPE_EGL,
+};
 
 struct gl_renderer
 {
@@ -57,6 +65,47 @@ struct gl_renderer
 
     pepper_bool_t   has_read_format_bgra;
     pepper_bool_t   has_unpack_subimage;
+};
+
+#define NUM_MAX_PLANES  3
+
+enum shader_sampler
+{
+    GL_SHADER_SAMPLER_RGBA,
+    GL_SHADER_SAMPLER_RGBX,
+    GL_SHADER_SAMPLER_Y_UV,
+    GL_SHADER_SAMPLER_Y_XUXV,
+    GL_SHADER_SAMPLER_Y_U_V,
+};
+
+struct gl_surface_state
+{
+    gl_renderer_t      *renderer;
+    pepper_surface_t   *surface;
+
+    pepper_buffer_t    *buffer;
+    int                 buffer_width, buffer_height;
+    int                 buffer_type;
+
+    int                 num_planes;
+    GLuint              textures[NUM_MAX_PLANES];
+    int                 sampler;
+    int                 y_inverted;
+
+    /* EGL buffer type. */
+    EGLImageKHR         images[NUM_MAX_PLANES];
+
+    /* SHM buffer type. */
+    struct {
+        struct wl_shm_buffer   *buffer;
+        pepper_bool_t           need_full_upload;
+        GLenum                  format;
+        GLenum                  pixel_format;
+        int                     pitch;
+    } shm;
+
+    struct wl_listener  buffer_destroy_listener;
+    struct wl_listener  surface_destroy_listener;
 };
 
 static pepper_bool_t
@@ -117,9 +166,296 @@ gl_renderer_read_pixels(pepper_renderer_t *r, void *target,
 }
 
 static void
-gl_renderer_attach_surface(pepper_renderer_t *r, pepper_surface_t *surface, int *w, int *h)
+surface_state_release(gl_surface_state_t *state)
 {
-    /* TODO: */
+    int i;
+
+    for (i = 0; i < state->num_planes; i++)
+    {
+        glDeleteTextures(1, &state->textures[i]);
+        state->textures[i] = 0;
+
+        if (state->images[i] != EGL_NO_IMAGE_KHR)
+        {
+            state->renderer->destroy_image(state->renderer->display, state->images[i]);
+            state->images[i] = EGL_NO_IMAGE_KHR;
+        }
+    }
+
+    state->num_planes = 0;
+
+    if (state->buffer)
+        pepper_buffer_unreference(state->buffer);
+
+    wl_list_remove(&state->buffer_destroy_listener.link);
+    wl_list_remove(&state->surface_destroy_listener.link);
+
+    state->buffer = NULL;
+}
+
+static void
+surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
+{
+    gl_surface_state_t *state = wl_container_of(listener, state, surface_destroy_listener);
+
+    surface_state_release(state);
+    pepper_free(state);
+}
+
+static void
+surface_state_handle_buffer_destroy(struct wl_listener *listener, void *data)
+{
+    gl_surface_state_t *state = wl_container_of(listener, state, buffer_destroy_listener);
+
+    surface_state_release(state);
+}
+
+static gl_surface_state_t *
+get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
+{
+    gl_surface_state_t *state = pepper_surface_get_user_data(surface, renderer);
+
+    if (!state)
+    {
+        state = pepper_calloc(1, sizeof(gl_surface_state_t));
+        if (!state)
+            return NULL;
+
+        state->surface = surface;
+        state->buffer_destroy_listener.notify = surface_state_handle_buffer_destroy;
+        state->surface_destroy_listener.notify = surface_state_handle_surface_destroy;
+
+        pepper_surface_add_destroy_listener(surface, &state->surface_destroy_listener);
+    }
+
+    return state;
+}
+
+static void
+surface_state_destroy_images(gl_surface_state_t *state)
+{
+    int i;
+
+    for (i = 0; i < state->num_planes; i++)
+    {
+        state->renderer->destroy_image(state->renderer->display, state->images[i]);
+        state->images[i] = EGL_NO_IMAGE_KHR;
+    }
+}
+
+static void
+surface_state_ensure_textures(gl_surface_state_t *state, int num_planes)
+{
+    int i;
+
+    for (i = 0; i < NUM_MAX_PLANES; i++)
+    {
+        if (state->textures[i] == 0 && i < num_planes)
+        {
+            glGenTextures(1, &state->textures[i]);
+            glBindTexture(GL_TEXTURE_2D, state->textures[i]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        }
+        else if (state->textures[i] != 0 && i >= num_planes)
+        {
+            glDeleteTextures(1, &state->textures[i]);
+            state->textures[i] = 0;
+        }
+    }
+
+    state->num_planes = num_planes;
+}
+
+static pepper_bool_t
+surface_state_attach_shm(gl_surface_state_t *state, pepper_buffer_t *buffer)
+{
+    struct wl_shm_buffer   *shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(buffer));
+    int                     w, h;
+    int                     sampler;
+    GLenum                  format;
+    GLenum                  pixel_format;
+    int                     pitch;
+
+    if (!shm_buffer)
+        return PEPPER_FALSE;
+
+    switch (wl_shm_buffer_get_format(shm_buffer))
+    {
+        case WL_SHM_FORMAT_XRGB8888:
+            sampler = GL_SHADER_SAMPLER_RGBX;
+            format = GL_BGRA_EXT;
+            pixel_format = GL_UNSIGNED_BYTE;
+            pitch = wl_shm_buffer_get_stride(shm_buffer) / 4;
+            break;
+        case WL_SHM_FORMAT_ARGB8888:
+            sampler = GL_SHADER_SAMPLER_RGBA;
+            format = GL_BGRA_EXT;
+            pixel_format = GL_UNSIGNED_BYTE;
+            pitch = wl_shm_buffer_get_stride(shm_buffer) / 4;
+            break;
+        case WL_SHM_FORMAT_RGB565:
+            sampler = GL_SHADER_SAMPLER_RGBA;
+            format = GL_RGB;
+            pixel_format = GL_UNSIGNED_SHORT_5_6_5;
+            pitch = wl_shm_buffer_get_stride(shm_buffer) / 2;
+            break;
+        default:
+            PEPPER_ERROR("Unknown shm buffer format.\n");
+            return PEPPER_FALSE;
+    }
+
+    w = wl_shm_buffer_get_width(shm_buffer);
+    h = wl_shm_buffer_get_height(shm_buffer);
+
+    if (state->buffer_type != BUFFER_TYPE_SHM ||
+        w != state->buffer_width || h != state->buffer_height ||
+        pitch != state->shm.pitch || format != state->shm.format ||
+        pixel_format != state->shm.pixel_format)
+    {
+        state->buffer_type      = BUFFER_TYPE_SHM;
+        state->buffer_width     = w;
+        state->buffer_height    = h;
+
+        /* SHM buffer's origin is upper-left. */
+        state->y_inverted       = 1;
+
+        state->shm.buffer       = shm_buffer;
+        state->shm.format       = format;
+        state->shm.pixel_format = pixel_format;
+        state->shm.pitch        = pitch;
+
+        /* Don't use glTexSubImage2D() for shm buffers in this case. */
+        state->shm.need_full_upload = PEPPER_TRUE;
+
+        surface_state_ensure_textures(state, 1);
+    }
+
+    state->sampler = sampler;
+
+    return PEPPER_TRUE;
+}
+
+static pepper_bool_t
+surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
+{
+    gl_renderer_t      *renderer = state->renderer;
+    EGLDisplay          display = renderer->display;
+    struct wl_resource *resource = pepper_buffer_get_resource(buffer);
+    int                 num_planes;
+    int                 sampler;
+    EGLint              attribs[3];
+    int                 texture_format;
+    int                 i;
+
+    if (!renderer->query_buffer(display, resource, EGL_TEXTURE_FORMAT, &texture_format))
+        return PEPPER_FALSE;
+
+    switch (texture_format)
+    {
+    case EGL_TEXTURE_RGB:
+        sampler = GL_SHADER_SAMPLER_RGBX;
+        num_planes = 1;
+        break;
+    case EGL_TEXTURE_RGBA:
+        sampler = GL_SHADER_SAMPLER_RGBA;
+        num_planes = 1;
+        break;
+    case EGL_TEXTURE_Y_UV_WL:
+        sampler = GL_SHADER_SAMPLER_Y_UV;
+        num_planes = 2;
+        break;
+    case EGL_TEXTURE_Y_U_V_WL:
+        sampler = GL_SHADER_SAMPLER_Y_U_V;
+        num_planes = 3;
+        break;
+    case EGL_TEXTURE_Y_XUXV_WL:
+        sampler = GL_SHADER_SAMPLER_Y_XUXV;
+        num_planes = 2;
+        break;
+    default:
+        PEPPER_ERROR("unknown EGL buffer format.\n");
+        return PEPPER_FALSE;
+    }
+
+    if (state->buffer_type != BUFFER_TYPE_EGL || num_planes != state->num_planes)
+        surface_state_ensure_textures(state, num_planes);
+
+    attribs[0] = EGL_WAYLAND_PLANE_WL;
+    attribs[2] = EGL_NONE;
+
+    for (i = 0; i < num_planes; i++)
+    {
+        attribs[1] = i;
+        state->images[i] = renderer->create_image(display, NULL, EGL_WAYLAND_BUFFER_WL,
+                                                  resource, attribs);
+
+        PEPPER_ASSERT(state->images[i] != EGL_NO_IMAGE_KHR);
+
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, state->textures[i]);
+        renderer->image_target_texture_2d(GL_TEXTURE_2D, state->images[i]);
+    }
+
+    renderer->query_buffer(display, resource, EGL_WIDTH, &state->buffer_width);
+    renderer->query_buffer(display, resource, EGL_HEIGHT, &state->buffer_height);
+    renderer->query_buffer(display, resource, EGL_WAYLAND_Y_INVERTED_WL, &state->y_inverted);
+
+    state->buffer_type = BUFFER_TYPE_EGL;
+    state->sampler = sampler;
+
+    return PEPPER_TRUE;
+}
+
+static void
+gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surface, int *w, int *h)
+{
+    gl_surface_state_t *state = get_surface_state(renderer, surface);
+    pepper_buffer_t    *buffer = pepper_surface_get_buffer(surface);
+
+    if (!buffer)
+    {
+        surface_state_release(state);
+        return;
+    }
+
+    pepper_buffer_reference(buffer);
+    surface_state_destroy_images(state);
+
+    if (surface_state_attach_shm(state, buffer))
+        goto done;
+
+    if (surface_state_attach_egl(state, buffer))
+        goto done;
+
+    /* Assert not reached. */
+    PEPPER_ASSERT(PEPPER_FALSE);
+    return;
+
+done:
+    /* Release previous buffer. */
+    if (state->buffer)
+        pepper_buffer_unreference(state->buffer);
+
+    /* Set new buffer. */
+    state->buffer = buffer;
+    wl_list_remove(&state->buffer_destroy_listener.link);
+    pepper_buffer_add_destroy_listener(buffer, &state->buffer_destroy_listener);
+
+    /* Output buffer size info. */
+    *w = state->buffer_width;
+    *h = state->buffer_height;
+}
+
+static void
+gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *surface)
+{
+    gl_surface_state_t *state = get_surface_state(renderer, surface);
+
+    if (state->buffer_type != BUFFER_TYPE_SHM)
+        return;
+
+    /* TODO: Texture upload. */
 }
 
 static void
@@ -484,6 +820,7 @@ pepper_gl_renderer_create(void *display, void *window, const char *platform_str,
     renderer->base.destroy              =   gl_renderer_destroy;
     renderer->base.read_pixels          =   gl_renderer_read_pixels;
     renderer->base.attach_surface       =   gl_renderer_attach_surface;
+    renderer->base.flush_surface_damage =   gl_renderer_flush_surface_damage;
     renderer->base.draw                 =   gl_renderer_draw;
 
     return &renderer->base;
