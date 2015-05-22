@@ -22,6 +22,7 @@ struct pepper_compositor
     struct wl_list      regions;
     struct wl_list      seat_list;
     struct wl_list      layers;
+    struct wl_list      output_list;
 };
 
 struct pepper_output
@@ -30,6 +31,7 @@ struct pepper_output
 
     struct wl_global           *global;
     struct wl_list              resources;
+    struct wl_list              link;
 
     pepper_output_geometry_t    geometry;
     int32_t                     scale;

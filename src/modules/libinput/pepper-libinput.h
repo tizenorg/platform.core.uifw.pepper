@@ -1,6 +1,7 @@
 #ifndef PEPPER_LIBINPUT_H
 #define PEPPER_LIBINPUT_H
 
+#include <libudev.h>
 #include <pepper.h>
 
 #ifdef __cplusplus
@@ -10,7 +11,7 @@ extern "C" {
 typedef struct pepper_libinput   pepper_libinput_t;
 
 PEPPER_API pepper_libinput_t *
-pepper_libinput_create(pepper_compositor_t *compositor);
+pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev);
 
 PEPPER_API void
 pepper_libinput_destroy(pepper_libinput_t *input);

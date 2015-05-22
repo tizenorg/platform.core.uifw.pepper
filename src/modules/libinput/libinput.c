@@ -477,7 +477,7 @@ handle_libinput_events(int fd, uint32_t mask, void *data)
 }
 
 PEPPER_API pepper_libinput_t *
-pepper_libinput_create(pepper_compositor_t *compositor)
+pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev)
 {
     struct wl_display      *display;
     struct wl_event_loop   *loop;
@@ -487,15 +487,10 @@ pepper_libinput_create(pepper_compositor_t *compositor)
     if (!input)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-        return PEPPER_FALSE;
-    }
-
-    input->udev = udev_new();
-    if (!input->udev)
-    {
-        PEPPER_ERROR("Failed to initialize udev in %s\n", __FUNCTION__);
         goto error;
     }
+
+    input->udev = udev;
 
     input->libinput = libinput_udev_create_context(&libinput_interface, input, input->udev);
     if (!input->libinput)
@@ -503,6 +498,7 @@ pepper_libinput_create(pepper_compositor_t *compositor)
         PEPPER_ERROR("Failed to initialize libinput in %s\n", __FUNCTION__);
         goto error;
     }
+    libinput_ref(input->libinput);
 
     if (libinput_udev_assign_seat(input->libinput, "seat0"/* FIXME */) != 0)
     {
@@ -546,9 +542,11 @@ pepper_libinput_destroy(pepper_libinput_t *input)
     wl_list_for_each_safe(seat, tmp, &input->seat_list, link)
         libinput_seat_destroy(seat);
 
-    udev_unref(input->udev);
-    libinput_unref(input->libinput);
-    wl_event_source_remove(input->libinput_event_source);
+    if (input->libinput)
+        libinput_unref(input->libinput);
+
+    if (input->libinput_event_source)
+        wl_event_source_remove(input->libinput_event_source);
 
     pepper_free(input);
 }

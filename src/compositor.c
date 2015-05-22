@@ -75,6 +75,7 @@ pepper_compositor_create(const char *socket_name)
                      compositor_bind);
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
+    wl_list_init(&compositor->output_list);
 
     if (wl_display_init_shm(compositor->display) != 0)
     {

@@ -62,7 +62,8 @@ libpepper_la_CFLAGS += $(DRM_BACKEND_CFLAGS) -I$(top_srcdir)/src/modules/libinpu
 libpepper_la_LIBADD += $(DRM_BACKEND_LIBS)
 
 libpepper_la_SOURCES += modules/drm/drm-internal.h  \
-                        modules/drm/drm-common.c
+                        modules/drm/drm-common.c    \
+                        modules/drm/drm-output.c
 endif
 
 # libinput module for drm & fbdev backends

@@ -3,8 +3,9 @@
 static void
 output_update_mode(pepper_output_t *output)
 {
-    int                 i;
-    struct wl_resource  *resource;
+    int                     i;
+    struct wl_resource     *resource;
+    pepper_output_mode_t   *preferred_mode = NULL;
 
     output->current_mode = NULL;
 
@@ -28,7 +29,12 @@ output_update_mode(pepper_output_t *output)
         if (output->modes[i].flags & WL_OUTPUT_MODE_CURRENT)
             output->current_mode = &output->modes[i];
 
+        if (output->modes[i].flags & WL_OUTPUT_MODE_PREFERRED)
+            preferred_mode = &output->modes[i];
     }
+
+    if (!output->current_mode)
+        output->current_mode = preferred_mode;
 
     wl_resource_for_each(resource, &output->resources)
     {
@@ -211,6 +217,8 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     output->geometry.w = output->current_mode->w;
     output->geometry.h = output->current_mode->h;
 
+    wl_list_insert(&compositor->output_list, &output->link);
+
     /* Install listeners. */
     output->data_destroy_listener.notify = handle_output_data_destroy;
     interface->add_destroy_listener(data, &output->data_destroy_listener);
@@ -235,6 +243,8 @@ pepper_output_get_compositor(pepper_output_t *output)
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output)
 {
+    wl_list_remove(&output->link);
+
     if (output->interface && output->data)
         output->interface->destroy(output->data);
 
@@ -292,5 +302,8 @@ pepper_output_get_mode(pepper_output_t *output, int index)
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode)
 {
+    if (output->current_mode == mode)
+        return PEPPER_TRUE;
+
     return output->interface->set_mode(output->data, mode);
 }
