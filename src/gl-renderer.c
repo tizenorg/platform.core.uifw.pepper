@@ -34,15 +34,16 @@ enum buffer_type
 
 struct gl_renderer
 {
-    pepper_renderer_t   base;
+    pepper_renderer_t       base;
+    pepper_compositor_t    *compositor;
 
-    void               *native_display;
-    void               *native_window;
+    void                   *native_display;
+    void                   *native_window;
 
-    EGLDisplay          display;
-    EGLSurface          surface;
-    EGLContext          context;
-    EGLConfig           config;
+    EGLDisplay              display;
+    EGLSurface              surface;
+    EGLContext              context;
+    EGLConfig               config;
 
     /* EGL extensions. */
     PFNEGLCREATEIMAGEKHRPROC    create_image;
@@ -474,7 +475,7 @@ gl_renderer_draw(pepper_renderer_t *r, void *target, void *data)
     if (!gl_renderer_use(renderer))
         return;
 
-    glClearColor(1.0, 1.0, 1.0, 1.0);
+    glClearColor(1.0, 1.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     eglSwapBuffers(renderer->display, renderer->surface);
 }
@@ -551,7 +552,8 @@ setup_egl_extensions(gl_renderer_t *renderer)
         renderer->unbind_display    = (void *)eglGetProcAddress("eglUnbindWaylandDisplayWL");
         renderer->query_buffer      = (void *)eglGetProcAddress("eglQueryWaylandBufferWL");
 
-        if (!renderer->bind_display(renderer->display, renderer->native_display))
+        if (!renderer->bind_display(renderer->display,
+                                    pepper_compositor_get_display(renderer->compositor)))
         {
             renderer->bind_display = NULL;
             renderer->unbind_display = NULL;
@@ -596,7 +598,7 @@ setup_gl_extensions(gl_renderer_t *renderer)
         return PEPPER_FALSE;
     }
 
-    if (strstr(extensions, "GL_EXT_texture_format_BGRA8888"))
+    if (!strstr(extensions, "GL_EXT_texture_format_BGRA8888"))
     {
         PEPPER_ERROR("GL_EXT_texture_format_BGRA8888 not supported.\n");
         return PEPPER_FALSE;
@@ -685,11 +687,11 @@ init_egl(gl_renderer_t *renderer, void *dpy, void *win, EGLenum platform,
     if ((configs = (EGLConfig *)pepper_calloc(config_size, sizeof(EGLConfig))) == NULL)
         goto error;
 
-    if (num_configs < 1)
-        goto error;
-
     eglChooseConfig(display, config_attribs, configs, config_size, &num_configs);
     PEPPER_ASSERT(config_size == num_configs); /* Paranoid check. */
+
+    if (num_configs < 1)
+        goto error;
 
     for (i = 0; i < num_configs; i++)
     {
@@ -794,8 +796,9 @@ platform_string_to_egl(const char *str)
 }
 
 PEPPER_API pepper_renderer_t *
-pepper_gl_renderer_create(void *display, void *window, const char *platform_str,
-                          pepper_format_t format, const uint32_t *native_visual_id)
+pepper_gl_renderer_create(pepper_compositor_t *compositor, void *display, void *window,
+                          const char *platform_str, pepper_format_t format,
+                          const uint32_t *native_visual_id)
 {
     gl_renderer_t  *renderer;
     EGLenum         platform;
@@ -819,6 +822,7 @@ pepper_gl_renderer_create(void *display, void *window, const char *platform_str,
 
     pepper_renderer_init(&renderer->base);
 
+    renderer->compositor = compositor;
     renderer->native_display = display;
     renderer->native_window  = window;
 

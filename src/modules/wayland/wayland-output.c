@@ -259,7 +259,8 @@ init_gl_renderer(wayland_output_t *output)
     if (!output->egl.window)
         return PEPPER_FALSE;
 
-    output->renderer = pepper_gl_renderer_create(output->conn->display,
+    output->renderer = pepper_gl_renderer_create(output->conn->pepper,
+                                                 output->conn->display,
                                                  output->egl.window,
                                                  "wayland",
                                                  PEPPER_FORMAT_ARGB8888,
