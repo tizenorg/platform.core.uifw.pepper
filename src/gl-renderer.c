@@ -165,8 +165,10 @@ gl_renderer_read_pixels(pepper_renderer_t *r, void *target,
     return PEPPER_TRUE;
 }
 
+/* TODO: Similar with pixman renderer. There might be a way of reusing those codes.  */
+
 static void
-surface_state_release(gl_surface_state_t *state)
+surface_state_release_buffer(gl_surface_state_t *state)
 {
     int i;
 
@@ -185,12 +187,12 @@ surface_state_release(gl_surface_state_t *state)
     state->num_planes = 0;
 
     if (state->buffer)
+    {
         pepper_buffer_unreference(state->buffer);
+        state->buffer = NULL;
 
-    wl_list_remove(&state->buffer_destroy_listener.link);
-    wl_list_remove(&state->surface_destroy_listener.link);
-
-    state->buffer = NULL;
+        wl_list_remove(&state->buffer_destroy_listener.link);
+    }
 }
 
 static void
@@ -198,7 +200,9 @@ surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
 {
     gl_surface_state_t *state = wl_container_of(listener, state, surface_destroy_listener);
 
-    surface_state_release(state);
+    surface_state_release_buffer(state);
+    wl_list_remove(&state->surface_destroy_listener.link);
+    pepper_surface_set_user_data(state->surface, state->renderer, NULL, NULL);
     pepper_free(state);
 }
 
@@ -207,7 +211,7 @@ surface_state_handle_buffer_destroy(struct wl_listener *listener, void *data)
 {
     gl_surface_state_t *state = wl_container_of(listener, state, buffer_destroy_listener);
 
-    surface_state_release(state);
+    surface_state_release_buffer(state);
 }
 
 static gl_surface_state_t *
@@ -226,6 +230,7 @@ get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
         state->surface_destroy_listener.notify = surface_state_handle_surface_destroy;
 
         pepper_surface_add_destroy_listener(surface, &state->surface_destroy_listener);
+        pepper_surface_set_user_data(surface, renderer, state, NULL);
     }
 
     return state;
@@ -415,11 +420,10 @@ gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surfac
 
     if (!buffer)
     {
-        surface_state_release(state);
+        surface_state_release_buffer(state);
         return;
     }
 
-    pepper_buffer_reference(buffer);
     surface_state_destroy_images(state);
 
     if (surface_state_attach_shm(state, buffer))
@@ -433,13 +437,17 @@ gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surfac
     return;
 
 done:
+    pepper_buffer_reference(buffer);
+
     /* Release previous buffer. */
     if (state->buffer)
+    {
         pepper_buffer_unreference(state->buffer);
+        wl_list_remove(&state->buffer_destroy_listener.link);
+    }
 
     /* Set new buffer. */
     state->buffer = buffer;
-    wl_list_remove(&state->buffer_destroy_listener.link);
     pepper_buffer_add_destroy_listener(buffer, &state->buffer_destroy_listener);
 
     /* Output buffer size info. */

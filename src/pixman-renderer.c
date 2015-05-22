@@ -16,6 +16,7 @@ struct pixman_surface_state
 
     pepper_surface_t   *surface;
     pepper_buffer_t    *buffer;
+    int                 buffer_width, buffer_height;
     pixman_image_t     *image;
 
     struct wl_listener  buffer_destroy_listener;
@@ -93,19 +94,24 @@ pixman_renderer_read_pixels(pepper_renderer_t *r, void *target,
     return PEPPER_TRUE;
 }
 
+/* TODO: Similar with gl renderer. There might be a way of reusing those codes.  */
+
 static void
-release_current_buffer(pixman_surface_state_t *state)
+surface_state_release_buffer(pixman_surface_state_t *state)
 {
-    if (!state->buffer)
-        return;
+    if (state->image)
+    {
+        pixman_image_unref(state->image);
+        state->image = NULL;
+    }
 
-    pepper_buffer_unreference(state->buffer);
-    pixman_image_unref(state->image);
-    wl_list_remove(&state->buffer_destroy_listener.link);
-    wl_list_remove(&state->surface_destroy_listener.link);
+    if (state->buffer)
+    {
+        pepper_buffer_unreference(state->buffer);
+        state->buffer = NULL;
 
-    state->buffer = NULL;
-    state->image = NULL;
+        wl_list_remove(&state->buffer_destroy_listener.link);
+    }
 }
 
 static void
@@ -113,7 +119,9 @@ surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
 {
     pixman_surface_state_t *state = wl_container_of(listener, state, surface_destroy_listener);
 
-    release_current_buffer(state);
+    surface_state_release_buffer(state);
+    wl_list_remove(&state->surface_destroy_listener.link);
+    pepper_surface_set_user_data(state->surface, state->renderer, NULL, NULL);
     pepper_free(state);
 }
 
@@ -122,77 +130,114 @@ surface_state_handle_buffer_destroy(struct wl_listener *listener, void *data)
 {
     pixman_surface_state_t *state = wl_container_of(listener, state, buffer_destroy_listener);
 
-    release_current_buffer(state);
+    surface_state_release_buffer(state);
 }
 
-static void
-pixman_renderer_attach_surface(pepper_renderer_t *r, pepper_surface_t *surface, int *w, int *h)
+static pixman_surface_state_t *
+get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
 {
-    pixman_surface_state_t *state;
-    struct wl_shm_buffer   *shm_buffer;
-    struct wl_resource     *resource;
-
-    state = pepper_surface_get_user_data(surface, r);
+    pixman_surface_state_t *state = pepper_surface_get_user_data(surface, renderer);
 
     if (!state)
     {
         state = pepper_calloc(1, sizeof(pixman_surface_state_t));
         if (!state)
-            return;
+            return NULL;
 
         state->surface = surface;
         state->buffer_destroy_listener.notify = surface_state_handle_buffer_destroy;
         state->surface_destroy_listener.notify = surface_state_handle_surface_destroy;
 
         pepper_surface_add_destroy_listener(surface, &state->surface_destroy_listener);
+        pepper_surface_set_user_data(surface, renderer, state, NULL);
     }
 
-    /* Release previously attached buffer. */
-    release_current_buffer(state);
+    return state;
+}
 
-    state->buffer = pepper_surface_get_buffer(surface);
-    if (!state->buffer)
-        return;
+static pepper_bool_t
+surface_state_attach_shm(pixman_surface_state_t *state, pepper_buffer_t *buffer)
+{
+    struct wl_shm_buffer   *shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(buffer));
+    pixman_format_code_t    format;
+    int                     w, h;
+    pixman_image_t         *image;
 
-    resource = pepper_buffer_get_resource(state->buffer);
+    if (!shm_buffer)
+        return PEPPER_FALSE;
 
-    if ((shm_buffer = wl_shm_buffer_get(resource)) != NULL)
+    switch (wl_shm_buffer_get_format(shm_buffer))
     {
-        pixman_format_code_t    format;
-        int                     width, height;
+    case WL_SHM_FORMAT_XRGB8888:
+        format = PIXMAN_x8r8g8b8;
+        break;
+    case WL_SHM_FORMAT_ARGB8888:
+        format = PIXMAN_a8r8g8b8;
+        break;
+    case WL_SHM_FORMAT_RGB565:
+        format = PIXMAN_r5g6b5;
+        break;
+    default:
+        PEPPER_ERROR("Unknown shm buffer format.\n");
+        return PEPPER_FALSE;
+    }
 
-        switch (wl_shm_buffer_get_format(shm_buffer))
-        {
-        case WL_SHM_FORMAT_XRGB8888:
-            format = PIXMAN_x8r8g8b8;
-            break;
-        case WL_SHM_FORMAT_ARGB8888:
-            format = PIXMAN_a8r8g8b8;
-            break;
-        case WL_SHM_FORMAT_RGB565:
-            format = PIXMAN_r5g6b5;
-            break;
-        default:
-            PEPPER_ERROR("Unknown shm buffer format.\n");
-            return;
-        }
+    w = wl_shm_buffer_get_width(shm_buffer);
+    h = wl_shm_buffer_get_height(shm_buffer);
 
-        width = wl_shm_buffer_get_width(shm_buffer);
-        height = wl_shm_buffer_get_height(shm_buffer);
+    image = pixman_image_create_bits(format, w, h,
+                                     wl_shm_buffer_get_data(shm_buffer),
+                                     wl_shm_buffer_get_stride(shm_buffer));
 
-        pepper_buffer_add_destroy_listener(state->buffer, &state->buffer_destroy_listener);
-        state->image = pixman_image_create_bits(format, width, height,
-                                                wl_shm_buffer_get_data(shm_buffer),
-                                                wl_shm_buffer_get_stride(shm_buffer));
+    if (!image)
+        return PEPPER_FALSE;
 
-        *w = width;
-        *h = height;
+    state->buffer_width = w;
+    state->buffer_height = h;
+    state->image = image;
 
-        PEPPER_ASSERT(state->image);
+    return PEPPER_TRUE;;
+}
+
+static void
+pixman_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surface,
+                               int *w, int *h)
+{
+    pixman_surface_state_t *state = get_surface_state(renderer, surface);
+    pepper_buffer_t        *buffer = pepper_surface_get_buffer(surface);
+
+    if (!buffer)
+    {
+        surface_state_release_buffer(state);
         return;
     }
+
+    if (surface_state_attach_shm(state, buffer))
+        goto done;
 
     /* TODO: Other buffer types which can be mapped into CPU address space. i.e. wl_tbm. */
+
+    /* TODO: return error so that the compositor can handle that error. */
+    PEPPER_ASSERT(PEPPER_FALSE);
+    return;
+
+done:
+    pepper_buffer_reference(buffer);
+
+    /* Release previous buffer. */
+    if (state->buffer)
+    {
+        pepper_buffer_unreference(state->buffer);
+        wl_list_remove(&state->buffer_destroy_listener.link);
+    }
+
+    /* Set new buffer. */
+    state->buffer = buffer;
+    pepper_buffer_add_destroy_listener(buffer, &state->buffer_destroy_listener);
+
+    /* Output buffer size info. */
+    *w = state->buffer_width;
+    *h = state->buffer_height;
 }
 
 static void
