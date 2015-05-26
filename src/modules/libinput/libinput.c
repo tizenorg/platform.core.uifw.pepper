@@ -1,6 +1,10 @@
+#include <fcntl.h>
 #include <libinput.h>
 #include <libudev.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "libinput-internal.h"
 
@@ -90,14 +94,30 @@ error:
 static int
 libinput_open_restricted(const char *path, int flags, void *user_data)
 {
-    /* TODO */
-    return 0;
+    int         fd;
+    struct stat s;
+
+    fd = open(path, flags | O_CLOEXEC);
+    if (fd < 0)
+    {
+        PEPPER_ERROR("Failed to open file[%s] in %s\n", path, __FUNCTION__);
+        return -1;
+    }
+
+    if (fstat(fd, &s) < 0)
+    {
+        PEPPER_ERROR("Failed to get file[%s] status in %s\n", path, __FUNCTION__);
+        close(fd);
+        return -1;
+    }
+
+    return fd;
 }
 
 static void
 libinput_close_restricted(int fd, void *user_data)
 {
-    /* TODO */
+    close(fd);
 }
 
 const struct libinput_interface libinput_interface =
@@ -151,9 +171,10 @@ device_added(pepper_libinput_t *input, struct libinput_device *libinput_device)
             PEPPER_ERROR("Failed to create libinput_seat in %s\n", __FUNCTION__);
             return;
         }
+
+        wl_list_insert(&input->seat_list, &seat->link);
     }
 
-    wl_list_insert(&input->seat_list, &seat->link);
     libinput_device_set_user_data(libinput_device, seat);
 
     /* TODO
@@ -164,7 +185,7 @@ device_added(pepper_libinput_t *input, struct libinput_device *libinput_device)
     caps = get_capabilities(libinput_device);
     if (seat->caps != caps)
     {
-        seat->caps = caps;
+        seat->caps |= caps;
         wl_signal_emit(&seat->capabilities_signal, seat);
     }
 
@@ -490,7 +511,10 @@ pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev)
         goto error;
     }
 
+    input->compositor = compositor;
     input->udev = udev;
+
+    wl_list_init(&input->seat_list);
 
     input->libinput = libinput_udev_create_context(&libinput_interface, input, input->udev);
     if (!input->libinput)
@@ -506,8 +530,6 @@ pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev)
         goto error;
     }
 
-    wl_list_init(&input->seat_list);
-
     dispatch_events(input);   /* FIXME */
 
     /* add libinput_fd to main loop */
@@ -522,8 +544,6 @@ pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev)
         PEPPER_ERROR("Failed to add libinput fd to the main loop in %s\n", __FUNCTION__);
         goto error;
     }
-
-    input->compositor = compositor;
 
     return input;
 
