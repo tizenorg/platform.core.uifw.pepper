@@ -783,13 +783,13 @@ error:
 static EGLenum
 platform_string_to_egl(const char *str)
 {
-    if (strcmp(str, "gbm"))
+    if (!strcmp(str, "gbm"))
         return EGL_PLATFORM_GBM_KHR;
 
-    if (strcmp(str, "wayland"))
+    if (!strcmp(str, "wayland"))
         return EGL_PLATFORM_WAYLAND_KHR;
 
-    if (strcmp(str, "x11"))
+    if (!strcmp(str, "x11"))
         return EGL_PLATFORM_X11_KHR;
 
     return EGL_NONE;
