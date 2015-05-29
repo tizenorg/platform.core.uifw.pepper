@@ -35,6 +35,7 @@ typedef struct pepper_keyboard          pepper_keyboard_t;
 typedef struct pepper_touch             pepper_touch_t;
 
 typedef struct pepper_input_event       pepper_input_event_t;
+typedef struct pepper_event_hook        pepper_event_hook_t;
 
 typedef struct pepper_renderer          pepper_renderer_t;
 typedef struct pepper_surface           pepper_surface_t;
@@ -264,6 +265,18 @@ struct pepper_input_event
 
 PEPPER_API pepper_bool_t
 pepper_seat_handle_event(pepper_seat_t *seat, pepper_input_event_t *event);
+
+/* Event hook */
+typedef pepper_bool_t (*pepper_event_handler_t)(pepper_seat_t *, pepper_input_event_t *, void *);
+
+PEPPER_API pepper_event_hook_t *
+pepper_compositor_add_event_hook(pepper_compositor_t        *compositor,
+                                 pepper_event_handler_t      handler,
+                                 void                       *data);
+
+PEPPER_API void
+pepper_compositor_remove_event_hook(pepper_compositor_t     *compositor,
+                                    pepper_event_hook_t     *hook);
 
 /* Renderer. */
 struct pepper_renderer

@@ -1,5 +1,8 @@
 #include "pepper-internal.h"
 
+#undef PEPPER_TRACE
+#define PEPPER_TRACE(...)
+
 static void
 unbind_resource(struct wl_resource *resource)
 {
@@ -352,13 +355,87 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
 
     seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat,
                                     bind_seat);
-
     return seat;
+}
+
+void
+pepper_seat_update_modifier(pepper_seat_t *seat, pepper_input_event_t *event)
+{
+    /* TODO */
+    seat->modifier = event->value;
+}
+
+pepper_bool_t
+pepper_compositor_event_handler(pepper_seat_t           *seat,
+                                pepper_input_event_t    *event,
+                                void                    *data)
+{
+    /* TODO: */
+    /* pepper_compositor_t *compositor = data; */
+
+    switch(event->type)
+    {
+    case PEPPER_INPUT_EVENT_KEYBOARD_KEY:
+        pepper_seat_update_modifier(seat, event);
+        break;
+    default:
+        PEPPER_TRACE("Unknown pepper input event type [%x]\n", event->type);
+        break;
+    }
+
+    return PEPPER_TRUE;
+}
+
+PEPPER_API pepper_event_hook_t *
+pepper_compositor_add_event_hook(pepper_compositor_t      *compositor,
+                                 pepper_event_handler_t    handler,
+                                 void                     *data)
+{
+    pepper_event_hook_t *hook;
+
+    if( !handler )
+        return NULL;
+
+    hook = pepper_calloc(1, sizeof(pepper_event_hook_t));
+    if (!hook)
+    {
+        PEPPER_ERROR("Failed to allocation\n");
+        return NULL;
+    }
+
+    hook->handler = handler;
+    hook->data    = data;
+
+    wl_list_insert(&compositor->event_hook_chain, &hook->link);
+
+    return hook;
+}
+
+PEPPER_API void
+pepper_compositor_remove_event_hook(pepper_compositor_t     *compositor,
+                                    pepper_event_hook_t     *hook)
+{
+    wl_list_remove(&hook->link);
+    pepper_free(hook);
 }
 
 PEPPER_API pepper_bool_t
 pepper_seat_handle_event(pepper_seat_t *seat, pepper_input_event_t *event)
 {
-    /* TODO */
-    return PEPPER_TRUE;
+    pepper_compositor_t     *compositor = seat->compositor;
+    pepper_event_hook_t     *hook, *tmp;
+    pepper_bool_t            ret = PEPPER_FALSE;
+
+    /* Iterate installed hook chain. */
+    /* XXX: this code is not thread-safe */
+    wl_list_for_each_safe(hook, tmp, &compositor->event_hook_chain, link)
+    {
+        ret = hook->handler(seat, event, hook->data);
+
+        /* Event consumed, do not delegate to next element */
+        if( PEPPER_TRUE == ret)
+            break;
+    }
+
+    return ret;
 }

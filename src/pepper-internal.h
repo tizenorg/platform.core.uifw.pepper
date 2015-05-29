@@ -9,6 +9,7 @@
 
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
+
 typedef struct pepper_data_source   pepper_data_source_t;
 typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
@@ -23,6 +24,8 @@ struct pepper_compositor
     struct wl_list      seat_list;
     struct wl_list      layers;
     struct wl_list      output_list;
+
+    struct wl_list      event_hook_chain;
 };
 
 struct pepper_output
@@ -176,6 +179,8 @@ struct pepper_seat
     enum wl_seat_capability     caps;
     const char                 *name;
 
+    uint32_t                    modifier;
+
     /* Backend-specific variables. */
     pepper_seat_interface_t    *interface;
     void                       *data;
@@ -198,6 +203,9 @@ struct pepper_touch
     pepper_seat_t              *seat;
     struct wl_list              resources;
 };
+
+void
+pepper_seat_update_modifier(pepper_seat_t *seat, pepper_input_event_t *event);
 
 /* Data device */
 struct pepper_data_source
@@ -254,5 +262,24 @@ struct pepper_layer
     struct wl_list          link;
     struct wl_list          views;
 };
+
+
+/* Event hook */
+struct pepper_event_hook
+{
+    pepper_event_handler_t    handler;
+    void                     *data;
+    struct wl_list            link;
+
+    /* TODO:
+     * void *owner, *priority;
+     * or something elses
+     */
+};
+
+pepper_bool_t
+pepper_compositor_event_handler(pepper_seat_t           *seat,
+                                pepper_input_event_t    *event,
+                                void                    *data);
 
 #endif /* PEPPER_INTERNAL_H */
