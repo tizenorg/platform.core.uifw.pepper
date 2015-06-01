@@ -6,6 +6,7 @@
 *.so
 *.pc
 *.in
+!*.pc.in
 aclocal.m4
 autom4te.cache/
 config.guess
@@ -22,11 +23,16 @@ install-sh
 libtool
 ltmain.sh
 missing
-src/.deps/
-src/.libs/
+.deps/
+.libs/
 Makefile
 stamp-h1
 
-pepper
+doctor
+drm-backend
+wayland-backend
+x11-backend
+simple-touch
+simple-shm
 
 .vim.custom
