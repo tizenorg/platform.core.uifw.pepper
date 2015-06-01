@@ -275,8 +275,7 @@ pepper_compositor_add_event_hook(pepper_compositor_t        *compositor,
                                  void                       *data);
 
 PEPPER_API void
-pepper_compositor_remove_event_hook(pepper_compositor_t     *compositor,
-                                    pepper_event_hook_t     *hook);
+pepper_event_hook_destroy(pepper_event_hook_t     *hook);
 
 /* Renderer. */
 struct pepper_renderer

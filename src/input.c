@@ -412,8 +412,7 @@ pepper_compositor_add_event_hook(pepper_compositor_t      *compositor,
 }
 
 PEPPER_API void
-pepper_compositor_remove_event_hook(pepper_compositor_t     *compositor,
-                                    pepper_event_hook_t     *hook)
+pepper_event_hook_destroy(pepper_event_hook_t     *hook)
 {
     wl_list_remove(&hook->link);
     pepper_free(hook);
