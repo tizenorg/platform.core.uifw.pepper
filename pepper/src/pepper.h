@@ -4,6 +4,8 @@
 #define WL_HIDE_DEPRECATED
 #include <wayland-server.h>
 
+#include <pixman.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -307,6 +309,15 @@ pepper_surface_get_buffer_scale(pepper_surface_t *surface);
 
 PEPPER_API int32_t
 pepper_surface_get_buffer_transform(pepper_surface_t *surface);
+
+PEPPER_API const pixman_region32_t *
+pepper_surface_get_damage_region(pepper_surface_t *surface);
+
+PEPPER_API const pixman_region32_t *
+pepper_surface_get_opaque_region(pepper_surface_t *surface);
+
+PEPPER_API const pixman_region32_t *
+pepper_surface_get_input_region(pepper_surface_t *surface);
 
 /* Buffer. */
 PEPPER_API void

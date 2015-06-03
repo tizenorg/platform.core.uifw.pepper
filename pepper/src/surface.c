@@ -452,3 +452,21 @@ pepper_surface_get_buffer_transform(pepper_surface_t *surface)
 {
     return surface->buffer.transform;
 }
+
+PEPPER_API const pixman_region32_t *
+pepper_surface_get_damage_region(pepper_surface_t *surface)
+{
+    return &surface->damage_region;
+}
+
+PEPPER_API const pixman_region32_t *
+pepper_surface_get_opaque_region(pepper_surface_t *surface)
+{
+    return &surface->opaque_region;
+}
+
+PEPPER_API const pixman_region32_t *
+pepper_surface_get_input_region(pepper_surface_t *surface)
+{
+    return &surface->input_region;
+}
