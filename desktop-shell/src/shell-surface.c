@@ -36,7 +36,7 @@ handle_surface_destroy(struct wl_listener *listener, void *data)
         wl_resource_destroy(shsurf->resource);
 
     remove_ping_timer(shsurf);
-    pepper_free(shsurf);
+    free(shsurf);
 }
 
 static void
@@ -63,7 +63,7 @@ shell_surface_create(shell_t *shell, pepper_surface_t *surface, struct wl_client
     shsurf->resource = wl_resource_create(client, interface, version, id);
     if (!shsurf->resource)
     {
-        pepper_free(shsurf);
+        free(shsurf);
         return NULL;
     }
 

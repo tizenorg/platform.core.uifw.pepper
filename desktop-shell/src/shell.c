@@ -19,7 +19,7 @@ shell_create(pepper_compositor_t *compositor, struct wl_client *client,
     if (!shell->resource)
     {
         wl_client_post_no_memory(client);
-        pepper_free(shell);
+        free(shell);
         return NULL;
     }
 

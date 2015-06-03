@@ -30,7 +30,7 @@ main(int argc, char **argv)
 
     {   /* for gdb attach */
         char cc;
-	int  ret;
+        int  ret;
 
         ret = scanf("%c", &cc);
     }

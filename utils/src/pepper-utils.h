@@ -22,8 +22,8 @@
 
 /* This source code was taken from weston's os-compatability.h. */
 
-#ifndef PEPPER_OS_COMPAT_H
-#define PEPPER_OS_COMPAT_H
+#ifndef PEPPER_UTILS_H
+#define PEPPER_UTILS_H
 
 #include <pepper.h>
 
@@ -38,4 +38,4 @@ pepper_create_anonymous_file(off_t size);
 }
 #endif
 
-#endif /* PEPPER_OS_COMPAT_H */
+#endif /* PEPPER_UTILS_H */

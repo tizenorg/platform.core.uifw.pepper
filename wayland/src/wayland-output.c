@@ -225,6 +225,11 @@ pixman_render_pre(wayland_output_t *output)
     if (wl_list_empty(&output->shm.free_buffers))
     {
         buffer = wayland_shm_buffer_create(output);
+        if (!buffer)
+        {
+            PEPPER_ERROR("Failed to create a shm buffer.\n");
+            return;
+        }
     }
     else
     {

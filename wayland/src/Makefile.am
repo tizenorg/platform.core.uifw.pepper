@@ -8,8 +8,8 @@ libpepper_wayland_la_CFLAGS = $(PEPPER_WAYLAND_CFLAGS) -Wall
 libpepper_wayland_la_LIBADD = $(PEPPER_WAYLAND_LIBS)
 
 libpepper_wayland_la_SOURCES =  pepper-wayland.h        \
-				wayland-internal.h      \
-				wayland-common.c        \
-				wayland-output.c        \
-				wayland-input.c         \
-				wayland-shm-buffer.c
+                                wayland-internal.h      \
+                                wayland-common.c        \
+                                wayland-output.c        \
+                                wayland-input.c         \
+                                wayland-shm-buffer.c
