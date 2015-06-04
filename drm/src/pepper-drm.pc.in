@@ -5,8 +5,10 @@ includedir=@includedir@
 libexecdir=@libexecdir@
 pkglibexecdir=${libexecdir}/@PACKAGE@
 
-Name: Pepper Libinput Backend Library
-Description: Pepper libinput backend library header and library files
-Version: @PEPPER_LIBINPUT_VERSION@
+Name: Pepper DRM Backend Library
+Description: Pepper DRM backend library header and library files
+Version: @PEPPER_DRM_VERSION@
+
+Requires.private: @PEPPER_DRM_REQUIRES@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lpepper-drm

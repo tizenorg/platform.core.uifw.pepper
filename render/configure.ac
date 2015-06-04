@@ -21,7 +21,7 @@ AC_PROG_CC
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
-PKG_CHECK_MODULES(PEPPER_RENDER, [pepper])
+PEPPER_RENDER_MODULES="pepper"
 
 # pixman renderer
 AC_ARG_ENABLE(pixman,
@@ -32,7 +32,7 @@ AM_CONDITIONAL(ENABLE_PIXMAN, test $enable_pixman = yes)
 
 if test $enable_pixman = yes; then
     AC_DEFINE(ENABLE_PIXMAN, 1, [Enable pixman renderer])
-    PKG_CHECK_MODULES(PIXMAN, [pixman-1])
+    PEPPER_RENDER_MODULES="$PEPPER_RENDER_MODULES pixman-1"
 fi
 
 # gl renderer
@@ -44,8 +44,11 @@ AM_CONDITIONAL(ENABLE_GL, test $enable_gl = yes)
 
 if test $enable_gl = yes; then
     AC_DEFINE(ENABLE_GL, 1, [Enable OpenGL renderer])
-    PKG_CHECK_MODULES(GL, [egl glesv2])
+    PEPPER_RENDER_MODULES="$PEPPER_RENDER_MODULES egl glesv2"
 fi
+
+PKG_CHECK_MODULES(PEPPER_RENDER, [$PEPPER_RENDER_MODULES])
+AC_SUBST([PEPPER_RENDER_REQUIRES], [$PEPPER_RENDER_MODULES])
 
 AC_CONFIG_FILES([
 Makefile

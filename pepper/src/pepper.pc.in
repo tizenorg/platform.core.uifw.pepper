@@ -8,5 +8,7 @@ pkglibexecdir=${libexecdir}/@PACKAGE@
 Name: Pepper Library
 Description: Pepper library header and library files
 Version: @PEPPER_VERSION@
+
+Requires.private: @PEPPER_REQUIRES@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lpepper

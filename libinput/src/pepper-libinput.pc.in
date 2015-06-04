@@ -8,5 +8,7 @@ pkglibexecdir=${libexecdir}/@PACKAGE@
 Name: Pepper Libinput Backend Library
 Description: Pepper libinput backend library header and library files
 Version: @PEPPER_LIBINPUT_VERSION@
+
+Requires.private: @PEPPER_LIBINPUT_REQUIRES@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lpepper-libinput

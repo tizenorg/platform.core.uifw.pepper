@@ -23,6 +23,7 @@ LT_INIT([disable-static])
 
 PEPPER_X11_MODULES="pepper pepper-render x11 xcb-shm x11-xcb wayland-server pixman-1"
 PKG_CHECK_MODULES(PEPPER_X11, [$PEPPER_X11_MODULES])
+AC_SUBST([PEPPER_X11_REQUIRES], [$PEPPER_X11_MODULES])
 
 AC_CONFIG_FILES([
 Makefile

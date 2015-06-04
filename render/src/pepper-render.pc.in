@@ -8,5 +8,7 @@ pkglibexecdir=${libexecdir}/@PACKAGE@
 Name: Pepper Rendering Library
 Description: Pepper rendering library header and library files
 Version: @PEPPER_RENDER_VERSION@
+
+Requires.private: @PEPPER_RENDER_REQUIRES@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lpepper-render

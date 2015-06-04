@@ -8,5 +8,7 @@ pkglibexecdir=${libexecdir}/@PACKAGE@
 Name: Pepper Wayland Backend Library
 Description: Pepper wayland backend library header and library files
 Version: @PEPPER_WAYLAND_VERSION@
+
+Requires.private: @PEPPER_WAYLAND_REQUIRES@
 Cflags: -I${includedir}
 Libs: -L${libdir} -lpepper-wayland

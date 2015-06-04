@@ -23,6 +23,7 @@ LT_INIT([disable-static])
 
 PEPPER_MODULES="wayland-server pixman-1"
 PKG_CHECK_MODULES(PEPPER, [$PEPPER_MODULES])
+AC_SUBST([PEPPER_REQUIRES], [$PEPPER_MODULES])
 
 # Output files
 AC_CONFIG_FILES([

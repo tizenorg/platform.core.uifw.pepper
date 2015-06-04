@@ -25,6 +25,7 @@ PEPPER_DRM_MODULES="pepper pepper-render pepper-libinput pixman-1 wayland-server
                     libdrm gbm pepper-desktop-shell"
 
 PKG_CHECK_MODULES(PEPPER_DRM, [$PEPPER_DRM_MODULES])
+AC_SUBST([PEPPER_DRM_REQUIRES], [$PEPPER_DRM_MODULES])
 
 AC_CONFIG_FILES([
 Makefile
