@@ -213,7 +213,9 @@ static const pepper_output_interface_t wayland_output_interface =
 static void
 handle_connection_destroy(struct wl_listener *listener, void *data)
 {
-    wayland_output_t *output = wl_container_of(listener, output, conn_destroy_listener);
+    wayland_output_t *output =
+        pepper_container_of(listener, wayland_output_t, conn_destroy_listener);
+
     wayland_output_destroy(output);
 }
 
@@ -233,7 +235,7 @@ pixman_render_pre(wayland_output_t *output)
     }
     else
     {
-        buffer = wl_container_of(output->shm.free_buffers.next, buffer, link);
+        buffer = pepper_container_of(output->shm.free_buffers.next, wayland_shm_buffer_t, link);
         wl_list_remove(&buffer->link);
     }
 

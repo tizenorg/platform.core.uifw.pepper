@@ -16,6 +16,10 @@ extern "C" {
 #   define PEPPER_API
 #endif
 
+#define pepper_container_of(ptr, type, member) ({               \
+    const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
+    (type *)( (char *)__mptr - offsetof(type,member) );})
+
 #define PEPPER_FALSE    0
 #define PEPPER_TRUE     1
 

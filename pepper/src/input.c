@@ -293,7 +293,7 @@ seat_set_capabilities(pepper_seat_t *seat, uint32_t caps)
 static void
 handle_seat_set_capabilities(struct wl_listener *listener, void *data)
 {
-    pepper_seat_t  *seat = wl_container_of(listener, seat, capabilities_listener);
+    pepper_seat_t  *seat = pepper_container_of(listener, pepper_seat_t, capabilities_listener);
     uint32_t        caps;
 
     caps = seat->interface->get_capabilities(data);
@@ -317,7 +317,7 @@ seat_set_name(pepper_seat_t *seat, const char *name)
 static void
 handle_seat_set_name(struct wl_listener *listener, void *data)
 {
-    pepper_seat_t   *seat = wl_container_of(listener, seat, name_listener);
+    pepper_seat_t   *seat = pepper_container_of(listener, pepper_seat_t, name_listener);
     const char      *name;
 
     name = seat->interface->get_name(data);

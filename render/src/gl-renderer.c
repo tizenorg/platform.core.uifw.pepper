@@ -169,7 +169,8 @@ surface_state_release_buffer(gl_surface_state_t *state)
 static void
 surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
 {
-    gl_surface_state_t *state = wl_container_of(listener, state, surface_destroy_listener);
+    gl_surface_state_t *state =
+        pepper_container_of(listener, gl_surface_state_t, surface_destroy_listener);
 
     surface_state_release_buffer(state);
     wl_list_remove(&state->surface_destroy_listener.link);
@@ -180,7 +181,8 @@ surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
 static void
 surface_state_handle_buffer_destroy(struct wl_listener *listener, void *data)
 {
-    gl_surface_state_t *state = wl_container_of(listener, state, buffer_destroy_listener);
+    gl_surface_state_t *state =
+        pepper_container_of(listener, gl_surface_state_t, buffer_destroy_listener);
 
     surface_state_release_buffer(state);
 }

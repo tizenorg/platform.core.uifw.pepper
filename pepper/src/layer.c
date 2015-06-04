@@ -51,55 +51,43 @@ pepper_compositor_stack_layer(pepper_compositor_t *compositor, pepper_layer_t *l
 PEPPER_API pepper_layer_t *
 pepper_compositor_get_top_layer(pepper_compositor_t *compositor)
 {
-    pepper_layer_t *layer;
-
     if (wl_list_empty(&compositor->layers))
         return NULL;
 
-    layer = wl_container_of(compositor->layers.prev, layer, link);
-    return layer;
+    return pepper_container_of(compositor->layers.prev, pepper_layer_t, link);
 }
 
 PEPPER_API pepper_layer_t *
 pepper_compositor_get_bottom_layer(pepper_compositor_t *compositor)
 {
-    pepper_layer_t *layer;
-
     if (wl_list_empty(&compositor->layers))
         return NULL;
 
-    layer = wl_container_of(compositor->layers.next, layer, link);
-    return layer;
+    return pepper_container_of(compositor->layers.next, pepper_layer_t, link);
 }
 
 PEPPER_API pepper_layer_t *
 pepper_layer_get_above(pepper_layer_t *layer)
 {
-    pepper_layer_t *above;
-
     if (wl_list_empty(&layer->link))
         return NULL;
 
     if (layer->link.next == &layer->compositor->layers)
         return NULL;
 
-    above = wl_container_of(layer->link.next, layer, link);
-    return above;
+    return pepper_container_of(layer->link.next, pepper_layer_t, link);
 }
 
 PEPPER_API pepper_layer_t *
 pepper_layer_get_below(pepper_layer_t *layer)
 {
-    pepper_layer_t *below;
-
     if (wl_list_empty(&layer->link))
         return NULL;
 
     if (layer->link.prev == &layer->compositor->layers)
         return NULL;
 
-    below = wl_container_of(layer->link.prev, layer, link);
-    return below;
+    return pepper_container_of(layer->link.prev, pepper_layer_t, link);
 }
 
 PEPPER_API void
@@ -130,23 +118,17 @@ pepper_layer_stack_view(pepper_layer_t *layer, pepper_view_t *view, pepper_view_
 PEPPER_API pepper_view_t *
 pepper_layer_get_top_view(pepper_layer_t *layer)
 {
-    pepper_view_t *view;
-
     if (wl_list_empty(&layer->views))
         return NULL;
 
-    view = wl_container_of(layer->views.prev, view, layer_link);
-    return view;
+    return pepper_container_of(layer->views.prev, pepper_view_t, layer_link);
 }
 
 PEPPER_API pepper_view_t *
 pepper_layer_get_bottom_view(pepper_layer_t *layer)
 {
-    pepper_view_t *view;
-
     if (wl_list_empty(&layer->views))
         return NULL;
 
-    view = wl_container_of(layer->views.next, view, layer_link);
-    return view;
+    return pepper_container_of(layer->views.next, pepper_view_t, layer_link);
 }

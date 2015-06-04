@@ -537,7 +537,7 @@ static const pepper_output_interface_t x11_output_interface =
 static void
 handle_connection_destroy(struct wl_listener *listener, void *data)
 {
-    x11_output_t *output = wl_container_of(listener, output, conn_destroy_listener);
+    x11_output_t *output = pepper_container_of(listener, x11_output_t, conn_destroy_listener);
     x11_output_destroy(output);
 }
 

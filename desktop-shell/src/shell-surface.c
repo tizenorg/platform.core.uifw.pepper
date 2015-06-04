@@ -14,7 +14,8 @@ remove_ping_timer(shell_surface_t *shsurf)
 static void
 handle_client_destroy(struct wl_listener *listener, void *data)
 {
-    shell_surface_t *shsurf = wl_container_of(listener, shsurf, client_destroy_listener);
+    shell_surface_t *shsurf =
+        pepper_container_of(listener, shell_surface_t, client_destroy_listener);
 
     wl_list_remove(&shsurf->client_destroy_listener.link);
     wl_list_init(&shsurf->client_destroy_listener.link);
@@ -25,7 +26,8 @@ handle_client_destroy(struct wl_listener *listener, void *data)
 static void
 handle_surface_destroy(struct wl_listener *listener, void *data)
 {
-    shell_surface_t *shsurf = wl_container_of(listener, shsurf, surface_destroy_listener);
+    shell_surface_t *shsurf =
+        pepper_container_of(listener, shell_surface_t, surface_destroy_listener);
 
     if (!wl_list_empty(&shsurf->client_destroy_listener.link))
         wl_list_remove(&shsurf->client_destroy_listener.link);

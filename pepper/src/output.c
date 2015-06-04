@@ -111,7 +111,7 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 static void
 handle_output_data_destroy(struct wl_listener *listener, void *data)
 {
-    pepper_output_t *output = wl_container_of(listener, output, data_destroy_listener);
+    pepper_output_t *output = pepper_container_of(listener, pepper_output_t, data_destroy_listener);
     output->data = NULL;
     output->interface = NULL;
     pepper_output_destroy(output);
@@ -120,14 +120,14 @@ handle_output_data_destroy(struct wl_listener *listener, void *data)
 static void
 handle_mode_change(struct wl_listener *listener, void *data)
 {
-    pepper_output_t *output = wl_container_of(listener, output, mode_change_listener);
+    pepper_output_t *output = pepper_container_of(listener, pepper_output_t, mode_change_listener);
     output_update_mode(output);
 }
 
 static void
 handle_output_frame(struct wl_listener *listener, void *data)
 {
-    pepper_output_t *output = wl_container_of(listener, output, frame.frame_listener);
+    pepper_output_t *output = pepper_container_of(listener, pepper_output_t, frame.frame_listener);
 
     output->frame.pending = PEPPER_FALSE;
 

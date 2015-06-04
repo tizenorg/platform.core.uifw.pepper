@@ -18,7 +18,7 @@ view_geometry_dirty(pepper_view_t *view)
 static void
 handle_parent_destroy(struct wl_listener *listener, void *data)
 {
-    pepper_view_t *view = wl_container_of(listener, view, parent_destroy_listener);
+    pepper_view_t *view = pepper_container_of(listener, pepper_view_t, parent_destroy_listener);
 
     PEPPER_ASSERT(view->parent == data);
     pepper_view_set_parent(view, NULL);
@@ -197,29 +197,23 @@ pepper_view_get_alpha(pepper_view_t *view)
 PEPPER_API pepper_view_t *
 pepper_view_get_above(pepper_view_t *view)
 {
-    pepper_view_t *above;
-
     if (!view->layer)
         return NULL;
 
     if (view->layer_link.next == &view->layer->views)
         return NULL;
 
-    above = wl_container_of(view->layer_link.next, view, layer_link);
-    return above;
+    return pepper_container_of(view->layer_link.next, pepper_view_t, layer_link);
 }
 
 PEPPER_API pepper_view_t *
 pepper_view_get_below(pepper_view_t *view)
 {
-    pepper_view_t *below;
-
     if (!view->layer)
         return NULL;
 
     if (view->layer_link.prev == &view->layer->views)
         return NULL;
 
-    below = wl_container_of(view->layer_link.prev, view, layer_link);
-    return below;
+    return pepper_container_of(view->layer_link.prev, pepper_view_t, layer_link);
 }

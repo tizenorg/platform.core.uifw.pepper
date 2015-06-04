@@ -3,7 +3,8 @@
 static void
 buffer_destroy_handler(struct wl_listener *listener, void *data)
 {
-    pepper_surface_state_t *state = wl_container_of(listener, state, buffer_destroy_listener);
+    pepper_surface_state_t *state =
+        pepper_container_of(listener, pepper_surface_state_t, buffer_destroy_listener);
 
     state->buffer = NULL;
 }

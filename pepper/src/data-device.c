@@ -59,9 +59,8 @@ static void destroy_data_offer(struct wl_resource *resource)
 static void
 destroy_offer_data_source(struct wl_listener *listener, void *data)
 {
-    pepper_data_offer_t *offer;
-
-    offer = wl_container_of(listener, offer, source_destroy_listener);
+    pepper_data_offer_t *offer =
+        pepper_container_of(listener, pepper_data_offer_t, source_destroy_listener);
 
     offer->source = NULL;
 }
