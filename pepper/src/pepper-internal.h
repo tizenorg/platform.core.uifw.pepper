@@ -24,6 +24,7 @@ struct pepper_compositor
     struct wl_list      seat_list;
     struct wl_list      layers;
     struct wl_list      output_list;
+    struct wl_list      root_view_list;
 
     struct wl_list      event_hook_chain;
 };
@@ -119,6 +120,9 @@ struct pepper_surface
 
     /* User data. */
     pepper_map_t           *user_data_map;
+
+    /* Views. */
+    struct wl_list          view_list;
 };
 
 struct pepper_region
@@ -233,24 +237,33 @@ struct pepper_view
     pepper_compositor_t    *compositor;
     struct wl_signal        destroy_signal;
 
-    pepper_surface_t       *surface;
-    pepper_bool_t           mapped;
+    /* Hierarchy. */
+    pepper_view_t          *parent;
+    struct wl_list         *container_list;
+    struct wl_list          parent_link;
+    struct wl_list          child_list;
+
+    /* Geometry. */
+    float                   x, y, w, h;
+    pepper_matrix_t         transform;
+
+    /* Visibility. */
+    pepper_bool_t           visibility;
     float                   alpha;
 
-    pepper_view_t          *parent;
-    struct wl_list          parent_link;
-    struct wl_listener      parent_destroy_listener;
-    struct wl_list          childs;
+    /* Content. */
+    pepper_surface_t       *surface;
+    struct wl_listener      surface_destroy_listener;
+    struct wl_list          surface_link;
 
     struct {
-        pepper_bool_t       dirty;
+        int x, y, w, h;
+    } viewport;
 
-        float               x, y;
-        pepper_matrix_t     transform;
-    } geometry;
-
-    pepper_layer_t         *layer;
-    struct wl_list          layer_link;
+    /* Clip. */
+    pepper_bool_t           clip_to_parent;
+    pepper_bool_t           clip_children;
+    pixman_region32_t       clip_region;
 };
 
 struct pepper_layer

@@ -76,6 +76,7 @@ pepper_compositor_create(const char *socket_name)
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
     wl_list_init(&compositor->output_list);
+    wl_list_init(&compositor->root_view_list);
 
     wl_list_init(&compositor->event_hook_chain);
 

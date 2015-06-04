@@ -294,6 +294,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     wl_list_init(&surface->frame_callbacks);
     wl_signal_init(&surface->destroy_signal);
+    wl_list_init(&surface->view_list);
 
     return surface;
 }

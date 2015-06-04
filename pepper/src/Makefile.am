@@ -19,6 +19,5 @@ libpepper_la_SOURCES = pepper.h                 \
                        buffer.c                 \
                        data-device.c            \
                        view.c                   \
-                       layer.c                  \
                        pepper-util.h            \
                        pepper-util.c

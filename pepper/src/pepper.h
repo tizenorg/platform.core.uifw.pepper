@@ -45,7 +45,6 @@ typedef struct pepper_event_hook        pepper_event_hook_t;
 
 typedef struct pepper_surface           pepper_surface_t;
 typedef struct pepper_view              pepper_view_t;
-typedef struct pepper_layer             pepper_layer_t;
 typedef struct pepper_buffer            pepper_buffer_t;
 
 typedef struct pepper_matrix            pepper_matrix_t;
@@ -338,13 +337,8 @@ pepper_buffer_get_resource(pepper_buffer_t *buffer);
 
 /* View. */
 PEPPER_API pepper_view_t *
-pepper_view_create(pepper_compositor_t *compositor, pepper_surface_t *surface);
-
-PEPPER_API pepper_compositor_t *
-pepper_view_get_compositor(pepper_view_t *view);
-
-PEPPER_API pepper_surface_t *
-pepper_view_get_surface(pepper_view_t *view);
+pepper_compositor_add_view(pepper_compositor_t *compositor,
+                           pepper_view_t *parent, pepper_view_t *pos, pepper_surface_t *surface);
 
 PEPPER_API void
 pepper_view_destroy(pepper_view_t *view);
@@ -352,11 +346,44 @@ pepper_view_destroy(pepper_view_t *view);
 PEPPER_API void
 pepper_view_add_destroy_listener(pepper_view_t *view, struct wl_listener *listener);
 
-PEPPER_API void
-pepper_view_set_transform(pepper_view_t *view, const pepper_matrix_t *matrix);
+PEPPER_API pepper_compositor_t *
+pepper_view_get_compositor(pepper_view_t *view);
 
-PEPPER_API const pepper_matrix_t *
-pepper_view_get_transform(pepper_view_t *view);
+PEPPER_API pepper_view_t *
+pepper_view_get_parent(pepper_view_t *view);
+
+PEPPER_API pepper_surface_t *
+pepper_view_get_surface(pepper_view_t *view);
+
+PEPPER_API pepper_bool_t
+pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below);
+
+PEPPER_API pepper_bool_t
+pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above);
+
+PEPPER_API void
+pepper_view_stack_top(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_stack_bottom(pepper_view_t *view);
+
+PEPPER_API pepper_view_t *
+pepper_view_get_above(pepper_view_t *view);
+
+PEPPER_API pepper_view_t *
+pepper_view_get_below(pepper_view_t *view);
+
+PEPPER_API pepper_view_t *
+pepper_view_get_top_child(pepper_view_t *view);
+
+PEPPER_API pepper_view_t *
+pepper_view_get_bottom_child(pepper_view_t *view);
+
+PEPPER_API void
+pepper_view_resize(pepper_view_t *view, float w, float h);
+
+PEPPER_API void
+pepper_view_get_size(pepper_view_t *view, float *w, float *h);
 
 PEPPER_API void
 pepper_view_set_position(pepper_view_t *view, float x, float y);
@@ -365,19 +392,16 @@ PEPPER_API void
 pepper_view_get_position(pepper_view_t *view, float *x, float *y);
 
 PEPPER_API void
-pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent);
+pepper_view_set_transform(pepper_view_t *view, const pepper_matrix_t *matrix);
 
-PEPPER_API pepper_view_t *
-pepper_view_get_parent(pepper_view_t *view);
-
-PEPPER_API void
-pepper_view_map(pepper_view_t *view);
+PEPPER_API const pepper_matrix_t *
+pepper_view_get_transform(pepper_view_t *view);
 
 PEPPER_API void
-pepper_view_unmap(pepper_view_t *view);
+pepper_view_set_visibility(pepper_view_t *view, pepper_bool_t visibility);
 
 PEPPER_API pepper_bool_t
-pepper_view_is_mapped(pepper_view_t *view);
+pepper_view_get_visibility(pepper_view_t *view);
 
 PEPPER_API void
 pepper_view_set_alpha(pepper_view_t *view, float alpha);
@@ -385,43 +409,29 @@ pepper_view_set_alpha(pepper_view_t *view, float alpha);
 PEPPER_API float
 pepper_view_get_alpha(pepper_view_t *view);
 
-PEPPER_API pepper_view_t *
-pepper_view_get_above(pepper_view_t *view);
-
-PEPPER_API pepper_view_t *
-pepper_view_get_below(pepper_view_t *view);
-
-/* Layer. */
-PEPPER_API pepper_layer_t *
-pepper_layer_create(pepper_compositor_t *compositor);
-
-PEPPER_API pepper_compositor_t *
-pepper_layer_get_compositor(pepper_layer_t *layer);
+PEPPER_API void
+pepper_view_set_viewport(pepper_view_t *view, int x, int y, int w, int h);
 
 PEPPER_API void
-pepper_compositor_stack_layer(pepper_compositor_t *compositor, pepper_layer_t *layer,
-                              pepper_layer_t *below);
-
-PEPPER_API pepper_layer_t *
-pepper_compositor_get_top_layer(pepper_compositor_t *compositor);
-
-PEPPER_API pepper_layer_t *
-pepper_compositor_get_bottom_layer(pepper_compositor_t *compositor);
-
-PEPPER_API pepper_layer_t *
-pepper_layer_get_above(pepper_layer_t *layer);
-
-PEPPER_API pepper_layer_t *
-pepper_layer_get_below(pepper_layer_t *layer);
+pepper_view_get_viewport(pepper_view_t *view, int *x, int *y, int *w, int *h);
 
 PEPPER_API void
-pepper_layer_stack_view(pepper_layer_t *layer, pepper_view_t *view, pepper_view_t *below);
+pepper_view_set_clip_to_parent(pepper_view_t *view, pepper_bool_t clip);
 
-PEPPER_API pepper_view_t *
-pepper_layer_get_top_view(pepper_layer_t *layer);
+PEPPER_API pepper_bool_t
+pepper_view_get_clip_to_parent(pepper_view_t *view);
 
-PEPPER_API pepper_view_t *
-pepper_layer_get_bottom_view(pepper_layer_t *layer);
+PEPPER_API void
+pepper_view_set_clip_children(pepper_view_t *view, pepper_bool_t clip);
+
+PEPPER_API pepper_bool_t
+pepper_view_get_clip_children(pepper_view_t *view);
+
+PEPPER_API pepper_bool_t
+pepper_view_set_clip_region(pepper_view_t *view, const pixman_region32_t *region);
+
+PEPPER_API const pixman_region32_t *
+pepper_view_get_clip_region(pepper_view_t *view);
 
 #ifdef __cplusplus
 }
