@@ -37,12 +37,15 @@ drm_output_destroy(void *o)
         drmModeCrtc *c = output->saved_crtc;
         drmModeSetCrtc(output->drm->drm_fd, c->crtc_id, c->buffer_id, c->x, c->y,
                        &output->conn_id, 1, &c->mode);
+        drmModeFreeCrtc(c);
     }
 
     fini_renderer(output);
 
     if (output->modes)
         free(output->modes);
+
+    wl_signal_emit(&output->destroy_signal, NULL);
 
     free(output);
 }
@@ -160,7 +163,7 @@ drm_output_set_mode(void *o, const pepper_output_mode_t *mode)
             fini_renderer(output);
             init_renderer(output);
 
-            wl_signal_emit(&output->mode_change_signal, output);
+            wl_signal_emit(&output->mode_change_signal, NULL);
 
             return PEPPER_TRUE;
         }
@@ -760,7 +763,7 @@ error:
 }
 
 static pepper_bool_t
-drm_add_outputs(pepper_drm_t *drm, struct udev_device *device)
+add_outputs(pepper_drm_t *drm, struct udev_device *device)
 {
     int                 i;
     drmModeRes         *res;
@@ -864,7 +867,7 @@ handle_page_flip(int fd, unsigned int sequence, unsigned int tv_sec, unsigned in
     output->page_flip_pending = PEPPER_FALSE;
     if (!output->vblank_pending)
     {
-        wl_signal_emit(&output->frame_signal, output->base);
+        wl_signal_emit(&output->frame_signal, NULL);
     }
 
     pepper_output_schedule_repaint(output->base);   /* TODO: remove */
@@ -884,11 +887,94 @@ handle_drm_events(int fd, uint32_t mask, void *data)
     return 0;
 }
 
+static void
+update_outputs(pepper_drm_t *drm, struct udev_device *device)
+{
+    int                 i;
+    drmModeRes         *res;
+    drmModeConnector   *conn;
+    drm_output_t       *output;
+
+    res = drmModeGetResources(drm->drm_fd);
+    if (!res)
+    {
+        PEPPER_ERROR("Failed to get drm resources in %s\n", __FUNCTION__);
+        return;
+    }
+
+    for (i = 0; i < res->count_connectors; i++)
+    {
+        conn = drmModeGetConnector(drm->drm_fd, res->connectors[i]);
+        if (!conn)
+            continue;
+
+        wl_list_for_each(output, &drm->output_list, link)
+            if (output->conn_id == conn->connector_id)
+                break;
+
+        if (output && conn->connection != DRM_MODE_CONNECTED)
+        {
+            drm_output_destroy(output);
+        }
+        else if (!output && conn->connection == DRM_MODE_CONNECTED)
+        {
+            output = drm_output_create(drm, device, res, conn);
+            if (!output)
+            {
+                PEPPER_ERROR("Failed to create drm_output in %s\n", __FUNCTION__);
+                drmModeFreeConnector(conn);
+                continue;
+            }
+
+            output->base = pepper_compositor_add_output(output->drm->compositor,
+                                                        &drm_output_interface, output);
+            if (!output->base)
+            {
+                PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);
+                drm_output_destroy(output);
+                drmModeFreeConnector(conn);
+                continue;
+            }
+        }
+
+        drmModeFreeConnector(conn);
+    }
+
+    drmModeFreeResources(res);
+}
+
+static int
+handle_udev_drm_events(int fd, uint32_t mask, void *data)
+{
+    pepper_drm_t *drm = (pepper_drm_t *)data;
+    struct udev_device *device;
+
+    const char *sysnum;
+    const char *value;
+
+    device = udev_monitor_receive_device(drm->udev_monitor);
+
+    sysnum = udev_device_get_sysnum(device);
+    if (!sysnum || atoi(sysnum) != drm->drm_sysnum)
+        goto done;
+
+    value = udev_device_get_property_value(device, "HOTPLUG");
+    if (!value || strcmp(value, "1"))
+        goto done;
+
+    update_outputs(drm, device);
+
+done:
+    udev_device_unref(device);
+    return 0;
+}
+
 pepper_bool_t
 pepper_drm_output_create(pepper_drm_t *drm)
 {
     struct udev_device      *drm_device;
     const char              *filepath;
+    const char              *sysnum;
 
     struct wl_display       *display;
     struct wl_event_loop    *loop;
@@ -901,6 +987,20 @@ pepper_drm_output_create(pepper_drm_t *drm)
         goto error;
     }
 
+    sysnum = udev_device_get_sysnum(drm_device);
+    if (!sysnum)
+    {
+        PEPPER_ERROR("Failed to get sysnum in %s\n", __FUNCTION__);
+        goto error;
+    }
+
+    drm->drm_sysnum = atoi(sysnum);
+    if (drm->drm_sysnum < 0)
+    {
+        PEPPER_ERROR("Failed to get sysnum in %s\n", __FUNCTION__);
+        goto error;
+    }
+
     filepath = udev_device_get_devnode(drm_device);
     drm->drm_fd = drm_open(filepath, O_RDWR);
     if (drm->drm_fd < 0)
@@ -910,7 +1010,7 @@ pepper_drm_output_create(pepper_drm_t *drm)
     }
 
     /* add outputs */
-    if (drm_add_outputs(drm, drm_device) == PEPPER_FALSE)
+    if (add_outputs(drm, drm_device) == PEPPER_FALSE)
     {
         PEPPER_ERROR("Failed to add outputs in %s\n", __FUNCTION__);
         goto error;
@@ -926,6 +1026,31 @@ pepper_drm_output_create(pepper_drm_t *drm)
         PEPPER_ERROR("Failed to add drm fd to main loop in %s\n", __FUNCTION__);
         goto error;
     }
+
+    drm->udev_monitor = udev_monitor_new_from_netlink(drm->udev, "udev");
+    if (!drm->udev_monitor)
+    {
+        PEPPER_ERROR("Failed to create udev_monitor in %s\n", __FUNCTION__);
+        goto error;
+    }
+
+    udev_monitor_filter_add_match_subsystem_devtype(drm->udev_monitor, "drm", NULL);
+    drm->udev_monitor_source = wl_event_loop_add_fd(loop,
+                                                    udev_monitor_get_fd(drm->udev_monitor),
+                                                    WL_EVENT_READABLE,
+                                                    handle_udev_drm_events, drm);
+    if (!drm->udev_monitor_source)
+    {
+        PEPPER_ERROR("Failed to add udev_monitor fd to main loop in %s\n", __FUNCTION__);
+        goto error;
+    }
+
+    if (udev_monitor_enable_receiving(drm->udev_monitor) < 0)
+    {
+        PEPPER_ERROR("Failed to enable udev_monitor in %s\n", __FUNCTION__);
+        goto error;
+    }
+
 
     udev_device_unref(drm_device);
 

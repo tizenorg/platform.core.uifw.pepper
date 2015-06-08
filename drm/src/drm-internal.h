@@ -22,16 +22,22 @@ struct pepper_drm
 {
     pepper_compositor_t        *compositor;
     pepper_libinput_t          *input;
-    struct udev                *udev;
 
-    int                         drm_fd;
     struct wl_list              output_list;
+
     uint32_t                   *crtcs;
     uint32_t                    count_crtcs;
+
     uint32_t                    min_width, min_height;
     uint32_t                    max_width, max_height;
 
+    int                         drm_fd;
+    int                         drm_sysnum;
     struct wl_event_source     *drm_event_source;
+
+    struct udev                *udev;
+    struct udev_monitor        *udev_monitor;
+    struct wl_event_source     *udev_monitor_source;
 };
 
 struct drm_output

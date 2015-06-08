@@ -53,6 +53,12 @@ pepper_drm_destroy(pepper_drm_t *drm)
 {
     drm_output_t *output, *next;
 
+    if (drm->udev_monitor_source)
+        wl_event_source_remove(drm->udev_monitor_source);
+
+    if (drm->udev_monitor)
+        udev_monitor_unref(drm->udev_monitor);
+
     if (drm->drm_event_source)
         wl_event_source_remove(drm->drm_event_source);
 
