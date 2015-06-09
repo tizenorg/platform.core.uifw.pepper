@@ -1,6 +1,8 @@
 #ifndef PEPPER_H
 #define PEPPER_H
 
+#include <pepper-utils.h>
+
 #define WL_HIDE_DEPRECATED
 #include <wayland-server.h>
 
@@ -9,23 +11,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#if defined(__GNUC__) && __GNUC__ >= 4
-#   define PEPPER_API __attribute__ ((visibility("default")))
-#else
-#   define PEPPER_API
-#endif
-
-#define pepper_container_of(ptr, type, member) ({               \
-    const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
-    (type *)( (char *)__mptr - offsetof(type,member) );})
-
-#define PEPPER_FALSE    0
-#define PEPPER_TRUE     1
-
-typedef void (*pepper_free_func_t)(void *);
-
-typedef unsigned int                    pepper_bool_t;
 
 typedef struct pepper_compositor        pepper_compositor_t;
 

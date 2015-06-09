@@ -5,7 +5,6 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <pepper-utils.h>
 
 static void
 buffer_release(void *data, struct wl_buffer *buf)

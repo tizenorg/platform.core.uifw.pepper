@@ -21,7 +21,7 @@ AC_PROG_CC
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
-PEPPER_WAYLAND_MODULES="pepper pepper-render wayland-server wayland-client pixman-1 pepper-utils"
+PEPPER_WAYLAND_MODULES="pepper pepper-render wayland-server wayland-client pixman-1"
 PKG_CHECK_MODULES(PEPPER_WAYLAND, [$PEPPER_WAYLAND_MODULES])
 AC_SUBST([PEPPER_WAYLAND_REQUIRES], [$PEPPER_WAYLAND_MODULES])
 

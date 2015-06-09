@@ -5,7 +5,6 @@
 #include "pepper.h"
 #include <wayland-util.h>
 #include <pixman.h>
-#include "pepper-util.h"
 
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;

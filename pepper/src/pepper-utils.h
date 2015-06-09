@@ -1,9 +1,29 @@
-#ifndef PEPPER_UTIL_H
-#define PEPPER_UTIL_H
+#ifndef PEPPER_UTILS_H
+#define PEPPER_UTILS_H
 
-#include "common.h"
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(__GNUC__) && __GNUC__ >= 4
+#   define PEPPER_API __attribute__ ((visibility("default")))
+#else
+#   define PEPPER_API
+#endif
+
+#define pepper_container_of(ptr, type, member) ({               \
+    const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
+    (type *)( (char *)__mptr - offsetof(type,member) );})
+
+typedef void (*pepper_free_func_t)(void *);
+
+typedef unsigned int    pepper_bool_t;
+
+#define PEPPER_FALSE    0
+#define PEPPER_TRUE     1
 
 typedef struct pepper_list  pepper_list_t;
 
@@ -139,22 +159,29 @@ typedef int (*pepper_key_length_func_t)(const void *key);
 typedef int (*pepper_key_compare_func_t)(const void *key0, int key0_length,
                                          const void *key1, int key1_length);
 
-pepper_map_t *
+PEPPER_API pepper_map_t *
 pepper_map_create(int                       bucket_bits,
                   pepper_hash_func_t        hash_func,
                   pepper_key_length_func_t  key_length_func,
                   pepper_key_compare_func_t key_compare_func);
 
-void
+PEPPER_API void
 pepper_map_clear(pepper_map_t *map);
 
-void
+PEPPER_API void
 pepper_map_destroy(pepper_map_t *map);
 
-void *
+PEPPER_API void *
 pepper_map_get(pepper_map_t *map, const void *key);
 
-void
+PEPPER_API void
 pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_t free_func);
 
-#endif /* PEPPER_UTIL_H */
+PEPPER_API int
+pepper_create_anonymous_file(off_t size);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* PEPPER_UTILS_H */

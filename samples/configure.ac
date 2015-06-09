@@ -36,10 +36,10 @@ PKG_CHECK_MODULES(X11_BACKEND,
                   [wayland-server pepper pepper-render pepper-x11 pepper-desktop-shell])
 
 # simple-touch
-PKG_CHECK_MODULES(SIMPLE_TOUCH, [wayland-client pepper-utils])
+PKG_CHECK_MODULES(SIMPLE_TOUCH, [wayland-client pepper])
 
 # simple-shm
-PKG_CHECK_MODULES(SIMPLE_SHM, [wayland-client pepper-utils])
+PKG_CHECK_MODULES(SIMPLE_SHM, [wayland-client pepper])
 
 AC_CONFIG_FILES([
 Makefile
