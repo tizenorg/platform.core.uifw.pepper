@@ -30,8 +30,6 @@ main(int argc, char **argv)
     pepper_output_set_mode(output, &mode);
 #endif
 
-    pepper_x11_seat_create(conn);
-
     display = pepper_compositor_get_display(compositor);
     PEPPER_ASSERT(display);
 

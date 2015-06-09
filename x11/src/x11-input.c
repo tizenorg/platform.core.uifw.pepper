@@ -1,8 +1,5 @@
 #include "x11-internal.h"
-
-/* TODO: debugging */
-#undef  PEPPER_TRACE
-#define PEPPER_TRACE(x)
+#include <stdlib.h>
 
 void
 x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev)
@@ -121,7 +118,9 @@ x11_window_input_property_change(xcb_connection_t *conn, xcb_window_t window)
 static void
 x11_seat_destroy(void *data)
 {
-    /* TODO : x11_seat_t *seat = (x11_seat_t *)data; */
+    x11_seat_t *seat = (x11_seat_t *)data;
+
+    free(seat);
 }
 
 static void
@@ -161,10 +160,18 @@ static const pepper_seat_interface_t x11_seat_interface =
     x11_seat_get_name,
 };
 
+static void
+handle_connection_destroy(struct wl_listener *listener, void *data)
+{
+    x11_seat_t *seat = wl_container_of(listener, seat, conn_destroy_listener);
+    x11_seat_destroy(seat);
+}
+
 PEPPER_API void
 pepper_x11_seat_create(pepper_x11_connection_t* conn)
 {
-    x11_seat_t  *seat;
+    x11_seat_t      *seat;
+    x11_output_t    *out, *tmp;
 
     if (!conn)
     {
@@ -181,20 +188,25 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
 
     conn->use_xinput = PEPPER_TRUE;
 
-    if (!wl_list_empty(&conn->outputs))
-    {
-        x11_output_t *out;
-        wl_list_for_each(out, &conn->outputs, link)
-            x11_window_input_property_change(conn->xcb_connection, out->window);
-    }
-    /* XXX: if x-input-module used with out x-output-module,
+    wl_list_for_each_safe(out, tmp, &conn->outputs, link)
+        x11_window_input_property_change(conn->xcb_connection, out->window);
+
+    /* XXX: if x-input-module used without x-output-module,
      * need to create dummy window for input with output-size */
 
     wl_signal_init(&seat->capabilities_signal);
     wl_signal_init(&seat->name_signal);
 
+    seat->conn_destroy_listener.notify = handle_connection_destroy;
+    wl_signal_add(&conn->destroy_signal, &seat->conn_destroy_listener);
+
     seat->base = pepper_compositor_add_seat(conn->compositor, &x11_seat_interface, seat);
     seat->id = X11_BACKEND_INPUT_ID;
+
+    /* Hard-coded: */
+    seat->caps |= WL_SEAT_CAPABILITY_POINTER;
+    seat->caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+    wl_signal_emit(&seat->capabilities_signal, seat->base);
 
     /* x-connection has only 1 seat */
     conn->seat = seat;

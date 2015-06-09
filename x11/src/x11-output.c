@@ -484,9 +484,6 @@ x11_output_repaint_shm(x11_output_t* output)
         PEPPER_ERROR("Failed to put shm image, err: %d\n", err->error_code);
         free(err);
     }
-
-    /* XXX: frame_done callback called after 10ms, referenced from weston */
-    wl_event_source_timer_update(output->frame_done_timer, 10);
 }
 
 static void
@@ -506,6 +503,9 @@ x11_output_repaint(void *o)
         /* TODO: gl case */
         PEPPER_ERROR("TODO : GL\n");
     }
+
+    /* XXX: frame_done callback called after 10ms, referenced from weston */
+    wl_event_source_timer_update(output->frame_done_timer, 10);
 }
 
 static void
@@ -673,6 +673,10 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
     }
 
     output->base = base;
+
+    /* X11 input seat create */
+    if (!connection->use_xinput)
+        pepper_x11_seat_create(connection);
 
     return base;
 }

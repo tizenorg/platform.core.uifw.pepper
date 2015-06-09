@@ -10,10 +10,6 @@
  * xcb is faster than xlib
  */
 
-/* TODO: debugging */
-#undef  PEPPER_TRACE
-#define PEPPER_TRACE(x)
-
 static inline pepper_bool_t
 x11_get_next_event(xcb_connection_t *xcb_conn, xcb_generic_event_t **event, uint32_t mask)
 {
@@ -250,5 +246,11 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 PEPPER_API void
 pepper_x11_destroy(pepper_x11_connection_t *conn)
 {
-    /* TODO */
+    wl_signal_emit(&conn->destroy_signal, conn);
+
+    if (conn->xcb_event_source)
+        wl_event_source_remove(conn->xcb_event_source);
+
+    XCloseDisplay(conn->display);
+    free(conn);
 }
