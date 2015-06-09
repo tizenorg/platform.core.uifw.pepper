@@ -67,6 +67,24 @@ pepper_compositor_add_view(pepper_compositor_t *compositor,
     return view;
 }
 
+PEPPER_API pepper_view_t *
+pepper_compositor_get_top_root_view(pepper_compositor_t *compositor)
+{
+    if (wl_list_empty(&compositor->root_view_list))
+        return NULL;
+
+    return pepper_container_of(compositor->root_view_list.prev, pepper_view_t, parent_link);
+}
+
+PEPPER_API pepper_view_t *
+pepper_compositor_get_bottom_root_view(pepper_compositor_t *compositor)
+{
+    if (wl_list_empty(&compositor->root_view_list))
+        return NULL;
+
+    return pepper_container_of(compositor->root_view_list.next, pepper_view_t, parent_link);
+}
+
 PEPPER_API void
 pepper_view_destroy(pepper_view_t *view)
 {

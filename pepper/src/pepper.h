@@ -340,6 +340,12 @@ PEPPER_API pepper_view_t *
 pepper_compositor_add_view(pepper_compositor_t *compositor,
                            pepper_view_t *parent, pepper_view_t *pos, pepper_surface_t *surface);
 
+PEPPER_API pepper_view_t *
+pepper_compositor_get_top_root_view(pepper_compositor_t *compositor);
+
+PEPPER_API pepper_view_t *
+pepper_compositor_get_bottom_root_view(pepper_compositor_t *compositor);
+
 PEPPER_API void
 pepper_view_destroy(pepper_view_t *view);
 
