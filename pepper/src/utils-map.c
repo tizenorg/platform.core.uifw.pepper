@@ -119,7 +119,7 @@ pepper_map_get(pepper_map_t *map, const void *key)
         }
 
         if (map->key_compare_func(curr->key, len0, key, len1) == 0)
-            return &curr->data;
+            return curr->data;
 
         curr = curr->next;
     }
