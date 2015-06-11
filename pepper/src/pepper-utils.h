@@ -180,6 +180,9 @@ pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_
 PEPPER_API int
 pepper_create_anonymous_file(off_t size);
 
+PEPPER_API int
+pepper_log(const char* domain, int level, const char *format, ...);
+
 #ifdef __cplusplus
 }
 #endif
