@@ -26,6 +26,9 @@ struct pepper_compositor
     struct wl_list      root_view_list;
 
     struct wl_list      event_hook_chain;
+
+    struct wl_list      view_list;
+    pixman_region32_t   damage_region;
 };
 
 struct pepper_output
@@ -245,6 +248,10 @@ struct pepper_view
     /* Geometry. */
     float                   x, y, w, h;
     pepper_matrix_t         transform;
+    pepper_matrix_t         matrix_to_parent;
+    pepper_matrix_t         matrix_to_global;
+    pixman_region32_t       bounding_region;
+    pepper_bool_t           geometry_dirty;
 
     /* Visibility. */
     pepper_bool_t           visibility;
@@ -261,8 +268,12 @@ struct pepper_view
 
     /* Clip. */
     pepper_bool_t           clip_to_parent;
-    pepper_bool_t           clip_children;
     pixman_region32_t       clip_region;
+
+    pixman_region32_t       opaque_region;
+    pixman_region32_t       visible_region;
+    struct wl_list          view_list_link;
+    pepper_bool_t           need_damage;
 };
 
 struct pepper_layer
@@ -271,7 +282,6 @@ struct pepper_layer
     struct wl_list          link;
     struct wl_list          views;
 };
-
 
 /* Event hook */
 struct pepper_event_hook
@@ -290,5 +300,11 @@ pepper_bool_t
 pepper_compositor_event_handler(pepper_seat_t           *seat,
                                 pepper_input_event_t    *event,
                                 void                    *data);
+
+void
+pepper_compositor_add_damage(pepper_compositor_t *compositor, pixman_region32_t *region);
+
+void
+pepper_surface_flush_damage(pepper_surface_t *surface);
 
 #endif /* PEPPER_INTERNAL_H */

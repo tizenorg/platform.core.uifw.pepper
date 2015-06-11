@@ -472,3 +472,9 @@ pepper_surface_get_input_region(pepper_surface_t *surface)
 {
     return &surface->input_region;
 }
+
+void
+pepper_surface_flush_damage(pepper_surface_t *surface)
+{
+    /* TODO: */
+}

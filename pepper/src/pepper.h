@@ -120,6 +120,18 @@ pepper_matrix_equal(const pepper_matrix_t *a, const pepper_matrix_t *b)
            a->m[14] == b->m[14] && a->m[15] && b->m[15];
 }
 
+static inline void
+pepper_matrix_multiply(pepper_matrix_t *dst, const pepper_matrix_t *a, const pepper_matrix_t *b)
+{
+    /* TODO: */
+}
+
+static inline void
+pepper_matrix_copy(pepper_matrix_t *dst, const pepper_matrix_t *src)
+{
+    memcpy(dst, src, sizeof(pepper_matrix_t));
+}
+
 /* TODO: Other matrix utility functions. */
 
 struct pepper_output_geometry
@@ -411,12 +423,6 @@ pepper_view_set_clip_to_parent(pepper_view_t *view, pepper_bool_t clip);
 
 PEPPER_API pepper_bool_t
 pepper_view_get_clip_to_parent(pepper_view_t *view);
-
-PEPPER_API void
-pepper_view_set_clip_children(pepper_view_t *view, pepper_bool_t clip);
-
-PEPPER_API pepper_bool_t
-pepper_view_get_clip_children(pepper_view_t *view);
 
 PEPPER_API pepper_bool_t
 pepper_view_set_clip_region(pepper_view_t *view, const pixman_region32_t *region);

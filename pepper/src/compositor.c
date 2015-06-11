@@ -102,6 +102,9 @@ pepper_compositor_create(const char *socket_name)
     }
 
     wl_list_init(&compositor->layers);
+    wl_list_init(&compositor->view_list);
+    pixman_region32_init(&compositor->damage_region);
+
     return compositor;
 
 error:
@@ -124,4 +127,10 @@ PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_compositor_t *compositor)
 {
     return compositor->display;
+}
+
+void
+pepper_compositor_add_damage(pepper_compositor_t *compositor, pixman_region32_t *region)
+{
+    pixman_region32_union(&compositor->damage_region, &compositor->damage_region, region);
 }
