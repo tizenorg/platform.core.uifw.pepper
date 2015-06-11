@@ -315,6 +315,8 @@ pepper_surface_destroy(pepper_surface_t *surface)
     pixman_region32_fini(&surface->opaque_region);
     pixman_region32_fini(&surface->input_region);
 
+    wl_list_remove(wl_resource_get_link(surface->resource));
+
     wl_resource_for_each_safe(callback, next, &surface->frame_callbacks)
         wl_resource_destroy(callback);
 
@@ -325,6 +327,15 @@ pepper_surface_destroy(pepper_surface_t *surface)
         pepper_map_destroy(surface->user_data_map);
 
     pepper_free(surface);
+}
+
+static void
+pepper_surface_schedule_repaint(pepper_surface_t *surface)
+{
+    /* FIXME: Find outputs to be repainted */
+    pepper_output_t *output;
+    wl_list_for_each(output, &surface->compositor->output_list, link)
+        pepper_output_schedule_repaint(output);
 }
 
 void
@@ -386,7 +397,7 @@ pepper_surface_commit(pepper_surface_t *surface)
     pixman_region32_copy(&surface->opaque_region, &surface->pending.opaque_region);
     pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
 
-    /* TODO: Now schedule redraw. */
+    pepper_surface_schedule_repaint(surface);
 }
 
 PEPPER_API void
