@@ -140,6 +140,8 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     resource = wl_resource_create(client, &wl_seat_interface, version/*FIXME*/, id);
     wl_list_insert(&seat->resources, wl_resource_get_link(resource));
     wl_resource_set_implementation(resource, &seat_interface, data, unbind_resource);
+
+    wl_seat_send_capabilities(resource, seat->caps);
 }
 
 static pepper_pointer_t *
@@ -377,6 +379,33 @@ pepper_compositor_event_handler(pepper_seat_t           *seat,
     {
     case PEPPER_INPUT_EVENT_KEYBOARD_KEY:
         pepper_seat_update_modifier(seat, event);
+        break;
+
+    case PEPPER_INPUT_EVENT_POINTER_BUTTON:
+        {
+            /* FIXME: Send focused client only */
+            struct wl_display   *display = pepper_compositor_get_display(seat->compositor);
+            uint32_t             serial  = wl_display_next_serial(display);
+            struct wl_resource  *pointer;
+
+            wl_resource_for_each(pointer, &seat->pointer->resources)
+                wl_pointer_send_button(pointer,
+                                       serial,
+                                       event->time,
+                                       event->index,
+                                       event->state);
+        }
+        break;
+    case PEPPER_INPUT_EVENT_POINTER_MOTION:
+        {
+            /* FIXME: Send focused client only */
+            struct wl_resource *pointer;
+            wl_resource_for_each(pointer, &seat->pointer->resources)
+                wl_pointer_send_motion(pointer,
+                                       event->time,
+                                       wl_fixed_from_double(event->x),
+                                       wl_fixed_from_double(event->y));
+        }
         break;
     default:
         PEPPER_TRACE("Unknown pepper input event type [%x]\n", event->type);
