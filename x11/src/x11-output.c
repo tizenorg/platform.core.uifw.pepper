@@ -458,6 +458,9 @@ x11_output_repaint_shm(x11_output_t* output)
     xcb_void_cookie_t    cookie;
     xcb_generic_error_t *err;
 
+    pepper_pixman_renderer_set_target(output->renderer, output->shm.image);
+    pepper_renderer_repaint_output(output->renderer, output->base);
+
     /* TODO: Set clipping area from damages
      *       pixman_region32_rectangles(...);
      *       xcb_set_clip_rectangles(...);
@@ -487,11 +490,18 @@ x11_output_repaint_shm(x11_output_t* output)
 }
 
 static void
+x11_output_repaint_gl(x11_output_t* output)
+{
+    pepper_renderer_repaint_output(output->renderer, output->base);
+
+    /* TODO: */
+    PEPPER_ERROR("TODO : GL\n");
+}
+
+static void
 x11_output_repaint(void *o)
 {
     x11_output_t *output = o;
-
-    pepper_renderer_repaint_output(output->renderer, output->base);
 
     /* FIXME: hack, only pixman-render use shm.image */
     if (output->shm.image)
@@ -500,8 +510,7 @@ x11_output_repaint(void *o)
     }
     else
     {
-        /* TODO: gl case */
-        PEPPER_ERROR("TODO : GL\n");
+        x11_output_repaint_gl(output);
     }
 
     /* XXX: frame_done callback called after 10ms, referenced from weston */

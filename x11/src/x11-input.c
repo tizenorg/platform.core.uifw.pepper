@@ -206,7 +206,7 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     /* Hard-coded: */
     seat->caps |= WL_SEAT_CAPABILITY_POINTER;
     seat->caps |= WL_SEAT_CAPABILITY_KEYBOARD;
-    wl_signal_emit(&seat->capabilities_signal, seat->base);
+    wl_signal_emit(&seat->capabilities_signal, seat);
 
     /* x-connection has only 1 seat */
     conn->seat = seat;
