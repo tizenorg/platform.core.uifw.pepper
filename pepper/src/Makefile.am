@@ -5,7 +5,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pepper.pc
 
 libpepper_la_CFLAGS = $(PEPPER_CFLAGS) -Wall
-libpepper_la_LIBADD = $(PEPPER_LIBS)
+libpepper_la_LIBADD = $(PEPPER_LIBS) -lm
 
 libpepper_la_SOURCES = pepper.h                 \
                        pepper-internal.h        \

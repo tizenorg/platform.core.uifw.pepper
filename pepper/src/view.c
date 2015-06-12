@@ -64,7 +64,7 @@ pepper_compositor_add_view(pepper_compositor_t *compositor,
     view->parent = parent;
 
     wl_list_init(&view->child_list);
-    pepper_matrix_load_identity(&view->transform);
+    pepper_matrix_init_identity(&view->transform);
     view->alpha = 1.0f;
 
     view->surface = surface;

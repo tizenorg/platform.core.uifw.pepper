@@ -32,8 +32,6 @@ typedef struct pepper_surface           pepper_surface_t;
 typedef struct pepper_view              pepper_view_t;
 typedef struct pepper_buffer            pepper_buffer_t;
 
-typedef struct pepper_matrix            pepper_matrix_t;
-
 #define PEPPER_FORMAT(type, bpp, a, r, g, b)    \
     ((((type) & 0xff) << 24)    |               \
      (( (bpp) & 0xff) << 16)    |               \
@@ -72,67 +70,6 @@ typedef enum
 
     PEPPER_FORMAT_ALPHA         = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,     8,  8,  0,  0,  0),
 } pepper_format_t;
-
-#define PEPPER_MATRIX_IS_IDENTITY   1
-
-struct pepper_matrix
-{
-    float       m[16];
-    uint32_t    flags;
-};
-
-static inline void
-pepper_matrix_load_identity(pepper_matrix_t *matrix)
-{
-    matrix->m[ 0] = 1.0f;
-    matrix->m[ 1] = 0.0f;
-    matrix->m[ 2] = 0.0f;
-    matrix->m[ 3] = 0.0f;
-
-    matrix->m[ 4] = 0.0f;
-    matrix->m[ 5] = 1.0f;
-    matrix->m[ 6] = 0.0f;
-    matrix->m[ 7] = 0.0f;
-
-    matrix->m[ 8] = 0.0f;
-    matrix->m[ 9] = 0.0f;
-    matrix->m[10] = 1.0f;
-    matrix->m[11] = 0.0f;
-
-    matrix->m[12] = 0.0f;
-    matrix->m[13] = 0.0f;
-    matrix->m[14] = 0.0f;
-    matrix->m[15] = 1.0f;
-
-    matrix->flags = PEPPER_MATRIX_IS_IDENTITY;
-}
-
-static inline pepper_bool_t
-pepper_matrix_equal(const pepper_matrix_t *a, const pepper_matrix_t *b)
-{
-    return a->m[ 0] == b->m[ 0] && a->m[ 1] == b->m[ 1] &&
-           a->m[ 2] == b->m[ 2] && a->m[ 3] && b->m[ 3] &&
-           a->m[ 4] == b->m[ 4] && a->m[ 5] && b->m[ 5] &&
-           a->m[ 6] == b->m[ 6] && a->m[ 7] && b->m[ 7] &&
-           a->m[ 8] == b->m[ 8] && a->m[ 9] && b->m[ 9] &&
-           a->m[10] == b->m[10] && a->m[11] && b->m[11] &&
-           a->m[12] == b->m[12] && a->m[13] && b->m[13] &&
-           a->m[14] == b->m[14] && a->m[15] && b->m[15];
-}
-
-static inline void
-pepper_matrix_multiply(pepper_matrix_t *dst, const pepper_matrix_t *a, const pepper_matrix_t *b)
-{
-    /* TODO: */
-}
-
-static inline void
-pepper_matrix_copy(pepper_matrix_t *dst, const pepper_matrix_t *src)
-{
-    memcpy(dst, src, sizeof(pepper_matrix_t));
-}
-
-/* TODO: Other matrix utility functions. */
 
 struct pepper_output_geometry
 {
