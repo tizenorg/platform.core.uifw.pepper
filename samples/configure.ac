@@ -27,6 +27,12 @@ PKG_CHECK_MODULES(DRM_BACKEND,
                    pepper-drm pepper-libinput
                    pepper-desktop-shell])
 
+# fbdev-backend
+PKG_CHECK_MODULES(FBDEV_BACKEND,
+                  [wayland-server pepper pepper-render
+                   pepper-fbdev pepper-libinput
+                   pepper-desktop-shell])
+
 # wayland-backend
 PKG_CHECK_MODULES(WAYLAND_BACKEND,
                   [wayland-server pepper pepper-render pepper-wayland pepper-desktop-shell])

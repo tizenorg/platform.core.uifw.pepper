@@ -6,6 +6,12 @@ drm_backend_CFLAGS = $(DRM_BACKEND_CFLAGS)
 drm_backend_LDADD = $(DRM_BACKEND_LIBS)
 drm_backend_SOURCES = drm-backend.c
 
+# fbdev-backend
+noinst_PROGRAMS += fbdev-backend
+fbdev_backend_CFLAGS = $(FBDEV_BACKEND_CFLAGS)
+fbdev_backend_LDADD = $(FBDEV_BACKEND_LIBS)
+fbdev_backend_SOURCES = fbdev-backend.c
+
 # wayland-backend
 noinst_PROGRAMS += wayland-backend
 wayland_backend_CFLAGS = $(WAYLAND_BACKEND_CFLAGS)
