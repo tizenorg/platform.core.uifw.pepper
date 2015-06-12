@@ -6,7 +6,7 @@
 #include <sys/time.h>
 
 static FILE *pepper_log_file;
-static int perpper_log_verbosity = 3;
+static int pepper_log_verbosity = 3;
 static int cached_tm_mday = -1;
 
 void __attribute__ ((constructor))
@@ -28,7 +28,8 @@ pepper_print_timestamp(void)
     if (brokendown_time == NULL)
         return fprintf(pepper_log_file, "[(NULL)localtime] ");
 
-    if (brokendown_time->tm_mday != cached_tm_mday) {
+    if (brokendown_time->tm_mday != cached_tm_mday)
+    {
         strftime(string, sizeof string, "%Y-%m-%d %Z", brokendown_time);
         fprintf(pepper_log_file, "Date: %s\n", string);
 
@@ -61,7 +62,7 @@ pepper_log(const char* domain, int level, const char *format, ...)
     int l;
     va_list argp;
 
-    if (level > perpper_log_verbosity || level < 0)
+    if (level > pepper_log_verbosity || level < 0)
         return 0;
 
     l = pepper_print_timestamp();
