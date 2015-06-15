@@ -82,6 +82,8 @@ struct pepper_surface_state
     pepper_buffer_t    *buffer;
     int32_t             x;
     int32_t             y;
+    pepper_bool_t       newly_attached;
+
     int32_t             transform;
     int32_t             scale;
 
@@ -97,9 +99,7 @@ struct pepper_surface
 {
     pepper_compositor_t    *compositor;
     struct wl_resource     *resource;
-
-    /* Surface states. wl_surface.commit will apply the pending state into current. */
-    pepper_surface_state_t  pending;
+    struct wl_signal        destroy_signal;
 
     struct {
         pepper_buffer_t    *buffer;
@@ -108,6 +108,8 @@ struct pepper_surface
         int32_t             scale;
     } buffer;
 
+    /* Surface size in surface local coordinate space.
+     * Buffer is transformed and scaled into surface local coordinate space. */
     int32_t                 w, h;
 
     pixman_region32_t       damage_region;
@@ -115,23 +117,13 @@ struct pepper_surface
     pixman_region32_t       input_region;
 
     struct wl_list          frame_callbacks;
-    struct wl_signal        destroy_signal;
 
-    /* Role. */
+    /* Surface states. wl_surface.commit will apply the pending state into current. */
+    pepper_surface_state_t  pending;
+
     char                   *role;
-
-    /* User data. */
     pepper_map_t           *user_data_map;
-
-    /* Views. */
     struct wl_list          view_list;
-};
-
-struct pepper_region
-{
-    pepper_compositor_t    *compositor;
-    struct wl_resource     *resource;
-    pixman_region32_t       pixman_region;
 };
 
 pepper_surface_t *
@@ -145,6 +137,13 @@ pepper_surface_destroy(pepper_surface_t *surface);
 
 void
 pepper_surface_commit(pepper_surface_t *surface);
+
+struct pepper_region
+{
+    pepper_compositor_t    *compositor;
+    struct wl_resource     *resource;
+    pixman_region32_t       pixman_region;
+};
 
 pepper_region_t *
 pepper_region_create(pepper_compositor_t *compositor,

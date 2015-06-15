@@ -81,6 +81,7 @@ surface_attach(struct wl_client    *client,
     surface->pending.buffer = buffer;
     surface->pending.x = x;
     surface->pending.y = y;
+    surface->pending.newly_attached = PEPPER_TRUE;
 
     if (buffer)
         wl_signal_add(&buffer->destroy_signal, &surface->pending.buffer_destroy_listener);
@@ -338,30 +339,9 @@ pepper_surface_schedule_repaint(pepper_surface_t *surface)
         pepper_output_schedule_repaint(output);
 }
 
-void
-pepper_surface_commit(pepper_surface_t *surface)
+static void
+surface_update_size(pepper_surface_t *surface)
 {
-    pepper_buffer_reference(surface->pending.buffer);
-
-    if (surface->buffer.buffer)
-        pepper_buffer_unreference(surface->buffer.buffer);
-
-    /* Commit buffer attachment states. */
-    surface->buffer.buffer     = surface->pending.buffer;
-    surface->buffer.x         += surface->pending.x;
-    surface->buffer.y         += surface->pending.y;
-    surface->buffer.transform  = surface->pending.transform;
-    surface->buffer.scale      = surface->pending.scale;
-
-    /* Stop listening on buffer destruction signal of the pending state. */
-    if (surface->pending.buffer)
-        wl_list_remove(&surface->pending.buffer_destroy_listener.link);
-
-    /* Migrate frame callbacks into current state. */
-    wl_list_insert_list(&surface->frame_callbacks, &surface->pending.frame_callbacks);
-    wl_list_init(&surface->pending.frame_callbacks);
-
-    /* Calculate surface size. */
     surface->w = 0;
     surface->h = 0;
 
@@ -383,17 +363,59 @@ pepper_surface_commit(pepper_surface_t *surface)
             surface->h = surface->buffer.buffer->w;
             break;
         }
+
+        surface->w /= surface->buffer.scale;
+        surface->h /= surface->buffer.scale;
+    }
+}
+
+static void
+attach_surface_to_outputs(pepper_surface_t *surface)
+{
+    /* TODO: */
+}
+
+void
+pepper_surface_commit(pepper_surface_t *surface)
+{
+    /* surface.attach(). */
+    if (surface->pending.newly_attached)
+    {
+        if (surface->pending.buffer)
+        {
+            wl_list_remove(&surface->pending.buffer_destroy_listener.link);
+            pepper_buffer_reference(surface->pending.buffer);
+        }
+
+        if (surface->buffer.buffer)
+            pepper_buffer_unreference(surface->buffer.buffer);
+
+        surface->buffer.buffer   = surface->pending.buffer;
+        surface->buffer.x       += surface->pending.x;
+        surface->buffer.y       += surface->pending.y;
+
+        surface->pending.newly_attached = PEPPER_FALSE;
+
+        /* Attach to all outputs. */
+        attach_surface_to_outputs(surface);
     }
 
-    surface->w /= surface->buffer.scale;
-    surface->h /= surface->buffer.scale;
+    /* surface.set_buffer_transform(), surface.set_buffer_scale(). */
+    surface->buffer.transform  = surface->pending.transform;
+    surface->buffer.scale      = surface->pending.scale;
 
-    /* Commit damage region. Pending state's damage is consumed by commit. */
+    surface_update_size(surface);
+
+    /* surface.frame(). */
+    wl_list_insert_list(&surface->frame_callbacks, &surface->pending.frame_callbacks);
+    wl_list_init(&surface->pending.frame_callbacks);
+
+    /* surface.damage(). */
     pixman_region32_union(&surface->damage_region,
                           &surface->damage_region, &surface->pending.damage_region);
     pixman_region32_clear(&surface->pending.damage_region);
 
-    /* Are we safe here just pointing to the region objects in the pending states?? */
+    /* surface.set_opaque_region(), surface.set_input_region(). */
     pixman_region32_copy(&surface->opaque_region, &surface->pending.opaque_region);
     pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
 
