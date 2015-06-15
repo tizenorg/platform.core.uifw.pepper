@@ -81,6 +81,4 @@ pepper_drm_destroy(pepper_drm_t *drm)
         udev_unref(drm->udev);
 
     free(drm);
-
-    return;
 }

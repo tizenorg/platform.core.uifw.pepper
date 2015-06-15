@@ -14,7 +14,6 @@ pointer_set_cursor(struct wl_client *client, struct wl_resource *resource, uint3
                    struct wl_resource *surface_resource, int32_t x, int32_t y)
 {
     /* TODO */
-    return;
 }
 
 static void
@@ -51,7 +50,6 @@ seat_get_pointer(struct wl_client *client, struct wl_resource *resource, uint32_
 
     /* TODO */
 
-    return;
 }
 
 static void
@@ -87,7 +85,6 @@ seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32
 
     /* TODO */
 
-    return;
 }
 
 static void
@@ -122,7 +119,6 @@ seat_get_touch(struct wl_client *client, struct wl_resource *resource, uint32_t 
 
     /* TODO */
 
-    return;
 }
 
 static const struct wl_seat_interface seat_interface = {
@@ -171,8 +167,6 @@ pointer_destroy(pepper_seat_t *seat)
     wl_resource_for_each(resource, resource_list)
         wl_resource_destroy(resource);
     pepper_free(seat->pointer);
-
-    return;
 }
 
 static pepper_keyboard_t *
@@ -202,8 +196,6 @@ keyboard_destroy(pepper_seat_t *seat)
     wl_resource_for_each(resource, resource_list)
         wl_resource_destroy(resource);
     pepper_free(seat->keyboard);
-
-    return;
 }
 
 static pepper_touch_t *
@@ -233,8 +225,6 @@ touch_destroy(pepper_seat_t *seat)
     wl_resource_for_each(resource, resource_list)
         wl_resource_destroy(resource);
     pepper_free(seat->touch);
-
-    return;
 }
 
 static void
@@ -288,8 +278,6 @@ seat_set_capabilities(pepper_seat_t *seat, uint32_t caps)
 
     wl_resource_for_each(resource, &seat->resources)
         wl_seat_send_capabilities(resource, caps);
-
-    return;
 }
 
 static void
@@ -300,8 +288,6 @@ handle_seat_set_capabilities(struct wl_listener *listener, void *data)
 
     caps = seat->interface->get_capabilities(data);
     seat_set_capabilities(seat, caps);
-
-    return;
 }
 
 static void
@@ -312,8 +298,6 @@ seat_set_name(pepper_seat_t *seat, const char *name)
     seat->name = name;
     wl_resource_for_each(resource, &seat->resources)
         wl_seat_send_name(resource, name);
-
-    return;
 }
 
 static void
@@ -324,8 +308,6 @@ handle_seat_set_name(struct wl_listener *listener, void *data)
 
     name = seat->interface->get_name(data);
     seat_set_name(seat, name);
-
-    return;
 }
 
 PEPPER_API pepper_seat_t *
