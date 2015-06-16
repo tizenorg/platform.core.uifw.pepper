@@ -49,7 +49,7 @@ handle_resource_destroy(struct wl_resource *resource)
 }
 
 shell_surface_t *
-shell_surface_create(shell_t *shell, pepper_surface_t *surface, struct wl_client *client,
+shell_surface_create(shell_t *shell, pepper_object_t *surface, struct wl_client *client,
                      const char *role_name, const struct wl_interface *interface,
                      const void *implementation, uint32_t version, uint32_t id)
 {
@@ -78,7 +78,7 @@ shell_surface_create(shell_t *shell, pepper_surface_t *surface, struct wl_client
     wl_client_add_destroy_listener(client, &shsurf->client_destroy_listener);
 
     shsurf->surface_destroy_listener.notify = handle_surface_destroy;
-    pepper_surface_add_destroy_listener(surface, &shsurf->surface_destroy_listener);
+    pepper_object_add_destroy_listener(surface, &shsurf->surface_destroy_listener);
 
     return shsurf;
 }

@@ -210,7 +210,7 @@ fini_renderer(fbdev_output_t *output)
 pepper_bool_t
 pepper_fbdev_output_create(pepper_fbdev_t *fbdev)
 {
-    fbdev_output_t             *output;
+    fbdev_output_t             *output = NULL;
 
     int                         fd;
     struct fb_fix_screeninfo    fixed_info;

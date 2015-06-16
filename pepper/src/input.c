@@ -145,7 +145,7 @@ pointer_create(pepper_seat_t *seat)
 {
     pepper_pointer_t *pointer;
 
-    pointer = (pepper_pointer_t *)pepper_calloc(1, sizeof(pepper_pointer_t));
+    pointer = (pepper_pointer_t *)pepper_object_alloc(sizeof(pepper_pointer_t), PEPPER_POINTER);
     if (!pointer)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -174,7 +174,7 @@ keyboard_create(pepper_seat_t *seat)
 {
     pepper_keyboard_t   *keyboard;
 
-    keyboard = (pepper_keyboard_t *)pepper_calloc(1, sizeof(pepper_keyboard_t));
+    keyboard = (pepper_keyboard_t *)pepper_object_alloc(sizeof(pepper_keyboard_t), PEPPER_KEYBOARD);
     if (!keyboard)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -203,7 +203,7 @@ touch_create(pepper_seat_t *seat)
 {
     pepper_touch_t *touch;
 
-    touch = (pepper_touch_t *)pepper_calloc(1, sizeof(pepper_touch_t));
+    touch = (pepper_touch_t *)pepper_object_alloc(sizeof(pepper_touch_t), PEPPER_TOUCH);
     if (!touch)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -310,14 +310,17 @@ handle_seat_set_name(struct wl_listener *listener, void *data)
     seat_set_name(seat, name);
 }
 
-PEPPER_API pepper_seat_t *
-pepper_compositor_add_seat(pepper_compositor_t *compositor,
+PEPPER_API pepper_object_t *
+pepper_compositor_add_seat(pepper_object_t *c,
                            const pepper_seat_interface_t *interface,
                            void *data)
 {
-    pepper_seat_t *seat;
+    pepper_seat_t       *seat;
+    pepper_compositor_t *compositor = (pepper_compositor_t *)c;
 
-    seat = (pepper_seat_t *)pepper_calloc(1, sizeof(pepper_seat_t));
+    CHECK_MAGIC_AND_NON_NULL(c, PEPPER_COMPOSITOR);
+
+    seat = (pepper_seat_t *)pepper_object_alloc(sizeof(pepper_seat_t), PEPPER_SEAT);
     if (!seat)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -339,7 +342,7 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
 
     seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat,
                                     bind_seat);
-    return seat;
+    return &seat->base;
 }
 
 void
@@ -350,12 +353,15 @@ pepper_seat_update_modifier(pepper_seat_t *seat, pepper_input_event_t *event)
 }
 
 pepper_bool_t
-pepper_compositor_event_handler(pepper_seat_t           *seat,
+pepper_compositor_event_handler(pepper_object_t         *s,
                                 pepper_input_event_t    *event,
                                 void                    *data)
 {
     /* TODO: */
     /* pepper_compositor_t *compositor = data; */
+
+    pepper_seat_t *seat = (pepper_seat_t *)s;
+    CHECK_MAGIC_AND_NON_NULL(s, PEPPER_SEAT);
 
     switch(event->type)
     {
@@ -366,7 +372,7 @@ pepper_compositor_event_handler(pepper_seat_t           *seat,
     case PEPPER_INPUT_EVENT_POINTER_BUTTON:
         {
             /* FIXME: Send focused client only */
-            struct wl_display   *display = pepper_compositor_get_display(seat->compositor);
+            struct wl_display   *display = pepper_compositor_get_display(&seat->compositor->base);
             uint32_t             serial  = wl_display_next_serial(display);
             struct wl_resource  *pointer;
 
@@ -398,11 +404,14 @@ pepper_compositor_event_handler(pepper_seat_t           *seat,
 }
 
 PEPPER_API pepper_event_hook_t *
-pepper_compositor_add_event_hook(pepper_compositor_t      *compositor,
-                                 pepper_event_handler_t    handler,
-                                 void                     *data)
+pepper_compositor_add_event_hook(pepper_object_t           *c,
+                                 pepper_event_handler_t     handler,
+                                 void                      *data)
 {
     pepper_event_hook_t *hook;
+    pepper_compositor_t *compositor = (pepper_compositor_t *)c;
+
+    CHECK_MAGIC_AND_NON_NULL(c, PEPPER_COMPOSITOR);
 
     if( !handler )
         return NULL;
@@ -430,17 +439,20 @@ pepper_event_hook_destroy(pepper_event_hook_t     *hook)
 }
 
 PEPPER_API pepper_bool_t
-pepper_seat_handle_event(pepper_seat_t *seat, pepper_input_event_t *event)
+pepper_seat_handle_event(pepper_object_t *s, pepper_input_event_t *event)
 {
+    pepper_seat_t           *seat = (pepper_seat_t *)s;
     pepper_compositor_t     *compositor = seat->compositor;
     pepper_event_hook_t     *hook, *tmp;
     pepper_bool_t            ret = PEPPER_FALSE;
+
+    CHECK_MAGIC_AND_NON_NULL(s, PEPPER_SEAT);
 
     /* Iterate installed hook chain. */
     /* XXX: this code is not thread-safe */
     wl_list_for_each_safe(hook, tmp, &compositor->event_hook_chain, link)
     {
-        ret = hook->handler(seat, event, hook->data);
+        ret = hook->handler(&seat->base, event, hook->data);
 
         /* Event consumed, do not delegate to next element */
         if( PEPPER_TRUE == ret)

@@ -6,7 +6,7 @@ handle_surface_destroy(struct wl_listener *listener, void *data)
 {
     pepper_view_t *view = pepper_container_of(listener, pepper_view_t, surface_destroy_listener);
     PEPPER_ASSERT(view->surface != NULL);
-    pepper_view_destroy(view);
+    pepper_view_destroy(&view->base);
 }
 
 static void
@@ -39,19 +39,22 @@ view_geometry_dirty(pepper_view_t *view)
         view_geometry_dirty(child);
 }
 
-PEPPER_API pepper_view_t *
-pepper_compositor_add_view(pepper_compositor_t *compositor,
-                           pepper_view_t *parent, pepper_view_t *pos, pepper_surface_t *surface)
+PEPPER_API pepper_object_t *
+pepper_compositor_add_view(pepper_object_t *comp,
+                           pepper_object_t *par, pepper_object_t *pos, pepper_object_t *sfc)
 {
-    pepper_view_t *view;
+    pepper_view_t       *view;
+    pepper_compositor_t *compositor = (pepper_compositor_t *)comp;
+    pepper_view_t       *parent = (pepper_view_t *)par;
+    pepper_view_t       *position = (pepper_view_t *)pos;
+    pepper_surface_t    *surface = (pepper_surface_t *)sfc;
 
-    if (!compositor)
-    {
-        PEPPER_ERROR("Compositor must be given.\n");
-        return NULL;
-    }
+    CHECK_MAGIC_AND_NON_NULL(comp, PEPPER_COMPOSITOR);
+    CHECK_MAGIC_IF_NON_NULL(par, PEPPER_VIEW);
+    CHECK_MAGIC_IF_NON_NULL(pos, PEPPER_VIEW);
+    CHECK_MAGIC_IF_NON_NULL(sfc, PEPPER_SURFACE);
 
-    view = pepper_calloc(1, sizeof(pepper_view_t));
+    view = (pepper_view_t *)pepper_object_alloc(sizeof(pepper_view_t), PEPPER_VIEW);
     if (!view)
     {
         PEPPER_ERROR("Failed to allocate memory.\n");
@@ -59,8 +62,6 @@ pepper_compositor_add_view(pepper_compositor_t *compositor,
     }
 
     view->compositor = compositor;
-    wl_signal_init(&view->destroy_signal);
-
     view->parent = parent;
 
     wl_list_init(&view->child_list);
@@ -73,7 +74,7 @@ pepper_compositor_add_view(pepper_compositor_t *compositor,
     {
         wl_list_insert(surface->view_list.next, &view->surface_link);
         view->surface_destroy_listener.notify = handle_surface_destroy;
-        pepper_surface_add_destroy_listener(surface, &view->surface_destroy_listener);
+        pepper_object_add_destroy_listener(&surface->base, &view->surface_destroy_listener);
     }
     else
     {
@@ -83,8 +84,8 @@ pepper_compositor_add_view(pepper_compositor_t *compositor,
     pixman_region32_init(&view->clip_region);
     pixman_region32_init(&view->visible_region);
 
-    if (pos)
-        wl_list_insert(pos->parent_link.next, &view->parent_link);
+    if (position)
+        wl_list_insert(position->parent_link.next, &view->parent_link);
     else if (parent)
         wl_list_insert(parent->child_list.next, &view->parent_link);
     else
@@ -96,25 +97,31 @@ pepper_compositor_add_view(pepper_compositor_t *compositor,
         view->container_list = &compositor->root_view_list;
 
     view_geometry_dirty(view);
-    return view;
+    return &view->base;
 }
 
-PEPPER_API pepper_view_t *
-pepper_compositor_get_top_root_view(pepper_compositor_t *compositor)
+PEPPER_API pepper_object_t *
+pepper_compositor_get_top_root_view(pepper_object_t *comp)
 {
+    pepper_compositor_t *compositor = (pepper_compositor_t *)comp;
+    CHECK_MAGIC_AND_NON_NULL(comp, PEPPER_COMPOSITOR);
+
     if (wl_list_empty(&compositor->root_view_list))
         return NULL;
 
-    return pepper_container_of(compositor->root_view_list.prev, pepper_view_t, parent_link);
+    return &pepper_container_of(compositor->root_view_list.prev, pepper_view_t, parent_link)->base;
 }
 
-PEPPER_API pepper_view_t *
-pepper_compositor_get_bottom_root_view(pepper_compositor_t *compositor)
+PEPPER_API pepper_object_t *
+pepper_compositor_get_bottom_root_view(pepper_object_t *comp)
 {
+    pepper_compositor_t *compositor = (pepper_compositor_t *)comp;
+    CHECK_MAGIC_AND_NON_NULL(comp, PEPPER_COMPOSITOR);
+
     if (wl_list_empty(&compositor->root_view_list))
         return NULL;
 
-    return pepper_container_of(compositor->root_view_list.next, pepper_view_t, parent_link);
+    return &pepper_container_of(compositor->root_view_list.next, pepper_view_t, parent_link)->base;
 }
 
 static void
@@ -133,15 +140,19 @@ pepper_view_unmap(pepper_view_t *view)
 }
 
 PEPPER_API void
-pepper_view_destroy(pepper_view_t *view)
+pepper_view_destroy(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
     pepper_view_t *child, *next;
 
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
+    pepper_object_fini(&view->base);
     pepper_view_unmap(view);
 
     /* Destroy all child views. */
     wl_list_for_each_safe(child, next, &view->child_list, parent_link)
-        pepper_view_destroy(child);
+        pepper_view_destroy(&child->base);
 
     wl_list_remove(&view->parent_link);
 
@@ -150,39 +161,42 @@ pepper_view_destroy(pepper_view_t *view)
 
     pixman_region32_fini(&view->clip_region);
 
-    /* Emit that the view is going to be destroyed. */
-    wl_signal_emit(&view->destroy_signal, view);
-
     pepper_free(view);
 }
 
-PEPPER_API void
-pepper_view_add_destroy_listener(pepper_view_t *view, struct wl_listener *listener)
+PEPPER_API pepper_object_t *
+pepper_view_get_compositor(pepper_object_t *v)
 {
-    wl_signal_add(&view->destroy_signal, listener);
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+    return &view->compositor->base;
 }
 
-PEPPER_API pepper_compositor_t *
-pepper_view_get_compositor(pepper_view_t *view)
+PEPPER_API pepper_object_t *
+pepper_view_get_parent(pepper_object_t *v)
 {
-    return view->compositor;
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+    return &view->parent->base;
 }
 
-PEPPER_API pepper_view_t *
-pepper_view_get_parent(pepper_view_t *view)
+PEPPER_API pepper_object_t *
+pepper_view_get_surface(pepper_object_t *v)
 {
-    return view->parent;
-}
-
-PEPPER_API pepper_surface_t *
-pepper_view_get_surface(pepper_view_t *view)
-{
-    return view->surface;
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+    return &view->surface->base;
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below)
+pepper_view_stack_above(pepper_object_t *v, pepper_object_t *blw)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    pepper_view_t *below = (pepper_view_t *)blw;
+
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+    CHECK_MAGIC_AND_NON_NULL(blw, PEPPER_VIEW);
+
     if (view == below)
         return PEPPER_TRUE;
 
@@ -199,8 +213,14 @@ pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below)
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above)
+pepper_view_stack_below(pepper_object_t *v, pepper_object_t *abv)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    pepper_view_t *above = (pepper_view_t *)abv;
+
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+    CHECK_MAGIC_AND_NON_NULL(abv, PEPPER_VIEW);
+
     if (view == above)
         return PEPPER_TRUE;
 
@@ -217,8 +237,11 @@ pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above)
 }
 
 PEPPER_API void
-pepper_view_stack_top(pepper_view_t *view)
+pepper_view_stack_top(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (view->container_list->prev == &view->parent_link)
         return;
 
@@ -230,8 +253,11 @@ pepper_view_stack_top(pepper_view_t *view)
 }
 
 PEPPER_API void
-pepper_view_stack_bottom(pepper_view_t *view)
+pepper_view_stack_bottom(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (view->container_list->next == &view->parent_link)
         return;
 
@@ -242,46 +268,61 @@ pepper_view_stack_bottom(pepper_view_t *view)
     view->need_damage = PEPPER_TRUE;
 }
 
-PEPPER_API pepper_view_t *
-pepper_view_get_above(pepper_view_t *view)
+PEPPER_API pepper_object_t *
+pepper_view_get_above(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (view->parent_link.next == view->container_list)
         return NULL;
 
-    return pepper_container_of(view->parent_link.next, pepper_view_t, parent_link);
+    return &pepper_container_of(view->parent_link.next, pepper_view_t, parent_link)->base;
 }
 
-PEPPER_API pepper_view_t *
-pepper_view_get_below(pepper_view_t *view)
+PEPPER_API pepper_object_t *
+pepper_view_get_below(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (view->parent_link.next == view->container_list)
         return NULL;
 
-    return pepper_container_of(view->parent_link.prev, pepper_view_t, parent_link);
+    return &pepper_container_of(view->parent_link.prev, pepper_view_t, parent_link)->base;
 }
 
 
-PEPPER_API pepper_view_t *
-pepper_view_get_top_child(pepper_view_t *view)
+PEPPER_API pepper_object_t *
+pepper_view_get_top_child(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (wl_list_empty(&view->child_list))
         return NULL;
 
-    return pepper_container_of(view->child_list.prev, pepper_view_t, parent_link);
+    return &pepper_container_of(view->child_list.prev, pepper_view_t, parent_link)->base;
 }
 
-PEPPER_API pepper_view_t *
-pepper_view_get_bottom_child(pepper_view_t *view)
+PEPPER_API pepper_object_t *
+pepper_view_get_bottom_child(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (wl_list_empty(&view->child_list))
         return NULL;
 
-    return pepper_container_of(view->child_list.next, pepper_view_t, parent_link);
+    return &pepper_container_of(view->child_list.next, pepper_view_t, parent_link)->base;
 }
 
 PEPPER_API void
-pepper_view_resize(pepper_view_t *view, float w, float h)
+pepper_view_resize(pepper_object_t *v, float w, float h)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (w < 0.0f)
         w = 0.0f;
 
@@ -295,8 +336,11 @@ pepper_view_resize(pepper_view_t *view, float w, float h)
 }
 
 PEPPER_API void
-pepper_view_get_size(pepper_view_t *view, float *w, float *h)
+pepper_view_get_size(pepper_object_t *v, float *w, float *h)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (w)
         *w = view->w;
 
@@ -305,8 +349,11 @@ pepper_view_get_size(pepper_view_t *view, float *w, float *h)
 }
 
 PEPPER_API void
-pepper_view_set_position(pepper_view_t *view, float x, float y)
+pepper_view_set_position(pepper_object_t *v, float x, float y)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     view->x = x;
     view->y = y;
 
@@ -314,8 +361,11 @@ pepper_view_set_position(pepper_view_t *view, float x, float y)
 }
 
 PEPPER_API void
-pepper_view_get_position(pepper_view_t *view, float *x, float *y)
+pepper_view_get_position(pepper_object_t *v, float *x, float *y)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (x)
         *x = view->x;
 
@@ -324,21 +374,29 @@ pepper_view_get_position(pepper_view_t *view, float *x, float *y)
 }
 
 PEPPER_API void
-pepper_view_set_transform(pepper_view_t *view, const pepper_matrix_t *matrix)
+pepper_view_set_transform(pepper_object_t *v, const pepper_matrix_t *matrix)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     memcpy(&view->transform, matrix, sizeof(pepper_matrix_t));
     view_geometry_dirty(view);
 }
 
 PEPPER_API const pepper_matrix_t *
-pepper_view_get_transform(pepper_view_t *view)
+pepper_view_get_transform(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return &view->transform;
 }
 
 PEPPER_API void
-pepper_view_set_visibility(pepper_view_t *view, pepper_bool_t visibility)
+pepper_view_set_visibility(pepper_object_t *v, pepper_bool_t visibility)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (view->visibility == visibility)
         return;
 
@@ -347,14 +405,19 @@ pepper_view_set_visibility(pepper_view_t *view, pepper_bool_t visibility)
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_get_visibility(pepper_view_t *view)
+pepper_view_get_visibility(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->visibility;
 }
 
 PEPPER_API void
-pepper_view_set_alpha(pepper_view_t *view, float alpha)
+pepper_view_set_alpha(pepper_object_t *v, float alpha)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (alpha < 0.0f)
         alpha = 0.0f;
 
@@ -369,14 +432,19 @@ pepper_view_set_alpha(pepper_view_t *view, float alpha)
 }
 
 PEPPER_API float
-pepper_view_get_alpha(pepper_view_t *view)
+pepper_view_get_alpha(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->alpha;
 }
 
 PEPPER_API void
-pepper_view_set_viewport(pepper_view_t *view, int x, int y, int w, int h)
+pepper_view_set_viewport(pepper_object_t *v, int x, int y, int w, int h)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (view->viewport.x == x && view->viewport.y == y &&
         view->viewport.w == w && view->viewport.h == h)
         return;
@@ -390,8 +458,11 @@ pepper_view_set_viewport(pepper_view_t *view, int x, int y, int w, int h)
 }
 
 PEPPER_API void
-pepper_view_get_viewport(pepper_view_t *view, int *x, int *y, int *w, int *h)
+pepper_view_get_viewport(pepper_object_t *v, int *x, int *y, int *w, int *h)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (x)
         *x = view->viewport.x;
 
@@ -406,8 +477,11 @@ pepper_view_get_viewport(pepper_view_t *view, int *x, int *y, int *w, int *h)
 }
 
 PEPPER_API void
-pepper_view_set_clip_to_parent(pepper_view_t *view, pepper_bool_t clip)
+pepper_view_set_clip_to_parent(pepper_object_t *v, pepper_bool_t clip)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (view->clip_to_parent == clip)
         return;
 
@@ -416,14 +490,19 @@ pepper_view_set_clip_to_parent(pepper_view_t *view, pepper_bool_t clip)
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_get_clip_to_parent(pepper_view_t *view)
+pepper_view_get_clip_to_parent(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->clip_to_parent;
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_set_clip_region(pepper_view_t *view, const pixman_region32_t *region)
+pepper_view_set_clip_region(pepper_object_t *v, const pixman_region32_t *region)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+
     if (!pixman_region32_copy(&view->clip_region, (pixman_region32_t *)region))
         return PEPPER_FALSE;
 
@@ -432,8 +511,10 @@ pepper_view_set_clip_region(pepper_view_t *view, const pixman_region32_t *region
 }
 
 PEPPER_API const pixman_region32_t *
-pepper_view_get_clip_region(pepper_view_t *view)
+pepper_view_get_clip_region(pepper_object_t *v)
 {
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return &view->clip_region;
 }
 

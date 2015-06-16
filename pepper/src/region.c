@@ -47,10 +47,7 @@ pepper_region_create(pepper_compositor_t   *compositor,
                      struct wl_resource    *resource,
                      uint32_t               id)
 {
-    pepper_region_t *region;
-
-    region = (pepper_region_t *)pepper_calloc(1, sizeof(pepper_region_t));
-
+    pepper_region_t *region = pepper_calloc(1, sizeof(pepper_region_t));
     if (!region)
     {
         PEPPER_ERROR("Surface memory allocation failed\n");
@@ -81,4 +78,5 @@ void
 pepper_region_destroy(pepper_region_t *region)
 {
     pixman_region32_fini(&region->pixman_region);
+    pepper_free(region);
 }

@@ -39,7 +39,7 @@ struct x11_shm_image
 
 struct x11_output
 {
-    pepper_output_t             *base;
+    pepper_object_t             *base;
     pepper_x11_connection_t     *connection;
 
     int32_t                  x, y;
@@ -70,7 +70,7 @@ struct x11_output
 
 struct x11_seat
 {
-    pepper_seat_t           *base;
+    pepper_object_t         *base;
 
     uint32_t                 id;
     uint32_t                 caps;
@@ -90,7 +90,7 @@ struct x11_seat
 
 struct pepper_x11_connection
 {
-    pepper_compositor_t    *compositor;
+    pepper_object_t        *compositor;
     char                   *display_name;
 
     Display                *display;

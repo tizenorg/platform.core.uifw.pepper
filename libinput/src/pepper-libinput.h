@@ -11,7 +11,7 @@ extern "C" {
 typedef struct pepper_libinput   pepper_libinput_t;
 
 PEPPER_API pepper_libinput_t *
-pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev);
+pepper_libinput_create(pepper_object_t *compositor, struct udev *udev);
 
 PEPPER_API void
 pepper_libinput_destroy(pepper_libinput_t *input);

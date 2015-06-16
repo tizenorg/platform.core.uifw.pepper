@@ -22,7 +22,7 @@ handle_sigint(int signal_number, void *data)
 int
 main(int argc, char **argv)
 {
-    pepper_compositor_t    *compositor;
+    pepper_object_t        *compositor;
     pepper_fbdev_t         *fbdev;
     struct wl_display      *display;
     struct wl_event_loop   *loop;

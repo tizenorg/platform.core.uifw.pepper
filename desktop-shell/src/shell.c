@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 shell_t *
-shell_create(pepper_compositor_t *compositor, struct wl_client *client,
+shell_create(pepper_object_t *compositor, struct wl_client *client,
              const struct wl_interface *interface, const void *implementation,
              uint32_t version, uint32_t id)
 {
@@ -30,7 +30,7 @@ shell_create(pepper_compositor_t *compositor, struct wl_client *client,
 }
 
 PEPPER_API pepper_bool_t
-pepper_desktop_shell_init(pepper_compositor_t *compositor)
+pepper_desktop_shell_init(pepper_object_t *compositor)
 {
     if (!init_wl_shell(compositor))
         return PEPPER_FALSE;

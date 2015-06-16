@@ -7,8 +7,8 @@
 int
 main(int argc, char **argv)
 {
-    pepper_compositor_t     *compositor;
-    pepper_output_t         *output;
+    pepper_object_t         *compositor;
+    pepper_object_t         *output;
     pepper_output_mode_t     mode;
     pepper_x11_connection_t *conn;
 

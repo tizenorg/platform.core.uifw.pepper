@@ -87,7 +87,7 @@ static void
 shell_get_shell_surface(struct wl_client *client, struct wl_resource *resource,
                         uint32_t id, struct wl_resource *surface_resource)
 {
-    pepper_surface_t   *surface = wl_resource_get_user_data(surface_resource);
+    pepper_object_t    *surface = wl_resource_get_user_data(surface_resource);
     shell_t            *shell = wl_resource_get_user_data(resource);
 
     shell_surface_create(shell, surface, client, "wl_shell_surface", &wl_shell_surface_interface,
@@ -102,12 +102,12 @@ static const struct wl_shell_interface shell_implementation =
 static void
 bind_shell(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 {
-    shell_create((pepper_compositor_t *)data, client,
+    shell_create((pepper_object_t *)data, client,
                  &wl_shell_interface, &shell_implementation, version, id);
 }
 
 pepper_bool_t
-init_wl_shell(pepper_compositor_t *compositor)
+init_wl_shell(pepper_object_t *compositor)
 {
     struct wl_display  *display = pepper_compositor_get_display(compositor);
     struct wl_global   *global;

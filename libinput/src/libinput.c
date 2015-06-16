@@ -498,7 +498,7 @@ handle_libinput_events(int fd, uint32_t mask, void *data)
 }
 
 PEPPER_API pepper_libinput_t *
-pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev)
+pepper_libinput_create(pepper_object_t *compositor, struct udev *udev)
 {
     struct wl_display      *display;
     struct wl_event_loop   *loop;

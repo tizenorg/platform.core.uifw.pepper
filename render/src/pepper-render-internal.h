@@ -9,21 +9,21 @@
 
 struct pepper_renderer
 {
-    pepper_compositor_t    *compositor;
+    pepper_object_t *compositor;
 
     void            (*destroy)(pepper_renderer_t *renderer);
 
     pepper_bool_t   (*attach_surface)(pepper_renderer_t *renderer,
-                                      pepper_surface_t *surface, int *w, int *h);
+                                      pepper_object_t *surface, int *w, int *h);
 
     void            (*flush_surface_damage)(pepper_renderer_t *renderer,
-                                            pepper_surface_t *surface);
+                                            pepper_object_t *surface);
 
     pepper_bool_t   (*read_pixels)(pepper_renderer_t *renderer,
                                    int x, int y, int w, int h,
                                    void *pixels, pepper_format_t format);
 
-    void            (*repaint_output)(pepper_renderer_t *renderer, pepper_output_t *output);
+    void            (*repaint_output)(pepper_renderer_t *renderer, pepper_object_t *output);
 };
 
 #endif /* PEPPER_RENDER_INTERNAL_H */

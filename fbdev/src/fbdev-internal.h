@@ -15,7 +15,7 @@ typedef struct fbdev_output     fbdev_output_t;
 
 struct pepper_fbdev
 {
-    pepper_compositor_t        *compositor;
+    pepper_object_t            *compositor;
     pepper_libinput_t          *input;
 
     struct wl_list              output_list;
@@ -29,7 +29,7 @@ struct pepper_fbdev
 struct fbdev_output
 {
     pepper_fbdev_t             *fbdev;
-    pepper_output_t            *base;
+    pepper_object_t            *base;
 
     struct wl_list              link;
 

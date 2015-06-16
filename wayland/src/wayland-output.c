@@ -310,7 +310,7 @@ init_renderer(wayland_output_t *output, const char *name)
     return PEPPER_FALSE;
 }
 
-PEPPER_API pepper_output_t *
+PEPPER_API pepper_object_t *
 pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const char *renderer)
 {
     wayland_output_t   *output;

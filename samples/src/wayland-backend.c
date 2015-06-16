@@ -7,10 +7,10 @@
 int
 main(int argc, char **argv)
 {
-    pepper_compositor_t    *compositor;
-    pepper_wayland_t       *conn;
-    pepper_output_t        *output;
-    struct wl_display      *display;
+    pepper_object_t    *compositor;
+    pepper_wayland_t   *conn;
+    pepper_object_t    *output;
+    struct wl_display  *display;
 
     compositor = pepper_compositor_create("wayland-1");
     PEPPER_ASSERT(compositor);

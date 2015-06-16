@@ -6,18 +6,85 @@
 #include <wayland-util.h>
 #include <pixman.h>
 
+typedef struct pepper_compositor    pepper_compositor_t;
+typedef struct pepper_output        pepper_output_t;
+typedef struct pepper_surface       pepper_surface_t;
+typedef struct pepper_buffer        pepper_buffer_t;
+typedef struct pepper_view          pepper_view_t;
+typedef struct pepper_seat          pepper_seat_t;
+typedef struct pepper_pointer       pepper_pointer_t;
+typedef struct pepper_keyboard      pepper_keyboard_t;
+typedef struct pepper_touch         pepper_touch_t;
+
+#define CHECK_NON_NULL(ptr)                                                     \
+    do {                                                                        \
+        if ((ptr) == NULL) {                                                    \
+            PEPPER_ERROR("NULL check failed.\n");                               \
+        }                                                                       \
+    } while (0)
+
+#define CHECK_MAGIC(obj, val)                                                   \
+    do {                                                                        \
+        if (((obj)->magic) != val)                                              \
+        {                                                                       \
+            PEPPER_ERROR("magic check failed : %p is not an %s\n", obj, #val);  \
+        }                                                                       \
+    } while (0)
+
+#define CHECK_MAGIC_AND_NON_NULL(obj, val)                                      \
+    do {                                                                        \
+        CHECK_NON_NULL(obj);                                                    \
+        CHECK_MAGIC(obj, val);                                                  \
+    } while (0)
+
+#define CHECK_MAGIC_IF_NON_NULL(obj, val)                                       \
+    do {                                                                        \
+        if (obj)                                                                \
+            CHECK_MAGIC(obj, val);                                              \
+    } while (0)
+
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
-
 typedef struct pepper_data_source   pepper_data_source_t;
 typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
 
+enum pepper_magic
+{
+    PEPPER_COMPOSITOR   = 0x00000001,
+    PEPPER_OUTPUT       = 0x00000002,
+    PEPPER_SURFACE      = 0x00000003,
+    PEPPER_BUFFER       = 0x00000004,
+    PEPPER_VIEW         = 0x00000005,
+    PEPPER_SEAT         = 0x00000006,
+    PEPPER_POINTER      = 0x00000007,
+    PEPPER_KEYBOARD     = 0x00000008,
+    PEPPER_TOUCH        = 0x00000009,
+};
+
+struct pepper_object
+{
+    uint32_t            magic;
+    struct wl_signal    destroy_signal;
+    pepper_map_t       *user_data_map;
+};
+
+pepper_object_t *
+pepper_object_alloc(size_t size, uint32_t magic);
+
+pepper_bool_t
+pepper_object_init(pepper_object_t *object, uint32_t magic);
+
+void
+pepper_object_fini(pepper_object_t *object);
+
 /* compositor */
 struct pepper_compositor
 {
+    pepper_object_t     base;
     char               *socket_name;
     struct wl_display  *display;
+
     struct wl_list      surfaces;
     struct wl_list      regions;
     struct wl_list      seat_list;
@@ -33,6 +100,7 @@ struct pepper_compositor
 
 struct pepper_output
 {
+    pepper_object_t             base;
     pepper_compositor_t        *compositor;
 
     struct wl_global           *global;
@@ -67,10 +135,10 @@ pepper_output_repaint(pepper_output_t *output);
 
 struct pepper_buffer
 {
+    pepper_object_t         base;
     struct wl_resource     *resource;
 
     int                     ref_count;
-    struct wl_signal        destroy_signal;
     struct wl_listener      resource_destroy_listener;
 
     /* the buffer size is unknown until it is actually attached to a renderer. */
@@ -97,9 +165,9 @@ struct pepper_surface_state
 
 struct pepper_surface
 {
+    pepper_object_t         base;
     pepper_compositor_t    *compositor;
     struct wl_resource     *resource;
-    struct wl_signal        destroy_signal;
 
     struct {
         pepper_buffer_t    *buffer;
@@ -140,6 +208,7 @@ pepper_surface_commit(pepper_surface_t *surface);
 
 struct pepper_region
 {
+    pepper_object_t         base;
     pepper_compositor_t    *compositor;
     struct wl_resource     *resource;
     pixman_region32_t       pixman_region;
@@ -157,15 +226,10 @@ pepper_region_destroy(pepper_region_t *region);
 pepper_buffer_t *
 pepper_buffer_from_resource(struct wl_resource *resource);
 
-void
-pepper_buffer_reference(pepper_buffer_t *buffer);
-
-void
-pepper_buffer_unreference(pepper_buffer_t *buffer);
-
 /* Input */
 struct pepper_seat
 {
+    pepper_object_t             base;
     pepper_compositor_t        *compositor;
     pepper_pointer_t           *pointer;
     pepper_keyboard_t          *keyboard;
@@ -190,18 +254,21 @@ struct pepper_seat
 
 struct pepper_pointer
 {
+    pepper_object_t             base;
     pepper_seat_t              *seat;
     struct wl_list              resources;
 };
 
 struct pepper_keyboard
 {
+    pepper_object_t             base;
     pepper_seat_t              *seat;
     struct wl_list              resources;
 };
 
 struct pepper_touch
 {
+    pepper_object_t             base;
     pepper_seat_t              *seat;
     struct wl_list              resources;
 };
@@ -235,8 +302,8 @@ pepper_data_device_manager_init(struct wl_display *display);
 
 struct pepper_view
 {
+    pepper_object_t         base;
     pepper_compositor_t    *compositor;
-    struct wl_signal        destroy_signal;
 
     /* Hierarchy. */
     pepper_view_t          *parent;
@@ -277,6 +344,7 @@ struct pepper_view
 
 struct pepper_layer
 {
+    pepper_object_t         base;
     pepper_compositor_t    *compositor;
     struct wl_list          link;
     struct wl_list          views;
@@ -296,7 +364,7 @@ struct pepper_event_hook
 };
 
 pepper_bool_t
-pepper_compositor_event_handler(pepper_seat_t           *seat,
+pepper_compositor_event_handler(pepper_object_t         *seat,
                                 pepper_input_event_t    *event,
                                 void                    *data);
 

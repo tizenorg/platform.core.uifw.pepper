@@ -20,7 +20,7 @@ typedef struct wayland_shm_buffer   wayland_shm_buffer_t;
 
 struct pepper_wayland
 {
-    pepper_compositor_t    *pepper;
+    pepper_object_t        *pepper;
 
     char                   *socket_name;
     struct wl_display      *display;
@@ -60,7 +60,7 @@ struct wayland_shm_buffer
 struct wayland_output
 {
     pepper_wayland_t           *conn;
-    pepper_output_t            *base;
+    pepper_object_t            *base;
 
     struct wl_signal            destroy_signal;
     struct wl_signal            mode_change_signal;
@@ -99,7 +99,7 @@ struct wayland_output
 
 struct wayland_seat
 {
-    pepper_seat_t              *base;
+    pepper_object_t            *base;
 
     uint32_t                    id;
     uint32_t                    caps;

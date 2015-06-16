@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 PEPPER_API pepper_bool_t
-pepper_desktop_shell_init(pepper_compositor_t *compositor);
+pepper_desktop_shell_init(pepper_object_t *compositor);
 
 #ifdef __cplusplus
 }

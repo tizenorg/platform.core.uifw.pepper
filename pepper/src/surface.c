@@ -84,7 +84,7 @@ surface_attach(struct wl_client    *client,
     surface->pending.newly_attached = PEPPER_TRUE;
 
     if (buffer)
-        wl_signal_add(&buffer->destroy_signal, &surface->pending.buffer_destroy_listener);
+        pepper_object_add_destroy_listener(&buffer->base, &surface->pending.buffer_destroy_listener);
 }
 
 static void
@@ -217,53 +217,18 @@ static const struct wl_surface_interface surface_implementation =
     surface_set_buffer_scale
 };
 
-static int
-user_data_hash(const void *key, int key_length)
-{
-#if INTPTR_MAX == INT32_MAX
-    return ((uint32_t)key) >> 2;
-#elif INTPTR_MAX == INT64_MAX
-    return ((uint64_t)key) >> 3;
-#else
-    #error "Not 32 or 64bit system"
-#endif
-}
-
-static int
-user_data_key_length(const void *key)
-{
-    return sizeof(key);
-}
-
-static int
-user_data_key_compare(const void *key0, int key0_length, const void *key1, int key1_length)
-{
-    return (int)(key0 - key1);
-}
-
 pepper_surface_t *
 pepper_surface_create(pepper_compositor_t *compositor,
                       struct wl_client *client,
                       struct wl_resource *resource,
                       uint32_t id)
 {
-    pepper_surface_t *surface;
-
-    surface = (pepper_surface_t *)pepper_calloc(1, sizeof(pepper_surface_t));
-
+    pepper_surface_t *surface = (pepper_surface_t *)pepper_object_alloc(sizeof(pepper_surface_t),
+                                                                        PEPPER_SURFACE);
     if (!surface)
     {
         PEPPER_ERROR("Surface memory allocation failed\n");
         wl_resource_post_no_memory(resource);
-        return NULL;
-    }
-
-    surface->user_data_map = pepper_map_create(5, user_data_hash, user_data_key_length,
-                                               user_data_key_compare);
-    if (!surface->user_data_map)
-    {
-        PEPPER_ERROR("User data map creation failed. Maybe OOM??\n");
-        pepper_free(surface);
         return NULL;
     }
 
@@ -294,7 +259,6 @@ pepper_surface_create(pepper_compositor_t *compositor,
     pixman_region32_init(&surface->input_region);
 
     wl_list_init(&surface->frame_callbacks);
-    wl_signal_init(&surface->destroy_signal);
     wl_list_init(&surface->view_list);
 
     return surface;
@@ -305,12 +269,11 @@ pepper_surface_destroy(pepper_surface_t *surface)
 {
     struct wl_resource *callback, *next;
 
-    wl_signal_emit(&surface->destroy_signal, NULL /* FIXME */);
-
+    pepper_object_fini(&surface->base);
     pepper_surface_state_fini(&surface->pending);
 
     if (surface->buffer.buffer)
-        pepper_buffer_unreference(surface->buffer.buffer);
+        pepper_buffer_unreference(&surface->buffer.buffer->base);
 
     pixman_region32_fini(&surface->damage_region);
     pixman_region32_fini(&surface->opaque_region);
@@ -336,7 +299,7 @@ pepper_surface_schedule_repaint(pepper_surface_t *surface)
     /* FIXME: Find outputs to be repainted */
     pepper_output_t *output;
     wl_list_for_each(output, &surface->compositor->output_list, link)
-        pepper_output_schedule_repaint(output);
+        pepper_output_schedule_repaint(&output->base);
 }
 
 static void
@@ -384,11 +347,11 @@ pepper_surface_commit(pepper_surface_t *surface)
         if (surface->pending.buffer)
         {
             wl_list_remove(&surface->pending.buffer_destroy_listener.link);
-            pepper_buffer_reference(surface->pending.buffer);
+            pepper_buffer_reference(&surface->pending.buffer->base);
         }
 
         if (surface->buffer.buffer)
-            pepper_buffer_unreference(surface->buffer.buffer);
+            pepper_buffer_unreference(&surface->buffer.buffer->base);
 
         surface->buffer.buffer   = surface->pending.buffer;
         surface->buffer.x       += surface->pending.x;
@@ -422,21 +385,19 @@ pepper_surface_commit(pepper_surface_t *surface)
     pepper_surface_schedule_repaint(surface);
 }
 
-PEPPER_API void
-pepper_surface_add_destroy_listener(pepper_surface_t *surface, struct wl_listener *listener)
-{
-    wl_signal_add(&surface->destroy_signal, listener);
-}
-
 PEPPER_API const char *
-pepper_surface_get_role(pepper_surface_t *surface)
+pepper_surface_get_role(pepper_object_t *sfc)
 {
-    return surface->role;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
+    return ((pepper_surface_t *)sfc)->role;
 }
 
 PEPPER_API pepper_bool_t
-pepper_surface_set_role(pepper_surface_t *surface, const char *role)
+pepper_surface_set_role(pepper_object_t *sfc, const char *role)
 {
+    pepper_surface_t *surface = (pepper_surface_t *)sfc;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
+
     if (surface->role)
         return PEPPER_FALSE;
 
@@ -447,28 +408,19 @@ pepper_surface_set_role(pepper_surface_t *surface, const char *role)
     return PEPPER_TRUE;
 }
 
-PEPPER_API void
-pepper_surface_set_user_data(pepper_surface_t *surface, const void *key, void *data,
-                             pepper_free_func_t free_func)
+PEPPER_API pepper_object_t *
+pepper_surface_get_buffer(pepper_object_t *sfc)
 {
-    pepper_map_set(surface->user_data_map, key, data, free_func);
-}
-
-PEPPER_API void *
-pepper_surface_get_user_data(pepper_surface_t *surface, const void *key)
-{
-    return pepper_map_get(surface->user_data_map, key);
-}
-
-PEPPER_API pepper_buffer_t *
-pepper_surface_get_buffer(pepper_surface_t *surface)
-{
-    return surface->buffer.buffer;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
+    return &(((pepper_surface_t *)sfc)->buffer.buffer->base);
 }
 
 PEPPER_API void
-pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x, int32_t *y)
+pepper_surface_get_buffer_offset(pepper_object_t *sfc, int32_t *x, int32_t *y)
 {
+    pepper_surface_t *surface = (pepper_surface_t *)sfc;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
+
     if (x)
         *x = surface->buffer.x;
 
@@ -477,32 +429,42 @@ pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x, int32_t 
 }
 
 PEPPER_API int32_t
-pepper_surface_get_buffer_scale(pepper_surface_t *surface)
+pepper_surface_get_buffer_scale(pepper_object_t *sfc)
 {
+    pepper_surface_t *surface = (pepper_surface_t *)sfc;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return surface->buffer.scale;
 }
 
 PEPPER_API int32_t
-pepper_surface_get_buffer_transform(pepper_surface_t *surface)
+pepper_surface_get_buffer_transform(pepper_object_t *sfc)
 {
+    pepper_surface_t *surface = (pepper_surface_t *)sfc;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return surface->buffer.transform;
 }
 
 PEPPER_API const pixman_region32_t *
-pepper_surface_get_damage_region(pepper_surface_t *surface)
+pepper_surface_get_damage_region(pepper_object_t *sfc)
 {
+    pepper_surface_t *surface = (pepper_surface_t *)sfc;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return &surface->damage_region;
 }
 
 PEPPER_API const pixman_region32_t *
-pepper_surface_get_opaque_region(pepper_surface_t *surface)
+pepper_surface_get_opaque_region(pepper_object_t *sfc)
 {
+    pepper_surface_t *surface = (pepper_surface_t *)sfc;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return &surface->opaque_region;
 }
 
 PEPPER_API const pixman_region32_t *
-pepper_surface_get_input_region(pepper_surface_t *surface)
+pepper_surface_get_input_region(pepper_object_t *sfc)
 {
+    pepper_surface_t *surface = (pepper_surface_t *)sfc;
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return &surface->input_region;
 }
 

@@ -87,7 +87,7 @@ handle_wayland_event(int fd, uint32_t mask, void *data)
 }
 
 PEPPER_API pepper_wayland_t *
-pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name)
+pepper_wayland_connect(pepper_object_t *compositor, const char *socket_name)
 {
     pepper_wayland_t        *conn;
     struct wl_display       *compositor_display;

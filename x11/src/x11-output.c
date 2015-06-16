@@ -550,7 +550,7 @@ handle_connection_destroy(struct wl_listener *listener, void *data)
     x11_output_destroy(output);
 }
 
-PEPPER_API pepper_output_t *
+PEPPER_API pepper_object_t *
 pepper_x11_output_create(pepper_x11_connection_t *connection,
                          int32_t w,
                          int32_t h,
@@ -559,7 +559,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
     static const char       *window_name = "PePPer Compositor";
     static const char       *class_name  = "pepper-1\0PePPer Compositor";
 
-    pepper_output_t         *base;
+    pepper_object_t         *base;
     x11_output_t            *output;
 
     struct wl_display       *wldisplay;

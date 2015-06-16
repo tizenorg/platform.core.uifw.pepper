@@ -46,15 +46,15 @@ compositor_bind(struct wl_client *client,
     wl_resource_set_implementation(resource, &compositor_interface, compositor, NULL);
 }
 
-PEPPER_API pepper_compositor_t *
+PEPPER_API pepper_object_t *
 pepper_compositor_create(const char *socket_name)
 {
     pepper_compositor_t *compositor = NULL;
 
-    compositor = (pepper_compositor_t *)pepper_calloc(1, sizeof (pepper_compositor_t));
-
+    compositor = (pepper_compositor_t *)pepper_object_alloc(sizeof(pepper_compositor_t),
+                                                            PEPPER_COMPOSITOR);
     if (!compositor)
-        goto error;
+        return NULL;
 
     compositor->display = wl_display_create();
 
@@ -81,7 +81,7 @@ pepper_compositor_create(const char *socket_name)
     wl_list_init(&compositor->event_hook_chain);
 
     /* Install default input event handler */
-    if( NULL == pepper_compositor_add_event_hook(compositor,
+    if( NULL == pepper_compositor_add_event_hook(&compositor->base,
                                                  pepper_compositor_event_handler,
                                                  compositor))
     {
@@ -105,18 +105,23 @@ pepper_compositor_create(const char *socket_name)
     wl_list_init(&compositor->view_list);
     pixman_region32_init(&compositor->damage_region);
 
-    return compositor;
+    return &compositor->base;
 
 error:
     if (compositor)
-        pepper_compositor_destroy(compositor);
+        pepper_compositor_destroy(&compositor->base);
 
     return NULL;
 }
 
 PEPPER_API void
-pepper_compositor_destroy(pepper_compositor_t *compositor)
+pepper_compositor_destroy(pepper_object_t *cmp)
 {
+    pepper_compositor_t *compositor = (pepper_compositor_t *)cmp;
+    CHECK_MAGIC_AND_NON_NULL(cmp, PEPPER_COMPOSITOR);
+
+    pepper_object_fini(&compositor->base);
+
     if (compositor->display)
         wl_display_destroy(compositor->display);
 
@@ -124,13 +129,16 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
 }
 
 PEPPER_API struct wl_display *
-pepper_compositor_get_display(pepper_compositor_t *compositor)
+pepper_compositor_get_display(pepper_object_t *cmp)
 {
+    pepper_compositor_t *compositor = (pepper_compositor_t *)cmp;
+    CHECK_MAGIC_AND_NON_NULL(cmp, PEPPER_COMPOSITOR);
     return compositor->display;
 }
 
 void
 pepper_compositor_add_damage(pepper_compositor_t *compositor, pixman_region32_t *region)
 {
+    CHECK_MAGIC_AND_NON_NULL(&compositor->base, PEPPER_COMPOSITOR);
     pixman_region32_union(&compositor->damage_region, &compositor->damage_region, region);
 }

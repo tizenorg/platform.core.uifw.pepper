@@ -15,8 +15,8 @@ struct pixman_surface_state
 {
     pixman_renderer_t  *renderer;
 
-    pepper_surface_t   *surface;
-    pepper_buffer_t    *buffer;
+    pepper_object_t    *surface;
+    pepper_object_t    *buffer;
     int                 buffer_width, buffer_height;
     pixman_image_t     *image;
 
@@ -93,7 +93,7 @@ surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
 
     surface_state_release_buffer(state);
     wl_list_remove(&state->surface_destroy_listener.link);
-    pepper_surface_set_user_data(state->surface, state->renderer, NULL, NULL);
+    pepper_object_set_user_data(state->surface, state->renderer, NULL, NULL);
     free(state);
 }
 
@@ -107,9 +107,9 @@ surface_state_handle_buffer_destroy(struct wl_listener *listener, void *data)
 }
 
 static pixman_surface_state_t *
-get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
+get_surface_state(pepper_renderer_t *renderer, pepper_object_t *surface)
 {
-    pixman_surface_state_t *state = pepper_surface_get_user_data(surface, renderer);
+    pixman_surface_state_t *state = pepper_object_get_user_data(surface, renderer);
 
     if (!state)
     {
@@ -121,15 +121,15 @@ get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
         state->buffer_destroy_listener.notify = surface_state_handle_buffer_destroy;
         state->surface_destroy_listener.notify = surface_state_handle_surface_destroy;
 
-        pepper_surface_add_destroy_listener(surface, &state->surface_destroy_listener);
-        pepper_surface_set_user_data(surface, renderer, state, NULL);
+        pepper_object_add_destroy_listener(surface, &state->surface_destroy_listener);
+        pepper_object_set_user_data(surface, renderer, state, NULL);
     }
 
     return state;
 }
 
 static pepper_bool_t
-surface_state_attach_shm(pixman_surface_state_t *state, pepper_buffer_t *buffer)
+surface_state_attach_shm(pixman_surface_state_t *state, pepper_object_t *buffer)
 {
     struct wl_shm_buffer   *shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(buffer));
     pixman_format_code_t    format;
@@ -172,11 +172,11 @@ surface_state_attach_shm(pixman_surface_state_t *state, pepper_buffer_t *buffer)
 }
 
 static pepper_bool_t
-pixman_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surface,
+pixman_renderer_attach_surface(pepper_renderer_t *renderer, pepper_object_t *surface,
                                int *w, int *h)
 {
     pixman_surface_state_t *state = get_surface_state(renderer, surface);
-    pepper_buffer_t        *buffer = pepper_surface_get_buffer(surface);
+    pepper_object_t        *buffer = pepper_surface_get_buffer(surface);
 
     if (!buffer)
     {
@@ -206,7 +206,7 @@ done:
 
     /* Set new buffer. */
     state->buffer = buffer;
-    pepper_buffer_add_destroy_listener(buffer, &state->buffer_destroy_listener);
+    pepper_object_add_destroy_listener(buffer, &state->buffer_destroy_listener);
 
     /* Output buffer size info. */
     *w = state->buffer_width;
@@ -252,7 +252,7 @@ pixman_renderer_read_pixels(pepper_renderer_t *renderer,
 }
 
 static void
-pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output)
+pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output)
 {
     pixman_image_t *dst = ((pixman_renderer_t *)renderer)->target;
 
@@ -271,7 +271,7 @@ pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *out
 }
 
 PEPPER_API pepper_renderer_t *
-pepper_pixman_renderer_create(pepper_compositor_t *compositor)
+pepper_pixman_renderer_create(pepper_object_t *compositor)
 {
     pixman_renderer_t    *renderer;
 

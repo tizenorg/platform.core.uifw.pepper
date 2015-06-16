@@ -83,9 +83,9 @@ enum shader_sampler
 struct gl_surface_state
 {
     gl_renderer_t      *renderer;
-    pepper_surface_t   *surface;
+    pepper_object_t    *surface;
 
-    pepper_buffer_t    *buffer;
+    pepper_object_t    *buffer;
     int                 buffer_width, buffer_height;
     int                 buffer_type;
 
@@ -174,7 +174,7 @@ surface_state_handle_surface_destroy(struct wl_listener *listener, void *data)
 
     surface_state_release_buffer(state);
     wl_list_remove(&state->surface_destroy_listener.link);
-    pepper_surface_set_user_data(state->surface, state->renderer, NULL, NULL);
+    pepper_object_set_user_data(state->surface, state->renderer, NULL, NULL);
     free(state);
 }
 
@@ -188,9 +188,9 @@ surface_state_handle_buffer_destroy(struct wl_listener *listener, void *data)
 }
 
 static gl_surface_state_t *
-get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
+get_surface_state(pepper_renderer_t *renderer, pepper_object_t *surface)
 {
-    gl_surface_state_t *state = pepper_surface_get_user_data(surface, renderer);
+    gl_surface_state_t *state = pepper_object_get_user_data(surface, renderer);
 
     if (!state)
     {
@@ -202,8 +202,8 @@ get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
         state->buffer_destroy_listener.notify = surface_state_handle_buffer_destroy;
         state->surface_destroy_listener.notify = surface_state_handle_surface_destroy;
 
-        pepper_surface_add_destroy_listener(surface, &state->surface_destroy_listener);
-        pepper_surface_set_user_data(surface, renderer, state, NULL);
+        pepper_object_add_destroy_listener(surface, &state->surface_destroy_listener);
+        pepper_object_set_user_data(surface, renderer, state, NULL);
     }
 
     return state;
@@ -246,7 +246,7 @@ surface_state_ensure_textures(gl_surface_state_t *state, int num_planes)
 }
 
 static pepper_bool_t
-surface_state_attach_shm(gl_surface_state_t *state, pepper_buffer_t *buffer)
+surface_state_attach_shm(gl_surface_state_t *state, pepper_object_t *buffer)
 {
     struct wl_shm_buffer   *shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(buffer));
     int                     w, h;
@@ -315,7 +315,7 @@ surface_state_attach_shm(gl_surface_state_t *state, pepper_buffer_t *buffer)
 }
 
 static pepper_bool_t
-surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
+surface_state_attach_egl(gl_surface_state_t *state, pepper_object_t *buffer)
 {
     gl_renderer_t      *gr = state->renderer;
     EGLDisplay          display = gr->display;
@@ -386,10 +386,10 @@ surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
 }
 
 static pepper_bool_t
-gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surface, int *w, int *h)
+gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_object_t *surface, int *w, int *h)
 {
     gl_surface_state_t *state = get_surface_state(renderer, surface);
-    pepper_buffer_t    *buffer = pepper_surface_get_buffer(surface);
+    pepper_object_t    *buffer = pepper_surface_get_buffer(surface);
 
     if (!buffer)
     {
@@ -424,7 +424,7 @@ done:
 
     /* Set new buffer. */
     state->buffer = buffer;
-    pepper_buffer_add_destroy_listener(buffer, &state->buffer_destroy_listener);
+    pepper_object_add_destroy_listener(buffer, &state->buffer_destroy_listener);
 
     /* Output buffer size info. */
     *w = state->buffer_width;
@@ -434,7 +434,7 @@ done:
 }
 
 static void
-gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *surface)
+gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_object_t *surface)
 {
     gl_surface_state_t *state = get_surface_state(renderer, surface);
 
@@ -476,7 +476,7 @@ gl_renderer_read_pixels(pepper_renderer_t *renderer,
 }
 
 static void
-gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output)
+gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *out)
 {
     gl_renderer_t  *gr = (gl_renderer_t *)renderer;
 
@@ -804,7 +804,7 @@ platform_string_to_egl(const char *str)
 }
 
 PEPPER_API pepper_renderer_t *
-pepper_gl_renderer_create(pepper_compositor_t *compositor, void *display, void *window,
+pepper_gl_renderer_create(pepper_object_t *compositor, void *display, void *window,
                           const char *platform_str, pepper_format_t format,
                           const void *visual_id)
 {

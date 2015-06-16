@@ -20,7 +20,7 @@ typedef struct drm_fb           drm_fb_t;
 
 struct pepper_drm
 {
-    pepper_compositor_t        *compositor;
+    pepper_object_t            *compositor;
     pepper_libinput_t          *input;
 
     struct wl_list              output_list;
@@ -43,7 +43,7 @@ struct pepper_drm
 struct drm_output
 {
     pepper_drm_t               *drm;
-    pepper_output_t            *base;
+    pepper_object_t            *base;
 
     struct wl_list              link;
 

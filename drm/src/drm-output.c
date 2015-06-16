@@ -848,8 +848,6 @@ handle_vblank(int fd, unsigned int sequence, unsigned int tv_sec, unsigned int t
     /* TODO */
 }
 
-void pepper_output_schedule_repaint(pepper_output_t *output);   /* TODO: remove */
-
 static void
 handle_page_flip(int fd, unsigned int sequence, unsigned int tv_sec, unsigned int tv_usec,
                  void *user_data)
