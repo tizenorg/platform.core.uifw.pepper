@@ -51,7 +51,7 @@ pepper_object_init(pepper_object_t *object, uint32_t magic)
     object->user_data_map = pepper_map_create(5, user_data_hash, user_data_key_length,
                                               user_data_key_compare);
 
-    if (object->user_data_map)
+    if (!object->user_data_map)
         return PEPPER_FALSE;
 
     return PEPPER_TRUE;
