@@ -5,7 +5,7 @@
 #include "fbdev-internal.h"
 
 PEPPER_API pepper_fbdev_t *
-pepper_fbdev_create(pepper_object_t *compositor, const char *device)
+pepper_fbdev_create(pepper_object_t *compositor, const char *device, const char *renderer)
 {
     pepper_fbdev_t *fbdev;
 
@@ -34,7 +34,7 @@ pepper_fbdev_create(pepper_object_t *compositor, const char *device)
 
     wl_list_init(&fbdev->output_list);
 
-    if (!pepper_fbdev_output_create(fbdev))
+    if (!pepper_fbdev_output_create(fbdev, renderer))
     {
         PEPPER_ERROR("Failed to connect fbdev output in %s\n", __FUNCTION__);
         goto error;

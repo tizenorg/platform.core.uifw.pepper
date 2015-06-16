@@ -50,7 +50,7 @@ struct fbdev_output
 };
 
 pepper_bool_t
-pepper_fbdev_output_create(pepper_fbdev_t *fbdev);
+pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer);
 
 void
 pepper_fbdev_output_destroy(fbdev_output_t *output);

@@ -16,13 +16,8 @@
 
 #include "fbdev-internal.h"
 
-#define USE_PIXMAN  1   /* FIXME */
-
 static pepper_bool_t
-init_renderer(fbdev_output_t *output);
-
-static void
-fini_renderer(fbdev_output_t *output);
+init_renderer(fbdev_output_t *output, const char *renderer);
 
 void
 fbdev_output_destroy(void *o)
@@ -30,7 +25,9 @@ fbdev_output_destroy(void *o)
     fbdev_output_t *output = (fbdev_output_t *)o;
 
     wl_list_remove(&output->link);
-    fini_renderer(output);
+
+    if (output->renderer)
+        pepper_renderer_destroy(output->renderer);
 
     if (output->fb_image)
         pixman_image_unref(output->fb_image);
@@ -102,17 +99,10 @@ fbdev_output_set_mode(void *o, const pepper_output_mode_t *mode)
 }
 
 static void
-draw_pixman(fbdev_output_t *output)
+draw(fbdev_output_t *output)
 {
     /* FIXME: copy shadow image to fb? */
     pepper_renderer_repaint_output(output->renderer, output->base);
-}
-
-static void
-draw(fbdev_output_t *output)
-{
-    if (USE_PIXMAN)
-        draw_pixman(output);
 }
 
 static void
@@ -150,25 +140,6 @@ struct pepper_output_interface fbdev_output_interface =
     fbdev_output_add_frame_listener,
 };
 
-static int
-fbdev_open(const char *path, int flags)
-{
-    int fd;
-
-    fd = open(path, flags | O_CLOEXEC);
-    if (fd == -1)
-        PEPPER_ERROR("Failed to open file[%s] in %s\n", path, __FUNCTION__);
-
-    return fd;
-}
-
-static void
-fini_pixman_renderer(fbdev_output_t *output)
-{
-    if (output->renderer)
-        pepper_renderer_destroy(output->renderer);
-}
-
 static pepper_bool_t
 init_pixman_renderer(fbdev_output_t *output)
 {
@@ -176,39 +147,25 @@ init_pixman_renderer(fbdev_output_t *output)
     if (!output->renderer)
     {
         PEPPER_ERROR("Failed to create pixman renderer in %s\n", __FUNCTION__);
-        goto error;
+        return PEPPER_FALSE;
     }
 
     /* FIXME: use shadow image? */
     pepper_pixman_renderer_set_target(output->renderer, output->fb_image);
 
     return PEPPER_TRUE;
-
-error:
-
-    fini_pixman_renderer(output);
-
-    return PEPPER_FALSE;
 }
 
 static pepper_bool_t
-init_renderer(fbdev_output_t *output)
+init_renderer(fbdev_output_t *output, const char *renderer)
 {
-    if (USE_PIXMAN)
-        return init_pixman_renderer(output);
-    else
+    if (strcmp("pixman", renderer))
         return PEPPER_FALSE;
-}
-
-static void
-fini_renderer(fbdev_output_t *output)
-{
-    if (USE_PIXMAN)
-        fini_pixman_renderer(output);
+    return init_pixman_renderer(output);
 }
 
 pepper_bool_t
-pepper_fbdev_output_create(pepper_fbdev_t *fbdev)
+pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 {
     fbdev_output_t             *output = NULL;
 
@@ -217,7 +174,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev)
     struct fb_var_screeninfo    var_info;
 
     /* fbdev open */
-    fd = fbdev_open("/dev/fb0"/*FIXME*/, O_RDWR);
+    fd = open("/dev/fb0"/*FIXME*/, O_RDWR | O_CLOEXEC);
     if (fd < 0)
     {
         PEPPER_ERROR("Failed to open fbdev in %s\n", __FUNCTION__);
@@ -290,6 +247,8 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev)
                var_info.xres_virtual, var_info.yres_virtual);
         printf("Scrolling offset:   (%i,%i)\n",
                var_info.xoffset, var_info.yoffset);
+        printf("Trans channel:      %i bits at offset %i\n",
+               var_info.transp.length, var_info.transp.offset);
         printf("Red channel:        %i bits at offset %i\n",
                var_info.red.length, var_info.red.offset);
         printf("Green channel:      %i bits at offset %i\n",
@@ -347,7 +306,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev)
         goto error;
     }
 
-    if (!init_renderer(output))
+    if (!init_renderer(output, renderer))
     {
         PEPPER_ERROR("Failed to initialize renderer in %s\n", __FUNCTION__);
         goto error;

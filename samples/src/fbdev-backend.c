@@ -40,7 +40,7 @@ main(int argc, char **argv)
     compositor = pepper_compositor_create("wayland-0");
     PEPPER_ASSERT(compositor);
 
-    fbdev = pepper_fbdev_create(compositor, "");
+    fbdev = pepper_fbdev_create(compositor, "", "pixman");
     PEPPER_ASSERT(fbdev);
 
     if (!pepper_desktop_shell_init(compositor))
