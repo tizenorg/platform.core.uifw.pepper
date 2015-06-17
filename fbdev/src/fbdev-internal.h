@@ -5,6 +5,7 @@
 
 #include <pepper-libinput.h>
 #include <pepper-render.h>
+#include <pepper-pixman-renderer.h>
 
 #include "pepper-fbdev.h"
 
@@ -24,6 +25,8 @@ struct pepper_fbdev
     uint32_t                    max_width, max_height;
 
     struct udev                *udev;
+
+    pepper_renderer_t          *pixman_renderer;
 };
 
 struct fbdev_output
@@ -33,19 +36,20 @@ struct fbdev_output
 
     struct wl_list              link;
 
+    pepper_renderer_t          *renderer;
+
+    pepper_render_target_t     *render_target;
+    pepper_format_t             format;
     int32_t                     subpixel;
-    uint32_t                    w, h;
-    uint32_t                    pixel_format;
-    uint32_t                    bits_per_pixel;
+    int                         w, h;
+    int                         bpp;
+    int                         stride;
+    void                       *pixels;
 
     struct wl_signal            destroy_signal;
     struct wl_signal            mode_change_signal;
     struct wl_signal            frame_signal;
 
-    void                       *fb;
-    pixman_image_t             *fb_image;
-
-    pepper_renderer_t          *renderer;
     /* TODO */
 };
 

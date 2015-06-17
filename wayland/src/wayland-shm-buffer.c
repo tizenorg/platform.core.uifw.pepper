@@ -70,10 +70,14 @@ wayland_shm_buffer_create(wayland_output_t *output)
     wl_shm_pool_destroy(pool);
     close(fd);
 
-    buffer->image = pixman_image_create_bits(PIXMAN_a8r8g8b8, buffer->w, buffer->h,
-                                             buffer->pixels, buffer->stride);
-    pixman_region32_init_rect(&buffer->damage, 0, 0, buffer->w, buffer->h);
+    buffer->target = pepper_pixman_renderer_create_target(PEPPER_FORMAT_ARGB8888,
+                                                          buffer->pixels, buffer->stride,
+                                                          buffer->w, buffer->h);
 
+    if (!buffer->target)
+        goto error;
+
+    pixman_region32_init_rect(&buffer->damage, 0, 0, buffer->w, buffer->h);
     return buffer;
 
 error:
@@ -83,14 +87,17 @@ error:
     if (buffer)
         free(buffer);
 
+    if (buffer->target)
+        pepper_render_target_destroy(buffer->target);
+
     return NULL;
 }
 
 void
 wayland_shm_buffer_destroy(wayland_shm_buffer_t *buffer)
 {
+    pepper_render_target_destroy(buffer->target);
     pixman_region32_fini(&buffer->damage);
-    pixman_image_unref(buffer->image);
     wl_buffer_destroy(buffer->buffer);
     munmap(buffer->pixels, buffer->size);
     wl_list_remove(&buffer->link);

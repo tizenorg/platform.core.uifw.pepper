@@ -88,30 +88,29 @@ frame_done_handler(void* data)
 static pepper_bool_t
 gl_renderer_init(x11_output_t *output)
 {
-    xcb_visualid_t visual = output->connection->screen->root_visual;
+    output->gl_target = pepper_gl_renderer_create_target(output->connection->gl_renderer,
+                                                         (void *)output->window,
+                                                         PEPPER_FORMAT_ARGB8888,
+                                                         &output->connection->screen->root_visual);
 
-    output->renderer = pepper_gl_renderer_create(output->connection->compositor,
-                                                 output->connection->display,
-                                                 (void *)(uintptr_t)output->window,
-                                                 "x11",
-                                                 PEPPER_FORMAT_XRGB8888, /* FIXME: */
-                                                 &visual);
-    if (!output->renderer)
+    if (!output->target)
     {
-        PEPPER_ERROR("gl_renderer_create failed\n");
+        PEPPER_ERROR("Failed to create gl render target.\n");
         return PEPPER_FALSE;
     }
 
+    output->renderer = output->connection->gl_renderer;
+    output->target = output->gl_target;
     return PEPPER_TRUE;
 }
 
 static void
 x11_shm_image_deinit(xcb_connection_t *conn, x11_shm_image_t *shm)
 {
-    if (shm->image)
+    if (shm->target)
     {
-        pixman_image_unref(shm->image);
-        shm->image = NULL;
+        pepper_render_target_destroy(shm->target);
+        shm->target = NULL;
     }
 
     if (shm->segment)
@@ -138,16 +137,16 @@ x11_shm_image_init(x11_shm_image_t *shm, xcb_connection_t *conn, int w, int h, i
 {
     xcb_generic_error_t     *err = NULL;
     xcb_void_cookie_t        cookie;
-    pixman_format_code_t     pixman_format;
+    pepper_format_t          format;
 
     /* FIXME: Hard coded */
     if (bpp == 32)
     {
-        pixman_format = PIXMAN_x8r8g8b8;
+        format = PEPPER_FORMAT_ARGB8888;
     }
     else if (bpp == 16)
     {
-        pixman_format = PIXMAN_r5g6b5;
+        format = PEPPER_FORMAT_RGB565;
     }
     else
     {
@@ -182,14 +181,18 @@ x11_shm_image_init(x11_shm_image_t *shm, xcb_connection_t *conn, int w, int h, i
 
     shmctl(shm->shm_id, IPC_RMID, NULL);
 
-    /* Now create pixman image */
-    shm->image = pixman_image_create_bits(pixman_format, w, h, shm->buf,
-                                          w * (bpp/ 8));
-    if (!shm->image)
+    /* Now create pepper render target */
+    shm->target = pepper_pixman_renderer_create_target(format, shm->buf, w * (bpp / 8), w, h);
+    if (!shm->target)
     {
-        PEPPER_ERROR("pixman_image_create failed\n");
+        PEPPER_ERROR("Failed to create pixman render target\n");
         goto err;
     }
+
+    shm->format = format;
+    shm->stride = w * (bpp / 8);
+    shm->w = w;
+    shm->h = h;
 
     return PEPPER_TRUE;
 
@@ -273,13 +276,8 @@ pixman_renderer_init(x11_output_t *output)
         return PEPPER_FALSE;
     }
 
-    /* Create pixman renderer */
-    output->renderer = pepper_pixman_renderer_create(output->connection->compositor);
-    if (!output->renderer)
-    {
-        PEPPER_ERROR("pixman_renderer_create failed\n");
-        return PEPPER_FALSE;
-    }
+    output->renderer = output->connection->pixman_renderer;
+    output->target = output->shm.target;
 
     return PEPPER_TRUE;
 }
@@ -300,17 +298,11 @@ renderer_init(x11_output_t *output, const char *renderer)
 void
 x11_output_destroy(void *o)
 {
-    x11_output_t            *output;
-    pepper_x11_connection_t *conn;
+    x11_output_t            *output = o;
+    pepper_x11_connection_t *conn = output->connection;
 
-    if (!o)
-    {
-        PEPPER_ERROR("output is null\n");
-        return ;
-    }
-
-    output = o;
-    conn = output->connection;
+    if (output->gl_target)
+        pepper_render_target_destroy(output->gl_target);
 
     /* XXX */
     x11_shm_image_deinit(conn->xcb_connection, &output->shm);
@@ -413,10 +405,10 @@ x11_output_set_mode(void *o, const pepper_output_mode_t *mode)
                                   XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                                   values);
 
-            /* resize pixman image */
-            if (output->shm.image)
+            /* resize image */
+            if (output->shm.target)
             {
-                /* Release existing shm-buffer and pixman-image */
+                /* Release existing shm-buffer */
                 x11_shm_image_deinit(conn, &output->shm);
 
                 /* Init x11_shm_image */
@@ -452,65 +444,41 @@ x11_output_add_mode_change_listener(void *o, struct wl_listener *listener)
 }
 
 static void
-x11_output_repaint_shm(x11_output_t* output)
-{
-    xcb_connection_t    *conn  = output->connection->xcb_connection;
-    xcb_void_cookie_t    cookie;
-    xcb_generic_error_t *err;
-
-    pepper_pixman_renderer_set_target(output->renderer, output->shm.image);
-    pepper_renderer_repaint_output(output->renderer, output->base);
-
-    /* TODO: Set clipping area from damages
-     *       pixman_region32_rectangles(...);
-     *       xcb_set_clip_rectangles(...);
-     */
-    cookie = xcb_shm_put_image_checked(conn,
-                                       output->window,
-                                       output->gc,
-                                       output->w * output->scale,   /* total_width  */
-                                       output->h * output->scale,   /* total_height */
-                                       0,   /* src_x */
-                                       0,   /* src_y */
-                                       pixman_image_get_width(output->shm.image),  /* src_w */
-                                       pixman_image_get_height(output->shm.image), /* src_h */
-                                       0,   /* dst_x */
-                                       0,   /* dst_y */
-                                       output->depth,   /* depth */
-                                       XCB_IMAGE_FORMAT_Z_PIXMAP,   /* format */
-                                       0,   /* send_event */
-                                       output->shm.segment, /* xcb shm segment */
-                                       0);  /* offset */
-    err = xcb_request_check(conn, cookie);
-    if (err)
-    {
-        PEPPER_ERROR("Failed to put shm image, err: %d\n", err->error_code);
-        free(err);
-    }
-}
-
-static void
-x11_output_repaint_gl(x11_output_t* output)
-{
-    pepper_renderer_repaint_output(output->renderer, output->base);
-
-    /* TODO: */
-    PEPPER_ERROR("TODO : GL\n");
-}
-
-static void
 x11_output_repaint(void *o)
 {
     x11_output_t *output = o;
 
-    /* FIXME: hack, only pixman-render use shm.image */
-    if (output->shm.image)
+    pepper_renderer_set_target(output->renderer, output->target);
+    pepper_renderer_repaint_output(output->renderer, output->base);
+
+    if (output->renderer == output->connection->pixman_renderer)
     {
-        x11_output_repaint_shm(output);
-    }
-    else
-    {
-        x11_output_repaint_gl(output);
+        xcb_void_cookie_t    cookie;
+        xcb_generic_error_t *err;
+
+        cookie = xcb_shm_put_image_checked(output->connection->xcb_connection,
+                                           output->window,
+                                           output->gc,
+                                           output->w * output->scale,   /* total_width  */
+                                           output->h * output->scale,   /* total_height */
+                                           0,   /* src_x */
+                                           0,   /* src_y */
+                                           output->shm.w,  /* src_w */
+                                           output->shm.w, /* src_h */
+                                           0,   /* dst_x */
+                                           0,   /* dst_y */
+                                           output->depth,   /* depth */
+                                           XCB_IMAGE_FORMAT_Z_PIXMAP,   /* format */
+                                           0,   /* send_event */
+                                           output->shm.segment, /* xcb shm segment */
+                                           0);  /* offset */
+
+        err = xcb_request_check(output->connection->xcb_connection, cookie);
+        if (err)
+        {
+            PEPPER_ERROR("Failed to put shm image, err: %d\n", err->error_code);
+            free(err);
+        }
     }
 
     /* XXX: frame_done callback called after 10ms, referenced from weston */

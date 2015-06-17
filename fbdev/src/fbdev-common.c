@@ -16,6 +16,13 @@ pepper_fbdev_create(pepper_object_t *compositor, const char *device, const char 
         goto error;
     }
 
+    fbdev->pixman_renderer = pepper_pixman_renderer_create(compositor);
+    if (!fbdev->pixman_renderer)
+    {
+        PEPPER_ERROR("Failed to create pixman renderer.\n");
+        goto error;
+    }
+
     fbdev->udev = udev_new();
     if (!fbdev->udev)
     {
@@ -53,6 +60,9 @@ PEPPER_API void
 pepper_fbdev_destroy(pepper_fbdev_t *fbdev)
 {
     fbdev_output_t *output, *next;
+
+    if (fbdev->pixman_renderer)
+        pepper_renderer_destroy(fbdev->pixman_renderer);
 
     if (!wl_list_empty(&fbdev->output_list))
     {

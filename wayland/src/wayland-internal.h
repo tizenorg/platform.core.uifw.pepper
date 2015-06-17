@@ -3,6 +3,8 @@
 #include <wayland-client.h>
 #include <pixman.h>
 #include <pepper-render.h>
+#include <pepper-pixman-renderer.h>
+#include <pepper-gl-renderer.h>
 
 #if ENABLE_WAYLAND_BACKEND_EGL
 #include <wayland-egl.h>
@@ -37,24 +39,26 @@ struct pepper_wayland
 
     struct wl_shm          *shm;
 
+    pepper_renderer_t      *pixman_renderer;
+    pepper_renderer_t      *gl_renderer;
 };
 
 struct wayland_shm_buffer
 {
-    wayland_output_t   *output;
-    struct wl_list      link;
+    wayland_output_t       *output;
+    struct wl_list          link;
 
-    struct wl_buffer   *buffer;
+    struct wl_buffer       *buffer;
 
-    void               *pixels;
-    int                 stride;
-    int                 size;
-    int                 w, h;
+    void                   *pixels;
+    int                     stride;
+    int                     size;
+    int                     w, h;
 
-    pixman_image_t     *image;
-    pixman_region32_t   damage;
+    pepper_render_target_t *target;
+    pixman_region32_t       damage;
 
-    void               *data;
+    void                   *data;
 };
 
 struct wayland_output
@@ -75,6 +79,8 @@ struct wayland_output
     struct wl_shell_surface    *shell_surface;
 
     pepper_renderer_t          *renderer;
+    pepper_render_target_t     *render_target;
+    pepper_render_target_t     *gl_render_target;
 
     void    (*render_pre)(wayland_output_t *output);
     void    (*render_post)(wayland_output_t *output);

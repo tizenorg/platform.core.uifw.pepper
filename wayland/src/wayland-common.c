@@ -103,6 +103,15 @@ pepper_wayland_connect(pepper_object_t *compositor, const char *socket_name)
     conn->display = wl_display_connect(socket_name);
     conn->fd = wl_display_get_fd(conn->display);
 
+    conn->gl_renderer = pepper_gl_renderer_create(compositor, conn->display, "wayland");
+    conn->pixman_renderer = pepper_pixman_renderer_create(compositor);
+
+    if (!conn->pixman_renderer)
+    {
+        free(conn);
+        return NULL;
+    }
+
     compositor_display = pepper_compositor_get_display(compositor);
     loop = wl_display_get_event_loop(compositor_display);
     conn->event_source = wl_event_loop_add_fd(loop, conn->fd, WL_EVENT_READABLE,
@@ -123,6 +132,12 @@ PEPPER_API void
 pepper_wayland_destroy(pepper_wayland_t *conn)
 {
     wl_signal_emit(&conn->destroy_signal, conn);
+
+    if (conn->pixman_renderer)
+        pepper_renderer_destroy(conn->pixman_renderer);
+
+    if (conn->gl_renderer)
+        pepper_renderer_destroy(conn->gl_renderer);
 
     if (conn->socket_name)
         string_free(conn->socket_name);

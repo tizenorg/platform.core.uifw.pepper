@@ -4,11 +4,17 @@
 
 typedef struct pixman_renderer      pixman_renderer_t;
 typedef struct pixman_surface_state pixman_surface_state_t;
+typedef struct pixman_render_target pixman_render_target_t;
+
+struct pixman_render_target
+{
+    pepper_render_target_t  base;
+    pixman_image_t         *image;
+};
 
 struct pixman_renderer
 {
     pepper_renderer_t   base;
-    pixman_image_t     *target;
 };
 
 struct pixman_surface_state
@@ -57,12 +63,7 @@ get_pixman_format(pepper_format_t format)
 static void
 pixman_renderer_destroy(pepper_renderer_t *renderer)
 {
-    pixman_renderer_t *pr = (pixman_renderer_t *)renderer;
-
-    if (pr->target)
-        pixman_image_unref(pr->target);
-
-    free(pr);
+    free(renderer);
 }
 
 /* TODO: Similar with gl renderer. There might be a way of reusing those codes.  */
@@ -216,11 +217,17 @@ done:
 }
 
 static pepper_bool_t
+pixman_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_object_t *surface)
+{
+    return PEPPER_TRUE;
+}
+
+static pepper_bool_t
 pixman_renderer_read_pixels(pepper_renderer_t *renderer,
                             int x, int y, int w, int h,
                             void *pixels, pepper_format_t format)
 {
-    pixman_image_t         *src = ((pixman_renderer_t *)renderer)->target;
+    pixman_image_t         *src = ((pixman_render_target_t *)renderer->target)->image;
     pixman_image_t         *dst;
     pixman_format_code_t    pixman_format;
     int                     stride;
@@ -254,7 +261,7 @@ pixman_renderer_read_pixels(pepper_renderer_t *renderer,
 static void
 pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output)
 {
-    pixman_image_t *dst = ((pixman_renderer_t *)renderer)->target;
+    pixman_image_t *dst = ((pixman_render_target_t *)renderer->target)->image;
 
     if (dst)
     {
@@ -284,28 +291,51 @@ pepper_pixman_renderer_create(pepper_object_t *compositor)
     /* Backend functions. */
     renderer->base.destroy              = pixman_renderer_destroy;
     renderer->base.attach_surface       = pixman_renderer_attach_surface;
+    renderer->base.flush_surface_damage = pixman_renderer_flush_surface_damage;
     renderer->base.read_pixels          = pixman_renderer_read_pixels;
     renderer->base.repaint_output       = pixman_renderer_repaint_output;
 
     return &renderer->base;
 }
 
-PEPPER_API void
-pepper_pixman_renderer_set_target(pepper_renderer_t *renderer, pixman_image_t *target)
+static void
+pixman_render_target_destroy(pepper_render_target_t *target)
 {
-    pixman_renderer_t  *pr = (pixman_renderer_t *)renderer;
+    pixman_render_target_t *pt = (pixman_render_target_t *)target;
 
-    if (pr->target)
-        pixman_image_unref(pr->target);
+    if (pt->image)
+        pixman_image_unref(pt->image);
 
-    if (target)
-        pixman_image_ref(target);
-
-    pr->target = target;
+    free(target);
 }
 
-PEPPER_API pixman_image_t *
-pepper_pixman_renderer_get_target(pepper_renderer_t *renderer)
+PEPPER_API pepper_render_target_t *
+pepper_pixman_renderer_create_target(pepper_format_t format, void *pixels,
+                                     int stride, int width, int height)
 {
-    return ((pixman_renderer_t *)renderer)->target;
+    pixman_render_target_t *target;
+    pixman_format_code_t    pixman_format;
+
+    target = calloc(1, sizeof(pixman_render_target_t));
+    if (!target)
+        return NULL;
+
+    target->base.destroy    = pixman_render_target_destroy;
+
+    pixman_format = get_pixman_format(format);
+    if (!pixman_format)
+        goto error;
+
+    target->image = pixman_image_create_bits(pixman_format, width, height, pixels, stride);
+    if (!target->image)
+        goto error;
+
+    target->base.destroy = pixman_render_target_destroy;
+    return &target->base;
+
+error:
+    if (target)
+        free(target);
+
+    return NULL;
 }

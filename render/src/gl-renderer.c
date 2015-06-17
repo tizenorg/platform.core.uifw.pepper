@@ -11,6 +11,7 @@
 
 typedef struct gl_renderer      gl_renderer_t;
 typedef struct gl_surface_state gl_surface_state_t;
+typedef struct gl_render_target gl_render_target_t;
 
 #ifndef EGL_EXT_platform_base
 typedef EGLDisplay  (*PFNEGLGETPLATFORMDISPLAYEXTPROC)(EGLenum          platform,
@@ -34,21 +35,31 @@ enum buffer_type
     BUFFER_TYPE_EGL,
 };
 
+struct gl_render_target
+{
+    pepper_render_target_t  base;
+
+    EGLSurface              surface;
+    EGLConfig               config;
+
+    void                   *native_window;
+};
+
 struct gl_renderer
 {
     pepper_renderer_t       base;
 
     void                   *native_display;
-    void                   *native_window;
 
     EGLDisplay              display;
-    EGLSurface              surface;
     EGLContext              context;
-    EGLConfig               config;
+
+    /* EGL_EXT_platform. */
+    PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC create_platform_window_surface;
 
     /* EGL extensions. */
-    PFNEGLCREATEIMAGEKHRPROC    create_image;
-    PFNEGLDESTROYIMAGEKHRPROC   destroy_image;
+    PFNEGLCREATEIMAGEKHRPROC        create_image;
+    PFNEGLDESTROYIMAGEKHRPROC       destroy_image;
 
 #ifdef EGL_EXT_swap_buffers_with_damage
     PFNEGLSWAPBUFFERSWITHDAMAGEEXTPROC  swap_buffers_with_damage;
@@ -60,7 +71,6 @@ struct gl_renderer
 
     pepper_bool_t   has_buffer_age;
 
-    PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC    create_platform_window_surface;
 
     /* GL extensions. */
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC image_target_texture_2d;
@@ -113,7 +123,9 @@ struct gl_surface_state
 static pepper_bool_t
 gl_renderer_use(gl_renderer_t *gr)
 {
-    if (!eglMakeCurrent(gr->display, gr->surface, gr->surface, gr->context))
+    gl_render_target_t *gt = (gl_render_target_t *)gr->base.target;
+
+    if (!eglMakeCurrent(gr->display, gt->surface, gt->surface, gr->context))
         return PEPPER_FALSE;
 
     return PEPPER_TRUE;
@@ -126,9 +138,6 @@ gl_renderer_destroy(pepper_renderer_t *renderer)
 
     if (gr->context != EGL_NO_CONTEXT)
         eglDestroyContext(gr->display, gr->context);
-
-    if (gr->surface != EGL_NO_SURFACE)
-        eglDestroySurface(gr->display, gr->surface);
 
     if (gr->display != EGL_NO_DISPLAY)
         eglTerminate(gr->display);
@@ -433,15 +442,17 @@ done:
     return PEPPER_TRUE;
 }
 
-static void
+static pepper_bool_t
 gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_object_t *surface)
 {
     gl_surface_state_t *state = get_surface_state(renderer, surface);
 
     if (state->buffer_type != BUFFER_TYPE_SHM)
-        return;
+        return PEPPER_TRUE;
 
     /* TODO: Texture upload. */
+
+    return PEPPER_TRUE;
 }
 
 static pepper_bool_t
@@ -485,39 +496,9 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *out)
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    eglSwapBuffers(gr->display, gr->surface);
-}
+    eglSwapBuffers(gr->display, ((gl_render_target_t *)renderer->target)->surface);
 
-static PFNEGLGETPLATFORMDISPLAYEXTPROC get_platform_display = NULL;
-
-pepper_bool_t
-gl_renderer_support_platform(const char *platform)
-{
-    const char *extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
-    char        str[64];
-
-    if (!extensions)
-    {
-        PEPPER_ERROR("Failed to get EGL extension string.\n");
-        return PEPPER_FALSE;
-    }
-
-    if (!strstr(extensions, "EGL_EXT_platform_base"))
-        return PEPPER_TRUE;
-
-    snprintf(str, sizeof(str), "EGL_KHR_platform_%s", platform);
-    if (strstr(extensions, str))
-        return PEPPER_TRUE;
-
-    snprintf(str, sizeof(str), "EGL_EXT_platform_%s", platform);
-    if (strstr(extensions, str))
-        return PEPPER_TRUE;
-
-    snprintf(str, sizeof(str), "EGL_MESA_platform_%s", platform);
-    if (strstr(extensions, str))
-        return PEPPER_TRUE;
-
-    return PEPPER_FALSE;
+    /* TODO: eglSwapBuffersWithDamage. */
 }
 
 static pepper_bool_t
@@ -621,19 +602,159 @@ setup_gl_extensions(gl_renderer_t *gr)
     return PEPPER_TRUE;
 }
 
-static pepper_bool_t
-init_egl(gl_renderer_t *gr, void *dpy, void *win, EGLenum platform,
-         pepper_format_t format, const void *visual_id)
+static EGLenum
+get_egl_platform(const char *str)
 {
-    EGLDisplay      display = EGL_NO_DISPLAY;
-    EGLSurface      surface = EGL_NO_SURFACE;
-    EGLContext      context = EGL_NO_CONTEXT;
-    EGLConfig       config = NULL;
-    EGLint          config_size = 0;
-    EGLint          num_configs = 0;
+    if (!str)
+        return EGL_NONE;
+
+    if (!strcmp(str, "gbm"))
+        return EGL_PLATFORM_GBM_KHR;
+
+    if (!strcmp(str, "wayland"))
+        return EGL_PLATFORM_WAYLAND_KHR;
+
+    if (!strcmp(str, "x11"))
+        return EGL_PLATFORM_X11_KHR;
+
+    return EGL_NONE;
+}
+
+static PFNEGLGETPLATFORMDISPLAYEXTPROC  get_platform_display = NULL;
+
+static pepper_bool_t
+setup_display(gl_renderer_t *gr, void *native_display, const char *platform)
+{
+    EGLenum     egl_platform = get_egl_platform(platform);
+    const char *extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+    char        str[64];
+
+    if (!extensions || !strstr(extensions, "EGL_EXT_platform_base"))
+    {
+        gr->display = eglGetDisplay(native_display);
+        return gr->display != EGL_NO_DISPLAY;
+    }
+
+    if (!egl_platform)
+        goto use_legacy;
+
+    if (!extensions)
+        goto use_legacy;
+
+    if (!strstr(extensions, "EGL_EXT_platform_base"))
+        goto use_legacy;
+
+    snprintf(str, sizeof(str), "EGL_KHR_platform_%s", platform);
+    if (!strstr(extensions, str))
+        goto use_legacy;
+
+    snprintf(str, sizeof(str), "EGL_EXT_platform_%s", platform);
+    if (!strstr(extensions, str))
+        goto use_legacy;
+
+    snprintf(str, sizeof(str), "EGL_MESA_platform_%s", platform);
+    if (!strstr(extensions, str))
+        goto use_legacy;
+
+    if (!get_platform_display)
+        get_platform_display = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
+
+    if (!get_platform_display)
+        goto use_legacy;
+
+    gr->display = get_platform_display(egl_platform, native_display, NULL);
+
+    if (gr->display == EGL_NO_DISPLAY)
+        goto use_legacy;
+
+    gr->create_platform_window_surface =
+        (void *)eglGetProcAddress("eglCreatePlatformWindowSurfaceEXT");
+
+    return PEPPER_TRUE;
+
+use_legacy:
+    if (gr->display == EGL_NO_DISPLAY)
+        gr->display = eglGetDisplay(native_display);
+
+    if (gr->display != EGL_NO_DISPLAY)
+        return PEPPER_TRUE;
+
+    return PEPPER_FALSE;
+}
+
+PEPPER_API pepper_renderer_t *
+pepper_gl_renderer_create(pepper_object_t *compositor, void *native_display, const char *platform)
+{
+    gl_renderer_t  *gr;
     EGLint          major, minor;
-    EGLConfig      *configs = NULL;
-    int             i;
+
+    gr = calloc(1, sizeof(gl_renderer_t));
+    if (!gr)
+        return NULL;
+
+    if (!setup_display(gr, native_display, platform))
+        goto error;
+
+    gr->base.compositor = compositor;
+    gr->native_display = native_display;
+
+    gr->base.destroy                =   gl_renderer_destroy;
+    gr->base.attach_surface         =   gl_renderer_attach_surface;
+    gr->base.flush_surface_damage   =   gl_renderer_flush_surface_damage;
+    gr->base.read_pixels            =   gl_renderer_read_pixels;
+    gr->base.repaint_output         =   gl_renderer_repaint_output;
+
+    if (!eglInitialize(gr->display, &major, &minor))
+    {
+        PEPPER_ERROR("eglInitialize() failed.\n");
+        goto error;
+    }
+
+    if (!eglBindAPI(EGL_OPENGL_ES_API))
+    {
+        PEPPER_ERROR("eglBindAPI() failed.\n");
+        goto error;
+    }
+
+    if (!setup_egl_extensions(gr))
+        goto error;
+
+    if (!setup_gl_extensions(gr))
+        goto error;
+
+    return &gr->base;
+
+error:
+    if (gr)
+        gl_renderer_destroy(&gr->base);
+
+    return NULL;
+}
+
+static void
+gl_render_target_destroy(pepper_render_target_t *target)
+{
+    gl_render_target_t *gt = (gl_render_target_t *)target;
+    gl_renderer_t      *gr = (gl_renderer_t *)target->renderer;
+
+    if (gt->surface != EGL_NO_SURFACE)
+        eglDestroySurface(gr->display, gt->surface);
+
+    free(gt);
+}
+
+PEPPER_API pepper_render_target_t *
+pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_window,
+                                 pepper_format_t format, const void *visual_id)
+{
+    gl_renderer_t      *gr = (gl_renderer_t *)renderer;
+    gl_render_target_t *target;
+    EGLint              config_size = 0, num_configs = 0;
+    EGLConfig          *configs = NULL;
+    EGLConfig           config = NULL;
+    EGLSurface          surface = EGL_NO_SURFACE;
+    EGLContext          context = EGL_NO_CONTEXT;
+    int                 i;
 
     EGLint context_attribs[] =
     {
@@ -652,35 +773,16 @@ init_egl(gl_renderer_t *gr, void *dpy, void *win, EGLenum platform,
         EGL_NONE
     };
 
+    target = calloc(1, sizeof(gl_render_target_t));
+    if (!target)
+        return NULL;
+
     config_attribs[3] = PEPPER_FORMAT_R(format);
     config_attribs[5] = PEPPER_FORMAT_G(format);
     config_attribs[7] = PEPPER_FORMAT_B(format);
     config_attribs[9] = PEPPER_FORMAT_A(format);
 
-    if (get_platform_display)
-        display = get_platform_display(platform, (EGLNativeDisplayType)dpy, NULL);
-    else
-        display = eglGetDisplay((EGLNativeDisplayType)dpy);
-
-    if (display == EGL_NO_DISPLAY)
-    {
-        PEPPER_ERROR("eglGetDisplay(%p) failed.\n", display);
-        goto error;
-    }
-
-    if (!eglInitialize(display, &major, &minor))
-    {
-        PEPPER_ERROR("eglInitialize() failed.\n");
-        goto error;
-    }
-
-    if (!eglBindAPI(EGL_OPENGL_ES_API))
-    {
-        PEPPER_ERROR("eglBindAPI() failed.\n");
-        return PEPPER_FALSE;
-    }
-
-    if (!eglChooseConfig(display, config_attribs, NULL, 0, &config_size))
+    if (!eglChooseConfig(gr->display, config_attribs, NULL, 0, &config_size))
     {
         PEPPER_ERROR("eglChooseConfig() failed.\n");
         goto error;
@@ -695,8 +797,11 @@ init_egl(gl_renderer_t *gr, void *dpy, void *win, EGLenum platform,
     if ((configs = (EGLConfig *)calloc(config_size, sizeof(EGLConfig))) == NULL)
         goto error;
 
-    eglChooseConfig(display, config_attribs, configs, config_size, &num_configs);
-    PEPPER_ASSERT(config_size == num_configs); /* Paranoid check. */
+    if (!eglChooseConfig(gr->display, config_attribs, configs, config_size, &num_configs))
+    {
+        PEPPER_ERROR("eglChooseConfig() failed.\n");
+        goto error;
+    }
 
     if (num_configs < 1)
         goto error;
@@ -708,7 +813,7 @@ init_egl(gl_renderer_t *gr, void *dpy, void *win, EGLenum platform,
         if (visual_id)
         {
             /* Native visual id have privilege. */
-            if (eglGetConfigAttrib(display, configs[i], EGL_NATIVE_VISUAL_ID, &attrib))
+            if (eglGetConfigAttrib(gr->display, configs[i], EGL_NATIVE_VISUAL_ID, &attrib))
             {
                 if (attrib == *((EGLint *)visual_id))
                 {
@@ -720,7 +825,7 @@ init_egl(gl_renderer_t *gr, void *dpy, void *win, EGLenum platform,
             continue;
         }
 
-        if (eglGetConfigAttrib(display, configs[i], EGL_BUFFER_SIZE, &attrib))
+        if (eglGetConfigAttrib(gr->display, configs[i], EGL_BUFFER_SIZE, &attrib))
         {
             if (attrib == PEPPER_FORMAT_BPP(format))
             {
@@ -739,113 +844,55 @@ init_egl(gl_renderer_t *gr, void *dpy, void *win, EGLenum platform,
         goto error;
     }
 
-    surface = eglCreateWindowSurface(display, config, (EGLNativeWindowType)win, NULL);
+    /* Try platform window surface creation first. */
+    if (gr->create_platform_window_surface)
+        surface = gr->create_platform_window_surface(gr->display, config, native_window, NULL);
+
+    if (target->surface == EGL_NO_SURFACE)
+    {
+        surface = eglCreateWindowSurface(gr->display, config,
+                                         (EGLNativeWindowType)native_window, NULL);
+    }
+
     if (surface == EGL_NO_SURFACE)
     {
         PEPPER_ERROR("eglCreateWindowSurface() failed.\n");
         goto error;
     }
 
-    context = eglCreateContext(display, config, EGL_NO_CONTEXT, context_attribs);
-    if (context == EGL_NO_CONTEXT)
+    if (gr->context == EGL_NO_CONTEXT)
     {
-        PEPPER_ERROR("eglCreateContext() failed.\n");
-        goto error;
+        context = eglCreateContext(gr->display, config, EGL_NO_CONTEXT, context_attribs);
+        if (context == EGL_NO_CONTEXT)
+        {
+            PEPPER_ERROR("eglCreateContext() failed.\n");
+            goto error;
+        }
     }
 
-    if (!eglMakeCurrent(display, surface, surface, context))
+    if (!eglMakeCurrent(gr->display, surface, surface, context))
     {
         PEPPER_ERROR("eglMakeCurrent() failed.\n");
         goto error;
     }
 
-    gr->display = display;
-    gr->surface = surface;
-    gr->context = context;
-    gr->config  = config;
+    target->surface         = surface;
+    target->config          = config;
+    target->native_window   = native_window;
 
-    if (!setup_egl_extensions(gr))
-        goto error;
+    if (gr->context == EGL_NO_CONTEXT)
+        gr->context = context;
 
-    if (!setup_gl_extensions(gr))
-        goto error;
-
-    return PEPPER_TRUE;
+    target->base.destroy = gl_render_target_destroy;
+    return &target->base;
 
 error:
-    if (context)
-        eglDestroyContext(display, context);
+    if (context != EGL_NO_CONTEXT)
+        eglDestroyContext(gr->display, context);
 
-    if (surface)
-        eglDestroySurface(display, surface);
+    if (surface != EGL_NO_SURFACE)
+        eglDestroySurface(gr->display, surface);
 
-    if (display)
-        eglTerminate(display);
-
-    if (configs)
-        free(configs);
-
-    return PEPPER_FALSE;
-}
-
-static EGLenum
-platform_string_to_egl(const char *str)
-{
-    if (!strcmp(str, "gbm"))
-        return EGL_PLATFORM_GBM_KHR;
-
-    if (!strcmp(str, "wayland"))
-        return EGL_PLATFORM_WAYLAND_KHR;
-
-    if (!strcmp(str, "x11"))
-        return EGL_PLATFORM_X11_KHR;
-
-    return EGL_NONE;
-}
-
-PEPPER_API pepper_renderer_t *
-pepper_gl_renderer_create(pepper_object_t *compositor, void *display, void *window,
-                          const char *platform_str, pepper_format_t format,
-                          const void *visual_id)
-{
-    gl_renderer_t  *gr;
-    EGLenum         platform;
-
-    if (!gl_renderer_support_platform(platform_str))
-    {
-        PEPPER_ERROR("Unsupported platform %s.\n", platform_str);
-        return NULL;
-    }
-
-    platform = platform_string_to_egl(platform_str);
-    if (platform == EGL_NONE)
-        return NULL;
-
-    if (!get_platform_display)
-        get_platform_display = (void *)eglGetProcAddress("eglGetPlatformDisplayEXT");
-
-    gr = (gl_renderer_t *)calloc(1, sizeof(gl_renderer_t));
-    if (!gr)
-        return NULL;
-
-    gr->base.compositor = compositor;
-    gr->native_display = display;
-    gr->native_window  = window;
-
-    if (!init_egl(gr, display, window, platform, format, visual_id))
-        goto error;
-
-    gr->base.destroy                =   gl_renderer_destroy;
-    gr->base.attach_surface         =   gl_renderer_attach_surface;
-    gr->base.flush_surface_damage   =   gl_renderer_flush_surface_damage;
-    gr->base.read_pixels            =   gl_renderer_read_pixels;
-    gr->base.repaint_output         =   gl_renderer_repaint_output;
-
-    return &gr->base;
-
-error:
-    if (gr)
-        gl_renderer_destroy(&gr->base);
-
+    free(target);
     return NULL;
 }

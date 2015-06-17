@@ -31,16 +31,19 @@ typedef struct x11_shm_image    x11_shm_image_t;
 
 struct x11_shm_image
 {
-    int              shm_id;
-    void            *buf;
-    xcb_shm_seg_t    segment;
-    pixman_image_t  *image;    /* XXX: need double-buffering? */
+    int                     shm_id;
+    void                   *buf;
+    pepper_format_t         format;
+    int                     stride;
+    int                     w, h;
+    xcb_shm_seg_t           segment;
+    pepper_render_target_t *target; /* XXX: need double-buffering? */
 };
 
 struct x11_output
 {
-    pepper_object_t             *base;
-    pepper_x11_connection_t     *connection;
+    pepper_object_t         *base;
+    pepper_x11_connection_t *connection;
 
     int32_t                  x, y;
     uint32_t                 w, h;
@@ -53,16 +56,16 @@ struct x11_output
     xcb_gc_t                 gc;
     x11_cursor_t            *cursor;
 
-    x11_shm_image_t          shm;
-
     pepper_renderer_t       *renderer;
+    x11_shm_image_t          shm;
+    pepper_render_target_t  *target;
+    pepper_render_target_t  *gl_target;
 
     struct wl_signal         destroy_signal;
     struct wl_signal         mode_change_signal;
     struct wl_signal         frame_signal;
 
     struct wl_event_source  *frame_done_timer;
-
     struct wl_listener       conn_destroy_listener;
 
     struct wl_list           link;
@@ -124,6 +127,9 @@ struct pepper_x11_connection
     } atom;
 
     struct wl_signal        destroy_signal;
+
+    pepper_renderer_t       *pixman_renderer;
+    pepper_renderer_t       *gl_renderer;
 };
 
 struct x11_cursor

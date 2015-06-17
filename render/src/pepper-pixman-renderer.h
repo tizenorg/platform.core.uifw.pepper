@@ -11,11 +11,9 @@ extern "C" {
 PEPPER_API pepper_renderer_t *
 pepper_pixman_renderer_create(pepper_object_t *compositor);
 
-PEPPER_API void
-pepper_pixman_renderer_set_target(pepper_renderer_t *r, pixman_image_t *image);
-
-PEPPER_API pixman_image_t *
-pepper_pixman_renderer_get_target(pepper_renderer_t *r);
+PEPPER_API pepper_render_target_t *
+pepper_pixman_renderer_create_target(pepper_format_t format, void *pixels,
+                                     int stride, int width, int height);
 
 #ifdef __cplusplus
 }

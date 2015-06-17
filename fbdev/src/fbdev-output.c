@@ -16,26 +16,87 @@
 
 #include "fbdev-internal.h"
 
-static pepper_bool_t
-init_renderer(fbdev_output_t *output, const char *renderer);
+static void
+fbdev_debug_print_fixed_screeninfo(const struct fb_fix_screeninfo *info)
+{
+    printf("Framebuffer ID: %s\n", info->id);
+    printf("Framebuffer type: ");
 
+    switch (info->type)
+    {
+    case FB_TYPE_PACKED_PIXELS:
+        printf("packed pixels\n");
+        break;
+    case FB_TYPE_PLANES:
+        printf("planar (non-interleaved)\n");
+        break;
+    case FB_TYPE_INTERLEAVED_PLANES:
+        printf("planar (interleaved)\n");
+        break;
+    case FB_TYPE_TEXT:
+        printf("text (not a framebuffer)\n");
+        break;
+    case FB_TYPE_VGA_PLANES:
+        printf("planar (EGA/VGA)\n");
+        break;
+    default:
+        printf("?????\n");
+    }
+
+    printf("Bytes per scanline: %i\n", info->line_length);
+    printf("Visual type: ");
+
+    switch (info->visual)
+    {
+    case FB_VISUAL_TRUECOLOR:
+        printf("truecolor\n");
+        break;
+    case FB_VISUAL_PSEUDOCOLOR:
+        printf("pseudocolor\n");
+        break;
+    case FB_VISUAL_DIRECTCOLOR:
+        printf("directcolor\n");
+        break;
+    case FB_VISUAL_STATIC_PSEUDOCOLOR:
+        printf("fixed pseudocolor\n");
+        break;
+    default:
+        printf("?????\n");
+    }
+}
+
+static void
+fbdev_debug_print_var_screeninfo(const struct fb_var_screeninfo *info)
+{
+    printf("Bits per pixel:     %i\n", info->bits_per_pixel);
+    printf("Resolution:         %ix%i (virtual %ix%i)\n",
+           info->xres, info->yres,
+           info->xres_virtual, info->yres_virtual);
+    printf("Scrolling offset:   (%i,%i)\n",
+           info->xoffset, info->yoffset);
+    printf("Trans channel:      %i bits at offset %i\n",
+           info->transp.length, info->transp.offset);
+    printf("Red channel:        %i bits at offset %i\n",
+           info->red.length, info->red.offset);
+    printf("Green channel:      %i bits at offset %i\n",
+           info->red.length, info->green.offset);
+    printf("Blue channel:       %i bits at offset %i\n",
+           info->red.length, info->blue.offset);
+}
 void
 fbdev_output_destroy(void *o)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
 
+    wl_signal_emit(&output->destroy_signal, NULL);
     wl_list_remove(&output->link);
 
-    if (output->renderer)
-        pepper_renderer_destroy(output->renderer);
+    if (output->render_target)
+        pepper_render_target_destroy(output->render_target);
 
-    if (output->fb_image)
-        pixman_image_unref(output->fb_image);
+    if (output->pixels)
+        munmap(output->pixels, output->w * output->stride);
 
-    if (output->fb)
-        munmap(output->fb, output->w * output->h * (output->bits_per_pixel / 8));
-
-    wl_signal_emit(&output->destroy_signal, NULL);
     free(output);
 }
 
@@ -99,20 +160,10 @@ fbdev_output_set_mode(void *o, const pepper_output_mode_t *mode)
 }
 
 static void
-draw(fbdev_output_t *output)
-{
-    /* FIXME: copy shadow image to fb? */
-    pepper_renderer_repaint_output(output->renderer, output->base);
-}
-
-static void
 fbdev_output_repaint(void *o)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
-
-    draw(output);
-
-    /* TODO */
+    pepper_renderer_repaint_output(output->renderer, output->base);
 }
 
 static void
@@ -143,15 +194,19 @@ struct pepper_output_interface fbdev_output_interface =
 static pepper_bool_t
 init_pixman_renderer(fbdev_output_t *output)
 {
-    output->renderer = pepper_pixman_renderer_create(output->fbdev->compositor);
-    if (!output->renderer)
-    {
-        PEPPER_ERROR("Failed to create pixman renderer in %s\n", __FUNCTION__);
-        return PEPPER_FALSE;
-    }
+    pepper_render_target_t *target;
 
-    /* FIXME: use shadow image? */
-    pepper_pixman_renderer_set_target(output->renderer, output->fb_image);
+    if (!output->fbdev->pixman_renderer)
+        return PEPPER_FALSE;
+
+    target = pepper_pixman_renderer_create_target(output->format, output->pixels, output->stride,
+                                                  output->w, output->h);
+    if (!target)
+        return PEPPER_FALSE;
+
+    output->renderer = output->fbdev->pixman_renderer;
+    output->render_target = target;
+    pepper_renderer_set_target(output->renderer, output->render_target);
 
     return PEPPER_TRUE;
 }
@@ -159,8 +214,10 @@ init_pixman_renderer(fbdev_output_t *output)
 static pepper_bool_t
 init_renderer(fbdev_output_t *output, const char *renderer)
 {
-    if (strcmp("pixman", renderer))
+    /* Only support pixman renderer currently. */
+    if (strcmp("pixman", renderer) != 0)
         return PEPPER_FALSE;
+
     return init_pixman_renderer(output);
 }
 
@@ -168,7 +225,6 @@ pepper_bool_t
 pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 {
     fbdev_output_t             *output = NULL;
-
     int                         fd;
     struct fb_fix_screeninfo    fixed_info;
     struct fb_var_screeninfo    var_info;
@@ -187,51 +243,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
         goto error;
     }
 
-#if 1   /* print out some of the fixed info */
-    {
-        printf("Framebuffer ID: %s\n", fixed_info.id);
-        printf("Framebuffer type: ");
-        switch (fixed_info.type)
-        {
-            case FB_TYPE_PACKED_PIXELS:
-                printf("packed pixels\n");
-                break;
-            case FB_TYPE_PLANES:
-                printf("planar (non-interleaved)\n");
-                break;
-            case FB_TYPE_INTERLEAVED_PLANES:
-                printf("planar (interleaved)\n");
-                break;
-            case FB_TYPE_TEXT:
-                printf("text (not a framebuffer)\n");
-                break;
-            case FB_TYPE_VGA_PLANES:
-                printf("planar (EGA/VGA)\n");
-                break;
-            default:
-                printf("?????\n");
-        }
-        printf("Bytes per scanline: %i\n", fixed_info.line_length);
-        printf("Visual type: ");
-        switch (fixed_info.visual)
-        {
-            case FB_VISUAL_TRUECOLOR:
-                printf("truecolor\n");
-                break;
-            case FB_VISUAL_PSEUDOCOLOR:
-                printf("pseudocolor\n");
-                break;
-            case FB_VISUAL_DIRECTCOLOR:
-                printf("directcolor\n");
-                break;
-            case FB_VISUAL_STATIC_PSEUDOCOLOR:
-                printf("fixed pseudocolor\n");
-                break;
-            default:
-                printf("?????\n");
-        }
-    }
-#endif
+    fbdev_debug_print_fixed_screeninfo(&fixed_info);
 
     if (ioctl(fd, FBIOGET_VSCREENINFO, &var_info) < 0)
     {
@@ -239,24 +251,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
         goto error;
     }
 
-#if 1   /* print out some info */
-    {
-        printf("Bits per pixel:     %i\n", var_info.bits_per_pixel);
-        printf("Resolution:         %ix%i (virtual %ix%i)\n",
-               var_info.xres, var_info.yres,
-               var_info.xres_virtual, var_info.yres_virtual);
-        printf("Scrolling offset:   (%i,%i)\n",
-               var_info.xoffset, var_info.yoffset);
-        printf("Trans channel:      %i bits at offset %i\n",
-               var_info.transp.length, var_info.transp.offset);
-        printf("Red channel:        %i bits at offset %i\n",
-               var_info.red.length, var_info.red.offset);
-        printf("Green channel:      %i bits at offset %i\n",
-               var_info.red.length, var_info.green.offset);
-        printf("Blue channel:       %i bits at offset %i\n",
-               var_info.red.length, var_info.blue.offset);
-    }
-#endif
+    fbdev_debug_print_var_screeninfo(&var_info);
 
     output = (fbdev_output_t *)calloc(1, sizeof(fbdev_output_t));
     if (!output)
@@ -266,37 +261,33 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     }
 
     output->fbdev = fbdev;
+    wl_list_init(&output->link);
 
+    output->format = PEPPER_FORMAT_XRGB8888;
     output->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
     output->w = var_info.xres;
     output->h = var_info.yres;
-    output->pixel_format = PIXMAN_x8r8g8b8; /*FIXME*/
-    output->bits_per_pixel = var_info.bits_per_pixel;
+    output->bpp = var_info.bits_per_pixel;
+    output->stride = output->w * (output->bpp / 8);
 
     wl_signal_init(&output->destroy_signal);
     wl_signal_init(&output->mode_change_signal);
     wl_signal_init(&output->frame_signal);
 
-    wl_list_insert(&fbdev->output_list, &output->link);
-
-    output->fb = mmap(NULL, output->w * output->h * (output->bits_per_pixel / 8),
-                      PROT_WRITE, MAP_SHARED, fd, 0);
-    if (!output->fb)
+    output->pixels = mmap(NULL, output->w * output->stride, PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!output->pixels)
     {
-        PEPPER_ERROR("Failed to mmap in %s\n", __FUNCTION__);
+        PEPPER_ERROR("mmap failed.\n");
         goto error;
     }
 
-    output->fb_image = pixman_image_create_bits(output->pixel_format,
-                                                output->w, output->h, output->fb,
-                                                output->w * (output->bits_per_pixel / 8));
-    if (!output->fb_image)
+    close(fd);
+
+    if (!init_renderer(output, renderer))
     {
-        PEPPER_ERROR("Failed to create pixman image in %s\n", __FUNCTION__);
+        PEPPER_ERROR("Failed to initialize renderer in %s\n", __FUNCTION__);
         goto error;
     }
-
-    /* TODO : make shadow image? */
 
     output->base = pepper_compositor_add_output(output->fbdev->compositor,
                                                 &fbdev_output_interface, output);
@@ -306,19 +297,10 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
         goto error;
     }
 
-    if (!init_renderer(output, renderer))
-    {
-        PEPPER_ERROR("Failed to initialize renderer in %s\n", __FUNCTION__);
-        goto error;
-    }
-
-    if (fd >=0)
-        close(fd);
-
+    wl_list_insert(&fbdev->output_list, &output->link);
     return PEPPER_TRUE;
 
 error:
-
     if (output)
         pepper_fbdev_output_destroy(output);
 

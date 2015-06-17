@@ -7,17 +7,25 @@
 #define PEPPER_ASSERT(exp)
 #define PEPPER_ERROR(...)
 
+struct pepper_render_target
+{
+    /* Renderer from where this target is created. */
+    pepper_renderer_t   *renderer;
+
+    void    (*destroy)(pepper_render_target_t *target);
+};
+
 struct pepper_renderer
 {
-    pepper_object_t *compositor;
+    pepper_object_t        *compositor;
+    pepper_render_target_t *target;
 
     void            (*destroy)(pepper_renderer_t *renderer);
 
     pepper_bool_t   (*attach_surface)(pepper_renderer_t *renderer,
                                       pepper_object_t *surface, int *w, int *h);
 
-    void            (*flush_surface_damage)(pepper_renderer_t *renderer,
-                                            pepper_object_t *surface);
+    pepper_bool_t   (*flush_surface_damage)(pepper_renderer_t *renderer, pepper_object_t *surface);
 
     pepper_bool_t   (*read_pixels)(pepper_renderer_t *renderer,
                                    int x, int y, int w, int h,

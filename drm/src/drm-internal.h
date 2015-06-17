@@ -38,6 +38,9 @@ struct pepper_drm
     struct udev                *udev;
     struct udev_monitor        *udev_monitor;
     struct wl_event_source     *udev_monitor_source;
+
+    pepper_renderer_t          *pixman_renderer;
+    pepper_renderer_t          *gl_renderer;
 };
 
 struct drm_output
@@ -63,10 +66,6 @@ struct drm_output
 
     drmModeCrtc                *saved_crtc;
 
-    drm_fb_t                   *dumb_fb[DUMB_FB_COUNT];
-    pixman_image_t             *dumb_image[DUMB_FB_COUNT];
-    int                         back_fb_index;
-
     struct gbm_device          *gbm_device;
     struct gbm_surface         *gbm_surface;
 
@@ -74,6 +73,12 @@ struct drm_output
     drm_fb_t                   *back_fb;
 
     pepper_renderer_t          *renderer;
+    pepper_render_target_t     *render_target;
+    pepper_render_target_t     *gl_render_target;
+
+    pepper_bool_t               use_pixman;
+    drm_fb_t                   *dumb_fb[DUMB_FB_COUNT];
+    int                         back_fb_index;
 
     pepper_bool_t               vblank_pending;
     pepper_bool_t               page_flip_pending;
@@ -88,11 +93,14 @@ struct drm_fb
     int                         fd;
     uint32_t                    id;
     uint32_t                    handle;
+
+    uint32_t                    w, h;
     uint32_t                    stride;
     uint32_t                    size;
 
     struct gbm_bo              *bo;
     void                       *map;
+    pepper_render_target_t     *target;
 };
 
 pepper_bool_t

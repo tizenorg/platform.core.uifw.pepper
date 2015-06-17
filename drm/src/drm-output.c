@@ -17,10 +17,8 @@
 #include <pepper-pixman-renderer.h>
 #include <pepper-gl-renderer.h>
 
-#define USE_PIXMAN  0   /* FIXME */
-
 static pepper_bool_t
-init_renderer(drm_output_t *output);
+init_renderer(drm_output_t *output, const char *renderer);
 
 static void
 fini_renderer(drm_output_t *output);
@@ -156,15 +154,15 @@ drm_output_set_mode(void *o, const pepper_output_mode_t *mode)
         drmModeModeInfo *m = &(output->modes[i]);
         if ((m->hdisplay == mode->w) && (m->vdisplay == mode->h))   /* FIXME */
         {
+            /* TODO: drmModeSetCrtc() with current front buffer with the mode. */
+
             output->current_mode = m;
             output->w = m->hdisplay;
             output->h = m->vdisplay;
 
-            fini_renderer(output);
-            init_renderer(output);
+            /* TODO: Resize handleing. */
 
             wl_signal_emit(&output->mode_change_signal, NULL);
-
             return PEPPER_TRUE;
         }
     }
@@ -184,96 +182,70 @@ destroy_fb(struct gbm_bo *bo, void *data)
 }
 
 static drm_fb_t *
-create_fb(drm_output_t *output, struct gbm_bo *bo)
-{
-    int         ret;
-    uint32_t    w, h;
-    drm_fb_t   *fb;
-
-    fb = (drm_fb_t *)calloc(1, sizeof(drm_fb_t));
-    if (!fb)
-    {
-        PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-        goto error;
-    }
-
-    w = gbm_bo_get_width(bo);
-    h = gbm_bo_get_height(bo);
-    fb->fd = output->drm->drm_fd;
-    fb->handle = gbm_bo_get_handle(bo).u32;
-    fb->stride = gbm_bo_get_stride(bo);
-    fb->size = fb->stride * h;
-    fb->bo = bo;
-
-    ret = drmModeAddFB(fb->fd, w, h, 24, 32, fb->stride, fb->handle, &fb->id);
-    if (ret)
-    {
-        PEPPER_ERROR("Failed to add fb in %s\n", __FUNCTION__);
-        goto error;
-    }
-
-    gbm_bo_set_user_data(bo, fb, destroy_fb);
-
-    return fb;
-
-error:
-
-    if (fb)
-        destroy_fb(bo, fb);
-
-    return NULL;
-}
-
-static drm_fb_t *
 get_fb(drm_output_t *output, struct gbm_bo *bo)
 {
-    drm_fb_t *fb = (drm_fb_t *)gbm_bo_get_user_data(bo);
+    drm_fb_t   *fb = (drm_fb_t *)gbm_bo_get_user_data(bo);
 
     if (fb)
         return fb;
 
-    return create_fb(output, bo);
-}
-
-static void
-draw_gl(drm_output_t *output)
-{
-    struct gbm_bo *bo;
-
-    pepper_renderer_repaint_output(output->renderer, output->base);
-
-    bo = gbm_surface_lock_front_buffer(output->gbm_surface);
-    if (!bo)
+    /* Create drm_fb for the new comer. */
+    fb = (drm_fb_t *)calloc(1, sizeof(drm_fb_t));
+    if (!fb)
     {
-        PEPPER_ERROR("Failed to lock front buffer in %s\n", __FUNCTION__);
-        return;
+        PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
+        return NULL;
     }
 
-    output->back_fb = get_fb(output, bo);
-    if (!output->back_fb)
+    fb->fd = output->drm->drm_fd;
+    fb->handle = gbm_bo_get_handle(bo).u32;
+
+    fb->w = gbm_bo_get_width(bo);
+    fb->h = gbm_bo_get_height(bo);
+    fb->stride = gbm_bo_get_stride(bo);
+    fb->size = fb->stride * fb->h;
+    fb->bo = bo;
+
+    if (drmModeAddFB(fb->fd, fb->w, fb->h, 24, 32, fb->stride, fb->handle, &fb->id))
     {
-        PEPPER_ERROR("Failed to get back fb in %s\n", __FUNCTION__);
-        gbm_surface_release_buffer(output->gbm_surface, bo);
-        return;
+        PEPPER_ERROR("Failed to add fb in %s\n", __FUNCTION__);
+        free(fb);
+        return NULL;
     }
+
+    gbm_bo_set_user_data(bo, fb, destroy_fb);
+    return fb;
 }
 
 static void
-draw_pixman(drm_output_t *output)
+update_back_buffer(drm_output_t *output)
 {
-    output->back_fb_index ^= 1;
-    output->back_fb = output->dumb_fb[output->back_fb_index];
-    pepper_renderer_repaint_output(output->renderer, output->base);
-    pepper_pixman_renderer_set_target(output->renderer, output->dumb_image[output->back_fb_index]);
-}
+    if (output->renderer == output->drm->gl_renderer)
+    {
+        struct gbm_bo *bo = gbm_surface_lock_front_buffer(output->gbm_surface);
 
-static void
-draw(drm_output_t *output)
-{
-    if (USE_PIXMAN/* FIXME */)
-        draw_pixman(output);
+        if (!bo)
+        {
+            PEPPER_ERROR("gbm_surface_lock_front_buffer() failed.\n");
+            output->back_fb = NULL;
+            return;
+        }
+
+        output->back_fb = get_fb(output, bo);
+        if (!output->back_fb)
+        {
+            PEPPER_ERROR("Failed to get drm_fb from gbm_bo.\n");
+            return;
+        }
+    }
+    else if (output->renderer == output->drm->pixman_renderer)
+    {
+        output->back_fb = output->dumb_fb[output->back_fb_index];
+    }
     else
-        draw_gl(output);
+    {
+        output->back_fb = NULL;
+    }
 }
 
 static void
@@ -282,19 +254,13 @@ drm_output_repaint(void *o)
     int             ret;
     drm_output_t   *output = (drm_output_t *)o;
 
-    draw(output);
+    pepper_renderer_set_target(output->renderer, output->render_target);
+    pepper_renderer_repaint_output(output->renderer, output->base);
+
+    update_back_buffer(output);
 
     if (!output->back_fb)
         return;
-
-    ret = drmModeSetCrtc(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
-                         0, 0, &output->conn_id, 1, output->current_mode);
-    if (ret)
-    {
-        PEPPER_ERROR("Failed to set CRTC[%d] for Connector[%d] in %s\n",
-                     output->crtc_id, output->conn_id, __FUNCTION__);
-        return;
-    }
 
     ret = drmModePageFlip(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
                           DRM_MODE_PAGE_FLIP_EVENT, output);
@@ -307,7 +273,6 @@ drm_output_repaint(void *o)
     output->page_flip_pending = PEPPER_TRUE;
 
     /* TODO: set planes */
-
 }
 
 static void
@@ -457,19 +422,40 @@ find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
     return -1;
 }
 
-/* FIXME: copied from weston */
+static void
+destroy_dumb_fb(drm_fb_t *fb)
+{
+    if (fb->map)
+        munmap(fb->map, fb->size);
+
+    if (fb->id)
+        drmModeRmFB(fb->fd, fb->id);
+
+    if (fb->handle)
+    {
+        struct drm_mode_destroy_dumb destroy_arg;
+
+        memset(&destroy_arg, 0, sizeof(destroy_arg));
+        destroy_arg.handle = fb->handle;
+        drmIoctl(fb->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_arg);
+    }
+
+    if (fb->target)
+        pepper_render_target_destroy(fb->target);
+
+    free(fb);
+}
+
 static drm_fb_t *
 create_dumb_fb(drm_output_t *output)
 {
     drm_fb_t   *fb;
-    int         ret;
 
     int         drm_fd = output->drm->drm_fd;
     uint32_t    width = output->w;
     uint32_t    height = output->h;
 
     struct drm_mode_create_dumb     create_arg;
-    struct drm_mode_destroy_dumb    destroy_arg;
     struct drm_mode_map_dumb        map_arg;
 
     fb = calloc(1, sizeof(drm_fb_t));
@@ -479,80 +465,58 @@ create_dumb_fb(drm_output_t *output)
         return NULL;
     }
 
+    fb->fd = drm_fd;
+
     memset(&create_arg, 0, sizeof create_arg);
     create_arg.bpp = 32;
     create_arg.width = width;
     create_arg.height = height;
 
-    ret = drmIoctl(drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_arg);
-    if (ret)
+    if (drmIoctl(drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_arg))
     {
         PEPPER_ERROR("Failed to create dumb_fb fb with ioctl in %s\n", __FUNCTION__);
-        goto err_fb;
+        goto error;
     }
 
     fb->handle = create_arg.handle;
     fb->stride = create_arg.pitch;
     fb->size = create_arg.size;
-    fb->fd = drm_fd;
 
-    ret = drmModeAddFB(drm_fd, width, height, 24, 32, fb->stride, fb->handle, &fb->id);
-    if (ret)
+    if (drmModeAddFB(drm_fd, width, height, 24, 32, fb->stride, fb->handle, &fb->id))
     {
         PEPPER_ERROR("Failed to add fb in %s\n", __FUNCTION__);
-        goto err_bo;
+        goto error;
     }
 
     memset(&map_arg, 0, sizeof map_arg);
     map_arg.handle = fb->handle;
-    ret = drmIoctl(fb->fd, DRM_IOCTL_MODE_MAP_DUMB, &map_arg);
-    if (ret)
+
+    if (drmIoctl(fb->fd, DRM_IOCTL_MODE_MAP_DUMB, &map_arg))
     {
         PEPPER_ERROR("Failed to map dumb_fb fb in %s\n", __FUNCTION__);
-        goto err_add_fb;
+        goto error;
     }
 
     fb->map = mmap(0, fb->size, PROT_WRITE, MAP_SHARED, drm_fd, map_arg.offset);
     if (fb->map == MAP_FAILED)
     {
         PEPPER_ERROR("Failed to map fb in %s\n", __FUNCTION__);
-        goto err_add_fb;
+        goto error;
+    }
+
+    fb->target = pepper_pixman_renderer_create_target(PEPPER_FORMAT_XRGB8888, fb->map,
+                                                      fb->stride, width, height);
+    if (!fb->target)
+    {
+        PEPPER_ERROR("Failed to create pixman render target.\n");
+        goto error;
     }
 
     return fb;
 
-err_add_fb:
-    drmModeRmFB(drm_fd, fb->id);
-
-err_bo:
-    memset(&destroy_arg, 0, sizeof(destroy_arg));
-    destroy_arg.handle = create_arg.handle;
-    drmIoctl(drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_arg);
-
-err_fb:
-    free(fb);
+error:
+    destroy_dumb_fb(fb);
     return NULL;
-}
-
-/* FIXME: copied from weston */
-static void
-destroy_dumb_fb(drm_fb_t *fb)
-{
-    struct drm_mode_destroy_dumb destroy_arg;
-
-    if (!fb->map)
-        return;
-
-    if (fb->id)
-        drmModeRmFB(fb->fd, fb->id);
-
-    munmap(fb->map, fb->size);
-
-    memset(&destroy_arg, 0, sizeof(destroy_arg));
-    destroy_arg.handle = fb->handle;
-    drmIoctl(fb->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_arg);
-
-    free(fb);
 }
 
 static void
@@ -564,12 +528,7 @@ fini_pixman_renderer(drm_output_t *output)
     {
         if (output->dumb_fb[i])
             destroy_dumb_fb(output->dumb_fb[i]);
-        if (output->dumb_image[i])
-            pixman_image_unref(output->dumb_image[i]);
     }
-
-    if (output->renderer)
-        pepper_renderer_destroy(output->renderer);
 }
 
 /* FIXME: copied from weston */
@@ -584,53 +543,40 @@ init_pixman_renderer(drm_output_t *output)
         if (!output->dumb_fb[i])
         {
             PEPPER_ERROR("Failed to create dumb_fb[%d] in %s\n", i, __FUNCTION__);
-            goto error;
-        }
-
-        output->dumb_image[i] = pixman_image_create_bits(PIXMAN_x8r8g8b8,
-                                                    output->w, output->h,
-                                                    output->dumb_fb[i]->map,
-                                                    output->dumb_fb[i]->stride);
-        if (!output->dumb_image[i])
-        {
-            PEPPER_ERROR("Failed to create (pixman)dumb_image[%d] in %s\n", i, __FUNCTION__);
-            goto error;
+            return PEPPER_FALSE;
         }
     }
 
-    output->renderer = pepper_pixman_renderer_create(output->drm->compositor);
-    if (!output->renderer)
-    {
-        PEPPER_ERROR("Failed to create pixman renderer in %s\n", __FUNCTION__);
-        goto error;
-    }
+    output->renderer = output->drm->pixman_renderer;
+    output->use_pixman = PEPPER_TRUE;
 
     return PEPPER_TRUE;
-
-error:
-
-    fini_pixman_renderer(output);
-
-    return PEPPER_FALSE;
 }
 
 static void
 fini_gl_renderer(drm_output_t *output)
 {
-    if (output->renderer)
-        pepper_renderer_destroy(output->renderer);
+    if (output->gl_render_target)
+        pepper_render_target_destroy(output->gl_render_target);
 
     if (output->gbm_surface)
         gbm_surface_destroy(output->gbm_surface);
 
     if (output->gbm_device)
         gbm_device_destroy(output->gbm_device);
+
+    output->gl_render_target = NULL;
+    output->gbm_surface = NULL;
+    output->gbm_device = NULL;
 }
 
 static pepper_bool_t
 init_gl_renderer(drm_output_t *output)
 {
     uint32_t native_visual_id;
+
+    if (!output->drm->gl_renderer)
+        return PEPPER_FALSE;
 
     output->gbm_device = gbm_create_device(output->drm->drm_fd);
     if (!output->gbm_device)
@@ -648,44 +594,38 @@ init_gl_renderer(drm_output_t *output)
         goto error;
     }
 
-    /*
-     * PEPPER_API pepper_renderer_t *
-     * pepper_gl_renderer_create(pepper_compositor_t *compositor,
-     *                           void *display, void *window, const char *platform,
-     *                           pepper_format_t format, const uint32_t *native_visual_id);
-     */
     native_visual_id = GBM_FORMAT_XRGB8888;
-    output->renderer = pepper_gl_renderer_create(output->drm->compositor,
-                                                 output->gbm_device, output->gbm_surface, "gbm",
-                                                 PEPPER_FORMAT_ARGB8888/*FIXME*/,
-                                                 &native_visual_id/*FIXME*/);
-    if (!output->renderer)
+    output->gl_render_target = pepper_gl_renderer_create_target(output->drm->gl_renderer,
+                                                                 output->gbm_surface,
+                                                                 PEPPER_FORMAT_XRGB8888,
+                                                                 &native_visual_id);
+    if (!output->gl_render_target)
     {
-        PEPPER_ERROR("Failed to create gl renderer in %s\n", __FUNCTION__);
+        PEPPER_ERROR("Failed to create gl render target.\n");
         goto error;
     }
 
+    output->renderer = output->drm->gl_renderer;
     return PEPPER_TRUE;
 
 error:
     fini_gl_renderer(output);
-
     return PEPPER_FALSE;
 }
 
 static pepper_bool_t
-init_renderer(drm_output_t *output)
+init_renderer(drm_output_t *output, const char *renderer)
 {
-    if (USE_PIXMAN/* FIXME */)
-        return init_pixman_renderer(output);
-    else
+    if (strcmp(renderer, "gl") == 0)
         return init_gl_renderer(output);
+
+    return init_pixman_renderer(output);
 }
 
 static void
 fini_renderer(drm_output_t *output)
 {
-    if (USE_PIXMAN/* FIXME */)
+    if (output->use_pixman)
         fini_pixman_renderer(output);
     else
         fini_gl_renderer(output);
@@ -693,7 +633,7 @@ fini_renderer(drm_output_t *output)
 
 static drm_output_t *
 drm_output_create(pepper_drm_t *drm, struct udev_device *device,
-                  drmModeRes *res, drmModeConnector *conn)
+                  drmModeRes *res, drmModeConnector *conn, const char *renderer)
 {
     int             i;
     drm_output_t   *output;
@@ -746,7 +686,7 @@ drm_output_create(pepper_drm_t *drm, struct udev_device *device,
         }
     }
 
-    if (!init_renderer(output))
+    if (!init_renderer(output, renderer))
     {
         PEPPER_ERROR("Failed to initialize renderer in %s\n", __FUNCTION__);
         goto error;
@@ -803,7 +743,8 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
             continue;
         }
 
-        output = drm_output_create(drm, device, res, conn);
+        /* TODO: Get renderer string from somewhere else. i.e. config file. */
+        output = drm_output_create(drm, device, res, conn, "pixman");
         if (!output)
         {
             PEPPER_ERROR("Failed to create drm_output in %s\n", __FUNCTION__);
@@ -854,21 +795,25 @@ handle_page_flip(int fd, unsigned int sequence, unsigned int tv_sec, unsigned in
 {
     drm_output_t *output = (drm_output_t *)user_data;
 
-    if (output->page_flip_pending)
+    if (output->use_pixman)
     {
-        if (output->front_fb && output->front_fb->bo) /* FIXME */
-            gbm_surface_release_buffer(output->gbm_surface, output->front_fb->bo);
-        output->front_fb = output->back_fb;
-        output->back_fb = NULL;
+        output->back_fb_index ^= 1;
+        output->render_target = output->dumb_fb[output->back_fb_index]->target;
+    }
+    else
+    {
+        /* Assume GL renderer in this case. */
+        gbm_surface_release_buffer(output->gbm_surface, output->front_fb->bo);
     }
 
+    output->front_fb = output->back_fb;
+    output->back_fb = NULL;
     output->page_flip_pending = PEPPER_FALSE;
+
     if (!output->vblank_pending)
     {
         wl_signal_emit(&output->frame_signal, NULL);
     }
-
-    pepper_output_schedule_repaint(output->base);   /* TODO: remove */
 }
 
 static int
@@ -916,7 +861,8 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
         }
         else if (!output && conn->connection == DRM_MODE_CONNECTED)
         {
-            output = drm_output_create(drm, device, res, conn);
+            /* TODO: Get renderer string from somewhere else. */
+            output = drm_output_create(drm, device, res, conn, "pixman");
             if (!output)
             {
                 PEPPER_ERROR("Failed to create drm_output in %s\n", __FUNCTION__);

@@ -1,4 +1,6 @@
 #include <wayland-server.h>
+#include <pepper-pixman-renderer.h>
+#include <pepper-gl-renderer.h>
 #include "x11-internal.h"
 
 #include <stdlib.h>
@@ -214,6 +216,24 @@ pepper_x11_connect(pepper_object_t *compositor, const char *display_name)
         return NULL;
     }
 
+    connection->pixman_renderer = pepper_pixman_renderer_create(connection->compositor);
+    if (!connection->pixman_renderer)
+    {
+        PEPPER_ERROR("Failed to create pixman renderer.\n");
+        free(connection);
+        return NULL;
+    }
+
+    connection->gl_renderer = pepper_gl_renderer_create(connection->compositor,
+                                                        connection->display, "x11");
+    if (!connection->gl_renderer)
+    {
+        PEPPER_ERROR("Failed to create gl renderer.\n");
+        free(connection);
+        return NULL;
+    }
+
+
     scr_iter = xcb_setup_roots_iterator(xcb_get_setup(connection->xcb_connection));
     connection->screen = scr_iter.data;
 
@@ -234,10 +254,9 @@ pepper_x11_connect(pepper_object_t *compositor, const char *display_name)
                                                         WL_EVENT_READABLE,
                                                         x11_handle_event,
                                                         connection);
+
     wl_event_source_check(connection->xcb_event_source);
-
     wl_list_init(&connection->outputs);
-
     wl_signal_init(&connection->destroy_signal);
 
     return connection;
@@ -250,6 +269,12 @@ pepper_x11_destroy(pepper_x11_connection_t *conn)
 
     if (conn->xcb_event_source)
         wl_event_source_remove(conn->xcb_event_source);
+
+    if (conn->pixman_renderer)
+        pepper_renderer_destroy(conn->pixman_renderer);
+
+    if (conn->gl_renderer)
+        pepper_renderer_destroy(conn->gl_renderer);
 
     XCloseDisplay(conn->display);
     free(conn);
