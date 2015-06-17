@@ -26,6 +26,13 @@ PEPPER_DESKTOP_SHELL_MODULES="pepper"
 PKG_CHECK_MODULES(PEPPER_DESKTOP_SHELL, [$PEPPER_DESKTOP_SHELL_MODULES])
 AC_SUBST([PEPPER_DESKTOP_SHELL_REQUIRES], [$PEPPER_DESKTOP_SHELL_MODULES])
 
+# wayland-scanner
+AC_PATH_PROG([wayland_scanner], [wayland-scanner])
+if test x$wayland_scanner = x; then
+    PKG_CHECK_MODULES(WAYLAND_SCANNER, [wayland-scanner])
+    wayland_scanner=`$PKG_CONFIG --variable=wayland_scanner wayland-scanner`
+fi
+
 AC_CONFIG_FILES([
 Makefile
 src/Makefile
