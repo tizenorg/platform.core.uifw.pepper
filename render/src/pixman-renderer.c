@@ -259,11 +259,12 @@ pixman_renderer_read_pixels(pepper_renderer_t *renderer,
 }
 
 static void
-pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output)
+pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output,
+                               const pixman_region32_t *output_damage)
 {
     pixman_image_t *dst = ((pixman_render_target_t *)renderer->target)->image;
 
-    if (dst)
+    if (dst && pixman_region32_not_empty((pixman_region32_t*)output_damage))
     {
         pixman_fill(pixman_image_get_data(dst),
                     pixman_image_get_stride(dst) / sizeof(uint32_t),

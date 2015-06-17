@@ -31,7 +31,9 @@ struct pepper_renderer
                                    int x, int y, int w, int h,
                                    void *pixels, pepper_format_t format);
 
-    void            (*repaint_output)(pepper_renderer_t *renderer, pepper_object_t *output);
+    void            (*repaint_output)(pepper_renderer_t *renderer,
+                                      pepper_object_t *output,
+                                      const pixman_region32_t *output_damage);
 };
 
 #endif /* PEPPER_RENDER_INTERNAL_H */
