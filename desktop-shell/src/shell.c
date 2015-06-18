@@ -26,6 +26,9 @@ shell_create(pepper_object_t *compositor, struct wl_client *client,
     wl_resource_set_implementation(shell->resource, implementation, shell, NULL);
 
     shell->compositor = compositor;
+
+    wl_list_init(&shell->shell_surface_list);
+
     return shell;
 }
 

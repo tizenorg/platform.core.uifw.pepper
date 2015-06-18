@@ -23,7 +23,13 @@ shell_surface_resize(struct wl_client *client, struct wl_resource *resource,
 static void
 shell_surface_set_toplevel(struct wl_client *client, struct wl_resource *resource)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_set_parent(shsurf, NULL);
+
+    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TOPLEVEL);
+
+    pepper_view_set_visibility(shsurf->view, PEPPER_TRUE);
 }
 
 static void
@@ -50,7 +56,7 @@ shell_surface_set_popup(struct wl_client *client, struct wl_resource *resource,
 
 static void
 shell_surface_set_maximized(struct wl_client *client, struct wl_resource *resource,
-                            struct wl_resource *output)
+                            struct wl_resource *output_res)
 {
     /* TODO */
 }
@@ -59,14 +65,30 @@ static void
 shell_surface_set_title(struct wl_client *client, struct wl_resource *resource,
                         const char *title)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    if (shsurf->title)
+        free(shsurf->title);
+
+    shsurf->title = strdup(title);
+
+    if (!shsurf->title)
+        wl_client_post_no_memory(client);
 }
 
 static void
 shell_surface_set_class(struct wl_client *client, struct wl_resource *resource,
                         const char *class_)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    if (shsurf->class_)
+        free(shsurf->class_);
+
+    shsurf->class_ = strdup(class_);
+
+    if (!shsurf->class_)
+        wl_client_post_no_memory(client);
 }
 
 static const struct wl_shell_surface_interface shell_surface_implementation =
@@ -88,9 +110,16 @@ shell_get_shell_surface(struct wl_client *client, struct wl_resource *resource,
                         uint32_t id, struct wl_resource *surface_resource)
 {
     pepper_object_t    *surface = wl_resource_get_user_data(surface_resource);
-    shell_t            *shell = wl_resource_get_user_data(resource);
+    shell_t            *shell   = wl_resource_get_user_data(resource);
 
-    shell_surface_create(shell, surface, client, "wl_shell_surface", &wl_shell_surface_interface,
+    if (!pepper_surface_set_role(surface, "wl_shell_surface"))
+    {
+        wl_resource_post_error(resource, WL_SHELL_ERROR_ROLE,
+                               "Assign \"wl_shell_surface\" to wl_surface failed\n");
+        return ;
+    }
+
+    shell_surface_create(shell, surface, client, &wl_shell_surface_interface,
                          &shell_surface_implementation, 1, id);
 }
 
