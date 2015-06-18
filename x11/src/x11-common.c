@@ -216,6 +216,9 @@ pepper_x11_connect(pepper_object_t *compositor, const char *display_name)
         return NULL;
     }
 
+    connection->gl_renderer = pepper_gl_renderer_create(connection->compositor,
+                                                        connection->display, "x11");
+
     connection->pixman_renderer = pepper_pixman_renderer_create(connection->compositor);
     if (!connection->pixman_renderer)
     {
@@ -223,16 +226,6 @@ pepper_x11_connect(pepper_object_t *compositor, const char *display_name)
         free(connection);
         return NULL;
     }
-
-    connection->gl_renderer = pepper_gl_renderer_create(connection->compositor,
-                                                        connection->display, "x11");
-    if (!connection->gl_renderer)
-    {
-        PEPPER_ERROR("Failed to create gl renderer.\n");
-        free(connection);
-        return NULL;
-    }
-
 
     scr_iter = xcb_setup_roots_iterator(xcb_get_setup(connection->xcb_connection));
     connection->screen = scr_iter.data;
