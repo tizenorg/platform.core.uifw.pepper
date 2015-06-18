@@ -464,7 +464,7 @@ x11_output_repaint(void *o)
                                            0,   /* src_x */
                                            0,   /* src_y */
                                            output->shm.w,  /* src_w */
-                                           output->shm.w, /* src_h */
+                                           output->shm.h, /* src_h */
                                            0,   /* dst_x */
                                            0,   /* dst_y */
                                            output->depth,   /* depth */
