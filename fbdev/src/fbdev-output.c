@@ -274,7 +274,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     wl_signal_init(&output->mode_change_signal);
     wl_signal_init(&output->frame_signal);
 
-    output->pixels = mmap(NULL, output->w * output->stride, PROT_WRITE, MAP_SHARED, fd, 0);
+    output->pixels = mmap(NULL, output->h * output->stride, PROT_WRITE, MAP_SHARED, fd, 0);
     if (!output->pixels)
     {
         PEPPER_ERROR("mmap failed.\n");
