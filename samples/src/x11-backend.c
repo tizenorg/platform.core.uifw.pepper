@@ -1,5 +1,6 @@
 #include <pepper.h>
 #include <pepper-x11.h>
+#include <pepper-desktop-shell.h>
 
 /* TODO: */
 #define PEPPER_ASSERT(exp)
@@ -29,6 +30,9 @@ main(int argc, char **argv)
     mode.refresh = 60000;
     pepper_output_set_mode(output, &mode);
 #endif
+
+    if (!pepper_desktop_shell_init(compositor))
+        PEPPER_ASSERT(0);
 
     display = pepper_compositor_get_display(compositor);
     PEPPER_ASSERT(display);
