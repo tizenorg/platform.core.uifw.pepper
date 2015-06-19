@@ -262,6 +262,12 @@ drm_output_repaint(void *o)
     if (!output->back_fb)
         return;
 
+    if (!output->front_fb)
+    {
+        ret = drmModeSetCrtc(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
+                             0, 0, &output->conn_id, 1, output->current_mode);
+    }
+
     ret = drmModePageFlip(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
                           DRM_MODE_PAGE_FLIP_EVENT, output);
     if (ret < 0)
@@ -548,6 +554,7 @@ init_pixman_renderer(drm_output_t *output)
     }
 
     output->renderer = output->drm->pixman_renderer;
+    output->render_target = output->dumb_fb[output->back_fb_index]->target;
     output->use_pixman = PEPPER_TRUE;
 
     return PEPPER_TRUE;
@@ -562,12 +569,8 @@ fini_gl_renderer(drm_output_t *output)
     if (output->gbm_surface)
         gbm_surface_destroy(output->gbm_surface);
 
-    if (output->gbm_device)
-        gbm_device_destroy(output->gbm_device);
-
     output->gl_render_target = NULL;
     output->gbm_surface = NULL;
-    output->gbm_device = NULL;
 }
 
 static pepper_bool_t
@@ -578,14 +581,7 @@ init_gl_renderer(drm_output_t *output)
     if (!output->drm->gl_renderer)
         return PEPPER_FALSE;
 
-    output->gbm_device = gbm_create_device(output->drm->drm_fd);
-    if (!output->gbm_device)
-    {
-        PEPPER_ERROR("Failed to create gbm device in %s\n", __FUNCTION__);
-        goto error;
-    }
-
-    output->gbm_surface = gbm_surface_create(output->gbm_device, output->w, output->h,
+    output->gbm_surface = gbm_surface_create(output->drm->gbm_device, output->w, output->h,
                                              GBM_FORMAT_XRGB8888/*FIXME*/,
                                              GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING/*FIXME*/);
     if (!output->gbm_surface)
@@ -596,9 +592,9 @@ init_gl_renderer(drm_output_t *output)
 
     native_visual_id = GBM_FORMAT_XRGB8888;
     output->gl_render_target = pepper_gl_renderer_create_target(output->drm->gl_renderer,
-                                                                 output->gbm_surface,
-                                                                 PEPPER_FORMAT_XRGB8888,
-                                                                 &native_visual_id);
+                                                                output->gbm_surface,
+                                                                PEPPER_FORMAT_XRGB8888,
+                                                                &native_visual_id);
     if (!output->gl_render_target)
     {
         PEPPER_ERROR("Failed to create gl render target.\n");
@@ -606,6 +602,8 @@ init_gl_renderer(drm_output_t *output)
     }
 
     output->renderer = output->drm->gl_renderer;
+    output->render_target = output->gl_render_target;
+
     return PEPPER_TRUE;
 
 error:
@@ -803,7 +801,8 @@ handle_page_flip(int fd, unsigned int sequence, unsigned int tv_sec, unsigned in
     else
     {
         /* Assume GL renderer in this case. */
-        gbm_surface_release_buffer(output->gbm_surface, output->front_fb->bo);
+        if (output->front_fb && output->front_fb->bo)
+            gbm_surface_release_buffer(output->gbm_surface, output->front_fb->bo);
     }
 
     output->front_fb = output->back_fb;
@@ -950,6 +949,18 @@ pepper_drm_output_create(pepper_drm_t *drm)
     if (drm->drm_fd < 0)
     {
         PEPPER_ERROR("Failed to open drm[%s] in %s\n", filepath, __FUNCTION__);
+        goto error;
+    }
+
+    /* create gl-renderer & pixman-renderer */
+    drm->gbm_device = gbm_create_device(drm->drm_fd);
+    if (drm->gbm_device)
+        drm->gl_renderer = pepper_gl_renderer_create(drm->compositor, drm->gbm_device, "gbm");
+
+    drm->pixman_renderer = pepper_pixman_renderer_create(drm->compositor);
+    if (!drm->pixman_renderer)
+    {
+        PEPPER_ERROR("Failed to create pixman-renderer\n");
         goto error;
     }
 

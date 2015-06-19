@@ -39,6 +39,8 @@ struct pepper_drm
     struct udev_monitor        *udev_monitor;
     struct wl_event_source     *udev_monitor_source;
 
+    struct gbm_device          *gbm_device;
+
     pepper_renderer_t          *pixman_renderer;
     pepper_renderer_t          *gl_renderer;
 };
@@ -66,7 +68,6 @@ struct drm_output
 
     drmModeCrtc                *saved_crtc;
 
-    struct gbm_device          *gbm_device;
     struct gbm_surface         *gbm_surface;
 
     drm_fb_t                   *front_fb;

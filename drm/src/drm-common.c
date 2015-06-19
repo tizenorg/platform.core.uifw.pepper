@@ -1,7 +1,9 @@
 #include <libudev.h>
 #include <unistd.h>
-#include "drm-internal.h"
 #include <stdlib.h>
+#include <gbm.h>
+
+#include "drm-internal.h"
 
 PEPPER_API pepper_drm_t *
 pepper_drm_create(pepper_object_t *compositor, const char *device)
@@ -70,6 +72,9 @@ pepper_drm_destroy(pepper_drm_t *drm)
 
     if (drm->crtcs)
         free(drm->crtcs);
+
+    if (drm->gbm_device)
+        gbm_device_destroy(drm->gbm_device);
 
     if (drm->drm_fd)
         close(drm->drm_fd);

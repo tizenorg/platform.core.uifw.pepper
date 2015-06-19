@@ -720,9 +720,6 @@ pepper_gl_renderer_create(pepper_object_t *compositor, void *native_display, con
     if (!setup_egl_extensions(gr))
         goto error;
 
-    if (!setup_gl_extensions(gr))
-        goto error;
-
     return &gr->base;
 
 error:
@@ -876,6 +873,9 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
         PEPPER_ERROR("eglMakeCurrent() failed.\n");
         goto error;
     }
+
+    if (!setup_gl_extensions(gr))
+        goto error;
 
     target->surface         = surface;
     target->config          = config;
