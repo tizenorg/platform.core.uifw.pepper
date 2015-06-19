@@ -38,6 +38,7 @@ struct shell_surface
     struct wl_list          child_list;   /* children surfaces of this */
     struct wl_list          parent_link;
 
+    pepper_object_t        *surface;
     pepper_object_t        *view;
 
     enum shell_surface_type type;
@@ -49,8 +50,11 @@ struct shell_surface
         int32_t x, y, width, height;
     } geometry, saved;
 
+    /* Ping-Pong */
     struct wl_event_source *ping_timer;
     pepper_bool_t           need_pong;
+    uint32_t                ping_serial;
+    pepper_bool_t           unresponsive;
 
     struct wl_listener      client_destroy_listener;
     struct wl_listener      surface_destroy_listener;

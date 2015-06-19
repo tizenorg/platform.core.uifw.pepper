@@ -3,7 +3,19 @@
 static void
 shell_surface_pong(struct wl_client *client, struct wl_resource *resource, uint32_t serial)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    /* Client response right ping_serial */
+    if (shsurf->need_pong && shsurf->ping_serial == serial)
+    {
+        wl_event_source_timer_update(shsurf->ping_timer, 0);    /* disarms the timer */
+
+        shsurf->unresponsive = PEPPER_FALSE;
+        shsurf->need_pong    = PEPPER_FALSE;
+        shsurf->ping_serial  = 0;
+
+        /* TODO: Stop displaying wait cursor */
+    }
 }
 
 static void

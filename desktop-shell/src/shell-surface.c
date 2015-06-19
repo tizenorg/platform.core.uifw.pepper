@@ -89,10 +89,10 @@ shell_surface_create(shell_t *shell, pepper_object_t *surface, struct wl_client 
         goto error;
     }
 
-    shsurf->shell  = shell;
-    shsurf->client = client;
-
-    shsurf->view = pepper_compositor_add_view(shell->compositor, NULL, NULL, surface);
+    shsurf->shell   = shell;
+    shsurf->client  = client;
+    shsurf->surface = surface;
+    shsurf->view    = pepper_compositor_add_view(shell->compositor, NULL, NULL, surface);
     if (!shsurf->view)
     {
         PEPPER_ERROR("pepper_compositor_add_view failed\n");
@@ -134,7 +134,12 @@ error:
 static int
 handle_ping_timeout(void *data)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = data;
+
+    shsurf->unresponsive = PEPPER_TRUE;
+
+    /* TODO: Display wait cursor */
+
     return 1;
 }
 
@@ -142,8 +147,14 @@ void
 shell_surface_ping(shell_surface_t *shsurf)
 {
     struct wl_display *display = pepper_compositor_get_display(shsurf->shell->compositor);
+    const char *role;
 
-    /* TODO: Check if the backend support ping. */
+    /* Already stucked, do not send another ping */
+    if (shsurf->unresponsive)
+    {
+        handle_ping_timeout(shsurf);
+        return ;
+    }
 
     if (!shsurf->ping_timer)
     {
@@ -159,9 +170,16 @@ shell_surface_ping(shell_surface_t *shsurf)
     }
 
     wl_event_source_timer_update(shsurf->ping_timer, DESKTOP_SHELL_PING_TIMEOUT);
-    shsurf->need_pong = PEPPER_TRUE;
 
-    /* TODO: Do protocol specific ping. */
+    shsurf->ping_serial = wl_display_next_serial(display);
+    shsurf->need_pong   = PEPPER_TRUE;
+
+    role = pepper_surface_get_role(shsurf->surface);
+
+    if (!strcmp(role, "wl_shell_surface"))
+        wl_shell_surface_send_ping(shsurf->resource, shsurf->ping_serial);
+
+    /* TODO: Do another protocol specific ping. */
 }
 
 void
