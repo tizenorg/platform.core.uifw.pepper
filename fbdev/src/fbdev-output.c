@@ -160,10 +160,10 @@ fbdev_output_set_mode(void *o, const pepper_output_mode_t *mode)
 }
 
 static void
-fbdev_output_repaint(void *o)
+fbdev_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
-    pepper_renderer_repaint_output(output->renderer, output->base);
+    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
 }
 
 static void

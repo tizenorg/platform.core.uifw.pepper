@@ -167,11 +167,16 @@ pepper_output_repaint(pepper_output_t *output)
 {
     PEPPER_ASSERT(!output->frame.pending);
 
-    output->interface->repaint(output->data);
+    pepper_compositor_update_view_list(output->compositor);
+
+    output->interface->repaint(output->data, &output->compositor->view_list, &output->damage_region);
     output->frame.pending = PEPPER_TRUE;
     output->frame.scheduled = PEPPER_FALSE;
 
     /* TODO: Send frame done to the callback objects of this output. */
+
+    /* Output has been repainted, so damage region is totally consumed. */
+    pixman_region32_clear(&output->damage_region);
 }
 
 PEPPER_API pepper_object_t *

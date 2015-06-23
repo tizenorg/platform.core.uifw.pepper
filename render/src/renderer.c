@@ -42,16 +42,10 @@ pepper_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_object_
 }
 
 PEPPER_API void
-pepper_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output)
+pepper_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output,
+                               const pepper_list_t *view_list, const pixman_region32_t *damage)
 {
-    /* FIXME */
-    /* add output_damage parameter at pepper_renderer_repaint_ouput() later */
-    pixman_region32_t output_damage;
-    pixman_region32_init(&output_damage);
-
-    renderer->repaint_output(renderer, output, &output_damage);
-
-    pixman_region32_fini(&output_damage);
+    renderer->repaint_output(renderer, output, view_list, damage);
 }
 
 PEPPER_API pepper_bool_t

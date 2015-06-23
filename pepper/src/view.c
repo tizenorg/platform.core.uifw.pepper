@@ -96,7 +96,9 @@ pepper_compositor_add_view(pepper_object_t *comp,
     else
         view->container_list = &compositor->root_view_list;
 
+    view->compositor_link.item = (void *)view;
     view_geometry_dirty(view);
+
     return &view->base;
 }
 
@@ -572,7 +574,7 @@ view_list_add(pepper_view_t *view)
 {
     pepper_view_t *child;
 
-    wl_list_insert(&view->compositor->view_list, &view->view_list_link);
+    pepper_list_insert(&view->compositor->view_list, &view->compositor_link);
 
     wl_list_for_each(child, &view->child_list, parent_link)
         view_list_add(child);
@@ -585,21 +587,23 @@ pepper_compositor_update_view_list(pepper_compositor_t *compositor)
     pixman_region32_t   visible;
     pixman_region32_t   opaque;
     pixman_region32_t   surface_damage;
+    pepper_list_t      *l;
 
     pixman_region32_init(&visible);
     pixman_region32_init(&opaque);
     pixman_region32_init(&surface_damage);
 
     /* Make compositor's view list empty. */
-    wl_list_init(&compositor->view_list);
+    pepper_list_init(&compositor->view_list);
 
     /* Build z-ordered view list by traversing the view tree in depth-first order. */
     wl_list_for_each(view, &compositor->root_view_list, parent_link)
         view_list_add(view);
 
     /* Update views from front to back. */
-    wl_list_for_each_reverse(view, &compositor->view_list, view_list_link)
+    PEPPER_LIST_FOR_EACH_REVERSE(&compositor->view_list, l)
     {
+        view = l->item;
         view_update_geometry(view);
 
         /* Update visible region. */

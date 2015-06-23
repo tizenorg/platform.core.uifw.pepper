@@ -164,7 +164,7 @@ static const struct wl_callback_listener frame_listener =
 };
 
 static void
-wayland_output_repaint(void *o)
+wayland_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
 {
     wayland_output_t   *output = o;
     struct wl_callback *callback;
@@ -172,8 +172,7 @@ wayland_output_repaint(void *o)
     if (output->render_pre)
         output->render_pre(output);
 
-    /* TODO: Pass rendering data to the renderer. maybe view list? or scene graph data? */
-    pepper_renderer_repaint_output(output->renderer, output->base);
+    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
 
     if (output->render_post)
         output->render_post(output);

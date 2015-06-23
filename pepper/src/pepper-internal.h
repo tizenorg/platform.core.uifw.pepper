@@ -91,11 +91,8 @@ struct pepper_compositor
     struct wl_list      layers;
     struct wl_list      output_list;
     struct wl_list      root_view_list;
-
     struct wl_list      event_hook_chain;
-
-    struct wl_list      view_list;
-    pixman_region32_t   damage_region;
+    pepper_list_t       view_list;
 };
 
 struct pepper_output
@@ -344,9 +341,13 @@ struct pepper_view
 
     pixman_region32_t       opaque_region;
     pixman_region32_t       visible_region;
-    struct wl_list          view_list_link;
     pepper_bool_t           need_damage;
+
+    pepper_list_t           compositor_link;
 };
+
+void
+pepper_compositor_update_view_list(pepper_compositor_t *compositor);
 
 struct pepper_layer
 {

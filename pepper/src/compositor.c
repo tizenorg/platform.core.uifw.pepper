@@ -102,8 +102,7 @@ pepper_compositor_create(const char *socket_name)
     }
 
     wl_list_init(&compositor->layers);
-    wl_list_init(&compositor->view_list);
-    pixman_region32_init(&compositor->damage_region);
+    pepper_list_init(&compositor->view_list);
 
     return &compositor->base;
 

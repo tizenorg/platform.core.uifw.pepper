@@ -444,12 +444,12 @@ x11_output_add_mode_change_listener(void *o, struct wl_listener *listener)
 }
 
 static void
-x11_output_repaint(void *o)
+x11_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
 {
     x11_output_t *output = o;
 
     pepper_renderer_set_target(output->renderer, output->target);
-    pepper_renderer_repaint_output(output->renderer, output->base);
+    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
 
     if (output->renderer == output->connection->pixman_renderer)
     {

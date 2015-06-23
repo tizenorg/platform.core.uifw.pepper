@@ -249,13 +249,13 @@ update_back_buffer(drm_output_t *output)
 }
 
 static void
-drm_output_repaint(void *o)
+drm_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
 {
     int             ret;
     drm_output_t   *output = (drm_output_t *)o;
 
     pepper_renderer_set_target(output->renderer, output->render_target);
-    pepper_renderer_repaint_output(output->renderer, output->base);
+    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
 
     update_back_buffer(output);
 

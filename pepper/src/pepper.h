@@ -96,7 +96,9 @@ struct pepper_output_interface
     void            (*get_mode)(void *output, int index, pepper_output_mode_t *mode);
     pepper_bool_t   (*set_mode)(void *output, const pepper_output_mode_t *mode);
 
-    void            (*repaint)(void *output);
+    void            (*repaint)(void *output,
+                               const pepper_list_t *view_list, const pixman_region32_t *damage);
+
     void            (*add_frame_listener)(void *output, struct wl_listener *listener);
 };
 
