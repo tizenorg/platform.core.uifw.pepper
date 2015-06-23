@@ -877,6 +877,7 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
     if (!setup_gl_extensions(gr))
         goto error;
 
+    target->base.renderer   = renderer;
     target->surface         = surface;
     target->config          = config;
     target->native_window   = native_window;
