@@ -34,5 +34,6 @@ wayland-backend
 x11-backend
 simple-touch
 simple-shm
+fbdev-backend
 
 .vim.custom
