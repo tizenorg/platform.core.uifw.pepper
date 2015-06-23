@@ -72,8 +72,12 @@ x11_handle_event(int fd, uint32_t mask, void *data)
             {
                 xcb_expose_event_t *expose = (xcb_expose_event_t *)event;
                 x11_output_t *output = x11_find_output_by_window(connection, expose->window);
+
                 if (output)
-                    pepper_output_schedule_repaint(output->base);
+                {
+                    /* TODO: Damage only newly exposed area. */
+                    pepper_output_add_damage_whole(output->base);
+                }
             }
             break;
         case XCB_FOCUS_IN:

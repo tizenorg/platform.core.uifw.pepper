@@ -156,7 +156,14 @@ PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_object_t *output, const pepper_output_mode_t *mode);
 
 PEPPER_API void
-pepper_output_schedule_repaint(pepper_object_t *output);
+pepper_output_add_damage(pepper_object_t *output,
+                         const pixman_region32_t *region, int x, int y);
+
+PEPPER_API void
+pepper_output_add_damage_rect(pepper_object_t *output, int x, int y, unsigned int w, unsigned int h);
+
+PEPPER_API void
+pepper_output_add_damage_whole(pepper_object_t *output);
 
 /* Input. */
 struct pepper_seat_interface

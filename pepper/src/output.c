@@ -148,13 +148,10 @@ idle_repaint(void *data)
     }
 }
 
-PEPPER_API void
-pepper_output_schedule_repaint(pepper_object_t *out)
+void
+pepper_output_schedule_repaint(pepper_output_t *output)
 {
     struct wl_event_loop   *loop;
-    pepper_output_t        *output = (pepper_output_t *)out;
-
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
 
     if (output->frame.scheduled)
         return;
@@ -235,8 +232,7 @@ pepper_compositor_add_output(pepper_object_t *cmp,
     output->frame.frame_listener.notify = handle_output_frame;
     interface->add_frame_listener(data, &output->frame.frame_listener);
 
-    pepper_output_schedule_repaint(&output->base);
-
+    pepper_output_add_damage_whole(&output->base);
     return &output->base;
 }
 
@@ -281,8 +277,7 @@ pepper_output_move(pepper_object_t *out, int32_t x, int32_t y)
         output->geometry.x = x;
         output->geometry.y = y;
 
-        /* TODO: Repaint. */
-
+        pepper_output_add_damage_whole(out);
         output_send_geometry(output);
     }
 }
@@ -332,5 +327,60 @@ pepper_output_set_mode(pepper_object_t *out, const pepper_output_mode_t *mode)
     if (output->current_mode == mode)
         return PEPPER_TRUE;
 
-    return output->interface->set_mode(output->data, mode);
+    if (output->interface->set_mode(output->data, mode))
+    {
+        pepper_output_add_damage_whole(out);
+        return PEPPER_TRUE;
+    }
+
+    return PEPPER_FALSE;
+}
+
+PEPPER_API void
+pepper_output_add_damage(pepper_object_t *out,
+                         const pixman_region32_t *region, int x, int y)
+{
+    pepper_output_t    *output = (pepper_output_t *)out;
+    pixman_region32_t   damage;
+
+    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
+
+    pixman_region32_init(&damage);
+    pixman_region32_copy(&damage, (pixman_region32_t *)region);
+    pixman_region32_translate(&damage, x, y);
+    pixman_region32_intersect_rect(&damage, &damage, 0, 0, output->geometry.w, output->geometry.h);
+
+    if (pixman_region32_not_empty(&damage))
+        pixman_region32_union(&output->damage_region, &output->damage_region, &damage);
+
+    pixman_region32_fini(&damage);
+    pepper_output_schedule_repaint(output);
+}
+
+PEPPER_API void
+pepper_output_add_damage_rect(pepper_object_t *out, int x, int y, unsigned int w, unsigned int h)
+{
+    pepper_output_t    *output = (pepper_output_t *)out;
+    pixman_region32_t   damage;
+
+    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
+
+    pixman_region32_init_rect(&damage, x, y, w, h);
+    pixman_region32_intersect_rect(&damage, &damage, 0, 0, output->geometry.w, output->geometry.h);
+
+    if (pixman_region32_not_empty(&damage))
+        pixman_region32_union(&output->damage_region, &output->damage_region, &damage);
+
+    pixman_region32_fini(&damage);
+    pepper_output_schedule_repaint(output);
+}
+
+PEPPER_API void
+pepper_output_add_damage_whole(pepper_object_t *out)
+{
+    pepper_output_t *output = (pepper_output_t *)out;
+
+    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
+    pixman_region32_init_rect(&output->damage_region, 0, 0, output->geometry.w, output->geometry.h);
+    pepper_output_schedule_repaint(output);
 }

@@ -299,7 +299,7 @@ pepper_surface_schedule_repaint(pepper_surface_t *surface)
     /* FIXME: Find outputs to be repainted */
     pepper_output_t *output;
     wl_list_for_each(output, &surface->compositor->output_list, link)
-        pepper_output_schedule_repaint(&output->base);
+        pepper_output_schedule_repaint(output);
 }
 
 static void

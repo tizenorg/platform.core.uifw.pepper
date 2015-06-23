@@ -137,8 +137,25 @@ pepper_compositor_get_display(pepper_object_t *cmp)
 }
 
 void
-pepper_compositor_add_damage(pepper_compositor_t *compositor, pixman_region32_t *region)
+pepper_compositor_add_damage(pepper_compositor_t *compositor, const pixman_region32_t *region)
 {
+    pepper_output_t    *output;
+
     CHECK_MAGIC_AND_NON_NULL(&compositor->base, PEPPER_COMPOSITOR);
-    pixman_region32_union(&compositor->damage_region, &compositor->damage_region, region);
+
+    wl_list_for_each(output, &compositor->output_list, link)
+    {
+        pepper_output_add_damage(&output->base, region, output->geometry.x, output->geometry.y);
+    }
+}
+
+void
+pepper_compositor_add_damage_rect(pepper_compositor_t *compositor,
+                                  int x, int y, unsigned int w, unsigned int h)
+{
+    pixman_region32_t region;
+
+    pixman_region32_init_rect(&region, x, y, w, h);
+    pepper_compositor_add_damage(compositor, &region);
+    pixman_region32_fini(&region);
 }

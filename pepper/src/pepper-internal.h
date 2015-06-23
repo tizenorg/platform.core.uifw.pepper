@@ -128,7 +128,13 @@ struct pepper_output
         pepper_bool_t           pending;
         struct wl_listener      frame_listener;
     } frame;
+
+    /* Region damaged but not repainted. */
+    pixman_region32_t           damage_region;
 };
+
+void
+pepper_output_schedule_repaint(pepper_output_t *output);
 
 void
 pepper_output_repaint(pepper_output_t *output);
@@ -369,7 +375,11 @@ pepper_compositor_event_handler(pepper_object_t         *seat,
                                 void                    *data);
 
 void
-pepper_compositor_add_damage(pepper_compositor_t *compositor, pixman_region32_t *region);
+pepper_compositor_add_damage(pepper_compositor_t *compositor, const pixman_region32_t *region);
+
+void
+pepper_compositor_add_damage_rect(pepper_compositor_t *compositor,
+                                  int x, int y, unsigned int w, unsigned int h);
 
 void
 pepper_surface_flush_damage(pepper_surface_t *surface);
