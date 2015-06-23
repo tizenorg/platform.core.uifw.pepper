@@ -439,6 +439,13 @@ pepper_matrix_copy(pepper_matrix_t *dst, const pepper_matrix_t *src)
     memcpy(dst, src, sizeof(pepper_matrix_t));
 }
 
+/* Virtual terminal */
+PEPPER_API pepper_bool_t
+pepper_virtual_terminal_setup(int tty);
+
+PEPPER_API void
+pepper_virtual_terminal_restore();
+
 #ifdef __cplusplus
 }
 #endif

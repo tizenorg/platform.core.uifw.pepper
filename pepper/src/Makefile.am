@@ -22,4 +22,5 @@ libpepper_la_SOURCES = pepper.h                 \
                        view.c                   \
                        utils-file.c             \
                        utils-map.c              \
-                       utils-log.c
+                       utils-log.c              \
+                       utils-vt.c

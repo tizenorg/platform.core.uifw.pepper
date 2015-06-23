@@ -35,6 +35,9 @@ main(int argc, char **argv)
         ret = scanf("%c", &cc);
     }
 
+    if (!pepper_virtual_terminal_setup(0/*FIXME*/))
+        PEPPER_ASSERT(0);
+
     compositor = pepper_compositor_create("wayland-0");
     PEPPER_ASSERT(compositor);
 
@@ -56,6 +59,8 @@ main(int argc, char **argv)
     wl_event_source_remove(sigint);
     pepper_drm_destroy(drm);
     pepper_compositor_destroy(compositor);
+
+    pepper_virtual_terminal_restore();
 
     return 0;
 }
