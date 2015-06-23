@@ -1,6 +1,5 @@
 #include "pepper-pixman-renderer.h"
 #include "pepper-render-internal.h"
-#include <stdlib.h>
 
 typedef struct pixman_renderer      pixman_renderer_t;
 typedef struct pixman_surface_state pixman_surface_state_t;
@@ -229,23 +228,75 @@ pixman_renderer_read_pixels(pepper_renderer_t *renderer,
 }
 
 static void
-pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output,
-                               const pepper_list_t *view_list, const pixman_region32_t *damage)
+repaint_view(pepper_renderer_t *renderer, pepper_object_t *output, pepper_view_state_t *view_state,
+             const pixman_region32_t *global_damage) /* global coordinate */
 {
-    pixman_image_t *dst = ((pixman_render_target_t *)renderer->target)->image;
+    pixman_region32_t repaint;
+    pixman_image_t *dest = ((pixman_render_target_t *)renderer->target)->image;
+    pepper_object_t *view = view_state->view;
+    pepper_object_t *view_surf = pepper_view_get_surface(view);
+    pixman_surface_state_t *ps = get_surface_state(renderer, view_surf);
+    const pixman_region32_t *visible = view_state->visible;
+    const pepper_output_geometry_t *geometry;
+    const pepper_mat4_t *transform = view_state->transform;
+    int viewport_x, viewport_y, viewport_w, viewport_h;
 
-    if (dst && pixman_region32_not_empty((pixman_region32_t*)damage))
+    if (!ps->image || !dest)
+        return;
+
+    pixman_region32_init(&repaint);
+    pixman_region32_intersect(&repaint, (pixman_region32_t*) visible,
+                              (pixman_region32_t*) global_damage);
+
+    if (pixman_region32_not_empty(&repaint))
     {
-        pixman_fill(pixman_image_get_data(dst),
-                    pixman_image_get_stride(dst) / sizeof(uint32_t),
-                    PIXMAN_FORMAT_BPP(pixman_image_get_format(dst)),
-                    0, 0,
-                    pixman_image_get_width(dst),
-                    pixman_image_get_height(dst),
-                    0x00000000);
+        /* damage region global to output */
+        geometry = pepper_output_get_geometry(output);
+        pixman_region32_translate(&repaint, -geometry->x, -geometry->y);
+        /* set clip on target destination */
+        pixman_image_set_clip_region32(dest, &repaint);
+        /* get viewport */
+        /* TODO: consider transform such as rotation */
+        viewport_x = transform->m[3];
+        viewport_y = transform->m[7];
+        pepper_view_get_size(view, &viewport_w, &viewport_h);
+        /* composite */
+        pixman_image_composite32(PIXMAN_OP_SRC, ps->image, NULL, dest,
+                                 0, 0, /* src_x, src_y */
+                                 0, 0, /* mask_x, mask_y */
+                                 viewport_x, viewport_y, /* dest_x, dest_y */
+                                 viewport_w, viewport_h);
     }
 
-    /* TODO: */
+    pixman_region32_fini(&repaint);
+}
+
+static void
+pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output,
+                               const pepper_list_t *view_list, const pixman_region32_t *output_damage)
+{
+    const pixman_image_t *dst = ((pixman_render_target_t *)renderer->target)->image;
+    const pepper_list_t *cur_list;
+    pepper_view_state_t *view_state;
+    const pepper_output_geometry_t *geometry;
+    pixman_region32_t global_damage;
+
+    if (dst && pixman_region32_not_empty((pixman_region32_t*) output_damage))
+    {
+        /* translate damage to global coordinate */
+        geometry = pepper_output_get_geometry(output);
+        pixman_region32_init(&global_damage);
+        pixman_region32_copy(&global_damage, (pixman_region32_t*) output_damage);
+        pixman_region32_translate(&global_damage, geometry->x, geometry->y);
+
+        PEPPER_LIST_FOR_EACH_REVERSE(view_list, cur_list)
+        {
+            view_state = cur_list->item;
+            repaint_view(renderer, output, view_state, (const pixman_region32_t *) &global_damage);
+        }
+
+        pixman_region32_fini(&global_damage);
+    }
 }
 
 PEPPER_API pepper_renderer_t *
