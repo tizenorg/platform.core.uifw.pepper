@@ -94,8 +94,14 @@ fbdev_output_destroy(void *o)
     if (output->render_target)
         pepper_render_target_destroy(output->render_target);
 
-    if (output->pixels)
-        munmap(output->pixels, output->w * output->stride);
+    if (output->shadow_image)
+        pixman_image_unref(output->shadow_image);
+
+    if (output->frame_buffer_image)
+        pixman_image_unref(output->frame_buffer_image);
+
+    if (output->frame_buffer_pixels)
+        munmap(output->frame_buffer_pixels, output->w * output->stride);
 
     free(output);
 }
@@ -164,6 +170,12 @@ fbdev_output_repaint(void *o, const pepper_list_t *view_list, const pixman_regio
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
     pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
+
+    /* FIXME: composite with damage? */
+    if (output->use_shadow)
+        pixman_image_composite32(PIXMAN_OP_SRC, output->shadow_image, NULL,
+                                 output->frame_buffer_image, 0, 0, 0, 0, 0, 0,
+                                 output->w, output->h);
 }
 
 static void
@@ -199,8 +211,13 @@ init_pixman_renderer(fbdev_output_t *output)
     if (!output->fbdev->pixman_renderer)
         return PEPPER_FALSE;
 
-    target = pepper_pixman_renderer_create_target(output->format, output->pixels, output->stride,
-                                                  output->w, output->h);
+    if (output->use_shadow)
+        target = pepper_pixman_renderer_create_target(output->format, NULL,
+                                                      output->stride, output->w, output->h);
+    else
+        target = pepper_pixman_renderer_create_target(output->format, output->frame_buffer_pixels,
+                                                      output->stride, output->w, output->h);
+
     if (!target)
         return PEPPER_FALSE;
 
@@ -274,8 +291,9 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     wl_signal_init(&output->mode_change_signal);
     wl_signal_init(&output->frame_signal);
 
-    output->pixels = mmap(NULL, output->h * output->stride, PROT_WRITE, MAP_SHARED, fd, 0);
-    if (!output->pixels)
+    output->frame_buffer_pixels = mmap(NULL, output->h * output->stride,
+                                       PROT_WRITE, MAP_SHARED, fd, 0);
+    if (!output->frame_buffer_pixels)
     {
         PEPPER_ERROR("mmap failed.\n");
         goto error;
@@ -283,7 +301,32 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 
     close(fd);
 
-    if (!init_renderer(output, renderer))
+    /* TODO: read & set output->use_shadow value from somewhere */
+    output->use_shadow = PEPPER_TRUE;
+    if (output->use_shadow)
+    {
+        pixman_format_code_t pixman_format = get_pixman_format(output->format);
+
+        output->frame_buffer_image = pixman_image_create_bits(pixman_format,
+                                                              output->w, output->h,
+                                                              output->frame_buffer_pixels,
+                                                              output->stride);
+        if (!output->frame_buffer_image)
+        {
+            PEPPER_ERROR("Failed to create pixman image in %s: pixels_image\n", __FUNCTION__);
+            goto error;
+        }
+
+        output->shadow_image = pixman_image_create_bits(pixman_format, output->w, output->h,
+                                                        NULL, output->stride);
+        if (!output->shadow_image)
+        {
+            PEPPER_ERROR("Failed to create pixman image in %s: shadow_image\n", __FUNCTION__);
+            goto error;
+        }
+    }
+
+     if (!init_renderer(output, renderer))
     {
         PEPPER_ERROR("Failed to initialize renderer in %s\n", __FUNCTION__);
         goto error;

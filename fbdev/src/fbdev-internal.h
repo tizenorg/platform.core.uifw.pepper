@@ -44,7 +44,11 @@ struct fbdev_output
     int                         w, h;
     int                         bpp;
     int                         stride;
-    void                       *pixels;
+
+    void                       *frame_buffer_pixels;
+    pixman_image_t             *frame_buffer_image;
+    pixman_image_t             *shadow_image;
+    pepper_bool_t               use_shadow;
 
     struct wl_signal            destroy_signal;
     struct wl_signal            mode_change_signal;

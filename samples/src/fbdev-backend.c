@@ -38,29 +38,40 @@ main(int argc, char **argv)
     }
 
     if (!pepper_virtual_terminal_setup(0/*FIXME*/))
-        PEPPER_ASSERT(0);
+        goto cleanup;
 
     compositor = pepper_compositor_create("wayland-0");
-    PEPPER_ASSERT(compositor);
+    if (!compositor)
+        goto cleanup;
 
     fbdev = pepper_fbdev_create(compositor, "", "pixman");
-    PEPPER_ASSERT(fbdev);
+    if (!fbdev)
+        goto cleanup;
 
     if (!pepper_desktop_shell_init(compositor))
-        PEPPER_ASSERT(0);
+        goto cleanup;
 
     display = pepper_compositor_get_display(compositor);
-    PEPPER_ASSERT(display);
+    if (!display)
+        goto cleanup;
 
     loop = wl_display_get_event_loop(display);
     sigint = wl_event_loop_add_signal(loop, SIGINT, handle_sigint, display);
-    PEPPER_ASSERT(sigint);
+    if (!sigint)
+        goto cleanup;
 
     wl_display_run(display);
 
-    wl_event_source_remove(sigint);
-    pepper_fbdev_destroy(fbdev);
-    pepper_compositor_destroy(compositor);
+cleanup:
+
+    if (sigint)
+        wl_event_source_remove(sigint);
+
+    if (fbdev)
+        pepper_fbdev_destroy(fbdev);
+
+    if (compositor)
+        pepper_compositor_destroy(compositor);
 
     pepper_virtual_terminal_restore();
 
