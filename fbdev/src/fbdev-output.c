@@ -101,7 +101,7 @@ fbdev_output_destroy(void *o)
         pixman_image_unref(output->frame_buffer_image);
 
     if (output->frame_buffer_pixels)
-        munmap(output->frame_buffer_pixels, output->w * output->stride);
+        munmap(output->frame_buffer_pixels, output->h * output->stride);
 
     free(output);
 }
