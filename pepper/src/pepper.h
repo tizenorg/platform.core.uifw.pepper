@@ -297,6 +297,9 @@ pepper_view_set_visibility(pepper_object_t *view, pepper_bool_t visibility);
 PEPPER_API pepper_bool_t
 pepper_view_get_visibility(pepper_object_t *view);
 
+PEPPER_API const pixman_region32_t *
+pepper_view_get_visible_region(pepper_object_t *view);
+
 PEPPER_API void
 pepper_view_set_alpha(pepper_object_t *view, float alpha);
 

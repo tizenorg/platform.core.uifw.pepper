@@ -414,6 +414,14 @@ pepper_view_get_visibility(pepper_object_t *v)
     return view->visibility;
 }
 
+PEPPER_API const pixman_region32_t *
+pepper_view_get_visible_region(pepper_object_t *v)
+{
+    pepper_view_t *view = (pepper_view_t *)v;
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+    return &view->visible_region;
+}
+
 PEPPER_API void
 pepper_view_set_alpha(pepper_object_t *v, float alpha)
 {
