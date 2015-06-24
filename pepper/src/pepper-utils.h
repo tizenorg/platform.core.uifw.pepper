@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <math.h>
 
+#include <pixman.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,6 +28,75 @@ typedef unsigned int    pepper_bool_t;
 
 #define PEPPER_FALSE    0
 #define PEPPER_TRUE     1
+
+#define PEPPER_FORMAT(type, bpp, a, r, g, b)    \
+    ((((type) & 0xff) << 24)    |               \
+     (( (bpp) & 0xff) << 16)    |               \
+     ((   (a) & 0x0f) << 12)    |               \
+     ((   (r) & 0x0f) <<  8)    |               \
+     ((   (g) & 0x0f) <<  4)    |               \
+     ((   (b) & 0x0f) <<  0))
+
+#define PEPPER_FORMAT_TYPE(format)  (((format) & 0xff000000) >> 24)
+#define PEPPER_FORMAT_BPP(format)   (((format) & 0x00ff0000) >> 16)
+#define PEPPER_FORMAT_A(format)     (((format) & 0x0000f000) >> 12)
+#define PEPPER_FORMAT_R(format)     (((format) & 0x00000f00) >>  8)
+#define PEPPER_FORMAT_G(format)     (((format) & 0x000000f0) >>  4)
+#define PEPPER_FORMAT_B(format)     (((format) & 0x0000000f) >>  0)
+
+typedef enum
+{
+    PEPPER_FORMAT_TYPE_UNKNOWN,
+    PEPPER_FORMAT_TYPE_ARGB,
+    PEPPER_FORMAT_TYPE_ABGR,
+} pepper_format_type_t;
+
+typedef enum
+{
+    PEPPER_FORMAT_UNKNOWN       = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_UNKNOWN,  0,  0,  0,  0,  0),
+
+    PEPPER_FORMAT_ARGB8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    32,  8,  8,  8,  8),
+    PEPPER_FORMAT_XRGB8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    32,  0,  8,  8,  8),
+    PEPPER_FORMAT_RGB888        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    24,  0,  8,  8,  8),
+    PEPPER_FORMAT_RGB565        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,    16,  0,  5,  6,  5),
+
+    PEPPER_FORMAT_ABGR8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    32,  8,  8,  8,  8),
+    PEPPER_FORMAT_XBGR8888      = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    32,  0,  8,  8,  8),
+    PEPPER_FORMAT_BGR888        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    24,  0,  8,  8,  8),
+    PEPPER_FORMAT_BGR565        = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ABGR,    16,  0,  5,  6,  5),
+
+    PEPPER_FORMAT_ALPHA         = PEPPER_FORMAT(PEPPER_FORMAT_TYPE_ARGB,     8,  8,  0,  0,  0),
+} pepper_format_t;
+
+static inline pixman_format_code_t
+get_pixman_format(pepper_format_t format)
+{
+    switch (format)
+    {
+    case PEPPER_FORMAT_ARGB8888:
+        return PIXMAN_a8r8g8b8;
+    case PEPPER_FORMAT_XRGB8888:
+        return PIXMAN_x8r8g8b8;
+    case PEPPER_FORMAT_RGB888:
+        return PIXMAN_r8g8b8;
+    case PEPPER_FORMAT_RGB565:
+        return PIXMAN_r5g6b5;
+    case PEPPER_FORMAT_ABGR8888:
+        return PIXMAN_a8b8g8r8;
+    case PEPPER_FORMAT_XBGR8888:
+        return PIXMAN_x8b8g8r8;
+    case PEPPER_FORMAT_BGR888:
+        return PIXMAN_b8g8r8;
+    case PEPPER_FORMAT_BGR565:
+        return PIXMAN_b5g6r5;
+    case PEPPER_FORMAT_ALPHA:
+        return PIXMAN_a8;
+    default:
+        break;
+    }
+
+    return (pixman_format_code_t)0;
+}
 
 typedef struct pepper_list      pepper_list_t;
 typedef struct pepper_matrix    pepper_matrix_t;

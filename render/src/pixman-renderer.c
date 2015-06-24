@@ -30,36 +30,6 @@ struct pixman_surface_state
     struct wl_listener  surface_destroy_listener;
 };
 
-static inline pixman_format_code_t
-get_pixman_format(pepper_format_t format)
-{
-    switch (format)
-    {
-    case PEPPER_FORMAT_ARGB8888:
-        return PIXMAN_a8r8g8b8;
-    case PEPPER_FORMAT_XRGB8888:
-        return PIXMAN_x8r8g8b8;
-    case PEPPER_FORMAT_RGB888:
-        return PIXMAN_r8g8b8;
-    case PEPPER_FORMAT_RGB565:
-        return PIXMAN_r5g6b5;
-    case PEPPER_FORMAT_ABGR8888:
-        return PIXMAN_a8b8g8r8;
-    case PEPPER_FORMAT_XBGR8888:
-        return PIXMAN_x8b8g8r8;
-    case PEPPER_FORMAT_BGR888:
-        return PIXMAN_b8g8r8;
-    case PEPPER_FORMAT_BGR565:
-        return PIXMAN_b5g6r5;
-    case PEPPER_FORMAT_ALPHA:
-        return PIXMAN_a8;
-    default:
-        break;
-    }
-
-    return (pixman_format_code_t)0;
-}
-
 static void
 pixman_renderer_destroy(pepper_renderer_t *renderer)
 {
