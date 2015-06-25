@@ -10,6 +10,26 @@
 #define PEPPER_ASSERT(exp)
 #define PEPPER_ERROR(...)
 
+static void
+handle_signals(int s, siginfo_t *siginfo, void *context)
+{
+    pepper_virtual_terminal_restore();
+    raise(SIGTRAP);
+}
+
+static void
+init_signals()
+{
+    struct sigaction action;
+
+    action.sa_flags = SA_SIGINFO | SA_RESETHAND;
+    action.sa_sigaction = handle_signals;
+    sigemptyset(&action.sa_mask);
+
+    sigaction(SIGSEGV, &action, NULL);
+    sigaction(SIGABRT, &action, NULL);
+}
+
 static int
 handle_sigint(int signal_number, void *data)
 {
@@ -22,11 +42,11 @@ handle_sigint(int signal_number, void *data)
 int
 main(int argc, char **argv)
 {
-    pepper_object_t        *compositor;
-    pepper_drm_t           *drm;
-    struct wl_display      *display;
-    struct wl_event_loop   *loop;
-    struct wl_event_source *sigint;
+    pepper_object_t        *compositor = NULL;
+    pepper_drm_t           *drm = NULL;
+    struct wl_display      *display = NULL;
+    struct wl_event_loop   *loop = NULL;
+    struct wl_event_source *sigint = NULL;
 
     {   /* for gdb attach */
         char cc;
@@ -35,30 +55,43 @@ main(int argc, char **argv)
         ret = scanf("%c", &cc);
     }
 
+    init_signals();
+
     if (!pepper_virtual_terminal_setup(0/*FIXME*/))
-        PEPPER_ASSERT(0);
+        goto cleanup;
 
     compositor = pepper_compositor_create("wayland-0");
-    PEPPER_ASSERT(compositor);
+    if (!compositor)
+        goto cleanup;
 
     drm = pepper_drm_create(compositor, ""/*device*/, "gl"/*renderer*/);
-    PEPPER_ASSERT(drm);
+    if (!drm)
+        goto cleanup;
 
     if (!pepper_desktop_shell_init(compositor))
-        PEPPER_ASSERT(0);
+        goto cleanup;
 
     display = pepper_compositor_get_display(compositor);
-    PEPPER_ASSERT(display);
+    if (!display)
+        goto cleanup;
 
     loop = wl_display_get_event_loop(display);
     sigint = wl_event_loop_add_signal(loop, SIGINT, handle_sigint, display);
-    PEPPER_ASSERT(sigint);
+    if (!sigint)
+        goto cleanup;
 
     wl_display_run(display);
 
-    wl_event_source_remove(sigint);
-    pepper_drm_destroy(drm);
-    pepper_compositor_destroy(compositor);
+cleanup:
+
+    if (sigint)
+        wl_event_source_remove(sigint);
+
+    if (drm)
+        pepper_drm_destroy(drm);
+
+    if (compositor)
+        pepper_compositor_destroy(compositor);
 
     pepper_virtual_terminal_restore();
 
