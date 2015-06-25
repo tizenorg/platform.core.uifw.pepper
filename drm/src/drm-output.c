@@ -631,7 +631,7 @@ fini_renderer(drm_output_t *output)
 
 static drm_output_t *
 drm_output_create(pepper_drm_t *drm, struct udev_device *device,
-                  drmModeRes *res, drmModeConnector *conn, const char *renderer)
+                  drmModeRes *res, drmModeConnector *conn)
 {
     int             i;
     drm_output_t   *output;
@@ -684,7 +684,7 @@ drm_output_create(pepper_drm_t *drm, struct udev_device *device,
         }
     }
 
-    if (!init_renderer(output, renderer))
+    if (!init_renderer(output, drm->renderer))
     {
         PEPPER_ERROR("Failed to initialize renderer in %s\n", __FUNCTION__);
         goto error;
@@ -742,7 +742,7 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
         }
 
         /* TODO: Get renderer string from somewhere else. i.e. config file. */
-        output = drm_output_create(drm, device, res, conn, "pixman");
+        output = drm_output_create(drm, device, res, conn);
         if (!output)
         {
             PEPPER_ERROR("Failed to create drm_output in %s\n", __FUNCTION__);
@@ -861,7 +861,7 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
         else if (!output && conn->connection == DRM_MODE_CONNECTED)
         {
             /* TODO: Get renderer string from somewhere else. */
-            output = drm_output_create(drm, device, res, conn, "pixman");
+            output = drm_output_create(drm, device, res, conn);
             if (!output)
             {
                 PEPPER_ERROR("Failed to create drm_output in %s\n", __FUNCTION__);
@@ -913,7 +913,7 @@ done:
 }
 
 pepper_bool_t
-pepper_drm_output_create(pepper_drm_t *drm)
+pepper_drm_output_create(pepper_drm_t *drm, const char *renderer)
 {
     struct udev_device      *drm_device;
     const char              *filepath;
@@ -951,6 +951,9 @@ pepper_drm_output_create(pepper_drm_t *drm)
         PEPPER_ERROR("Failed to open drm[%s] in %s\n", filepath, __FUNCTION__);
         goto error;
     }
+
+    if (renderer)
+        drm->renderer = strdup(renderer);
 
     /* create gl-renderer & pixman-renderer */
     drm->gbm_device = gbm_create_device(drm->drm_fd);

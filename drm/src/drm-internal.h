@@ -41,6 +41,7 @@ struct pepper_drm
 
     struct gbm_device          *gbm_device;
 
+    char                       *renderer;
     pepper_renderer_t          *pixman_renderer;
     pepper_renderer_t          *gl_renderer;
 };
@@ -105,7 +106,7 @@ struct drm_fb
 };
 
 pepper_bool_t
-pepper_drm_output_create(pepper_drm_t *drm);
+pepper_drm_output_create(pepper_drm_t *drm, const char *renderer);
 
 void
 pepper_drm_output_destroy(drm_output_t *output);

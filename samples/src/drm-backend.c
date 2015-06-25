@@ -41,7 +41,7 @@ main(int argc, char **argv)
     compositor = pepper_compositor_create("wayland-0");
     PEPPER_ASSERT(compositor);
 
-    drm = pepper_drm_create(compositor, "");
+    drm = pepper_drm_create(compositor, ""/*device*/, "gl"/*renderer*/);
     PEPPER_ASSERT(drm);
 
     if (!pepper_desktop_shell_init(compositor))

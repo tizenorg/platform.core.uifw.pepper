@@ -6,7 +6,7 @@
 #include "drm-internal.h"
 
 PEPPER_API pepper_drm_t *
-pepper_drm_create(pepper_object_t *compositor, const char *device)
+pepper_drm_create(pepper_object_t *compositor, const char *device, const char *renderer)
 {
     pepper_drm_t    *drm;
 
@@ -35,7 +35,7 @@ pepper_drm_create(pepper_object_t *compositor, const char *device)
 
     wl_list_init(&drm->output_list);
 
-    if (!pepper_drm_output_create(drm))
+    if (!pepper_drm_output_create(drm, renderer))
     {
         PEPPER_ERROR("Failed to connect drm output in %s\n", __FUNCTION__);
         goto error;
@@ -54,6 +54,12 @@ PEPPER_API void
 pepper_drm_destroy(pepper_drm_t *drm)
 {
     drm_output_t *output, *next;
+
+    if (!drm)
+        return;
+
+    if (drm->renderer)
+        free(drm->renderer);
 
     if (drm->udev_monitor_source)
         wl_event_source_remove(drm->udev_monitor_source);
