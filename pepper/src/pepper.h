@@ -228,14 +228,7 @@ pepper_buffer_get_resource(pepper_object_t *buffer);
 
 /* View. */
 PEPPER_API pepper_object_t *
-pepper_compositor_add_view(pepper_object_t *compositor,
-                           pepper_object_t *parent, pepper_object_t *pos, pepper_object_t *surface);
-
-PEPPER_API pepper_object_t *
-pepper_compositor_get_top_root_view(pepper_object_t *compositor);
-
-PEPPER_API pepper_object_t *
-pepper_compositor_get_bottom_root_view(pepper_object_t *compositor);
+pepper_compositor_add_surface_view(pepper_object_t *compositor, pepper_object_t *surface);
 
 PEPPER_API void
 pepper_view_destroy(pepper_object_t *view);
@@ -244,22 +237,25 @@ PEPPER_API pepper_object_t *
 pepper_view_get_compositor(pepper_object_t *view);
 
 PEPPER_API pepper_object_t *
-pepper_view_get_parent(pepper_object_t *view);
-
-PEPPER_API pepper_object_t *
 pepper_view_get_surface(pepper_object_t *view);
 
-PEPPER_API pepper_bool_t
-pepper_view_stack_above(pepper_object_t *view, pepper_object_t *below);
+PEPPER_API void
+pepper_view_set_parent(pepper_object_t *view, pepper_object_t *parent);
+
+PEPPER_API pepper_object_t *
+pepper_view_get_parent(pepper_object_t *view);
 
 PEPPER_API pepper_bool_t
-pepper_view_stack_below(pepper_object_t *view, pepper_object_t *above);
+pepper_view_stack_above(pepper_object_t *view, pepper_object_t *below, pepper_bool_t subtree);
+
+PEPPER_API pepper_bool_t
+pepper_view_stack_below(pepper_object_t *view, pepper_object_t *above, pepper_bool_t subtree);
 
 PEPPER_API void
-pepper_view_stack_top(pepper_object_t *view);
+pepper_view_stack_top(pepper_object_t *view, pepper_bool_t subtree);
 
 PEPPER_API void
-pepper_view_stack_bottom(pepper_object_t *view);
+pepper_view_stack_bottom(pepper_object_t *view, pepper_bool_t subtree);
 
 PEPPER_API pepper_object_t *
 pepper_view_get_above(pepper_object_t *view);
@@ -267,23 +263,20 @@ pepper_view_get_above(pepper_object_t *view);
 PEPPER_API pepper_object_t *
 pepper_view_get_below(pepper_object_t *view);
 
-PEPPER_API pepper_object_t *
-pepper_view_get_top_child(pepper_object_t *view);
-
-PEPPER_API pepper_object_t *
-pepper_view_get_bottom_child(pepper_object_t *view);
+PEPPER_API const pepper_list_t *
+pepper_view_get_children_list(pepper_object_t *view);
 
 PEPPER_API void
-pepper_view_resize(pepper_object_t *view, float w, float h);
+pepper_view_resize(pepper_object_t *view, double w, double h);
 
 PEPPER_API void
-pepper_view_get_size(pepper_object_t *view, float *w, float *h);
+pepper_view_get_size(pepper_object_t *view, double *w, double *h);
 
 PEPPER_API void
-pepper_view_set_position(pepper_object_t *view, float x, float y);
+pepper_view_set_position(pepper_object_t *view, double x, double y);
 
 PEPPER_API void
-pepper_view_get_position(pepper_object_t *view, float *x, float *y);
+pepper_view_get_position(pepper_object_t *view, double *x, double *y);
 
 PEPPER_API void
 pepper_view_set_transform(pepper_object_t *view, const pepper_matrix_t *matrix);
@@ -292,37 +285,19 @@ PEPPER_API const pepper_matrix_t *
 pepper_view_get_transform(pepper_object_t *view);
 
 PEPPER_API void
-pepper_view_set_visibility(pepper_object_t *view, pepper_bool_t visibility);
+pepper_view_map(pepper_object_t *view);
+
+PEPPER_API void
+pepper_view_unmap(pepper_object_t *view);
 
 PEPPER_API pepper_bool_t
-pepper_view_get_visibility(pepper_object_t *view);
+pepper_view_is_mapped(pepper_object_t *view);
+
+PEPPER_API pepper_bool_t
+pepper_view_is_visible(pepper_object_t *view);
 
 PEPPER_API const pixman_region32_t *
 pepper_view_get_visible_region(pepper_object_t *view);
-
-PEPPER_API void
-pepper_view_set_alpha(pepper_object_t *view, float alpha);
-
-PEPPER_API float
-pepper_view_get_alpha(pepper_object_t *view);
-
-PEPPER_API void
-pepper_view_set_viewport(pepper_object_t *view, int x, int y, int w, int h);
-
-PEPPER_API void
-pepper_view_get_viewport(pepper_object_t *view, int *x, int *y, int *w, int *h);
-
-PEPPER_API void
-pepper_view_set_clip_to_parent(pepper_object_t *view, pepper_bool_t clip);
-
-PEPPER_API pepper_bool_t
-pepper_view_get_clip_to_parent(pepper_object_t *view);
-
-PEPPER_API pepper_bool_t
-pepper_view_set_clip_region(pepper_object_t *view, const pixman_region32_t *region);
-
-PEPPER_API const pixman_region32_t *
-pepper_view_get_clip_region(pepper_object_t *view);
 
 #ifdef __cplusplus
 }

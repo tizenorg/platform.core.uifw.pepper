@@ -41,7 +41,7 @@ shell_surface_set_toplevel(struct wl_client *client, struct wl_resource *resourc
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TOPLEVEL);
 
-    pepper_view_set_visibility(shsurf->view, PEPPER_TRUE);
+    pepper_view_map(shsurf->view);
 }
 
 static void

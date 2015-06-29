@@ -167,7 +167,7 @@ pepper_output_repaint(pepper_output_t *output)
 {
     PEPPER_ASSERT(!output->frame.pending);
 
-    pepper_compositor_update_view_list(output->compositor);
+    pepper_compositor_update_views(output->compositor);
 
     output->interface->repaint(output->data, &output->compositor->view_list, &output->damage_region);
     output->frame.pending = PEPPER_TRUE;
@@ -356,10 +356,12 @@ pepper_output_add_damage(pepper_object_t *out,
     pixman_region32_intersect_rect(&damage, &damage, 0, 0, output->geometry.w, output->geometry.h);
 
     if (pixman_region32_not_empty(&damage))
+    {
         pixman_region32_union(&output->damage_region, &output->damage_region, &damage);
+        pepper_output_schedule_repaint(output);
+    }
 
     pixman_region32_fini(&damage);
-    pepper_output_schedule_repaint(output);
 }
 
 PEPPER_API void

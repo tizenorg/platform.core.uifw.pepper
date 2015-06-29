@@ -76,9 +76,10 @@ pepper_compositor_create(const char *socket_name)
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
     wl_list_init(&compositor->output_list);
-    wl_list_init(&compositor->root_view_list);
-
     wl_list_init(&compositor->event_hook_chain);
+
+    pepper_list_init(&compositor->root_view_list);
+    pepper_list_init(&compositor->view_list);
 
     /* Install default input event handler */
     if( NULL == pepper_compositor_add_event_hook(&compositor->base,
@@ -100,9 +101,6 @@ pepper_compositor_create(const char *socket_name)
         PEPPER_ERROR("Failed to initialze data device manager.\n");
         goto error;
     }
-
-    wl_list_init(&compositor->layers);
-    pepper_list_init(&compositor->view_list);
 
     return &compositor->base;
 
@@ -143,9 +141,7 @@ pepper_compositor_add_damage(pepper_compositor_t *compositor, const pixman_regio
     CHECK_MAGIC_AND_NON_NULL(&compositor->base, PEPPER_COMPOSITOR);
 
     wl_list_for_each(output, &compositor->output_list, link)
-    {
         pepper_output_add_damage(&output->base, region, output->geometry.x, output->geometry.y);
-    }
 }
 
 void
@@ -157,4 +153,15 @@ pepper_compositor_add_damage_rect(pepper_compositor_t *compositor,
     pixman_region32_init_rect(&region, x, y, w, h);
     pepper_compositor_add_damage(compositor, &region);
     pixman_region32_fini(&region);
+}
+
+void
+pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
+{
+    pepper_output_t    *output;
+
+    CHECK_MAGIC_AND_NON_NULL(&compositor->base, PEPPER_COMPOSITOR);
+
+    wl_list_for_each(output, &compositor->output_list, link)
+        pepper_output_schedule_repaint(output);
 }

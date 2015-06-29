@@ -125,6 +125,7 @@ struct pepper_list
 {
     pepper_list_t  *prev;
     pepper_list_t  *next;
+    pepper_bool_t   owns_mem;
     void           *item;
 };
 
@@ -155,12 +156,13 @@ pepper_list_insert_item(pepper_list_t *list, void *item)
         return NULL;
 
     elm->item = item;
+    elm->owns_mem = PEPPER_TRUE;
     pepper_list_insert(list, elm);
     return elm;
 }
 
 static inline void
-pepper_list_remove(pepper_list_t *list, pepper_free_func_t free_func, pepper_bool_t free_list)
+pepper_list_remove(pepper_list_t *list, pepper_free_func_t free_func)
 {
     list->prev->next = list->next;
     list->next->prev = list->prev;
@@ -170,13 +172,12 @@ pepper_list_remove(pepper_list_t *list, pepper_free_func_t free_func, pepper_boo
     if (free_func)
         free_func(list->item);
 
-    if (free_list)
+    if (list->owns_mem)
         free(list);
 }
 
 static inline void
-pepper_list_remove_item(pepper_list_t *list, void *item,
-                        pepper_free_func_t free_func, pepper_bool_t free_list)
+pepper_list_remove_item(pepper_list_t *list, void *item, pepper_free_func_t free_func)
 {
     pepper_list_t *l;
 
@@ -184,14 +185,14 @@ pepper_list_remove_item(pepper_list_t *list, void *item,
     {
         if (l->item == item)
         {
-            pepper_list_remove(l, free_func, free_list);
+            pepper_list_remove(l, free_func);
             return;
         }
     }
 }
 
 static inline void
-pepper_list_clear(pepper_list_t *list, pepper_free_func_t free_func, pepper_bool_t free_list)
+pepper_list_clear(pepper_list_t *list, pepper_free_func_t free_func)
 {
     pepper_list_t *l, *temp;
 
@@ -200,7 +201,7 @@ pepper_list_clear(pepper_list_t *list, pepper_free_func_t free_func, pepper_bool
         if (free_func)
             free_func(l->item);
 
-        if (free_list)
+        if (l->owns_mem)
             free(l);
     }
 

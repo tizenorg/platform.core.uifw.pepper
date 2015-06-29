@@ -88,10 +88,9 @@ struct pepper_compositor
     struct wl_list      surfaces;
     struct wl_list      regions;
     struct wl_list      seat_list;
-    struct wl_list      layers;
     struct wl_list      output_list;
-    struct wl_list      root_view_list;
     struct wl_list      event_hook_chain;
+    pepper_list_t       root_view_list;
     pepper_list_t       view_list;
 };
 
@@ -308,14 +307,14 @@ struct pepper_view
     pepper_object_t         base;
     pepper_compositor_t    *compositor;
 
-    /* Hierarchy. */
+    /* Hierarchy & Z-order. */
     pepper_view_t          *parent;
-    struct wl_list         *container_list;
-    struct wl_list          parent_link;
-    struct wl_list          child_list;
+    pepper_list_t           children_list;
+    pepper_list_t           parent_link;
+    pepper_list_t           z_link;
 
     /* Geometry. */
-    float                   x, y, w, h;
+    double                  x, y, w, h;
     pepper_matrix_t         transform;
     pepper_matrix_t         matrix_to_parent;
     pepper_matrix_t         matrix_to_global;
@@ -324,38 +323,19 @@ struct pepper_view
 
     /* Visibility. */
     pepper_bool_t           visibility;
-    float                   alpha;
+    pepper_bool_t           mapped;
 
     /* Content. */
     pepper_surface_t       *surface;
-    struct wl_listener      surface_destroy_listener;
     struct wl_list          surface_link;
-
-    struct {
-        int x, y, w, h;
-    } viewport;
-
-    /* Clip. */
-    pepper_bool_t           clip_to_parent;
-    pixman_region32_t       clip_region;
+    struct wl_listener      surface_destroy_listener;
 
     pixman_region32_t       opaque_region;
     pixman_region32_t       visible_region;
-    pepper_bool_t           need_damage;
-
-    pepper_list_t           compositor_link;
 };
 
 void
-pepper_compositor_update_view_list(pepper_compositor_t *compositor);
-
-struct pepper_layer
-{
-    pepper_object_t         base;
-    pepper_compositor_t    *compositor;
-    struct wl_list          link;
-    struct wl_list          views;
-};
+pepper_compositor_update_views(pepper_compositor_t *compositor);
 
 /* Event hook */
 struct pepper_event_hook

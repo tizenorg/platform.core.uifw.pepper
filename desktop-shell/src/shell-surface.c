@@ -92,7 +92,7 @@ shell_surface_create(shell_t *shell, pepper_object_t *surface, struct wl_client 
     shsurf->shell   = shell;
     shsurf->client  = client;
     shsurf->surface = surface;
-    shsurf->view    = pepper_compositor_add_view(shell->compositor, NULL, NULL, surface);
+    shsurf->view    = pepper_compositor_add_surface_view(shell->compositor, surface);
     if (!shsurf->view)
     {
         PEPPER_ERROR("pepper_compositor_add_view failed\n");
