@@ -267,10 +267,10 @@ PEPPER_API const pepper_list_t *
 pepper_view_get_children_list(pepper_object_t *view);
 
 PEPPER_API void
-pepper_view_resize(pepper_object_t *view, double w, double h);
+pepper_view_resize(pepper_object_t *view, int w, int h);
 
 PEPPER_API void
-pepper_view_get_size(pepper_object_t *view, double *w, double *h);
+pepper_view_get_size(pepper_object_t *view, int *w, int *h);
 
 PEPPER_API void
 pepper_view_set_position(pepper_object_t *view, double x, double y);

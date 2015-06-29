@@ -314,7 +314,8 @@ struct pepper_view
     pepper_list_t           z_link;
 
     /* Geometry. */
-    double                  x, y, w, h;
+    double                  x, y;
+    int                     w, h;
     pepper_matrix_t         transform;
     pepper_matrix_t         matrix_to_parent;
     pepper_matrix_t         matrix_to_global;

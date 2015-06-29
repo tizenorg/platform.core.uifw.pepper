@@ -88,8 +88,9 @@ pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
 
     view->x = 0.0;
     view->y = 0.0;
-    view->w = 0.0;
-    view->h = 0.0;
+
+    view->w = 0;
+    view->h = 0;
 
     pepper_matrix_init_identity(&view->transform);
     pepper_matrix_init_identity(&view->matrix_to_parent);
@@ -300,7 +301,7 @@ pepper_view_get_children_list(pepper_object_t *v)
 }
 
 PEPPER_API void
-pepper_view_resize(pepper_object_t *v, double w, double h)
+pepper_view_resize(pepper_object_t *v, int w, int h)
 {
     pepper_view_t *view  = (pepper_view_t *)v;
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
@@ -314,7 +315,7 @@ pepper_view_resize(pepper_object_t *v, double w, double h)
 }
 
 PEPPER_API void
-pepper_view_get_size(pepper_object_t *v, double *w, double *h)
+pepper_view_get_size(pepper_object_t *v, int *w, int *h)
 {
     pepper_view_t *view  = (pepper_view_t *)v;
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
