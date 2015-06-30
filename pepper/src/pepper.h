@@ -279,9 +279,9 @@ PEPPER_API void
 pepper_view_get_position(pepper_object_t *view, double *x, double *y);
 
 PEPPER_API void
-pepper_view_set_transform(pepper_object_t *view, const pepper_matrix_t *matrix);
+pepper_view_set_transform(pepper_object_t *view, const pepper_mat4_t *matrix);
 
-PEPPER_API const pepper_matrix_t *
+PEPPER_API const pepper_mat4_t *
 pepper_view_get_transform(pepper_object_t *view);
 
 PEPPER_API void

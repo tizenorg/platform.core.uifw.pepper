@@ -92,9 +92,9 @@ pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
     view->w = 0;
     view->h = 0;
 
-    pepper_matrix_init_identity(&view->transform);
-    pepper_matrix_init_identity(&view->matrix_to_parent);
-    pepper_matrix_init_identity(&view->matrix_to_global);
+    pepper_mat4_init_identity(&view->transform);
+    pepper_mat4_init_identity(&view->matrix_to_parent);
+    pepper_mat4_init_identity(&view->matrix_to_global);
 
     view->parent_link.item = (void *)view;
     view->z_link.item = (void *)view;
@@ -355,16 +355,16 @@ pepper_view_get_position(pepper_object_t *v, double *x, double *y)
 }
 
 PEPPER_API void
-pepper_view_set_transform(pepper_object_t *v, const pepper_matrix_t *matrix)
+pepper_view_set_transform(pepper_object_t *v, const pepper_mat4_t *matrix)
 {
     pepper_view_t *view  = (pepper_view_t *)v;
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
 
-    pepper_matrix_copy(&view->transform, matrix);
+    pepper_mat4_copy(&view->transform, matrix);
     view_geometry_dirty(view);
 }
 
-PEPPER_API const pepper_matrix_t *
+PEPPER_API const pepper_mat4_t *
 pepper_view_get_transform(pepper_object_t *v)
 {
     pepper_view_t *view  = (pepper_view_t *)v;
@@ -425,7 +425,7 @@ view_update_opaque_region(pepper_view_t *view)
 }
 
 static void
-damage_region_transform(pixman_region32_t *region, const pepper_matrix_t *matrix)
+damage_region_transform(pixman_region32_t *region, const pepper_mat4_t *matrix)
 {
     /* TODO: */
 }
@@ -460,12 +460,12 @@ view_update_geometry(pepper_view_t *view)
 
         if (view->parent)
         {
-            pepper_matrix_multiply(&view->matrix_to_global,
+            pepper_mat4_multiply(&view->matrix_to_global,
                                    &view->parent->matrix_to_global, &view->matrix_to_parent);
         }
         else
         {
-            pepper_matrix_copy(&view->matrix_to_global, &view->matrix_to_parent);
+            pepper_mat4_copy(&view->matrix_to_global, &view->matrix_to_parent);
         }
 
         view_update_bounding_region(view);

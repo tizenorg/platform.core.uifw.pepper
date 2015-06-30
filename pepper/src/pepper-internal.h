@@ -316,9 +316,9 @@ struct pepper_view
     /* Geometry. */
     double                  x, y;
     int                     w, h;
-    pepper_matrix_t         transform;
-    pepper_matrix_t         matrix_to_parent;
-    pepper_matrix_t         matrix_to_global;
+    pepper_mat4_t           transform;
+    pepper_mat4_t           matrix_to_parent;
+    pepper_mat4_t           matrix_to_global;
     pixman_region32_t       bounding_region;
     pepper_bool_t           geometry_dirty;
 
