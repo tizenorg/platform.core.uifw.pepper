@@ -333,6 +333,8 @@ struct pepper_view
 
     pixman_region32_t       opaque_region;
     pixman_region32_t       visible_region;
+
+    pepper_view_state_t     state;
 };
 
 void

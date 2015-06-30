@@ -68,6 +68,173 @@ view_unmap(pepper_view_t *view)
     view_update_visibility(view);
 }
 
+static inline void
+add_bbox_point(double *box, int x, int y, const pepper_mat4_t *matrix)
+{
+    pepper_vec2_t v = { x, y };
+
+    pepper_mat4_transform_vec2(matrix, &v);
+
+    box[0] = PEPPER_MIN(box[0], v.x);
+    box[1] = PEPPER_MIN(box[1], v.y);
+    box[2] = PEPPER_MAX(box[2], v.x);
+    box[3] = PEPPER_MAX(box[3], v.y);
+}
+
+static inline void
+transform_bounding_box(pixman_box32_t *box, const pepper_mat4_t *matrix)
+{
+    double          b[4] = { HUGE_VAL, HUGE_VAL, -HUGE_VAL, -HUGE_VAL };
+
+    add_bbox_point(b, box->x1, box->y1, matrix);
+    add_bbox_point(b, box->x2, box->y1, matrix);
+    add_bbox_point(b, box->x2, box->y2, matrix);
+    add_bbox_point(b, box->x1, box->y2, matrix);
+
+    box->x1 = floor(b[0]);
+    box->y1 = floor(b[1]);
+    box->x2 = ceil(b[2]);
+    box->y2 = ceil(b[3]);
+}
+
+static inline void
+transform_region_bounding(pixman_region32_t *region, const pepper_mat4_t *matrix)
+{
+    pixman_region32_t   result;
+    pixman_box32_t     *rects;
+    int                 i, num_rects;
+
+    pixman_region32_init(&result);
+    rects = pixman_region32_rectangles(region, &num_rects);
+
+    for (i = 0; i < num_rects; i++)
+    {
+        pixman_box32_t box = rects[i];
+
+        transform_bounding_box(&box, matrix);
+        pixman_region32_union_rect(&result, &result,
+                                   box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+    }
+
+    pixman_region32_copy(region, &result);
+    pixman_region32_fini(&result);
+}
+
+static void
+view_update_geometry(pepper_view_t *view)
+{
+    if (view->parent)
+        view_update_geometry(view->parent);
+
+    if (view->geometry_dirty)
+    {
+        view->matrix_to_parent.m[ 0] = view->transform.m[ 0] + view->transform.m[12] * view->x;
+        view->matrix_to_parent.m[ 1] = view->transform.m[ 1] + view->transform.m[13] * view->x;
+        view->matrix_to_parent.m[ 2] = view->transform.m[ 2] + view->transform.m[14] * view->x;
+        view->matrix_to_parent.m[ 3] = view->transform.m[ 3] + view->transform.m[15] * view->x;
+
+        view->matrix_to_parent.m[ 4] = view->transform.m[ 4] + view->transform.m[12] * view->y;
+        view->matrix_to_parent.m[ 5] = view->transform.m[ 5] + view->transform.m[13] * view->y;
+        view->matrix_to_parent.m[ 6] = view->transform.m[ 6] + view->transform.m[14] * view->y;
+        view->matrix_to_parent.m[ 7] = view->transform.m[ 7] + view->transform.m[15] * view->y;
+
+        view->matrix_to_parent.m[ 8] = view->transform.m[ 8];
+        view->matrix_to_parent.m[ 9] = view->transform.m[ 9];
+        view->matrix_to_parent.m[10] = view->transform.m[10];
+        view->matrix_to_parent.m[11] = view->transform.m[11];
+
+        view->matrix_to_parent.m[12] = view->transform.m[12];
+        view->matrix_to_parent.m[13] = view->transform.m[13];
+        view->matrix_to_parent.m[14] = view->transform.m[14];
+        view->matrix_to_parent.m[15] = view->transform.m[15];
+
+        if (view->parent)
+        {
+            pepper_mat4_multiply(&view->matrix_to_global,
+                                   &view->parent->matrix_to_global, &view->matrix_to_parent);
+        }
+        else
+        {
+            pepper_mat4_copy(&view->matrix_to_global, &view->matrix_to_parent);
+        }
+
+        /* Bounding region. */
+        pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
+        transform_region_bounding(&view->bounding_region, &view->matrix_to_global);
+
+        /* Opaque region. */
+        pixman_region32_init(&view->opaque_region);
+
+        if (view->surface && pepper_mat4_is_translation(&view->matrix_to_global))
+        {
+            pixman_region32_copy(&view->opaque_region, &view->surface->opaque_region);
+            pixman_region32_translate(&view->opaque_region,
+                                      view->matrix_to_global.m[3], view->matrix_to_global.m[7]);
+        }
+
+        view->geometry_dirty = PEPPER_FALSE;
+    }
+}
+
+void
+pepper_compositor_update_views(pepper_compositor_t *compositor)
+{
+    pepper_list_t      *l;
+    pixman_region32_t   visible;
+    pixman_region32_t   opaque;
+    pixman_region32_t   surface_damage;
+    pixman_region32_t   damage;
+
+    pixman_region32_init(&visible);
+    pixman_region32_init(&opaque);
+    pixman_region32_init(&surface_damage);
+    pixman_region32_init(&damage);
+
+    /* Update views from front to back. */
+    PEPPER_LIST_FOR_EACH_REVERSE(&compositor->view_list, l)
+    {
+        pepper_view_t *view = l->item;
+
+        view_update_geometry(view);
+
+        /* Calculate updated visible region. */
+        pixman_region32_subtract(&visible, &view->bounding_region, &opaque);
+        pixman_region32_subtract(&damage, &visible, &view->visible_region);
+
+        /* Inflict damage for the visible region change. */
+        pepper_compositor_add_damage(view->compositor, &damage);
+
+        /* Update visible region of the view. */
+        pixman_region32_copy(&view->visible_region, &visible);
+
+        /* Inflict surface damage. */
+        if (pixman_region32_not_empty(&view->surface->damage_region))
+        {
+            pepper_surface_flush_damage(view->surface);
+
+            pixman_region32_copy(&surface_damage, &view->surface->damage_region);
+
+            /* Transform surface damage into global coordinate space. */
+            transform_region_bounding(&surface_damage, &view->matrix_to_global);
+
+            /* Clip surface damage with view's bounding region. */
+            pixman_region32_intersect(&surface_damage, &surface_damage, &view->bounding_region);
+
+            /* Subtract area covered by opaque views. */
+            pixman_region32_subtract(&surface_damage, &surface_damage, &opaque);
+
+            pepper_compositor_add_damage(view->compositor, &surface_damage);
+        }
+
+        /* Accumulate opaque region. */
+        pixman_region32_union(&opaque, &opaque, &view->opaque_region);
+    }
+
+    pixman_region32_fini(&visible);
+    pixman_region32_fini(&opaque);
+    pixman_region32_fini(&surface_damage);
+    pixman_region32_fini(&damage);
+}
 PEPPER_API pepper_object_t *
 pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
 {
@@ -120,6 +287,13 @@ pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
     pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
     pixman_region32_init(&view->opaque_region);
     pixman_region32_init(&view->visible_region);
+
+    view->state.view        = &view->base;
+    view->state.transform   = &view->matrix_to_global;
+    view->state.bounding    = &view->bounding_region;
+    view->state.opaque      = &view->opaque_region;
+    view->state.visible     = &view->visible_region;
+    view->z_link.item = &view->state;
 
     return &view->base;
 }
@@ -402,180 +576,4 @@ pepper_view_is_visible(pepper_object_t *v)
     pepper_view_t *view  = (pepper_view_t *)v;
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->visibility;
-}
-
-PEPPER_API const pixman_region32_t *
-pepper_view_get_visible_region(pepper_object_t *v)
-{
-    pepper_view_t *view = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    return &view->visible_region;
-}
-
-static inline void
-add_bbox_point(double *box, int x, int y, const pepper_mat4_t *matrix)
-{
-    pepper_vec2_t v = { x, y };
-
-    pepper_mat4_transform_vec2(matrix, &v);
-
-    box[0] = PEPPER_MIN(box[0], v.x);
-    box[1] = PEPPER_MIN(box[1], v.y);
-    box[2] = PEPPER_MAX(box[2], v.x);
-    box[3] = PEPPER_MAX(box[3], v.y);
-}
-
-static inline void
-transform_bounding_box(pixman_box32_t *box, const pepper_mat4_t *matrix)
-{
-    double          b[4] = { HUGE_VAL, HUGE_VAL, -HUGE_VAL, -HUGE_VAL };
-
-    add_bbox_point(b, box->x1, box->y1, matrix);
-    add_bbox_point(b, box->x2, box->y1, matrix);
-    add_bbox_point(b, box->x2, box->y2, matrix);
-    add_bbox_point(b, box->x1, box->y2, matrix);
-
-    box->x1 = floor(b[0]);
-    box->y1 = floor(b[1]);
-    box->x2 = ceil(b[2]);
-    box->y2 = ceil(b[3]);
-}
-
-static inline void
-transform_region_bounding(pixman_region32_t *region, const pepper_mat4_t *matrix)
-{
-    pixman_region32_t   result;
-    pixman_box32_t     *rects;
-    int                 i, num_rects;
-
-    pixman_region32_init(&result);
-    rects = pixman_region32_rectangles(region, &num_rects);
-
-    for (i = 0; i < num_rects; i++)
-    {
-        pixman_box32_t box = rects[i];
-
-        transform_bounding_box(&box, matrix);
-        pixman_region32_union_rect(&result, &result,
-                                   box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
-    }
-
-    pixman_region32_copy(region, &result);
-    pixman_region32_fini(&result);
-}
-
-void
-view_update_geometry(pepper_view_t *view)
-{
-    if (view->parent)
-        view_update_geometry(view->parent);
-
-    if (view->geometry_dirty)
-    {
-        view->matrix_to_parent.m[ 0] = view->transform.m[ 0] + view->transform.m[12] * view->x;
-        view->matrix_to_parent.m[ 1] = view->transform.m[ 1] + view->transform.m[13] * view->x;
-        view->matrix_to_parent.m[ 2] = view->transform.m[ 2] + view->transform.m[14] * view->x;
-        view->matrix_to_parent.m[ 3] = view->transform.m[ 3] + view->transform.m[15] * view->x;
-
-        view->matrix_to_parent.m[ 4] = view->transform.m[ 4] + view->transform.m[12] * view->y;
-        view->matrix_to_parent.m[ 5] = view->transform.m[ 5] + view->transform.m[13] * view->y;
-        view->matrix_to_parent.m[ 6] = view->transform.m[ 6] + view->transform.m[14] * view->y;
-        view->matrix_to_parent.m[ 7] = view->transform.m[ 7] + view->transform.m[15] * view->y;
-
-        view->matrix_to_parent.m[ 8] = view->transform.m[ 8];
-        view->matrix_to_parent.m[ 9] = view->transform.m[ 9];
-        view->matrix_to_parent.m[10] = view->transform.m[10];
-        view->matrix_to_parent.m[11] = view->transform.m[11];
-
-        view->matrix_to_parent.m[12] = view->transform.m[12];
-        view->matrix_to_parent.m[13] = view->transform.m[13];
-        view->matrix_to_parent.m[14] = view->transform.m[14];
-        view->matrix_to_parent.m[15] = view->transform.m[15];
-
-        if (view->parent)
-        {
-            pepper_mat4_multiply(&view->matrix_to_global,
-                                   &view->parent->matrix_to_global, &view->matrix_to_parent);
-        }
-        else
-        {
-            pepper_mat4_copy(&view->matrix_to_global, &view->matrix_to_parent);
-        }
-
-        /* Bounding region. */
-        pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
-        transform_region_bounding(&view->bounding_region, &view->matrix_to_global);
-
-        /* Opaque region. */
-        pixman_region32_init(&view->opaque_region);
-
-        if (view->surface && pepper_mat4_is_translation(&view->matrix_to_global))
-        {
-            pixman_region32_copy(&view->opaque_region, &view->surface->opaque_region);
-            pixman_region32_translate(&view->opaque_region,
-                                      view->matrix_to_global.m[3], view->matrix_to_global.m[7]);
-        }
-
-        view->geometry_dirty = PEPPER_FALSE;
-    }
-}
-
-void
-pepper_compositor_update_views(pepper_compositor_t *compositor)
-{
-    pepper_list_t      *l;
-    pixman_region32_t   visible;
-    pixman_region32_t   opaque;
-    pixman_region32_t   surface_damage;
-    pixman_region32_t   damage;
-
-    pixman_region32_init(&visible);
-    pixman_region32_init(&opaque);
-    pixman_region32_init(&surface_damage);
-    pixman_region32_init(&damage);
-
-    /* Update views from front to back. */
-    PEPPER_LIST_FOR_EACH_REVERSE(&compositor->view_list, l)
-    {
-        pepper_view_t *view = l->item;
-
-        view_update_geometry(view);
-
-        /* Calculate updated visible region. */
-        pixman_region32_subtract(&visible, &view->bounding_region, &opaque);
-        pixman_region32_subtract(&damage, &visible, &view->visible_region);
-
-        /* Inflict damage for the visible region change. */
-        pepper_compositor_add_damage(view->compositor, &damage);
-
-        /* Update visible region of the view. */
-        pixman_region32_copy(&view->visible_region, &visible);
-
-        /* Inflict surface damage. */
-        if (pixman_region32_not_empty(&view->surface->damage_region))
-        {
-            pepper_surface_flush_damage(view->surface);
-
-            pixman_region32_copy(&surface_damage, &view->surface->damage_region);
-
-            /* Transform surface damage into global coordinate space. */
-            transform_region_bounding(&surface_damage, &view->matrix_to_global);
-
-            /* Clip surface damage with view's bounding region. */
-            pixman_region32_intersect(&surface_damage, &surface_damage, &view->bounding_region);
-
-            /* Subtract area covered by opaque views. */
-            pixman_region32_subtract(&surface_damage, &surface_damage, &opaque);
-
-            pepper_compositor_add_damage(view->compositor, &surface_damage);
-        }
-
-        /* Accumulate opaque region. */
-        pixman_region32_union(&opaque, &opaque, &view->opaque_region);
-    }
-
-    pixman_region32_fini(&visible);
-    pixman_region32_fini(&opaque);
-    pixman_region32_fini(&surface_damage);
-    pixman_region32_fini(&damage);
 }

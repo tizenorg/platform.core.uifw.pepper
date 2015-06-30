@@ -21,6 +21,17 @@ typedef struct pepper_seat_interface    pepper_seat_interface_t;
 typedef struct pepper_input_event       pepper_input_event_t;
 typedef struct pepper_event_hook        pepper_event_hook_t;
 
+typedef struct pepper_view_state        pepper_view_state_t;
+
+struct pepper_view_state
+{
+    pepper_object_t            *view;
+    const pepper_mat4_t        *transform;
+    const pixman_region32_t    *bounding;
+    const pixman_region32_t    *opaque;
+    const pixman_region32_t    *visible;
+};
+
 struct pepper_output_geometry
 {
     int32_t     x;
@@ -295,9 +306,6 @@ pepper_view_is_mapped(pepper_object_t *view);
 
 PEPPER_API pepper_bool_t
 pepper_view_is_visible(pepper_object_t *view);
-
-PEPPER_API const pixman_region32_t *
-pepper_view_get_visible_region(pepper_object_t *view);
 
 #ifdef __cplusplus
 }
