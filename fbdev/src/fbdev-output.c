@@ -212,8 +212,7 @@ init_pixman_renderer(fbdev_output_t *output)
         return PEPPER_FALSE;
 
     if (output->use_shadow)
-        target = pepper_pixman_renderer_create_target(output->format, NULL,
-                                                      output->stride, output->w, output->h);
+        target = pepper_pixman_renderer_create_target_for_image(output->shadow_image);
     else
         target = pepper_pixman_renderer_create_target(output->format, output->frame_buffer_pixels,
                                                       output->stride, output->w, output->h);
