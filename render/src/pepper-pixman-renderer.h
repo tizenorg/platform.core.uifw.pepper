@@ -15,6 +15,9 @@ PEPPER_API pepper_render_target_t *
 pepper_pixman_renderer_create_target(pepper_format_t format, void *pixels,
                                      int stride, int width, int height);
 
+PEPPER_API pepper_render_target_t *
+pepper_pixman_renderer_create_target_for_image(pixman_image_t *image);
+
 #ifdef __cplusplus
 }
 #endif

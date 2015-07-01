@@ -310,3 +310,19 @@ error:
 
     return NULL;
 }
+
+PEPPER_API pepper_render_target_t *
+pepper_pixman_renderer_create_target_for_image(pixman_image_t *image)
+{
+    pixman_render_target_t *target;
+
+    target = calloc(1, sizeof(pixman_render_target_t));
+    if (!target)
+        return NULL;
+
+    pixman_image_ref(image);
+    target->image = image;
+    target->base.destroy = pixman_render_target_destroy;
+
+    return &target->base;
+}
