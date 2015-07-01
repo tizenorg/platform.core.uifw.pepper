@@ -264,7 +264,6 @@ pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
     pepper_mat4_init_identity(&view->matrix_to_global);
 
     view->parent_link.item = (void *)view;
-    view->z_link.item = (void *)view;
 
     pepper_list_init(&view->children_list);
     pepper_list_insert(compositor->root_view_list.prev, &view->parent_link);
