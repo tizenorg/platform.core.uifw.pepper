@@ -158,6 +158,12 @@ view_update_geometry(pepper_view_t *view)
             pepper_mat4_copy(&view->matrix_to_global, &view->matrix_to_parent);
         }
 
+        if (view->surface)
+        {
+            view->w = view->surface->w;
+            view->h = view->surface->h;
+        }
+
         /* Bounding region. */
         pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
         transform_region_bounding(&view->bounding_region, &view->matrix_to_global);
@@ -294,6 +300,7 @@ pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
     view->state.visible     = &view->visible_region;
     view->z_link.item = &view->state;
 
+    view->geometry_dirty = PEPPER_TRUE;
     return &view->base;
 }
 
