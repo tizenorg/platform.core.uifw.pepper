@@ -69,11 +69,11 @@ handle_resource_destroy(struct wl_resource *resource)
 }
 
 shell_surface_t *
-shell_surface_create(shell_t *shell, pepper_object_t *surface, struct wl_client *client,
-                     const struct wl_interface *interface,
+shell_surface_create(shell_client_t *shell_client, pepper_object_t *surface,
+                     struct wl_client *client, const struct wl_interface *interface,
                      const void *implementation, uint32_t version, uint32_t id)
 {
-    shell_surface_t *shsurf = NULL;
+    shell_surface_t     *shsurf = NULL;
 
     shsurf = calloc(1, sizeof(shell_surface_t));
     if (!shsurf)
@@ -89,29 +89,20 @@ shell_surface_create(shell_t *shell, pepper_object_t *surface, struct wl_client 
         goto error;
     }
 
-    shsurf->shell   = shell;
-    shsurf->client  = client;
-    shsurf->surface = surface;
-    shsurf->view    = pepper_compositor_add_surface_view(shell->compositor, surface);
+    shsurf->shell_client = shell_client;
+    shsurf->shell        = shell_client->shell;
+    shsurf->client       = client;
+    shsurf->surface      = surface;
+
+    shsurf->view    = pepper_compositor_add_surface_view(shell_client->shell->compositor, surface);
     if (!shsurf->view)
     {
         PEPPER_ERROR("pepper_compositor_add_view failed\n");
         goto error;
     }
 
-    /* TODO: Need to know about output size */
-    shsurf->geometry.x = rand()%10;
-    shsurf->geometry.y = rand()%10;
-    pepper_view_set_position(shsurf->view, shsurf->geometry.x, shsurf->geometry.y);
-
-    wl_list_init(&shsurf->link);
-    wl_list_insert(&shell->shell_surface_list, &shsurf->link);
-
     wl_list_init(&shsurf->child_list);
     wl_list_init(&shsurf->parent_link);
-
-    /* Set shell_surface_t to pepper_surface_t */
-    set_shsurf_to_surface(surface, shsurf);
 
     wl_resource_set_implementation(shsurf->resource, implementation, shsurf, handle_resource_destroy);
 
@@ -121,13 +112,15 @@ shell_surface_create(shell_t *shell, pepper_object_t *surface, struct wl_client 
     shsurf->surface_destroy_listener.notify = handle_surface_destroy;
     pepper_object_add_destroy_listener(surface, &shsurf->surface_destroy_listener);
 
+    /* Set shell_surface_t to pepper_surface_t */
+    set_shsurf_to_surface(surface, shsurf);
+
     return shsurf;
 
 error:
     if (shsurf)
         free(shsurf);
 
-    wl_client_post_no_memory(client);
     return NULL;
 }
 
@@ -183,13 +176,13 @@ shell_surface_ping(shell_surface_t *shsurf)
 }
 
 void
-shell_surface_set_type(shell_surface_t *shsurf, enum shell_surface_type type)
+shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
 {
     shsurf->type = type;
 }
 
 shell_surface_t *
-get_shsurf_from_surface(pepper_object_t *surface, shell_t *shell)
+get_shsurf_from_surface(pepper_object_t *surface, desktop_shell_t *shell)
 {
     return pepper_object_get_user_data(surface, shell);
 }
