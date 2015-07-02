@@ -193,7 +193,7 @@ pepper_compositor_update_views(pepper_compositor_t *compositor)
     /* Update views from front to back. */
     PEPPER_LIST_FOR_EACH_REVERSE(&compositor->view_list, l)
     {
-        pepper_view_t *view = l->item;
+        pepper_view_t *view = (pepper_view_t *)(((pepper_view_state_t *)l->item)->view);
 
         view_update_geometry(view);
 
