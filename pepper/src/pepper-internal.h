@@ -147,6 +147,9 @@ struct pepper_buffer
     int32_t                 w, h;
 };
 
+pepper_buffer_t *
+pepper_buffer_from_resource(struct wl_resource *resource);
+
 struct pepper_surface_state
 {
     pepper_buffer_t    *buffer;
@@ -224,9 +227,6 @@ pepper_region_create(pepper_compositor_t *compositor,
 
 void
 pepper_region_destroy(pepper_region_t *region);
-
-pepper_buffer_t *
-pepper_buffer_from_resource(struct wl_resource *resource);
 
 /* Input */
 struct pepper_seat

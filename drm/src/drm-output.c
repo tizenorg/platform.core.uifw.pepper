@@ -282,6 +282,12 @@ drm_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region3
 }
 
 static void
+drm_output_attach_surface(void *o, pepper_object_t *surface, int *w, int *h)
+{
+    pepper_renderer_attach_surface(((drm_output_t *)o)->renderer, surface, w, h);
+}
+
+static void
 drm_output_add_frame_listener(void *o, struct wl_listener *listener)
 {
     drm_output_t *output = (drm_output_t *)o;
@@ -303,6 +309,7 @@ struct pepper_output_interface drm_output_interface =
     drm_output_set_mode,
 
     drm_output_repaint,
+    drm_output_attach_surface,
     drm_output_add_frame_listener,
 };
 

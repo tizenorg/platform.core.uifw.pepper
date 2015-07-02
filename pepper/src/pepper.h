@@ -68,6 +68,7 @@ struct pepper_output_interface
 
     void            (*repaint)(void *output,
                                const pepper_list_t *view_list, const pixman_region32_t *damage);
+    void            (*attach_surface)(void *output, pepper_object_t *surface, int *w, int *h);
 
     void            (*add_frame_listener)(void *output, struct wl_listener *listener);
 };

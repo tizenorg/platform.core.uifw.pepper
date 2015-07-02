@@ -486,6 +486,12 @@ x11_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region3
 }
 
 static void
+x11_output_attach_surface(void *o, pepper_object_t *surface, int *w, int *h)
+{
+    pepper_renderer_attach_surface(((x11_output_t *)o)->renderer, surface, w, h);
+}
+
+static void
 x11_output_add_frame_listener(void *o, struct wl_listener *listener)
 {
     x11_output_t *output = o;
@@ -508,6 +514,7 @@ static const pepper_output_interface_t x11_output_interface =
     x11_output_set_mode,
 
     x11_output_repaint,
+    x11_output_attach_surface,
     x11_output_add_frame_listener,
 };
 

@@ -179,6 +179,12 @@ fbdev_output_repaint(void *o, const pepper_list_t *view_list, const pixman_regio
 }
 
 static void
+fbdev_output_attach_surface(void *o, pepper_object_t *surface, int *w, int *h)
+{
+    pepper_renderer_attach_surface(((fbdev_output_t *)o)->renderer, surface, w, h);
+}
+
+static void
 fbdev_output_add_frame_listener(void *o, struct wl_listener *listener)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
@@ -200,6 +206,7 @@ struct pepper_output_interface fbdev_output_interface =
     fbdev_output_set_mode,
 
     fbdev_output_repaint,
+    fbdev_output_attach_surface,
     fbdev_output_add_frame_listener,
 };
 

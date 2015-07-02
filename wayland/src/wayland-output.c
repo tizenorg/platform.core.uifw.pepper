@@ -184,6 +184,12 @@ wayland_output_repaint(void *o, const pepper_list_t *view_list, const pixman_reg
 }
 
 static void
+wayland_output_attach_surface(void *o, pepper_object_t *surface, int *w, int *h)
+{
+    pepper_renderer_attach_surface(((wayland_output_t *)o)->renderer, surface, w, h);
+}
+
+static void
 wayland_output_add_frame_listener(void *o, struct wl_listener *listener)
 {
     wayland_output_t *output = o;
@@ -205,6 +211,7 @@ static const pepper_output_interface_t wayland_output_interface =
     wayland_output_set_mode,
 
     wayland_output_repaint,
+    wayland_output_attach_surface,
     wayland_output_add_frame_listener,
 };
 

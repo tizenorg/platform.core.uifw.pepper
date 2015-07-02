@@ -335,7 +335,16 @@ surface_update_size(pepper_surface_t *surface)
 static void
 attach_surface_to_outputs(pepper_surface_t *surface)
 {
-    /* TODO: */
+    pepper_output_t *output;
+    int              w, h;
+
+    wl_list_for_each(output, &surface->compositor->output_list, link)
+    {
+        output->interface->attach_surface(output->data, &surface->base, &w, &h);
+
+        surface->buffer.buffer->w = w;
+        surface->buffer.buffer->h = h;
+    }
 }
 
 void
