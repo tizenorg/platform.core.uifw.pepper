@@ -867,6 +867,10 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
             goto error;
         }
     }
+    else
+    {
+        context = gr->context;
+    }
 
     if (!eglMakeCurrent(gr->display, surface, surface, context))
     {
