@@ -219,6 +219,7 @@ pepper_x11_connect(pepper_object_t *compositor, const char *display_name)
         free(connection);
         return NULL;
     }
+    connection->compositor = compositor;
 
     connection->gl_renderer = pepper_gl_renderer_create(connection->compositor,
                                                         connection->display, "x11");
@@ -234,7 +235,6 @@ pepper_x11_connect(pepper_object_t *compositor, const char *display_name)
     scr_iter = xcb_setup_roots_iterator(xcb_get_setup(connection->xcb_connection));
     connection->screen = scr_iter.data;
 
-    connection->compositor = compositor;
     connection->fd = xcb_get_file_descriptor(connection->xcb_connection);
     if (display_name)
         connection->display_name = strdup(display_name);
