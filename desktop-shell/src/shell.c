@@ -1,6 +1,20 @@
 #include "desktop-shell-internal.h"
 #include <stdlib.h>
 
+static void
+handle_shell_client_destroy(struct wl_listener *listener, void *data)
+{
+    shell_client_t *shell_client = pepper_container_of(listener,
+                                                       shell_client_t,
+                                                       client_destroy_listener);
+
+    remove_ping_timer(shell_client);
+
+    wl_list_remove(&shell_client->link);
+
+    free(shell_client);
+}
+
 shell_client_t *
 shell_client_create(desktop_shell_t *shell, struct wl_client *client,
                     const struct wl_interface *interface, const void *implementation,
@@ -22,11 +36,16 @@ shell_client_create(desktop_shell_t *shell, struct wl_client *client,
         free(shell_client);
         return NULL;
     }
-    wl_resource_set_implementation(shell_client->resource, implementation, shell_client, NULL);
+
+    shell_client->shell  = shell;
+    shell_client->client = client;
+
+    shell_client->client_destroy_listener.notify = handle_shell_client_destroy;
+    wl_client_add_destroy_listener(client, &shell_client->client_destroy_listener);
 
     wl_list_insert(&shell->shell_client_list, &shell_client->link);
 
-    shell_client->shell = shell;
+    wl_resource_set_implementation(shell_client->resource, implementation, shell_client, NULL);
 
     return shell_client;
 }

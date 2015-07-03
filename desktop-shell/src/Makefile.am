@@ -4,7 +4,7 @@ include_HEADERS = pepper-desktop-shell.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pepper-desktop-shell.pc
 
-libpepper_desktop_shell_la_CFLAGS = $(PEPPER_DESKTOP_SHELL_CFLAGS) -I$(top_srcdir)/protocol/
+libpepper_desktop_shell_la_CFLAGS = $(PEPPER_DESKTOP_SHELL_CFLAGS) -Wall -I$(top_srcdir)/protocol/
 libpepper_desktop_shell_la_LIBADD = $(PEPPER_DESKTOP_SHELL_LIBS)
 
 libpepper_desktop_shell_la_SOURCES =            \

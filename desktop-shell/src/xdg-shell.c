@@ -225,7 +225,9 @@ xdg_shell_pong(struct wl_client     *client,
                struct wl_resource   *resource,
                uint32_t              serial)
 {
-    /* TODO: */
+    shell_client_t *shell_client = wl_resource_get_user_data(resource);
+
+    shell_client_handle_pong(shell_client, serial);
 }
 
 static const struct xdg_shell_interface xdg_shell_implementation =
@@ -255,4 +257,10 @@ init_xdg_shell(desktop_shell_t *shell)
         return PEPPER_FALSE;
 
     return PEPPER_TRUE;
+}
+
+void
+fini_xdg_shell(desktop_shell_t *shell)
+{
+    /* TODO */
 }

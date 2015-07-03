@@ -1,13 +1,13 @@
 #include "desktop-shell-internal.h"
-#include <stdlib.h>
+#include "xdg-shell-server-protocol.h"
 
-static void
-remove_ping_timer(shell_surface_t *shsurf)
+void
+remove_ping_timer(shell_client_t *shell_client)
 {
-    if (shsurf->ping_timer)
+    if (shell_client->ping_timer)
     {
-        wl_event_source_remove(shsurf->ping_timer);
-        shsurf->ping_timer = NULL;
+        wl_event_source_remove(shell_client->ping_timer);
+        shell_client->ping_timer = NULL;
     }
 }
 
@@ -20,10 +20,6 @@ handle_client_destroy(struct wl_listener *listener, void *data)
     if (!wl_list_empty(&shsurf->client_destroy_listener.link))
         wl_list_remove(&shsurf->client_destroy_listener.link);
     wl_list_init(&shsurf->client_destroy_listener.link);
-
-    remove_ping_timer(shsurf);
-
-    /* client_destroy -> client's surface destroy -> handle_surface_destroy */
 }
 
 static void
@@ -38,8 +34,6 @@ handle_surface_destroy(struct wl_listener *listener, void *data)
 
     wl_list_remove(&shsurf->surface_destroy_listener.link);
 
-    /* We don't need to destroy pepper_view_t */
-
     if (shsurf->resource)
         wl_resource_destroy(shsurf->resource);
 
@@ -48,8 +42,6 @@ handle_surface_destroy(struct wl_listener *listener, void *data)
 
     if (shsurf->class_)
         free(shsurf->class_);
-
-    remove_ping_timer(shsurf);
 
     wl_list_remove(&shsurf->parent_link);
 
@@ -115,6 +107,9 @@ shell_surface_create(shell_client_t *shell_client, pepper_object_t *surface,
     /* Set shell_surface_t to pepper_surface_t */
     set_shsurf_to_surface(surface, shsurf);
 
+    wl_list_init(&shsurf->link);
+    wl_list_insert(&shsurf->shell->shell_surface_list, &shsurf->link);
+
     return shsurf;
 
 error:
@@ -127,9 +122,9 @@ error:
 static int
 handle_ping_timeout(void *data)
 {
-    shell_surface_t *shsurf = data;
+    shell_client_t *shell_client = data;
 
-    shsurf->unresponsive = PEPPER_TRUE;
+    shell_client->irresponsive = PEPPER_TRUE;
 
     /* TODO: Display wait cursor */
 
@@ -139,40 +134,67 @@ handle_ping_timeout(void *data)
 void
 shell_surface_ping(shell_surface_t *shsurf)
 {
-    struct wl_display *display = pepper_compositor_get_display(shsurf->shell->compositor);
-    const char *role;
+    shell_client_t      *shell_client = shsurf->shell_client;
+    struct wl_display   *display;
+    const char          *role;
 
     /* Already stucked, do not send another ping */
-    if (shsurf->unresponsive)
+    if (shell_client->irresponsive)
     {
-        handle_ping_timeout(shsurf);
+        handle_ping_timeout(shell_client);
         return ;
     }
 
-    if (!shsurf->ping_timer)
+    display = pepper_compositor_get_display(shsurf->shell->compositor);
+
+    if (!shell_client->ping_timer)
     {
         struct wl_event_loop *loop = wl_display_get_event_loop(display);
 
-        shsurf->ping_timer = wl_event_loop_add_timer(loop, handle_ping_timeout, shsurf);
+        shell_client->ping_timer = wl_event_loop_add_timer(loop, handle_ping_timeout, shell_client);
 
-        if (!shsurf->ping_timer)
+        if (!shell_client->ping_timer)
         {
             PEPPER_ERROR("Failed to add timer event source.\n");
             return;
         }
     }
 
-    wl_event_source_timer_update(shsurf->ping_timer, DESKTOP_SHELL_PING_TIMEOUT);
+    wl_event_source_timer_update(shell_client->ping_timer, DESKTOP_SHELL_PING_TIMEOUT);
 
-    shsurf->ping_serial = wl_display_next_serial(display);
-    shsurf->need_pong   = PEPPER_TRUE;
+    shell_client->ping_serial = wl_display_next_serial(display);
+    shell_client->need_pong   = PEPPER_TRUE;
 
     role = pepper_surface_get_role(shsurf->surface);
 
     if (!strcmp(role, "wl_shell_surface"))
-        wl_shell_surface_send_ping(shsurf->resource, shsurf->ping_serial);
+        wl_shell_surface_send_ping(shsurf->resource, shell_client->ping_serial);
+    else if (!strcmp(role, "xdg_surface") || !strcmp(role, "xdg_popup"))
+        xdg_shell_send_ping(shell_client->resource, shell_client->ping_serial);
+    else
+        PEPPER_ASSERT(0);
+}
 
-    /* TODO: Do another protocol specific ping. */
+void
+shell_client_handle_pong(shell_client_t *shell_client, uint32_t serial)
+{
+    /* Client response right ping_serial */
+    if (shell_client->need_pong && shell_client->ping_serial == serial)
+    {
+        wl_event_source_timer_update(shell_client->ping_timer, 0);    /* disarms the timer */
+
+        shell_client->irresponsive = PEPPER_FALSE;
+        shell_client->need_pong    = PEPPER_FALSE;
+        shell_client->ping_serial  = 0;
+
+        /* TODO: Stop displaying wait cursor */
+    }
+}
+
+void
+shell_surface_handle_pong(shell_surface_t *shsurf, uint32_t serial)
+{
+    shell_client_handle_pong(shsurf->shell_client, serial);
 }
 
 void

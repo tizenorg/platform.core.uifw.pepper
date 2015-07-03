@@ -29,9 +29,19 @@ struct desktop_shell
 
 struct shell_client
 {
-    desktop_shell_t     *shell;
-    struct wl_resource  *resource;
-    struct wl_list       link;
+    desktop_shell_t         *shell;
+    struct wl_resource      *resource;
+    struct wl_client        *client;
+
+    struct wl_listener       client_destroy_listener;
+
+    /* Ping-Pong */
+    struct wl_event_source  *ping_timer;
+    pepper_bool_t            need_pong;
+    uint32_t                 ping_serial;
+    pepper_bool_t            irresponsive;
+
+    struct wl_list           link;
 };
 
 typedef enum
@@ -67,12 +77,6 @@ struct shell_surface
     /* Data structures per surface type */
     shell_surface_type_t     type;
 
-    /* Ping-Pong */
-    struct wl_event_source *ping_timer;
-    pepper_bool_t           need_pong;
-    uint32_t                ping_serial;
-    pepper_bool_t           unresponsive;
-
     /* Listeners */
     struct wl_listener      client_destroy_listener;
     struct wl_listener      surface_destroy_listener;
@@ -92,6 +96,15 @@ shell_surface_create(shell_client_t *shell, pepper_object_t *surface, struct wl_
 
 void
 shell_surface_ping(shell_surface_t *shsurf);
+
+void
+shell_client_handle_pong(shell_client_t *shell_client, uint32_t serial);
+
+void
+shell_surface_handle_pong(shell_surface_t *shsurf, uint32_t serial);
+
+void
+remove_ping_timer(shell_client_t *shell_client);
 
 void
 shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type);
