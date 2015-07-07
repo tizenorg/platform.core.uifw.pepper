@@ -866,20 +866,20 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
             PEPPER_ERROR("eglCreateContext() failed.\n");
             goto error;
         }
+
+        if (!eglMakeCurrent(gr->display, surface, surface, context))
+        {
+            PEPPER_ERROR("eglMakeCurrent() failed.\n");
+            goto error;
+        }
+
+        if (!setup_gl_extensions(gr))
+            goto error;
     }
     else
     {
         context = gr->context;
     }
-
-    if (!eglMakeCurrent(gr->display, surface, surface, context))
-    {
-        PEPPER_ERROR("eglMakeCurrent() failed.\n");
-        goto error;
-    }
-
-    if (!setup_gl_extensions(gr))
-        goto error;
 
     target->base.renderer   = renderer;
     target->surface         = surface;
