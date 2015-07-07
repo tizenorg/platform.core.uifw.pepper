@@ -407,7 +407,7 @@ error:
 static int
 find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
 {
-    unsigned int    i, j;
+    int             i, j;
     drmModeEncoder *enc;
     drm_output_t   *output;
 
@@ -419,17 +419,27 @@ find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
 
         for (j = 0; j < res->count_crtcs; j++)
         {
+            pepper_bool_t crtc_used = PEPPER_FALSE;
+
             if (!(enc->possible_crtcs & (1 << j)))
                 continue;
 
             wl_list_for_each(output, &drm->output_list, link)
             {
                 if (res->crtcs[j] == output->crtc_id)
-                    continue;
+                {
+                    crtc_used = PEPPER_TRUE;
+                    break;
+                }
             }
 
-            return res->crtcs[j];
+            if (!crtc_used)
+            {
+                drmModeFreeEncoder(enc);
+                return res->crtcs[j];
+            }
         }
+        drmModeFreeEncoder(enc);
     }
 
     return -1;
