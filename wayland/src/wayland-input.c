@@ -340,7 +340,7 @@ wayland_seat_get_name(void *data)
     return seat->name;
 }
 
-static const pepper_seat_interface_t wayland_seat_interface =
+static const pepper_seat_backend_t wayland_seat_backend =
 {
     wayland_seat_destroy,
     wayland_seat_add_capability_listener,
@@ -368,7 +368,7 @@ wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
     wl_signal_init(&seat->capabilities_signal);
     wl_signal_init(&seat->name_signal);
 
-    seat->base = pepper_compositor_add_seat(conn->pepper, &wayland_seat_interface, seat);
+    seat->base = pepper_compositor_add_seat(conn->pepper, &wayland_seat_backend, seat);
     seat->id = name;
 
     wl_list_init(&seat->link);

@@ -340,7 +340,7 @@ attach_surface_to_outputs(pepper_surface_t *surface)
 
     wl_list_for_each(output, &surface->compositor->output_list, link)
     {
-        output->interface->attach_surface(output->data, &surface->base, &w, &h);
+        output->backend->attach_surface(output->data, &surface->base, &w, &h);
 
         surface->buffer.buffer->w = w;
         surface->buffer.buffer->h = h;

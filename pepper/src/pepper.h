@@ -14,9 +14,9 @@ typedef struct pepper_object            pepper_object_t;
 
 typedef struct pepper_output_geometry   pepper_output_geometry_t;
 typedef struct pepper_output_mode       pepper_output_mode_t;
-typedef struct pepper_output_interface  pepper_output_interface_t;
+typedef struct pepper_output_backend    pepper_output_backend_t;
 
-typedef struct pepper_seat_interface    pepper_seat_interface_t;
+typedef struct pepper_seat_backend      pepper_seat_backend_t;
 
 typedef struct pepper_input_event       pepper_input_event_t;
 typedef struct pepper_event_hook        pepper_event_hook_t;
@@ -51,7 +51,7 @@ struct pepper_output_mode
     int32_t     refresh;
 };
 
-struct pepper_output_interface
+struct pepper_output_backend
 {
     void            (*destroy)(void *output);
 
@@ -96,12 +96,12 @@ pepper_compositor_get_display(pepper_object_t *compositor);
 
 PEPPER_API pepper_object_t *
 pepper_compositor_add_output(pepper_object_t *compositor,
-                             const pepper_output_interface_t *interface,
+                             const pepper_output_backend_t *backend,
                              void *data);
 
 PEPPER_API pepper_object_t *
 pepper_compositor_add_seat(pepper_object_t *compositor,
-                           const pepper_seat_interface_t *interface,
+                           const pepper_seat_backend_t *backend,
                            void *data);
 
 PEPPER_API pepper_object_t *
@@ -139,7 +139,7 @@ PEPPER_API void
 pepper_output_add_damage_whole(pepper_object_t *output);
 
 /* Input. */
-struct pepper_seat_interface
+struct pepper_seat_backend
 {
     void            (*destroy)(void *data);
     void            (*add_capabilities_listener)(void *data, struct wl_listener *listener);

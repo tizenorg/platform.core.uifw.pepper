@@ -111,7 +111,7 @@ struct pepper_output
     pepper_output_mode_t       *current_mode;
 
     /* Backend-specific variables. */
-    pepper_output_interface_t  *interface;
+    pepper_output_backend_t    *backend;
     void                       *data;
 
     /* Listeners for backend-side events. */
@@ -250,7 +250,7 @@ struct pepper_seat
     uint32_t                    modifier;
 
     /* Backend-specific variables. */
-    pepper_seat_interface_t    *interface;
+    pepper_seat_backend_t      *backend;
     void                       *data;
 };
 

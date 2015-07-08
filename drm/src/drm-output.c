@@ -294,7 +294,7 @@ drm_output_add_frame_listener(void *o, struct wl_listener *listener)
     wl_signal_add(&output->frame_signal, listener);
 }
 
-struct pepper_output_interface drm_output_interface =
+struct pepper_output_backend drm_output_backend =
 {
     drm_output_destroy,
     drm_output_add_destroy_listener,
@@ -770,10 +770,10 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
         /*
          * PEPPER_API pepper_output_t *
          * pepper_compositor_add_output(pepper_compositor_t *compositor,
-         *                              const pepper_output_interface_t *interface, void *data)
+         *                              const pepper_output_backend_t *backend, void *data)
          */
         output->base = pepper_compositor_add_output(output->drm->compositor,
-                                                    &drm_output_interface, output);
+                                                    &drm_output_backend, output);
         if (!output->base)
         {
             PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);
@@ -887,7 +887,7 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
             }
 
             output->base = pepper_compositor_add_output(output->drm->compositor,
-                                                        &drm_output_interface, output);
+                                                        &drm_output_backend, output);
             if (!output->base)
             {
                 PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);

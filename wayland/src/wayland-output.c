@@ -196,7 +196,7 @@ wayland_output_add_frame_listener(void *o, struct wl_listener *listener)
     wl_signal_add(&output->frame_signal, listener);
 }
 
-static const pepper_output_interface_t wayland_output_interface =
+static const pepper_output_backend_t wayland_output_backend =
 {
     wayland_output_destroy,
     wayland_output_add_destroy_listener,
@@ -342,7 +342,7 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
     wl_shell_surface_set_toplevel(output->shell_surface);
 
     /* Add compositor base class output object for this output. */
-    output->base = pepper_compositor_add_output(conn->pepper, &wayland_output_interface, output);
+    output->base = pepper_compositor_add_output(conn->pepper, &wayland_output_backend, output);
     if (!output->base)
     {
         wayland_output_destroy(output);

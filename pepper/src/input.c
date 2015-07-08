@@ -286,7 +286,7 @@ handle_seat_set_capabilities(struct wl_listener *listener, void *data)
     pepper_seat_t  *seat = pepper_container_of(listener, pepper_seat_t, capabilities_listener);
     uint32_t        caps;
 
-    caps = seat->interface->get_capabilities(data);
+    caps = seat->backend->get_capabilities(data);
     seat_set_capabilities(seat, caps);
 }
 
@@ -306,13 +306,13 @@ handle_seat_set_name(struct wl_listener *listener, void *data)
     pepper_seat_t   *seat = pepper_container_of(listener, pepper_seat_t, name_listener);
     const char      *name;
 
-    name = seat->interface->get_name(data);
+    name = seat->backend->get_name(data);
     seat_set_name(seat, name);
 }
 
 PEPPER_API pepper_object_t *
 pepper_compositor_add_seat(pepper_object_t *c,
-                           const pepper_seat_interface_t *interface,
+                           const pepper_seat_backend_t *backend,
                            void *data)
 {
     pepper_seat_t       *seat;
@@ -328,7 +328,7 @@ pepper_compositor_add_seat(pepper_object_t *c,
     }
 
     seat->compositor = compositor;
-    seat->interface = (pepper_seat_interface_t *)interface;
+    seat->backend = (pepper_seat_backend_t *)backend;
     seat->data = data;
 
     wl_list_init(&seat->resources);
@@ -336,9 +336,9 @@ pepper_compositor_add_seat(pepper_object_t *c,
     wl_list_insert(&compositor->seat_list, &seat->link);
 
     seat->capabilities_listener.notify = handle_seat_set_capabilities;
-    seat->interface->add_capabilities_listener(seat->data, &seat->capabilities_listener);
+    seat->backend->add_capabilities_listener(seat->data, &seat->capabilities_listener);
     seat->name_listener.notify = handle_seat_set_name;
-    seat->interface->add_name_listener(seat->data, &seat->name_listener);
+    seat->backend->add_name_listener(seat->data, &seat->name_listener);
 
     seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat,
                                     bind_seat);

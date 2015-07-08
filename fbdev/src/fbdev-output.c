@@ -191,7 +191,7 @@ fbdev_output_add_frame_listener(void *o, struct wl_listener *listener)
     wl_signal_add(&output->frame_signal, listener);
 }
 
-struct pepper_output_interface fbdev_output_interface =
+struct pepper_output_backend fbdev_output_backend =
 {
     fbdev_output_destroy,
     fbdev_output_add_destroy_listener,
@@ -339,7 +339,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     }
 
     output->base = pepper_compositor_add_output(output->fbdev->compositor,
-                                                &fbdev_output_interface, output);
+                                                &fbdev_output_backend, output);
     if (!output->base)
     {
         PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);

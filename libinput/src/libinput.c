@@ -49,7 +49,7 @@ libinput_seat_get_name(void *data)
     return seat->name;
 }
 
-static const pepper_seat_interface_t libinput_seat_interface =
+static const pepper_seat_backend_t libinput_seat_backend =
 {
     libinput_seat_destroy,
     libinput_seat_add_capabilities_listener,
@@ -75,7 +75,7 @@ libinput_seat_create(pepper_libinput_t *input)
 
     seat->input = input;
     seat->base = pepper_compositor_add_seat(input->compositor,
-                                            &libinput_seat_interface, seat);
+                                            &libinput_seat_backend, seat);
     if (!seat->base)
     {
         PEPPER_ERROR("Failed to create pepper_seat in %s\n", __FUNCTION__);

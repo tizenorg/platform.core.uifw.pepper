@@ -12,7 +12,7 @@ output_update_mode(pepper_output_t *output)
     if (output->modes)
         pepper_free(output->modes);
 
-    output->mode_count = output->interface->get_mode_count(output->data);
+    output->mode_count = output->backend->get_mode_count(output->data);
     PEPPER_ASSERT(output->mode_count > 0);
 
     output->modes = pepper_calloc(output->mode_count, sizeof(pepper_output_mode_t));
@@ -24,7 +24,7 @@ output_update_mode(pepper_output_t *output)
 
     for (i = 0; i < output->mode_count; i++)
     {
-        output->interface->get_mode(output->data, i, &output->modes[i]);
+        output->backend->get_mode(output->data, i, &output->modes[i]);
 
         if (output->modes[i].flags & WL_OUTPUT_MODE_CURRENT)
             output->current_mode = &output->modes[i];
@@ -113,7 +113,7 @@ handle_output_data_destroy(struct wl_listener *listener, void *data)
 {
     pepper_output_t *output = pepper_container_of(listener, pepper_output_t, data_destroy_listener);
     output->data = NULL;
-    output->interface = NULL;
+    output->backend = NULL;
     pepper_output_destroy(&output->base);
 }
 
@@ -169,7 +169,7 @@ pepper_output_repaint(pepper_output_t *output)
 
     pepper_compositor_update_views(output->compositor);
 
-    output->interface->repaint(output->data, &output->compositor->view_list, &output->damage_region);
+    output->backend->repaint(output->data, &output->compositor->view_list, &output->damage_region);
     output->frame.pending = PEPPER_TRUE;
     output->frame.scheduled = PEPPER_FALSE;
 
@@ -181,7 +181,7 @@ pepper_output_repaint(pepper_output_t *output)
 
 PEPPER_API pepper_object_t *
 pepper_compositor_add_output(pepper_object_t *cmp,
-                             const pepper_output_interface_t *interface, void *data)
+                             const pepper_output_backend_t *backend, void *data)
 {
     pepper_output_t        *output;
     pepper_compositor_t    *compositor = (pepper_compositor_t *)cmp;
@@ -206,7 +206,7 @@ pepper_compositor_add_output(pepper_object_t *cmp,
     }
 
     /* Create backend-side object. */
-    output->interface = (pepper_output_interface_t *)interface;
+    output->backend = (pepper_output_backend_t *)backend;
     output->data = data;
 
     /* Initialize output modes. */
@@ -217,9 +217,9 @@ pepper_compositor_add_output(pepper_object_t *cmp,
 
     /* Initialize geometry. TODO: Calculate position and size of the output. */
     output->geometry.transform = WL_OUTPUT_TRANSFORM_NORMAL;
-    output->geometry.subpixel = interface->get_subpixel_order(data);
-    output->geometry.maker = interface->get_maker_name(data);
-    output->geometry.model = interface->get_model_name(data);
+    output->geometry.subpixel = backend->get_subpixel_order(data);
+    output->geometry.maker = backend->get_maker_name(data);
+    output->geometry.model = backend->get_model_name(data);
     output->geometry.x = 0;
     output->geometry.y = 0;
     output->geometry.w = output->current_mode->w;
@@ -229,13 +229,13 @@ pepper_compositor_add_output(pepper_object_t *cmp,
 
     /* Install listeners. */
     output->data_destroy_listener.notify = handle_output_data_destroy;
-    interface->add_destroy_listener(data, &output->data_destroy_listener);
+    backend->add_destroy_listener(data, &output->data_destroy_listener);
 
     output->mode_change_listener.notify = handle_mode_change;
-    interface->add_mode_change_listener(data, &output->mode_change_listener);
+    backend->add_mode_change_listener(data, &output->mode_change_listener);
 
     output->frame.frame_listener.notify = handle_output_frame;
-    interface->add_frame_listener(data, &output->frame.frame_listener);
+    backend->add_frame_listener(data, &output->frame.frame_listener);
 
     pepper_output_add_damage_whole(&output->base);
     return &output->base;
@@ -258,8 +258,8 @@ pepper_output_destroy(pepper_object_t *out)
 
     wl_list_remove(&output->link);
 
-    if (output->interface && output->data)
-        output->interface->destroy(output->data);
+    if (output->backend && output->data)
+        output->backend->destroy(output->data);
 
     wl_global_destroy(output->global);
     wl_list_remove(&output->data_destroy_listener.link);
@@ -332,7 +332,7 @@ pepper_output_set_mode(pepper_object_t *out, const pepper_output_mode_t *mode)
     if (output->current_mode == mode)
         return PEPPER_TRUE;
 
-    if (output->interface->set_mode(output->data, mode))
+    if (output->backend->set_mode(output->data, mode))
     {
         pepper_output_add_damage_whole(out);
         return PEPPER_TRUE;

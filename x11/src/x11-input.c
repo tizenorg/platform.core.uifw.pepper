@@ -151,7 +151,7 @@ x11_seat_get_name(void *data)
     return seat->name;
 }
 
-static const pepper_seat_interface_t x11_seat_interface =
+static const pepper_seat_backend_t x11_seat_backend =
 {
     x11_seat_destroy,
     x11_seat_add_capability_listener,
@@ -200,7 +200,7 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     seat->conn_destroy_listener.notify = handle_connection_destroy;
     wl_signal_add(&conn->destroy_signal, &seat->conn_destroy_listener);
 
-    seat->base = pepper_compositor_add_seat(conn->compositor, &x11_seat_interface, seat);
+    seat->base = pepper_compositor_add_seat(conn->compositor, &x11_seat_backend, seat);
     seat->id = X11_BACKEND_INPUT_ID;
 
     /* Hard-coded: */

@@ -498,8 +498,8 @@ x11_output_add_frame_listener(void *o, struct wl_listener *listener)
     wl_signal_add(&output->frame_signal, listener);
 }
 
-/* X11 output interface to export for PePPer core */
-static const pepper_output_interface_t x11_output_interface =
+/* X11 output backend to export for PePPer core */
+static const pepper_output_backend_t x11_output_backend =
 {
     x11_output_destroy,
     x11_output_add_destroy_listener,
@@ -647,7 +647,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
 
     /* Register output object */
     base = pepper_compositor_add_output(connection->compositor,
-                                        &x11_output_interface,
+                                        &x11_output_backend,
                                         output);
     if (!base)
     {
