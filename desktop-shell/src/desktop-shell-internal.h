@@ -124,6 +124,12 @@ get_shsurf_from_surface(pepper_surface_t *surface, desktop_shell_t *shell);
 void
 set_shsurf_to_surface(pepper_surface_t *surface, shell_surface_t *shsurf);
 
+pepper_bool_t
+shell_surface_set_title(shell_surface_t *shsurf, const char* title);
+
+pepper_bool_t
+shell_surface_set_class(shell_surface_t *shsurf, const char* class_);
+
 void
 shell_surface_set_toplevel(shell_surface_t *shsurf);
 

@@ -21,7 +21,9 @@ xdg_surface_set_app_id(struct wl_client     *client,
                        struct wl_resource   *resource,
                        const char           *app_id)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_set_class(shsurf, app_id);
 }
 
 static void
@@ -40,7 +42,9 @@ xdg_surface_set_title(struct wl_client      *client,
                       struct wl_resource    *resource,
                       const char            *title)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_set_title(shsurf, title);
 }
 
 static void

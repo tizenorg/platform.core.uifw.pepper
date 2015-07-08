@@ -309,3 +309,31 @@ shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent)
             wl_list_insert(&parent_shsurf->child_list, &shsurf->parent_link);
     }
 }
+
+pepper_bool_t
+shell_surface_set_title(shell_surface_t *shsurf, const char* title)
+{
+    if (shsurf->title)
+        free(shsurf->title);
+
+    shsurf->title = strdup(title);
+
+    if (!shsurf->title)
+        return PEPPER_FALSE;
+
+    return PEPPER_TRUE;
+}
+
+pepper_bool_t
+shell_surface_set_class(shell_surface_t *shsurf, const char* class_)
+{
+    if (shsurf->class_)
+        free(shsurf->class_);
+
+    shsurf->class_ = strdup(class_);
+
+    if (!shsurf->class_)
+        return PEPPER_FALSE;
+
+    return PEPPER_TRUE;
+}

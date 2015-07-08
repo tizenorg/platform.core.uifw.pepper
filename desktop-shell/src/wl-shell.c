@@ -65,13 +65,7 @@ wl_shell_surface_set_title(struct wl_client *client, struct wl_resource *resourc
 {
     shell_surface_t *shsurf = wl_resource_get_user_data(resource);
 
-    if (shsurf->title)
-        free(shsurf->title);
-
-    shsurf->title = strdup(title);
-
-    if (!shsurf->title)
-        wl_client_post_no_memory(client);
+    shell_surface_set_title(shsurf, title);
 }
 
 static void
@@ -80,13 +74,7 @@ wl_shell_surface_set_class(struct wl_client *client, struct wl_resource *resourc
 {
     shell_surface_t *shsurf = wl_resource_get_user_data(resource);
 
-    if (shsurf->class_)
-        free(shsurf->class_);
-
-    shsurf->class_ = strdup(class_);
-
-    if (!shsurf->class_)
-        wl_client_post_no_memory(client);
+    shell_surface_set_class(shsurf, class_);
 }
 
 static const struct wl_shell_surface_interface shell_surface_implementation =
