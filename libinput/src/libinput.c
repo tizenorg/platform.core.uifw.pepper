@@ -9,9 +9,9 @@
 #include "libinput-internal.h"
 
 static void
-libinput_seat_destroy(void *data)
+li_seat_destroy(void *data)
 {
-    libinput_seat_t *seat = (libinput_seat_t *)data;
+    li_seat_t *seat = (li_seat_t *)data;
 
     wl_list_remove(&seat->link);
 
@@ -22,48 +22,48 @@ libinput_seat_destroy(void *data)
 }
 
 static void
-libinput_seat_add_capabilities_listener(void *data, struct wl_listener *listener)
+li_seat_add_capabilities_listener(void *data, struct wl_listener *listener)
 {
-    libinput_seat_t *seat = (libinput_seat_t *)data;
+    li_seat_t *seat = (li_seat_t *)data;
     wl_signal_add(&seat->capabilities_signal, listener);
 }
 
 static void
-libinput_seat_add_name_listener(void *data, struct wl_listener *listener)
+li_seat_add_name_listener(void *data, struct wl_listener *listener)
 {
-    libinput_seat_t *seat = (libinput_seat_t *)data;
+    li_seat_t *seat = (li_seat_t *)data;
     wl_signal_add(&seat->name_signal, listener);
 }
 
 static uint32_t
-libinput_seat_get_capabilities(void *data)
+li_seat_get_capabilities(void *data)
 {
-    libinput_seat_t *seat = (libinput_seat_t *)data;
+    li_seat_t *seat = (li_seat_t *)data;
     return seat->caps;
 }
 
 static const char *
-libinput_seat_get_name(void *data)
+li_seat_get_name(void *data)
 {
-    libinput_seat_t *seat = (libinput_seat_t *)data;
+    li_seat_t *seat = (li_seat_t *)data;
     return seat->name;
 }
 
-static const pepper_seat_backend_t libinput_seat_backend =
+static const pepper_seat_backend_t li_seat_backend =
 {
-    libinput_seat_destroy,
-    libinput_seat_add_capabilities_listener,
-    libinput_seat_add_name_listener,
-    libinput_seat_get_capabilities,
-    libinput_seat_get_name,
+    li_seat_destroy,
+    li_seat_add_capabilities_listener,
+    li_seat_add_name_listener,
+    li_seat_get_capabilities,
+    li_seat_get_name,
 };
 
-libinput_seat_t *
-libinput_seat_create(pepper_libinput_t *input)
+static li_seat_t *
+li_seat_create(pepper_libinput_t *input)
 {
-    libinput_seat_t *seat;
+    li_seat_t *seat;
 
-    seat = (libinput_seat_t *)calloc(1, sizeof(libinput_seat_t));
+    seat = (li_seat_t *)calloc(1, sizeof(li_seat_t));
     if (!seat)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -75,7 +75,7 @@ libinput_seat_create(pepper_libinput_t *input)
 
     seat->input = input;
     seat->base = pepper_compositor_add_seat(input->compositor,
-                                            &libinput_seat_backend, seat);
+                                            &li_seat_backend, seat);
     if (!seat->base)
     {
         PEPPER_ERROR("Failed to create pepper_seat in %s\n", __FUNCTION__);
@@ -148,7 +148,7 @@ device_added(pepper_libinput_t *input, struct libinput_device *libinput_device)
 {
     struct libinput_seat   *libinput_seat;
     const char             *seat_name;
-    libinput_seat_t        *tmp, *seat = NULL;
+    li_seat_t              *tmp, *seat = NULL;
     uint32_t                caps;
 
     libinput_seat = libinput_device_get_seat(libinput_device);
@@ -165,7 +165,7 @@ device_added(pepper_libinput_t *input, struct libinput_device *libinput_device)
 
     if (!seat)
     {
-        seat = libinput_seat_create(input);
+        seat = li_seat_create(input);
         if (!seat)
         {
             PEPPER_ERROR("Failed to create libinput_seat in %s\n", __FUNCTION__);
@@ -199,10 +199,10 @@ device_added(pepper_libinput_t *input, struct libinput_device *libinput_device)
 static void
 device_removed(pepper_libinput_t *input, struct libinput_device *libinput_device)
 {
-    libinput_seat_t    *seat;
-    uint32_t            caps;
+    li_seat_t  *seat;
+    uint32_t    caps;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
     caps = get_capabilities(libinput_device);
 
     if (seat->caps != caps)
@@ -216,10 +216,10 @@ static void
 pointer_motion(struct libinput_device *libinput_device,
                struct libinput_event_pointer *pointer_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     event.type = PEPPER_INPUT_EVENT_POINTER_MOTION;
     event.time = libinput_event_pointer_get_time(pointer_event);
@@ -239,10 +239,10 @@ static void
 pointer_motion_absolute(struct libinput_device *libinput_device,
                         struct libinput_event_pointer *pointer_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     /* TODO */
 
@@ -253,10 +253,10 @@ static void
 pointer_button(struct libinput_device *libinput_device,
                struct libinput_event_pointer *pointer_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     event.type = PEPPER_INPUT_EVENT_POINTER_BUTTON;
     event.time = libinput_event_pointer_get_time(pointer_event);
@@ -274,10 +274,10 @@ static void
 pointer_axis(struct libinput_device *libinput_device,
              struct libinput_event_pointer *pointer_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     event.type = PEPPER_INPUT_EVENT_POINTER_AXIS;
     event.time = libinput_event_pointer_get_time(pointer_event);
@@ -309,10 +309,10 @@ static void
 keyboard_key(struct libinput_device *libinput_device,
              struct libinput_event_keyboard *keyboard_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     event.type = PEPPER_INPUT_EVENT_KEYBOARD_KEY;
     event.time = libinput_event_keyboard_get_time(keyboard_event);
@@ -330,11 +330,11 @@ static void
 touch_down(struct libinput_device *libinput_device,
            struct libinput_event_touch *touch_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
     uint32_t                width, height;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_DOWN;
     event.time = libinput_event_touch_get_time(touch_event);
@@ -360,10 +360,10 @@ static void
 touch_up(struct libinput_device *libinput_device,
          struct libinput_event_touch *touch_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_UP;
     event.time = libinput_event_touch_get_time(touch_event);
@@ -381,11 +381,11 @@ static void
 touch_motion(struct libinput_device *libinput_device,
              struct libinput_event_touch *touch_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
     uint32_t                width, height;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_MOTION;
@@ -412,10 +412,10 @@ static void
 touch_frame(struct libinput_device *libinput_device,
             struct libinput_event_touch *touch_event)
 {
-    libinput_seat_t        *seat;
+    li_seat_t              *seat;
     pepper_input_event_t    event;
 
-    seat = (libinput_seat_t *)libinput_device_get_user_data(libinput_device);
+    seat = (li_seat_t *)libinput_device_get_user_data(libinput_device);
 
     event.type = PEPPER_INPUT_EVENT_TOUCH_FRAME;
     pepper_seat_handle_event(seat->base, &event);
@@ -557,10 +557,10 @@ error:
 PEPPER_API void
 pepper_libinput_destroy(pepper_libinput_t *input)
 {
-    libinput_seat_t *seat, *tmp;
+    li_seat_t  *seat, *tmp;
 
     wl_list_for_each_safe(seat, tmp, &input->seat_list, link)
-        libinput_seat_destroy(seat);
+        li_seat_destroy(seat);
 
     if (input->libinput)
         libinput_unref(input->libinput);

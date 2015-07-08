@@ -6,7 +6,7 @@
 /* TODO: Error logging. */
 #define PEPPER_ERROR(...)
 
-typedef struct libinput_seat         libinput_seat_t;
+typedef struct li_seat         li_seat_t;
 
 struct pepper_libinput
 {
@@ -19,7 +19,7 @@ struct pepper_libinput
     struct wl_list              seat_list;
 };
 
-struct libinput_seat
+struct li_seat
 {
     pepper_object_t            *base;
     pepper_libinput_t          *input;
