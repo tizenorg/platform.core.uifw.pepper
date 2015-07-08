@@ -12,6 +12,31 @@ remove_ping_timer(shell_client_t *shell_client)
 }
 
 static void
+shsurf_stop_listen_commit_event(shell_surface_t *shsurf)
+{
+    wl_list_remove(&shsurf->surface_commit_listener.link);
+    wl_list_init(&shsurf->surface_commit_listener.link);
+}
+
+static void
+handle_surface_commit(struct wl_listener *listener, void *data)
+{
+    shell_surface_t *shsurf =
+        pepper_container_of(listener, shell_surface_t, surface_commit_listener);
+
+    if (!shsurf->mapped && shsurf->shell_surface_map)
+        shsurf->shell_surface_map(shsurf);
+}
+
+static void
+shsurf_start_listen_commit_event(shell_surface_t *shsurf)
+{
+    shsurf->surface_commit_listener.notify = handle_surface_commit;
+    wl_list_init(&shsurf->surface_commit_listener.link);
+    /* TODO: Need new API: pepper_surface_add_commit_listener() */
+}
+
+static void
 handle_client_destroy(struct wl_listener *listener, void *data)
 {
     shell_surface_t *shsurf =
@@ -33,6 +58,8 @@ handle_surface_destroy(struct wl_listener *listener, void *data)
         wl_list_remove(&shsurf->client_destroy_listener.link);
 
     wl_list_remove(&shsurf->surface_destroy_listener.link);
+
+    shsurf_stop_listen_commit_event(shsurf);
 
     if (shsurf->resource)
         wl_resource_destroy(shsurf->resource);
@@ -103,6 +130,9 @@ shell_surface_create(shell_client_t *shell_client, pepper_object_t *surface,
 
     shsurf->surface_destroy_listener.notify = handle_surface_destroy;
     pepper_object_add_destroy_listener(surface, &shsurf->surface_destroy_listener);
+
+    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
+    shsurf_start_listen_commit_event(shsurf);
 
     /* Set shell_surface_t to pepper_surface_t */
     set_shsurf_to_surface(surface, shsurf);
@@ -198,9 +228,56 @@ shell_surface_handle_pong(shell_surface_t *shsurf, uint32_t serial)
 }
 
 void
+shell_surface_set_toplevel(shell_surface_t *shsurf)
+{
+    shell_surface_set_parent(shsurf, NULL);
+
+    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TOPLEVEL);
+
+    /* Need to map in later */
+    shsurf->mapped = PEPPER_FALSE;
+}
+
+static void
+shell_surface_set_position(shell_surface_t *shsurf, int32_t x, int32_t y)
+{
+    pepper_view_set_position(shsurf->view, x, y);
+}
+
+static void
+shell_surface_map_toplevel(shell_surface_t *shsurf)
+{
+    int32_t x = 0, y = 0;
+
+    /**
+     * TODO: To placing view, need to get output's size, position and seat->pointer's position
+     *       or, read from config file
+     */
+
+    shell_surface_set_position(shsurf, x, y);
+
+    pepper_view_map(shsurf->view);
+
+    shsurf->mapped = PEPPER_TRUE;
+}
+
+void
 shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
 {
     shsurf->type = type;
+
+    switch (type)
+    {
+    case SHELL_SURFACE_TYPE_NONE:
+        shsurf->shell_surface_map = NULL;
+        break;
+    case SHELL_SURFACE_TYPE_TOPLEVEL:
+        shsurf->shell_surface_map = shell_surface_map_toplevel;
+        break;
+    default :
+        /* XXX: Maybe some logs be needed */
+        break;
+    }
 }
 
 shell_surface_t *

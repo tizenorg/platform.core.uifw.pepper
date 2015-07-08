@@ -16,15 +16,15 @@ typedef struct shell_surface    shell_surface_t;
 
 struct desktop_shell
 {
-    pepper_object_t     *compositor;
+    pepper_object_t         *compositor;
 
-    struct wl_list       shell_client_list;
-    struct wl_list       shell_surface_list;
+    struct wl_list           shell_client_list;
+    struct wl_list           shell_surface_list;
 
     /* TODO: */
-    struct wl_listener   seat_create_listener;
-    struct wl_listener   output_create_listener;
-    struct wl_listener   output_change_listener;
+    struct wl_listener       seat_create_listener;
+    struct wl_listener       output_create_listener;
+    struct wl_listener       output_change_listener;
 };
 
 struct shell_client
@@ -77,9 +77,14 @@ struct shell_surface
     /* Data structures per surface type */
     shell_surface_type_t     type;
 
+    /* (*map) */
+    void (*shell_surface_map)(shell_surface_t *shsurf);
+    pepper_bool_t            mapped;
+
     /* Listeners */
     struct wl_listener      client_destroy_listener;
     struct wl_listener      surface_destroy_listener;
+    struct wl_listener      surface_commit_listener;
 
     struct wl_list          link;       /* link */
 };
@@ -118,6 +123,9 @@ get_shsurf_from_surface(pepper_object_t *surface, desktop_shell_t *shell);
 
 void
 set_shsurf_to_surface(pepper_object_t *surface, shell_surface_t *shsurf);
+
+void
+shell_surface_set_toplevel(shell_surface_t *shsurf);
 
 pepper_bool_t
 init_wl_shell(desktop_shell_t *shell);

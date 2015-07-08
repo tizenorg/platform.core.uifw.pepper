@@ -27,11 +27,7 @@ wl_shell_surface_set_toplevel(struct wl_client *client, struct wl_resource *reso
 {
     shell_surface_t *shsurf = wl_resource_get_user_data(resource);
 
-    shell_surface_set_parent(shsurf, NULL);
-
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TOPLEVEL);
-
-    pepper_view_map(shsurf->view);
+    shell_surface_set_toplevel(shsurf);
 }
 
 static void
