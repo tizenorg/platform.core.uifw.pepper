@@ -43,6 +43,8 @@ typedef struct pepper_touch         pepper_touch_t;
             CHECK_MAGIC(obj, val);                                              \
     } while (0)
 
+#define PEPPER_MAX_OUTPUT_ID    32
+
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
 typedef struct pepper_data_source   pepper_data_source_t;
@@ -89,6 +91,7 @@ struct pepper_compositor
     struct wl_list      regions;
     struct wl_list      seat_list;
     struct wl_list      output_list;
+    uint32_t            output_id_allocator;
     struct wl_list      event_hook_chain;
     pepper_list_t       root_view_list;
     pepper_list_t       view_list;
@@ -98,6 +101,7 @@ struct pepper_output
 {
     pepper_object_t             base;
     pepper_compositor_t        *compositor;
+    uint32_t                    id;
 
     struct wl_global           *global;
     struct wl_list              resources;

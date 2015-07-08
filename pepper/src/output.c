@@ -185,8 +185,19 @@ pepper_compositor_add_output(pepper_object_t *cmp,
 {
     pepper_output_t        *output;
     pepper_compositor_t    *compositor = (pepper_compositor_t *)cmp;
+    uint32_t                id;
 
     CHECK_MAGIC_AND_NON_NULL(cmp, PEPPER_COMPOSITOR);
+
+    id = ffs(~compositor->output_id_allocator);
+
+    if (id == 0)
+    {
+        PEPPER_ERROR("No available output ids.\n");
+        return NULL;
+    }
+
+    id = id - 1;
 
     output = (pepper_output_t *)pepper_object_alloc(sizeof(pepper_output_t), PEPPER_OUTPUT);
     if (!output)
@@ -204,6 +215,9 @@ pepper_compositor_add_output(pepper_object_t *cmp,
         pepper_free(output);
         return NULL;
     }
+
+    output->id = id;
+    compositor->output_id_allocator |= (1 << output->id);
 
     /* Create backend-side object. */
     output->backend = (pepper_output_backend_t *)backend;
@@ -256,6 +270,7 @@ pepper_output_destroy(pepper_object_t *out)
 
     pepper_object_fini(&output->base);
 
+    output->compositor->output_id_allocator &= ~(1 << output->id);
     wl_list_remove(&output->link);
 
     if (output->backend && output->data)
