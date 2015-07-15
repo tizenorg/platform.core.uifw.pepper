@@ -366,6 +366,7 @@ pepper_surface_commit(pepper_surface_t *surface)
         surface->buffer.y       += surface->pending.y;
 
         surface->pending.newly_attached = PEPPER_FALSE;
+        surface->pending.buffer = NULL;
 
         /* Attach to all outputs. */
         attach_surface_to_outputs(surface);
@@ -391,6 +392,18 @@ pepper_surface_commit(pepper_surface_t *surface)
     pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
 
     pepper_surface_schedule_repaint(surface);
+}
+
+void
+pepper_surface_send_frame_callback_done(pepper_surface_t *surface, uint32_t time)
+{
+    struct wl_resource *callback, *next;
+
+    wl_resource_for_each_safe(callback, next, &surface->frame_callbacks)
+    {
+        wl_callback_send_done(callback, time);
+        wl_resource_destroy(callback);
+    }
 }
 
 PEPPER_API const char *

@@ -182,7 +182,12 @@ output_repaint(pepper_output_t *output)
     output->frame.pending = PEPPER_TRUE;
     output->frame.scheduled = PEPPER_FALSE;
 
-    /* TODO: Send frame done to the callback objects of this output. */
+    PEPPER_LIST_FOR_EACH(&output->view_list, l)
+    {
+        /* TODO: Output time stamp and presentation feedback. */
+        pepper_view_t *view = l->item;
+        pepper_surface_send_frame_callback_done(view->surface, 0);
+    }
 }
 
 static void

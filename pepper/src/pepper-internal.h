@@ -160,6 +160,9 @@ pepper_surface_destroy(pepper_surface_t *surface);
 void
 pepper_surface_commit(pepper_surface_t *surface);
 
+void
+pepper_surface_send_frame_callback_done(pepper_surface_t *surface, uint32_t time);
+
 struct pepper_region
 {
     pepper_object_t         base;
