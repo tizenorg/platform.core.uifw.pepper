@@ -223,8 +223,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
                       struct wl_resource *resource,
                       uint32_t id)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)pepper_object_alloc(sizeof(pepper_surface_t),
-                                                                        PEPPER_SURFACE);
+    pepper_surface_t *surface = (pepper_surface_t *)pepper_object_alloc(sizeof(pepper_surface_t));
     if (!surface)
     {
         PEPPER_ERROR("Surface memory allocation failed\n");
@@ -273,7 +272,7 @@ pepper_surface_destroy(pepper_surface_t *surface)
     pepper_surface_state_fini(&surface->pending);
 
     if (surface->buffer.buffer)
-        pepper_buffer_unreference(&surface->buffer.buffer->base);
+        pepper_buffer_unreference(surface->buffer.buffer);
 
     pixman_region32_fini(&surface->damage_region);
     pixman_region32_fini(&surface->opaque_region);
@@ -340,7 +339,7 @@ attach_surface_to_outputs(pepper_surface_t *surface)
 
     wl_list_for_each(output, &surface->compositor->output_list, link)
     {
-        output->backend->attach_surface(output->data, &surface->base, &w, &h);
+        output->backend->attach_surface(output->data, surface, &w, &h);
 
         surface->buffer.buffer->w = w;
         surface->buffer.buffer->h = h;
@@ -356,11 +355,11 @@ pepper_surface_commit(pepper_surface_t *surface)
         if (surface->pending.buffer)
         {
             wl_list_remove(&surface->pending.buffer_destroy_listener.link);
-            pepper_buffer_reference(&surface->pending.buffer->base);
+            pepper_buffer_reference(surface->pending.buffer);
         }
 
         if (surface->buffer.buffer)
-            pepper_buffer_unreference(&surface->buffer.buffer->base);
+            pepper_buffer_unreference(surface->buffer.buffer);
 
         surface->buffer.buffer   = surface->pending.buffer;
         surface->buffer.x       += surface->pending.x;
@@ -395,18 +394,14 @@ pepper_surface_commit(pepper_surface_t *surface)
 }
 
 PEPPER_API const char *
-pepper_surface_get_role(pepper_object_t *sfc)
+pepper_surface_get_role(pepper_surface_t *surface)
 {
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
-    return ((pepper_surface_t *)sfc)->role;
+    return surface->role;
 }
 
 PEPPER_API pepper_bool_t
-pepper_surface_set_role(pepper_object_t *sfc, const char *role)
+pepper_surface_set_role(pepper_surface_t *surface, const char *role)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)sfc;
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
-
     if (surface->role)
         return PEPPER_FALSE;
 
@@ -417,19 +412,15 @@ pepper_surface_set_role(pepper_object_t *sfc, const char *role)
     return PEPPER_TRUE;
 }
 
-PEPPER_API pepper_object_t *
-pepper_surface_get_buffer(pepper_object_t *sfc)
+PEPPER_API pepper_buffer_t *
+pepper_surface_get_buffer(pepper_surface_t *surface)
 {
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
-    return &(((pepper_surface_t *)sfc)->buffer.buffer->base);
+    return surface->buffer.buffer;
 }
 
 PEPPER_API void
-pepper_surface_get_buffer_offset(pepper_object_t *sfc, int32_t *x, int32_t *y)
+pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x, int32_t *y)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)sfc;
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
-
     if (x)
         *x = surface->buffer.x;
 
@@ -438,42 +429,32 @@ pepper_surface_get_buffer_offset(pepper_object_t *sfc, int32_t *x, int32_t *y)
 }
 
 PEPPER_API int32_t
-pepper_surface_get_buffer_scale(pepper_object_t *sfc)
+pepper_surface_get_buffer_scale(pepper_surface_t *surface)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)sfc;
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return surface->buffer.scale;
 }
 
 PEPPER_API int32_t
-pepper_surface_get_buffer_transform(pepper_object_t *sfc)
+pepper_surface_get_buffer_transform(pepper_surface_t *surface)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)sfc;
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return surface->buffer.transform;
 }
 
 PEPPER_API const pixman_region32_t *
-pepper_surface_get_damage_region(pepper_object_t *sfc)
+pepper_surface_get_damage_region(pepper_surface_t *surface)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)sfc;
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return &surface->damage_region;
 }
 
 PEPPER_API const pixman_region32_t *
-pepper_surface_get_opaque_region(pepper_object_t *sfc)
+pepper_surface_get_opaque_region(pepper_surface_t *surface)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)sfc;
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return &surface->opaque_region;
 }
 
 PEPPER_API const pixman_region32_t *
-pepper_surface_get_input_region(pepper_object_t *sfc)
+pepper_surface_get_input_region(pepper_surface_t *surface)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)sfc;
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
     return &surface->input_region;
 }
 

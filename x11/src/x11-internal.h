@@ -9,6 +9,7 @@
 #include <X11/Xlib-xcb.h>
 #include <string.h>
 #include <pixman.h>
+#include <pepper-output-backend.h>
 #include <pepper-render.h>
 #include <stdio.h>
 
@@ -42,7 +43,7 @@ struct x11_shm_image
 
 struct x11_output
 {
-    pepper_object_t            *base;
+    pepper_output_t            *base;
     pepper_x11_connection_t    *connection;
 
     int32_t                  x, y;
@@ -70,12 +71,12 @@ struct x11_output
 
     struct wl_list           link;
 
-    pepper_object_t         *primary_plane;
+    pepper_plane_t          *primary_plane;
 };
 
 struct x11_seat
 {
-    pepper_object_t         *base;
+    pepper_seat_t           *base;
 
     uint32_t                 id;
     uint32_t                 caps;
@@ -95,7 +96,7 @@ struct x11_seat
 
 struct pepper_x11_connection
 {
-    pepper_object_t        *compositor;
+    pepper_compositor_t    *compositor;
     char                   *display_name;
 
     Display                *display;

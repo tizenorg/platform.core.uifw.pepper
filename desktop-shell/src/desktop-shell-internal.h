@@ -16,7 +16,7 @@ typedef struct shell_surface    shell_surface_t;
 
 struct desktop_shell
 {
-    pepper_object_t         *compositor;
+    pepper_compositor_t     *compositor;
 
     struct wl_list           shell_client_list;
     struct wl_list           shell_surface_list;
@@ -64,13 +64,13 @@ struct shell_surface
     struct wl_resource      *resource;
 
     /* Hierarchy */
-    pepper_object_t         *parent;
+    pepper_surface_t        *parent;
     struct wl_list           child_list;   /* children surfaces of this */
     struct wl_list           parent_link;
 
     /* Contents */
-    pepper_object_t         *surface;
-    pepper_object_t         *view;
+    pepper_surface_t        *surface;
+    pepper_view_t           *view;
 
     char                    *title, *class_;
 
@@ -95,7 +95,7 @@ shell_client_create(desktop_shell_t *shell, struct wl_client *client,
              uint32_t version, uint32_t id);
 
 shell_surface_t *
-shell_surface_create(shell_client_t *shell, pepper_object_t *surface, struct wl_client *client,
+shell_surface_create(shell_client_t *shell, pepper_surface_t *surface, struct wl_client *client,
                      const struct wl_interface *interface,
                      const void *implemenetation, uint32_t version, uint32_t id);
 
@@ -115,14 +115,14 @@ void
 shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type);
 
 void
-shell_surface_set_parent(shell_surface_t *shsurf, pepper_object_t *parent_surface);
+shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent);
 
 /* */
 shell_surface_t *
-get_shsurf_from_surface(pepper_object_t *surface, desktop_shell_t *shell);
+get_shsurf_from_surface(pepper_surface_t *surface, desktop_shell_t *shell);
 
 void
-set_shsurf_to_surface(pepper_object_t *surface, shell_surface_t *shsurf);
+set_shsurf_to_surface(pepper_surface_t *surface, shell_surface_t *shsurf);
 
 void
 shell_surface_set_toplevel(shell_surface_t *shsurf);

@@ -25,36 +25,23 @@ user_data_key_compare(const void *key0, int key0_length, const void *key1, int k
 }
 
 pepper_object_t *
-pepper_object_alloc(size_t size, uint32_t magic)
+pepper_object_alloc(size_t size)
 {
     pepper_object_t *object = pepper_calloc(1, size);
     if (!object)
         return NULL;
 
-    if (!pepper_object_init(object, magic))
+    wl_signal_init(&object->destroy_signal);
+    object->user_data_map = pepper_map_create(5, user_data_hash, user_data_key_length,
+                                              user_data_key_compare);
+
+    if (!object->user_data_map)
     {
         pepper_free(object);
         return NULL;
     }
 
     return object;
-}
-
-pepper_bool_t
-pepper_object_init(pepper_object_t *object, uint32_t magic)
-{
-    object->magic = magic;
-
-    wl_signal_init(&object->destroy_signal);
-
-    /* Create a hash table for user data. */
-    object->user_data_map = pepper_map_create(5, user_data_hash, user_data_key_length,
-                                              user_data_key_compare);
-
-    if (!object->user_data_map)
-        return PEPPER_FALSE;
-
-    return PEPPER_TRUE;
 }
 
 void

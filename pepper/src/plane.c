@@ -60,20 +60,15 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
     pixman_region32_intersect_rect(clip, clip, 0, 0, w, h);
 }
 
-PEPPER_API pepper_object_t *
-pepper_output_add_plane(pepper_object_t *out, pepper_object_t *above_plane)
+PEPPER_API pepper_plane_t *
+pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above)
 {
-    pepper_plane_t  *plane;
-    pepper_output_t *output = (pepper_output_t *)out;
-    pepper_plane_t  *above = (pepper_plane_t *)above_plane;
-
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-    CHECK_MAGIC_IF_NON_NULL(above_plane, PEPPER_PLANE);
+    pepper_plane_t *plane;
 
     if (above && above->output != output)
         return NULL;
 
-    plane = (pepper_plane_t *)pepper_object_alloc(sizeof(pepper_plane_t), PEPPER_PLANE);
+    plane = (pepper_plane_t *)pepper_object_alloc(sizeof(pepper_plane_t));
     if (!plane)
         return NULL;
 
@@ -89,23 +84,20 @@ pepper_output_add_plane(pepper_object_t *out, pepper_object_t *above_plane)
     pixman_region32_init(&plane->damage_region);
     pixman_region32_init(&plane->clip_region);
 
-    return &plane->base;
+    return plane;
 }
 
-void
-pepper_plane_destroy(pepper_object_t *pln)
+PEPPER_API void
+pepper_plane_destroy(pepper_plane_t *plane)
 {
-    pepper_plane_t *plane = (pepper_plane_t *)pln;
     pepper_list_t  *l;
 
-    CHECK_MAGIC_AND_NON_NULL(pln, PEPPER_PLANE);
-
-    pepper_object_fini(pln);
+    pepper_object_fini(&plane->base);
 
     PEPPER_LIST_FOR_EACH(&plane->entry_list, l)
     {
         pepper_plane_entry_t *entry = l->item;
-        pepper_view_assign_plane(entry->base.view, &plane->output->base, NULL);
+        pepper_view_assign_plane(entry->base.view, plane->output, NULL);
     }
 
     pepper_list_remove(&plane->link, NULL);
@@ -132,33 +124,25 @@ pepper_plane_add_damage_region(pepper_plane_t *plane, pixman_region32_t *damage)
 }
 
 PEPPER_API pixman_region32_t *
-pepper_plane_get_damage_region(pepper_object_t *pln)
+pepper_plane_get_damage_region(pepper_plane_t *plane)
 {
-    pepper_plane_t *plane = (pepper_plane_t *)pln;
-    CHECK_MAGIC_AND_NON_NULL(pln, PEPPER_PLANE);
     return &plane->damage_region;
 }
 
-pixman_region32_t *
-pepper_plane_get_clip_region(pepper_object_t *pln)
+PEPPER_API pixman_region32_t *
+pepper_plane_get_clip_region(pepper_plane_t *plane)
 {
-    pepper_plane_t *plane = (pepper_plane_t *)pln;
-    CHECK_MAGIC_AND_NON_NULL(pln, PEPPER_PLANE);
     return &plane->clip_region;
 }
 
-const pepper_list_t *
-pepper_plane_get_render_list(pepper_object_t *pln)
+PEPPER_API const pepper_list_t *
+pepper_plane_get_render_list(pepper_plane_t *plane)
 {
-    pepper_plane_t *plane = (pepper_plane_t *)pln;
-    CHECK_MAGIC_AND_NON_NULL(pln, PEPPER_PLANE);
     return &plane->entry_list;
 }
 
-void
-pepper_plane_subtract_damage_region(pepper_object_t *pln, pixman_region32_t *damage)
+PEPPER_API void
+pepper_plane_subtract_damage_region(pepper_plane_t *plane, pixman_region32_t *damage)
 {
-    pepper_plane_t *plane = (pepper_plane_t *)pln;
-    CHECK_MAGIC_AND_NON_NULL(pln, PEPPER_PLANE);
     pixman_region32_subtract(&plane->damage_region, &plane->damage_region, damage);
 }

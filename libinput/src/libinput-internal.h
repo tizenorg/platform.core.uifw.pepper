@@ -10,7 +10,7 @@ typedef struct li_seat         li_seat_t;
 
 struct pepper_libinput
 {
-    pepper_object_t            *compositor;
+    pepper_compositor_t        *compositor;
     struct udev                *udev;
     struct libinput            *libinput;
     struct wl_event_source     *libinput_event_source;
@@ -21,7 +21,7 @@ struct pepper_libinput
 
 struct li_seat
 {
-    pepper_object_t            *base;
+    pepper_seat_t              *base;
     pepper_libinput_t          *input;
 
     uint32_t                    id;

@@ -182,7 +182,7 @@ x11_init_atoms(pepper_x11_connection_t *conn)
 }
 
 PEPPER_API pepper_x11_connection_t *
-pepper_x11_connect(pepper_object_t *compositor, const char *display_name)
+pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 {
     pepper_x11_connection_t     *connection = NULL;
     struct wl_display           *wdisplay;

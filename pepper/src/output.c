@@ -18,7 +18,7 @@ output_update_mode(pepper_output_t *output)
     output->modes = pepper_calloc(output->mode_count, sizeof(pepper_output_mode_t));
     if (!output->modes)
     {
-        pepper_output_destroy(&output->base);
+        pepper_output_destroy(output);
         return;
     }
 
@@ -114,7 +114,7 @@ handle_output_data_destroy(struct wl_listener *listener, void *data)
     pepper_output_t *output = pepper_container_of(listener, pepper_output_t, data_destroy_listener);
     output->data = NULL;
     output->backend = NULL;
-    pepper_output_destroy(&output->base);
+    pepper_output_destroy(output);
 }
 
 static void
@@ -163,7 +163,7 @@ output_repaint(pepper_output_t *output)
         if (!view->visibility || !(view->output_overlap & (1 << output->id)))
         {
             /* Detach from the previously assigned plane. */
-            pepper_view_assign_plane(&view->base, &output->base, NULL);
+            pepper_view_assign_plane(view, output, NULL);
             continue;
         }
 
@@ -224,26 +224,19 @@ pepper_output_schedule_repaint(pepper_output_t *output)
 }
 
 PEPPER_API void
-pepper_output_add_damage_region(pepper_object_t *out, pixman_region32_t *region)
+pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *region)
 {
     pepper_list_t   *l;
-    pepper_output_t *output = (pepper_output_t *)out;
-
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-
     PEPPER_LIST_FOR_EACH(&output->plane_list, l)
         pepper_plane_add_damage_region((pepper_plane_t *)l->item, region);
 }
 
-PEPPER_API pepper_object_t *
-pepper_compositor_add_output(pepper_object_t *cmp,
+PEPPER_API pepper_output_t *
+pepper_compositor_add_output(pepper_compositor_t *compositor,
                              const pepper_output_backend_t *backend, void *data)
 {
     pepper_output_t        *output;
-    pepper_compositor_t    *compositor = (pepper_compositor_t *)cmp;
     uint32_t                id;
-
-    CHECK_MAGIC_AND_NON_NULL(cmp, PEPPER_COMPOSITOR);
 
     id = ffs(~compositor->output_id_allocator);
 
@@ -255,7 +248,7 @@ pepper_compositor_add_output(pepper_object_t *cmp,
 
     id = id - 1;
 
-    output = (pepper_output_t *)pepper_object_alloc(sizeof(pepper_output_t), PEPPER_OUTPUT);
+    output = (pepper_output_t *)pepper_object_alloc(sizeof(pepper_output_t));
     if (!output)
         return NULL;
 
@@ -309,22 +302,18 @@ pepper_compositor_add_output(pepper_object_t *cmp,
     backend->add_frame_listener(data, &output->frame.frame_listener);
 
     pepper_list_init(&output->plane_list);
-    return &output->base;
+    return output;
 }
 
-PEPPER_API pepper_object_t *
-pepper_output_get_compositor(pepper_object_t *out)
+PEPPER_API pepper_compositor_t *
+pepper_output_get_compositor(pepper_output_t *output)
 {
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-    return &(((pepper_output_t *)out)->compositor->base);
+    return output->compositor;
 }
 
 PEPPER_API void
-pepper_output_destroy(pepper_object_t *out)
+pepper_output_destroy(pepper_output_t *output)
 {
-    pepper_output_t *output = (pepper_output_t *)out;
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-
     pepper_object_fini(&output->base);
 
     output->compositor->output_id_allocator &= ~(1 << output->id);
@@ -344,11 +333,8 @@ pepper_output_destroy(pepper_object_t *out)
 }
 
 PEPPER_API void
-pepper_output_move(pepper_object_t *out, int32_t x, int32_t y)
+pepper_output_move(pepper_output_t *output, int32_t x, int32_t y)
 {
-    pepper_output_t *output = (pepper_output_t *)out;
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-
     if ((output->geometry.x != x) || (output->geometry.y != y))
     {
         output->geometry.x = x;
@@ -360,35 +346,26 @@ pepper_output_move(pepper_object_t *out, int32_t x, int32_t y)
 }
 
 PEPPER_API const pepper_output_geometry_t *
-pepper_output_get_geometry(pepper_object_t *out)
+pepper_output_get_geometry(pepper_output_t *output)
 {
-    pepper_output_t *output = (pepper_output_t *)out;
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
     return &output->geometry;
 }
 
 PEPPER_API uint32_t
-pepper_output_get_scale(pepper_object_t *out)
+pepper_output_get_scale(pepper_output_t *output)
 {
-    pepper_output_t *output = (pepper_output_t *)out;
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
     return output->scale;
 }
 
 PEPPER_API int
-pepper_output_get_mode_count(pepper_object_t *out)
+pepper_output_get_mode_count(pepper_output_t *output)
 {
-    pepper_output_t *output = (pepper_output_t *)out;
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
     return output->mode_count;
 }
 
 PEPPER_API const pepper_output_mode_t *
-pepper_output_get_mode(pepper_object_t *out, int index)
+pepper_output_get_mode(pepper_output_t *output, int index)
 {
-    pepper_output_t *output = (pepper_output_t *)out;
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-
     if (index < 0 || index >= output->mode_count)
         return NULL;
 
@@ -396,11 +373,8 @@ pepper_output_get_mode(pepper_object_t *out, int index)
 }
 
 PEPPER_API pepper_bool_t
-pepper_output_set_mode(pepper_object_t *out, const pepper_output_mode_t *mode)
+pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode)
 {
-    pepper_output_t *output = (pepper_output_t *)out;
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-
     if (output->current_mode == mode)
         return PEPPER_TRUE;
 

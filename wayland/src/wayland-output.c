@@ -1,7 +1,6 @@
 #include "wayland-internal.h"
 #include <string.h>
 #include <stdlib.h>
-#include <pepper-output-backend.h>
 #include <pepper-pixman-renderer.h>
 
 #if ENABLE_WAYLAND_BACKEND_EGL && ENABLE_GL_RENDERER
@@ -172,7 +171,7 @@ wayland_output_assign_planes(void *o, const pepper_list_t *view_list)
 
     PEPPER_LIST_FOR_EACH(view_list, l)
     {
-        pepper_object_t *view = l->item;
+        pepper_view_t *view = l->item;
         pepper_view_assign_plane(view, output->base, output->primary_plane);
     }
 }
@@ -187,7 +186,7 @@ wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 
     PEPPER_LIST_FOR_EACH(plane_list, l)
     {
-        pepper_object_t *plane = l->item;
+        pepper_plane_t *plane = l->item;
 
         if (plane == output->primary_plane)
         {
@@ -211,7 +210,7 @@ wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 }
 
 static void
-wayland_output_attach_surface(void *o, pepper_object_t *surface, int *w, int *h)
+wayland_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 {
     pepper_renderer_attach_surface(((wayland_output_t *)o)->renderer, surface, w, h);
 }
@@ -342,7 +341,7 @@ init_renderer(wayland_output_t *output, const char *name)
     return init_pixman_renderer(output);
 }
 
-PEPPER_API pepper_object_t *
+PEPPER_API pepper_output_t *
 pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const char *renderer)
 {
     wayland_output_t   *output;

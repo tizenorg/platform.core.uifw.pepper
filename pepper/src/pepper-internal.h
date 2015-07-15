@@ -7,44 +7,6 @@
 #include <pixman.h>
 #include <pepper-output-backend.h>
 
-typedef struct pepper_compositor    pepper_compositor_t;
-typedef struct pepper_output        pepper_output_t;
-typedef struct pepper_surface       pepper_surface_t;
-typedef struct pepper_buffer        pepper_buffer_t;
-typedef struct pepper_view          pepper_view_t;
-typedef struct pepper_seat          pepper_seat_t;
-typedef struct pepper_pointer       pepper_pointer_t;
-typedef struct pepper_keyboard      pepper_keyboard_t;
-typedef struct pepper_touch         pepper_touch_t;
-typedef struct pepper_plane         pepper_plane_t;
-
-#define CHECK_NON_NULL(ptr)                                                     \
-    do {                                                                        \
-        if ((ptr) == NULL) {                                                    \
-            PEPPER_ERROR("NULL check failed.\n");                               \
-        }                                                                       \
-    } while (0)
-
-#define CHECK_MAGIC(obj, val)                                                   \
-    do {                                                                        \
-        if (((obj)->magic) != val)                                              \
-        {                                                                       \
-            PEPPER_ERROR("magic check failed : %p is not an %s\n", obj, #val);  \
-        }                                                                       \
-    } while (0)
-
-#define CHECK_MAGIC_AND_NON_NULL(obj, val)                                      \
-    do {                                                                        \
-        CHECK_NON_NULL(obj);                                                    \
-        CHECK_MAGIC(obj, val);                                                  \
-    } while (0)
-
-#define CHECK_MAGIC_IF_NON_NULL(obj, val)                                       \
-    do {                                                                        \
-        if (obj)                                                                \
-            CHECK_MAGIC(obj, val);                                              \
-    } while (0)
-
 #define PEPPER_MAX_OUTPUT_COUNT 32
 
 typedef struct pepper_region        pepper_region_t;
@@ -54,32 +16,14 @@ typedef struct pepper_data_source   pepper_data_source_t;
 typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
 
-enum pepper_magic
-{
-    PEPPER_COMPOSITOR   = 0x00000001,
-    PEPPER_OUTPUT       = 0x00000002,
-    PEPPER_SURFACE      = 0x00000003,
-    PEPPER_BUFFER       = 0x00000004,
-    PEPPER_VIEW         = 0x00000005,
-    PEPPER_SEAT         = 0x00000006,
-    PEPPER_POINTER      = 0x00000007,
-    PEPPER_KEYBOARD     = 0x00000008,
-    PEPPER_TOUCH        = 0x00000009,
-    PEPPER_PLANE        = 0x0000000a,
-};
-
 struct pepper_object
 {
-    uint32_t            magic;
     struct wl_signal    destroy_signal;
     pepper_map_t       *user_data_map;
 };
 
 pepper_object_t *
-pepper_object_alloc(size_t size, uint32_t magic);
-
-pepper_bool_t
-pepper_object_init(pepper_object_t *object, uint32_t magic);
+pepper_object_alloc(size_t size);
 
 void
 pepper_object_fini(pepper_object_t *object);
@@ -356,9 +300,6 @@ struct pepper_view
 };
 
 void
-pepper_view_assign_plane(pepper_object_t *view, pepper_object_t *output, pepper_object_t *plane);
-
-void
 pepper_view_damage_below(pepper_view_t *view);
 
 void
@@ -378,21 +319,6 @@ struct pepper_plane
 
 pepper_object_t *
 pepper_plane_create(pepper_object_t *output, pepper_object_t *above_plane);
-
-void
-pepper_plane_destroy(pepper_object_t *plane);
-
-pixman_region32_t *
-pepper_plane_get_damage_region(pepper_object_t *plane);
-
-pixman_region32_t *
-pepper_plane_get_clip_region(pepper_object_t *plane);
-
-const pepper_list_t *
-pepper_plane_get_render_node_list(pepper_object_t *plane);
-
-void
-pepper_plane_subtract_damage_region(pepper_object_t *plane, pixman_region32_t *region);
 
 void
 pepper_plane_add_damage_region(pepper_plane_t *plane, pixman_region32_t *region);
@@ -417,9 +343,7 @@ struct pepper_event_hook
 };
 
 pepper_bool_t
-pepper_compositor_event_handler(pepper_object_t         *seat,
-                                pepper_input_event_t    *event,
-                                void                    *data);
+pepper_compositor_event_handler(pepper_seat_t *seat, pepper_input_event_t *event, void *data);
 
 void
 pepper_surface_flush_damage(pepper_surface_t *surface);

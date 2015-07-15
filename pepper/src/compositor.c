@@ -46,13 +46,12 @@ compositor_bind(struct wl_client *client,
     wl_resource_set_implementation(resource, &compositor_interface, compositor, NULL);
 }
 
-PEPPER_API pepper_object_t *
+PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name)
 {
-    pepper_compositor_t *compositor = NULL;
+    pepper_compositor_t *compositor =
+        (pepper_compositor_t *)pepper_object_alloc(sizeof(pepper_compositor_t));
 
-    compositor = (pepper_compositor_t *)pepper_object_alloc(sizeof(pepper_compositor_t),
-                                                            PEPPER_COMPOSITOR);
     if (!compositor)
         return NULL;
 
@@ -71,8 +70,7 @@ pepper_compositor_create(const char *socket_name)
         goto error;
     }
 
-    wl_global_create(compositor->display, &wl_compositor_interface, 3, compositor,
-                     compositor_bind);
+    wl_global_create(compositor->display, &wl_compositor_interface, 3, compositor, compositor_bind);
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
     pepper_list_init(&compositor->output_list);
@@ -80,7 +78,7 @@ pepper_compositor_create(const char *socket_name)
     pepper_list_init(&compositor->view_list);
 
     /* Install default input event handler */
-    if( NULL == pepper_compositor_add_event_hook(&compositor->base,
+    if( NULL == pepper_compositor_add_event_hook(compositor,
                                                  pepper_compositor_event_handler,
                                                  compositor))
     {
@@ -100,21 +98,18 @@ pepper_compositor_create(const char *socket_name)
         goto error;
     }
 
-    return &compositor->base;
+    return compositor;
 
 error:
     if (compositor)
-        pepper_compositor_destroy(&compositor->base);
+        pepper_compositor_destroy(compositor);
 
     return NULL;
 }
 
 PEPPER_API void
-pepper_compositor_destroy(pepper_object_t *cmp)
+pepper_compositor_destroy(pepper_compositor_t *compositor)
 {
-    pepper_compositor_t *compositor = (pepper_compositor_t *)cmp;
-    CHECK_MAGIC_AND_NON_NULL(cmp, PEPPER_COMPOSITOR);
-
     pepper_object_fini(&compositor->base);
 
     if (compositor->display)
@@ -124,9 +119,7 @@ pepper_compositor_destroy(pepper_object_t *cmp)
 }
 
 PEPPER_API struct wl_display *
-pepper_compositor_get_display(pepper_object_t *cmp)
+pepper_compositor_get_display(pepper_compositor_t *compositor)
 {
-    pepper_compositor_t *compositor = (pepper_compositor_t *)cmp;
-    CHECK_MAGIC_AND_NON_NULL(cmp, PEPPER_COMPOSITOR);
     return compositor->display;
 }

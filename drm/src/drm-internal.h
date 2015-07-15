@@ -5,6 +5,7 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
+#include <pepper-output-backend.h>
 #include <pepper-libinput.h>
 #include <pepper-render.h>
 
@@ -20,7 +21,7 @@ typedef struct drm_fb           drm_fb_t;
 
 struct pepper_drm
 {
-    pepper_object_t            *compositor;
+    pepper_compositor_t        *compositor;
     pepper_libinput_t          *input;
 
     struct wl_list              output_list;
@@ -49,7 +50,7 @@ struct pepper_drm
 struct drm_output
 {
     pepper_drm_t               *drm;
-    pepper_object_t            *base;
+    pepper_output_t            *base;
 
     struct wl_list              link;
 
@@ -85,7 +86,7 @@ struct drm_output
     pepper_bool_t               vblank_pending;
     pepper_bool_t               page_flip_pending;
 
-    pepper_object_t            *primary_plane;
+    pepper_plane_t             *primary_plane;
 
     /* TODO */
 };

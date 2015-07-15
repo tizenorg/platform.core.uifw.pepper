@@ -24,13 +24,13 @@ pepper_renderer_get_target(pepper_renderer_t *renderer);
 
 PEPPER_API pepper_bool_t
 pepper_renderer_attach_surface(pepper_renderer_t *renderer,
-                               pepper_object_t *surface, int *w, int *h);
+                               pepper_surface_t *surface, int *w, int *h);
 
 PEPPER_API pepper_bool_t
-pepper_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_object_t *surface);
+pepper_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *surface);
 
 PEPPER_API void
-pepper_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output,
+pepper_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
                                const pepper_list_t *view_list, pixman_region32_t *damage);
 
 PEPPER_API pepper_bool_t

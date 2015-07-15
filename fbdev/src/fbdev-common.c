@@ -5,7 +5,7 @@
 #include "fbdev-internal.h"
 
 PEPPER_API pepper_fbdev_t *
-pepper_fbdev_create(pepper_object_t *compositor, const char *device, const char *renderer)
+pepper_fbdev_create(pepper_compositor_t *compositor, const char *device, const char *renderer)
 {
     pepper_fbdev_t *fbdev;
 

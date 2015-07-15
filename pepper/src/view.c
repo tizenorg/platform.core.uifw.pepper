@@ -15,7 +15,7 @@ view_handle_surface_destroy(struct wl_listener *listener, void *data)
 {
     pepper_view_t *view = pepper_container_of(listener, pepper_view_t, surface_destroy_listener);
     PEPPER_ASSERT(view->surface != NULL);
-    pepper_view_destroy(&view->base);
+    pepper_view_destroy(view);
 }
 
 static void
@@ -218,16 +218,8 @@ view_handle_plane_destroy(struct wl_listener *listener, void *data)
 }
 
 void
-pepper_view_assign_plane(pepper_object_t *v, pepper_object_t *out, pepper_object_t *pln)
+pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_plane_t *plane)
 {
-    pepper_view_t          *view = (pepper_view_t *)v;
-    pepper_output_t        *output = (pepper_output_t *)out;
-    pepper_plane_t         *plane = (pepper_plane_t *)pln;
-
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-    CHECK_MAGIC_IF_NON_NULL(pln, PEPPER_PLANE);
-
     if (plane && plane->output != output)
     {
         PEPPER_ERROR("Output mismatch.\n");
@@ -311,22 +303,15 @@ view_init(pepper_view_t *view, pepper_compositor_t *compositor)
 
     for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
     {
-        view->plane_entries[i].base.view = &view->base;
+        view->plane_entries[i].base.view = view;
         view->plane_entries[i].link.item = &view->plane_entries[i];
     }
 }
 
-PEPPER_API pepper_object_t *
-pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
+PEPPER_API pepper_view_t *
+pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surface_t *surface)
 {
-    pepper_view_t       *view;
-    pepper_compositor_t *compositor = (pepper_compositor_t *)comp;
-    pepper_surface_t    *surface = (pepper_surface_t *)sfc;
-
-    CHECK_MAGIC_AND_NON_NULL(comp, PEPPER_COMPOSITOR);
-    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
-
-    view = (pepper_view_t *)pepper_object_alloc(sizeof(pepper_view_t), PEPPER_VIEW);
+    pepper_view_t *view = (pepper_view_t *)pepper_object_alloc(sizeof(pepper_view_t));
     if (!view)
     {
         PEPPER_ERROR("Failed to allocate a pepper object.\n");
@@ -348,17 +333,14 @@ pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
     view->surface_destroy_listener.notify = view_handle_surface_destroy;
     pepper_object_add_destroy_listener(&surface->base, &view->surface_destroy_listener);
 
-    return &view->base;
+    return view;
 }
 
 PEPPER_API void
-pepper_view_destroy(pepper_object_t *v)
+pepper_view_destroy(pepper_view_t *view)
 {
-    pepper_view_t  *view = (pepper_view_t *)v;
     pepper_list_t  *l, *next;
     int             i;
-
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
 
     /* Destroy signal is emitted in here so that any children that are willing to survive this
      * destruction can detach from their parent.
@@ -370,7 +352,7 @@ pepper_view_destroy(pepper_object_t *v)
         plane_entry_set_plane(&view->plane_entries[i], NULL);
 
     PEPPER_LIST_FOR_EACH_SAFE(&view->children_list, l, next)
-        pepper_view_destroy((pepper_object_t *)(l->item));
+        pepper_view_destroy((pepper_view_t *)(l->item));
 
     PEPPER_ASSERT(pepper_list_empty(&view->children_list));
 
@@ -391,34 +373,21 @@ pepper_view_destroy(pepper_object_t *v)
     pepper_free(view);
 }
 
-PEPPER_API pepper_object_t *
-pepper_view_get_compositor(pepper_object_t *v)
+PEPPER_API pepper_compositor_t *
+pepper_view_get_compositor(pepper_view_t *view)
 {
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    return &((pepper_view_t *)v)->compositor->base;
+    return view->compositor;
 }
 
-PEPPER_API pepper_object_t *
-pepper_view_get_surface(pepper_object_t *v)
+PEPPER_API pepper_surface_t *
+pepper_view_get_surface(pepper_view_t *view)
 {
-    pepper_view_t *view = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-
-    if (view->surface)
-        return &((pepper_view_t *)view)->surface->base;
-
-    return NULL;
+    return view->surface;
 }
 
 PEPPER_API void
-pepper_view_set_parent(pepper_object_t *v, pepper_object_t *p)
+pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent)
 {
-    pepper_view_t *view = (pepper_view_t *)v;
-    pepper_view_t *parent = (pepper_view_t *)p;
-
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    CHECK_MAGIC_IF_NON_NULL(p, PEPPER_VIEW);
-
     if (view->parent == parent)
         return;
 
@@ -431,86 +400,59 @@ pepper_view_set_parent(pepper_object_t *v, pepper_object_t *p)
     view_geometry_dirty(view);
 }
 
-PEPPER_API pepper_object_t *
-pepper_view_get_parent(pepper_object_t *v)
+PEPPER_API pepper_view_t *
+pepper_view_get_parent(pepper_view_t *view)
 {
-    pepper_view_t *view = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    return &view->parent->base;
+    return view->parent;
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_stack_above(pepper_object_t *v, pepper_object_t *b, pepper_bool_t subtree)
+pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below, pepper_bool_t subtree)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    pepper_view_t *below = (pepper_view_t *)b;
-
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    CHECK_MAGIC_AND_NON_NULL(b, PEPPER_VIEW);
-
     view_insert(view, &below->compositor_link, subtree);
     return PEPPER_TRUE;
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_stack_below(pepper_object_t *v, pepper_object_t *a, pepper_bool_t subtree)
+pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above, pepper_bool_t subtree)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    pepper_view_t *above = (pepper_view_t *)a;
-
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    CHECK_MAGIC_AND_NON_NULL(a, PEPPER_VIEW);
-
     view_insert(view, above->compositor_link.prev, subtree);
     return PEPPER_TRUE;
 }
 
 PEPPER_API void
-pepper_view_stack_top(pepper_object_t *v, pepper_bool_t subtree)
+pepper_view_stack_top(pepper_view_t *view, pepper_bool_t subtree)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     view_insert(view, view->compositor->view_list.prev, subtree);
 }
 
 PEPPER_API void
-pepper_view_stack_bottom(pepper_object_t *v, pepper_bool_t subtree)
+pepper_view_stack_bottom(pepper_view_t *view, pepper_bool_t subtree)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     view_insert(view, &view->compositor->view_list, subtree);
 }
 
-PEPPER_API pepper_object_t *
-pepper_view_get_above(pepper_object_t *v)
+PEPPER_API pepper_view_t *
+pepper_view_get_above(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->compositor_link.next->item;
 }
 
-PEPPER_API pepper_object_t *
-pepper_view_get_below(pepper_object_t *v)
+PEPPER_API pepper_view_t *
+pepper_view_get_below(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->compositor_link.prev->item;
 }
 
 PEPPER_API const pepper_list_t *
-pepper_view_get_children_list(pepper_object_t *v)
+pepper_view_get_children_list(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return &view->children_list;
 }
 
 PEPPER_API void
-pepper_view_resize(pepper_object_t *v, int w, int h)
+pepper_view_resize(pepper_view_t *view, int w, int h)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-
     if (view->w == w && view->h == h)
         return;
 
@@ -520,11 +462,8 @@ pepper_view_resize(pepper_object_t *v, int w, int h)
 }
 
 PEPPER_API void
-pepper_view_get_size(pepper_object_t *v, int *w, int *h)
+pepper_view_get_size(pepper_view_t *view, int *w, int *h)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-
     if (w)
         *w = view->w;
 
@@ -533,11 +472,8 @@ pepper_view_get_size(pepper_object_t *v, int *w, int *h)
 }
 
 PEPPER_API void
-pepper_view_set_position(pepper_object_t *v, double x, double y)
+pepper_view_set_position(pepper_view_t *view, double x, double y)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-
     if (view->x == x && view->y == y)
         return;
 
@@ -547,11 +483,8 @@ pepper_view_set_position(pepper_object_t *v, double x, double y)
 }
 
 PEPPER_API void
-pepper_view_get_position(pepper_object_t *v, double *x, double *y)
+pepper_view_get_position(pepper_view_t *view, double *x, double *y)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-
     if (x)
         *x = view->x;
 
@@ -560,51 +493,38 @@ pepper_view_get_position(pepper_object_t *v, double *x, double *y)
 }
 
 PEPPER_API void
-pepper_view_set_transform(pepper_object_t *v, const pepper_mat4_t *matrix)
+pepper_view_set_transform(pepper_view_t *view, const pepper_mat4_t *matrix)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-
     pepper_mat4_copy(&view->transform, matrix);
     view_geometry_dirty(view);
 }
 
 PEPPER_API const pepper_mat4_t *
-pepper_view_get_transform(pepper_object_t *v)
+pepper_view_get_transform(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return &view->transform;
 }
 
 PEPPER_API void
-pepper_view_map(pepper_object_t *v)
+pepper_view_map(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     view_map(view);
 }
 
 PEPPER_API void
-pepper_view_unmap(pepper_object_t *v)
+pepper_view_unmap(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     view_unmap(view);
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_is_mapped(pepper_object_t *v)
+pepper_view_is_mapped(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->mapped;
 }
 
 PEPPER_API pepper_bool_t
-pepper_view_is_visible(pepper_object_t *v)
+pepper_view_is_visible(pepper_view_t *view)
 {
-    pepper_view_t *view  = (pepper_view_t *)v;
-    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     return view->visibility;
 }

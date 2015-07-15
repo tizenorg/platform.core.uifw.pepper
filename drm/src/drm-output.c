@@ -14,7 +14,6 @@
 
 #include "drm-internal.h"
 
-#include <pepper-output-backend.h>
 #include <pepper-pixman-renderer.h>
 #include <pepper-gl-renderer.h>
 
@@ -256,10 +255,7 @@ drm_output_assign_planes(void *o, const pepper_list_t *view_list)
     pepper_list_t  *l;
 
     PEPPER_LIST_FOR_EACH(view_list, l)
-    {
-        pepper_object_t *view = l->item;
-        pepper_view_assign_plane(view, output->base, output->primary_plane);
-    }
+        pepper_view_assign_plane((pepper_view_t *)l->item, output->base, output->primary_plane);
 }
 
 static void
@@ -271,7 +267,7 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
 
     PEPPER_LIST_FOR_EACH(plane_list, l)
     {
-        pepper_object_t *plane = l->item;
+        pepper_plane_t *plane = l->item;
 
         if (plane == output->primary_plane)
         {
@@ -315,7 +311,7 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
 }
 
 static void
-drm_output_attach_surface(void *o, pepper_object_t *surface, int *w, int *h)
+drm_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 {
     pepper_renderer_attach_surface(((drm_output_t *)o)->renderer, surface, w, h);
 }

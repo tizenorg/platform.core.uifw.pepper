@@ -3,6 +3,7 @@
 
 #include <pixman.h>
 
+#include <pepper-output-backend.h>
 #include <pepper-libinput.h>
 #include <pepper-render.h>
 #include <pepper-pixman-renderer.h>
@@ -16,7 +17,7 @@ typedef struct fbdev_output     fbdev_output_t;
 
 struct pepper_fbdev
 {
-    pepper_object_t            *compositor;
+    pepper_compositor_t        *compositor;
     pepper_libinput_t          *input;
 
     struct wl_list              output_list;
@@ -32,7 +33,7 @@ struct pepper_fbdev
 struct fbdev_output
 {
     pepper_fbdev_t             *fbdev;
-    pepper_object_t            *base;
+    pepper_output_t            *base;
 
     struct wl_list              link;
 
@@ -54,7 +55,7 @@ struct fbdev_output
     struct wl_signal            mode_change_signal;
     struct wl_signal            frame_signal;
 
-    pepper_object_t            *primary_plane;
+    pepper_plane_t             *primary_plane;
     /* TODO */
 };
 

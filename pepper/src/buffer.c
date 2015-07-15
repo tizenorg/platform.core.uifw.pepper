@@ -24,7 +24,7 @@ pepper_buffer_from_resource(struct wl_resource *resource)
     if (listener)
         return pepper_container_of(listener, pepper_buffer_t, resource_destroy_listener);
 
-    buffer = (pepper_buffer_t *)pepper_object_alloc(sizeof(pepper_buffer_t), PEPPER_BUFFER);
+    buffer = (pepper_buffer_t *)pepper_object_alloc(sizeof(pepper_buffer_t));
     if (!buffer)
         return NULL;
 
@@ -36,22 +36,16 @@ pepper_buffer_from_resource(struct wl_resource *resource)
 }
 
 PEPPER_API void
-pepper_buffer_reference(pepper_object_t *buf)
+pepper_buffer_reference(pepper_buffer_t *buffer)
 {
-    pepper_buffer_t *buffer = (pepper_buffer_t *)buf;
-
-    CHECK_MAGIC_AND_NON_NULL(buf, PEPPER_BUFFER);
     PEPPER_ASSERT(buffer->ref_count >= 0);
 
     buffer->ref_count++;
 }
 
 PEPPER_API void
-pepper_buffer_unreference(pepper_object_t *buf)
+pepper_buffer_unreference(pepper_buffer_t *buffer)
 {
-    pepper_buffer_t *buffer = (pepper_buffer_t *)buf;
-
-    CHECK_MAGIC_AND_NON_NULL(buf, PEPPER_BUFFER);
     PEPPER_ASSERT(buffer->ref_count > 0);
 
     if (--buffer->ref_count == 0)
@@ -59,9 +53,7 @@ pepper_buffer_unreference(pepper_object_t *buf)
 }
 
 PEPPER_API struct wl_resource *
-pepper_buffer_get_resource(pepper_object_t *buf)
+pepper_buffer_get_resource(pepper_buffer_t *buffer)
 {
-    pepper_buffer_t *buffer = (pepper_buffer_t *)buf;
-    CHECK_MAGIC_AND_NON_NULL(buf, PEPPER_BUFFER);
     return buffer->resource;
 }

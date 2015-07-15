@@ -51,7 +51,7 @@ shell_client_create(desktop_shell_t *shell, struct wl_client *client,
 }
 
 PEPPER_API pepper_bool_t
-pepper_desktop_shell_init(pepper_object_t *compositor)
+pepper_desktop_shell_init(pepper_compositor_t *compositor)
 {
     desktop_shell_t *shell;
 

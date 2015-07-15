@@ -108,7 +108,7 @@ wl_shell_get_shell_surface(struct wl_client *client, struct wl_resource *resourc
                            uint32_t id, struct wl_resource *surface_resource)
 {
     shell_client_t     *shell_client = wl_resource_get_user_data(resource);
-    pepper_object_t    *surface      = wl_resource_get_user_data(surface_resource);
+    pepper_surface_t   *surface      = wl_resource_get_user_data(surface_resource);
     shell_surface_t    *shsurf;
 
     /* Only one shell surface can be associated with a given surface.*/

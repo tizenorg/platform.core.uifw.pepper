@@ -88,7 +88,7 @@ handle_resource_destroy(struct wl_resource *resource)
 }
 
 shell_surface_t *
-shell_surface_create(shell_client_t *shell_client, pepper_object_t *surface,
+shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
                      struct wl_client *client, const struct wl_interface *interface,
                      const void *implementation, uint32_t version, uint32_t id)
 {
@@ -129,7 +129,7 @@ shell_surface_create(shell_client_t *shell_client, pepper_object_t *surface,
     wl_client_add_destroy_listener(client, &shsurf->client_destroy_listener);
 
     shsurf->surface_destroy_listener.notify = handle_surface_destroy;
-    pepper_object_add_destroy_listener(surface, &shsurf->surface_destroy_listener);
+    pepper_object_add_destroy_listener((pepper_object_t *)surface, &shsurf->surface_destroy_listener);
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
     shsurf_start_listen_commit_event(shsurf);
@@ -281,19 +281,19 @@ shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
 }
 
 shell_surface_t *
-get_shsurf_from_surface(pepper_object_t *surface, desktop_shell_t *shell)
+get_shsurf_from_surface(pepper_surface_t *surface, desktop_shell_t *shell)
 {
-    return pepper_object_get_user_data(surface, shell);
+    return pepper_object_get_user_data((pepper_object_t *)surface, shell);
 }
 
 void
-set_shsurf_to_surface(pepper_object_t *surface, shell_surface_t *shsurf)
+set_shsurf_to_surface(pepper_surface_t *surface, shell_surface_t *shsurf)
 {
-    pepper_object_set_user_data(surface, shsurf->shell, shsurf, NULL);
+    pepper_object_set_user_data((pepper_object_t *)surface, shsurf->shell, shsurf, NULL);
 }
 
 void
-shell_surface_set_parent(shell_surface_t *shsurf, pepper_object_t *parent)
+shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent)
 {
     shell_surface_t *parent_shsurf;
 

@@ -159,7 +159,7 @@ xdg_shell_get_xdg_surface(struct wl_client      *client,
                           struct wl_resource    *surface_resource)
 {
     shell_client_t     *shell_client = wl_resource_get_user_data(resource);
-    pepper_object_t    *surface      = wl_resource_get_user_data(surface_resource);
+    pepper_surface_t   *surface      = wl_resource_get_user_data(surface_resource);
     shell_surface_t    *shsurf;
 
     if (!pepper_surface_set_role(surface, "xdg_surface"))
@@ -202,7 +202,7 @@ xdg_shell_get_xdg_popup(struct wl_client    *client,
                         int32_t              y)
 {
     shell_client_t     *shell_client = wl_resource_get_user_data(resource);
-    pepper_object_t    *surface      = wl_resource_get_user_data(surface_resource);
+    pepper_surface_t   *surface      = wl_resource_get_user_data(surface_resource);
     shell_surface_t    *shsurf;
 
     if (!pepper_surface_set_role(surface, "xdg_popup"))

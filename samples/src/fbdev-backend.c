@@ -42,7 +42,7 @@ handle_sigint(int signal_number, void *data)
 int
 main(int argc, char **argv)
 {
-    pepper_object_t        *compositor = NULL;
+    pepper_compositor_t    *compositor = NULL;
     pepper_fbdev_t         *fbdev = NULL;
     struct wl_display      *display = NULL;
     struct wl_event_loop   *loop = NULL;

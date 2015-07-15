@@ -2,6 +2,7 @@
 #include "pepper-wayland.h"
 #include <wayland-client.h>
 #include <pixman.h>
+#include <pepper-output-backend.h>
 #include <pepper-render.h>
 #include <pepper-pixman-renderer.h>
 #include <pepper-gl-renderer.h>
@@ -22,7 +23,7 @@ typedef struct wayland_shm_buffer   wayland_shm_buffer_t;
 
 struct pepper_wayland
 {
-    pepper_object_t        *pepper;
+    pepper_compositor_t    *pepper;
 
     char                   *socket_name;
     struct wl_display      *display;
@@ -64,7 +65,7 @@ struct wayland_shm_buffer
 struct wayland_output
 {
     pepper_wayland_t           *conn;
-    pepper_object_t            *base;
+    pepper_output_t            *base;
 
     struct wl_signal            destroy_signal;
     struct wl_signal            mode_change_signal;
@@ -102,12 +103,12 @@ struct wayland_output
     } egl;
 #endif
 
-    pepper_object_t            *primary_plane;
+    pepper_plane_t             *primary_plane;
 };
 
 struct wayland_seat
 {
-    pepper_object_t            *base;
+    pepper_seat_t              *base;
 
     uint32_t                    id;
     uint32_t                    caps;

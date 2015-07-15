@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 PEPPER_API pepper_renderer_t *
-pepper_pixman_renderer_create(pepper_object_t *compositor);
+pepper_pixman_renderer_create(pepper_compositor_t *compositor);
 
 PEPPER_API pepper_render_target_t *
 pepper_pixman_renderer_create_target(pepper_format_t format, void *pixels,
