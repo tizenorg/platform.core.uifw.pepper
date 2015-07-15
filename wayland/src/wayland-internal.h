@@ -101,6 +101,8 @@ struct wayland_output
         struct wl_egl_window   *window;
     } egl;
 #endif
+
+    pepper_object_t            *primary_plane;
 };
 
 struct wayland_seat

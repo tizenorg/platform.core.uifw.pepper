@@ -76,7 +76,7 @@ x11_handle_event(int fd, uint32_t mask, void *data)
                 if (output)
                 {
                     /* TODO: Damage only newly exposed area. */
-                    pepper_output_add_damage_whole(output->base);
+                    pepper_output_add_damage_region(output->base, NULL);
                 }
             }
             break;

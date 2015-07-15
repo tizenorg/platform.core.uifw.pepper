@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libpepper.la
-include_HEADERS = pepper.h pepper-utils.h
+include_HEADERS = pepper.h pepper-utils.h pepper-output-backend.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pepper.pc
@@ -20,6 +20,7 @@ libpepper_la_SOURCES = pepper.h                 \
                        buffer.c                 \
                        data-device.c            \
                        view.c                   \
+                       plane.c                  \
                        utils-file.c             \
                        utils-map.c              \
                        utils-log.c              \

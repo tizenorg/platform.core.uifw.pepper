@@ -1,5 +1,6 @@
 #include "pepper-pixman-renderer.h"
 #include "pepper-render-internal.h"
+#include <pepper-output-backend.h>
 
 typedef struct pixman_renderer      pixman_renderer_t;
 typedef struct pixman_surface_state pixman_surface_state_t;
@@ -228,44 +229,26 @@ pixman_renderer_read_pixels(pepper_renderer_t *renderer,
 }
 
 static void
-repaint_view(pepper_renderer_t *renderer, pepper_object_t *output, pepper_view_state_t *view_state,
-             const pixman_region32_t *global_damage) /* global coordinate */
+repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_region32_t *damage)
 {
     pixman_render_target_t  *target = (pixman_render_target_t*)renderer->target;
     pixman_region32_t        repaint;
-    pepper_object_t         *view;
-    pepper_object_t         *view_surf;
-    pixman_surface_state_t  *ps;
-
-    view = view_state->view;
-    PEPPER_ASSERT(view);
-
-    view_surf = pepper_view_get_surface(view);
-    if (!view_surf)
-        return;
-
-    ps = get_surface_state(renderer, view_surf);
-    if (!ps || !ps->image)
-        return;
+    pixman_surface_state_t  *ps = get_surface_state(renderer, pepper_view_get_surface(node->view));
 
     pixman_region32_init(&repaint);
-    pixman_region32_intersect(&repaint, (pixman_region32_t*) view_state->visible,
-                              (pixman_region32_t*) global_damage);
+    pixman_region32_intersect(&repaint, &node->visible_region, damage);
 
     if (pixman_region32_not_empty(&repaint))
     {
-        int                         x, y, w, h;
-        const pepper_mat4_t        *transform = view_state->transform;
+        int x, y, w, h;
 
-        /* set clip on destination */
         pixman_image_set_clip_region32(target->image, &repaint);
 
         /* TODO: consider transform such as rotation */
-        x = transform->m[3];
-        y = transform->m[7];
-        pepper_view_get_size(view, &w, &h);
+        x = node->transform.m[3];
+        y = node->transform.m[7];
+        pepper_view_get_size(node->view, &w, &h);
 
-        /* composite */
         pixman_image_composite32(PIXMAN_OP_SRC, ps->image, NULL, target->image,
                                  0, 0, /* src_x, src_y */
                                  0, 0, /* mask_x, mask_y */
@@ -278,31 +261,15 @@ repaint_view(pepper_renderer_t *renderer, pepper_object_t *output, pepper_view_s
 
 static void
 pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *output,
-                               const pepper_list_t *view_list,
-                               const pixman_region32_t *output_damage)
+                               const pepper_list_t *render_list,
+                               pixman_region32_t *damage)
 {
-    pixman_render_target_t      *target = (pixman_render_target_t *)renderer->target;
-
-    if (target && pixman_region32_not_empty((pixman_region32_t*) output_damage))
+    if (pixman_region32_not_empty(damage))
     {
-        const pepper_output_geometry_t  *geometry;
-        pixman_region32_t                global_damage;
-        pepper_list_t                   *cur_list;
-        pepper_view_state_t             *view_state;
+        pepper_list_t *l;
 
-        /* translate damage to global coordinate */
-        geometry = pepper_output_get_geometry(output);
-        pixman_region32_init(&global_damage);
-        pixman_region32_copy(&global_damage, (pixman_region32_t*) output_damage);
-        pixman_region32_translate(&global_damage, geometry->x, geometry->y);
-
-        PEPPER_LIST_FOR_EACH_REVERSE(view_list, cur_list)
-        {
-            view_state = cur_list->item;
-            repaint_view(renderer, output, view_state, (const pixman_region32_t *) &global_damage);
-        }
-
-        pixman_region32_fini(&global_damage);
+        PEPPER_LIST_FOR_EACH_REVERSE(render_list, l)
+            repaint_view(renderer, (pepper_render_item_t *)l->item, damage);
     }
 }
 

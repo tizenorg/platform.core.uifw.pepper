@@ -54,6 +54,7 @@ struct fbdev_output
     struct wl_signal            mode_change_signal;
     struct wl_signal            frame_signal;
 
+    pepper_object_t            *primary_plane;
     /* TODO */
 };
 

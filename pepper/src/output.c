@@ -125,6 +125,67 @@ handle_mode_change(struct wl_listener *listener, void *data)
 }
 
 static void
+output_accumulate_damage(pepper_output_t *output)
+{
+    pepper_list_t      *l;
+    pixman_region32_t   clip;
+    pixman_region32_t   plane_clip;
+
+    pixman_region32_init(&clip);
+
+    PEPPER_LIST_FOR_EACH_REVERSE(&output->plane_list, l)
+    {
+        pepper_plane_t *plane = l->item;
+
+        pepper_plane_accumulate_damage(plane, &plane_clip);
+        pixman_region32_copy(&plane->clip_region, &clip);
+        pixman_region32_union(&clip, &clip, &plane_clip);
+    }
+
+    pixman_region32_fini(&clip);
+}
+
+static void
+output_repaint(pepper_output_t *output)
+{
+    pepper_list_t          *l;
+
+    PEPPER_LIST_FOR_EACH(&output->compositor->view_list, l)
+        pepper_view_update_geometry((pepper_view_t *)l->item);
+
+    pepper_list_init(&output->view_list);
+
+    /* Build a list of views in sorted z-order that are visible on the given output. */
+    PEPPER_LIST_FOR_EACH(&output->compositor->view_list, l)
+    {
+        pepper_view_t *view = l->item;
+
+        if (!view->visibility || !(view->output_overlap & (1 << output->id)))
+        {
+            /* Detach from the previously assigned plane. */
+            pepper_view_assign_plane(&view->base, &output->base, NULL);
+            continue;
+        }
+
+        pepper_list_insert(&output->view_list, &view->link);
+        view->link.item = view;
+    }
+
+    output->backend->assign_planes(output->data, &output->view_list);
+
+    PEPPER_LIST_FOR_EACH(&output->plane_list, l)
+        pepper_plane_update((pepper_plane_t *)l->item, &output->view_list);
+
+    output_accumulate_damage(output);
+    output->backend->repaint(output->data, &output->plane_list);
+
+    output->frame.pending = PEPPER_TRUE;
+    output->frame.scheduled = PEPPER_FALSE;
+
+    /* TODO: Send frame done to the callback objects of this output. */
+}
+
+static void
 handle_output_frame(struct wl_listener *listener, void *data)
 {
     pepper_output_t *output = pepper_container_of(listener, pepper_output_t, frame.frame_listener);
@@ -133,7 +194,7 @@ handle_output_frame(struct wl_listener *listener, void *data)
 
     /* TODO: Better repaint scheduling by putting a delay before repaint. */
     if (output->frame.scheduled)
-        pepper_output_repaint(output);
+        output_repaint(output);
 }
 
 static void
@@ -144,7 +205,7 @@ idle_repaint(void *data)
     if (!output->frame.pending)
     {
         /* We can repaint a frame immediately if it is not in pending state. */
-        pepper_output_repaint(output);
+        output_repaint(output);
     }
 }
 
@@ -162,21 +223,16 @@ pepper_output_schedule_repaint(pepper_output_t *output)
     output->frame.scheduled = PEPPER_TRUE;
 }
 
-void
-pepper_output_repaint(pepper_output_t *output)
+PEPPER_API void
+pepper_output_add_damage_region(pepper_object_t *out, pixman_region32_t *region)
 {
-    PEPPER_ASSERT(!output->frame.pending);
+    pepper_list_t   *l;
+    pepper_output_t *output = (pepper_output_t *)out;
 
-    pepper_compositor_update_views(output->compositor);
+    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
 
-    output->backend->repaint(output->data, &output->compositor->view_list, &output->damage_region);
-    output->frame.pending = PEPPER_TRUE;
-    output->frame.scheduled = PEPPER_FALSE;
-
-    /* TODO: Send frame done to the callback objects of this output. */
-
-    /* Output has been repainted, so damage region is totally consumed. */
-    pixman_region32_clear(&output->damage_region);
+    PEPPER_LIST_FOR_EACH(&output->plane_list, l)
+        pepper_plane_add_damage_region((pepper_plane_t *)l->item, region);
 }
 
 PEPPER_API pepper_object_t *
@@ -239,7 +295,8 @@ pepper_compositor_add_output(pepper_object_t *cmp,
     output->geometry.w = output->current_mode->w;
     output->geometry.h = output->current_mode->h;
 
-    wl_list_insert(&compositor->output_list, &output->link);
+    pepper_list_insert(&compositor->output_list, &output->link);
+    output->link.item = output;
 
     /* Install listeners. */
     output->data_destroy_listener.notify = handle_output_data_destroy;
@@ -251,7 +308,7 @@ pepper_compositor_add_output(pepper_object_t *cmp,
     output->frame.frame_listener.notify = handle_output_frame;
     backend->add_frame_listener(data, &output->frame.frame_listener);
 
-    pepper_output_add_damage_whole(&output->base);
+    pepper_list_init(&output->plane_list);
     return &output->base;
 }
 
@@ -271,7 +328,7 @@ pepper_output_destroy(pepper_object_t *out)
     pepper_object_fini(&output->base);
 
     output->compositor->output_id_allocator &= ~(1 << output->id);
-    wl_list_remove(&output->link);
+    pepper_list_remove(&output->link, NULL);
 
     if (output->backend && output->data)
         output->backend->destroy(output->data);
@@ -297,7 +354,7 @@ pepper_output_move(pepper_object_t *out, int32_t x, int32_t y)
         output->geometry.x = x;
         output->geometry.y = y;
 
-        pepper_output_add_damage_whole(out);
+        /* TODO: pepper_output_add_damage_whole(out); */
         output_send_geometry(output);
     }
 }
@@ -349,60 +406,9 @@ pepper_output_set_mode(pepper_object_t *out, const pepper_output_mode_t *mode)
 
     if (output->backend->set_mode(output->data, mode))
     {
-        pepper_output_add_damage_whole(out);
+        /* TODO: pepper_output_add_damage_whole(out); */
         return PEPPER_TRUE;
     }
 
     return PEPPER_FALSE;
-}
-
-PEPPER_API void
-pepper_output_add_damage(pepper_object_t *out,
-                         const pixman_region32_t *region, int x, int y)
-{
-    pepper_output_t    *output = (pepper_output_t *)out;
-    pixman_region32_t   damage;
-
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-
-    pixman_region32_init(&damage);
-    pixman_region32_copy(&damage, (pixman_region32_t *)region);
-    pixman_region32_translate(&damage, x, y);
-    pixman_region32_intersect_rect(&damage, &damage, 0, 0, output->geometry.w, output->geometry.h);
-
-    if (pixman_region32_not_empty(&damage))
-    {
-        pixman_region32_union(&output->damage_region, &output->damage_region, &damage);
-        pepper_output_schedule_repaint(output);
-    }
-
-    pixman_region32_fini(&damage);
-}
-
-PEPPER_API void
-pepper_output_add_damage_rect(pepper_object_t *out, int x, int y, unsigned int w, unsigned int h)
-{
-    pepper_output_t    *output = (pepper_output_t *)out;
-    pixman_region32_t   damage;
-
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-
-    pixman_region32_init_rect(&damage, x, y, w, h);
-    pixman_region32_intersect_rect(&damage, &damage, 0, 0, output->geometry.w, output->geometry.h);
-
-    if (pixman_region32_not_empty(&damage))
-        pixman_region32_union(&output->damage_region, &output->damage_region, &damage);
-
-    pixman_region32_fini(&damage);
-    pepper_output_schedule_repaint(output);
-}
-
-PEPPER_API void
-pepper_output_add_damage_whole(pepper_object_t *out)
-{
-    pepper_output_t *output = (pepper_output_t *)out;
-
-    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
-    pixman_region32_init_rect(&output->damage_region, 0, 0, output->geometry.w, output->geometry.h);
-    pepper_output_schedule_repaint(output);
 }

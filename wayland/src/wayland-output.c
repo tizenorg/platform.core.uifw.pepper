@@ -1,6 +1,7 @@
 #include "wayland-internal.h"
 #include <string.h>
 #include <stdlib.h>
+#include <pepper-output-backend.h>
 #include <pepper-pixman-renderer.h>
 
 #if ENABLE_WAYLAND_BACKEND_EGL && ENABLE_GL_RENDERER
@@ -164,23 +165,49 @@ static const struct wl_callback_listener frame_listener =
 };
 
 static void
-wayland_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
+wayland_output_assign_planes(void *o, const pepper_list_t *view_list)
+{
+    wayland_output_t   *output = (wayland_output_t *)o;
+    pepper_list_t      *l;
+
+    PEPPER_LIST_FOR_EACH(view_list, l)
+    {
+        pepper_object_t *view = l->item;
+        pepper_view_assign_plane(view, output->base, output->primary_plane);
+    }
+}
+
+static void
+wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     wayland_output_t   *output = o;
     struct wl_callback *callback;
 
-    if (output->render_pre)
-        output->render_pre(output);
+    pepper_list_t  *l;
 
-    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
+    PEPPER_LIST_FOR_EACH(plane_list, l)
+    {
+        pepper_object_t *plane = l->item;
 
-    if (output->render_post)
-        output->render_post(output);
+        if (plane == output->primary_plane)
+        {
+            const pepper_list_t *render_list = pepper_plane_get_render_list(plane);
+            pixman_region32_t   *damage = pepper_plane_get_damage_region(plane);
 
-    callback = wl_surface_frame(output->surface);
-    wl_callback_add_listener(callback, &frame_listener, output);
-    wl_surface_commit(output->surface);
-    wl_display_flush(output->conn->display);
+            if (output->render_pre)
+                output->render_pre(output);
+
+            pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+
+            if (output->render_post)
+                output->render_post(output);
+
+            callback = wl_surface_frame(output->surface);
+            wl_callback_add_listener(callback, &frame_listener, output);
+            wl_surface_commit(output->surface);
+            wl_display_flush(output->conn->display);
+        }
+    }
 }
 
 static void
@@ -210,6 +237,7 @@ static const pepper_output_backend_t wayland_output_backend =
     wayland_output_get_mode,
     wayland_output_set_mode,
 
+    wayland_output_assign_planes,
     wayland_output_repaint,
     wayland_output_attach_surface,
     wayland_output_add_frame_listener,
@@ -359,5 +387,6 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
         return NULL;
     }
 
+    output->primary_plane = pepper_output_add_plane(output->base, NULL);
     return output->base;
 }

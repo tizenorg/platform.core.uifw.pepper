@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <pepper-output-backend.h>
 #include <pepper-pixman-renderer.h>
 #include <pepper-gl-renderer.h>
 
@@ -166,16 +167,44 @@ fbdev_output_set_mode(void *o, const pepper_output_mode_t *mode)
 }
 
 static void
-fbdev_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
+fbdev_output_assign_planes(void *o, const pepper_list_t *view_list)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
-    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
+    pepper_list_t  *l;
 
-    /* FIXME: composite with damage? */
-    if (output->use_shadow)
-        pixman_image_composite32(PIXMAN_OP_SRC, output->shadow_image, NULL,
-                                 output->frame_buffer_image, 0, 0, 0, 0, 0, 0,
-                                 output->w, output->h);
+    PEPPER_LIST_FOR_EACH(view_list, l)
+    {
+        pepper_object_t *view = l->item;
+        pepper_view_assign_plane(view, output->base, output->primary_plane);
+    }
+}
+
+static void
+fbdev_output_repaint(void *o, const pepper_list_t *plane_list)
+{
+    fbdev_output_t *output = (fbdev_output_t *)o;
+    pepper_list_t  *l;
+
+    PEPPER_LIST_FOR_EACH(plane_list, l)
+    {
+        pepper_object_t *plane = l->item;
+
+        if (plane == output->primary_plane)
+        {
+            const pepper_list_t *render_list = pepper_plane_get_render_list(plane);
+            pixman_region32_t   *damage = pepper_plane_get_damage_region(plane);
+
+            pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+
+            /* FIXME: composite with damage? */
+            if (output->use_shadow)
+                pixman_image_composite32(PIXMAN_OP_SRC, output->shadow_image, NULL,
+                                         output->frame_buffer_image, 0, 0, 0, 0, 0, 0,
+                                         output->w, output->h);
+        }
+
+        /* TODO: No overlays on fbdev??? */
+    }
 }
 
 static void
@@ -205,6 +234,7 @@ struct pepper_output_backend fbdev_output_backend =
     fbdev_output_get_mode,
     fbdev_output_set_mode,
 
+    fbdev_output_assign_planes,
     fbdev_output_repaint,
     fbdev_output_attach_surface,
     fbdev_output_add_frame_listener,
@@ -346,7 +376,9 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
         goto error;
     }
 
+    output->primary_plane = pepper_output_add_plane(output->base, NULL);
     wl_list_insert(&fbdev->output_list, &output->link);
+
     return PEPPER_TRUE;
 
 error:

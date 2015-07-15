@@ -2,6 +2,15 @@
 #include <string.h>
 
 static void
+view_mark_plane_entries_damaged(pepper_view_t *view)
+{
+    int i;
+
+    for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
+        view->plane_entries[i].need_damage = PEPPER_TRUE;
+}
+
+static void
 view_handle_surface_destroy(struct wl_listener *listener, void *data)
 {
     pepper_view_t *view = pepper_container_of(listener, pepper_view_t, surface_destroy_listener);
@@ -18,7 +27,7 @@ view_geometry_dirty(pepper_view_t *view)
         return;
 
     view->geometry_dirty = PEPPER_TRUE;
-    pepper_compositor_add_damage(view->compositor, &view->visible_region);
+    pepper_view_damage_below(view);
 
     PEPPER_LIST_FOR_EACH(&view->children_list, l)
         view_geometry_dirty((pepper_view_t *)l->item);
@@ -121,134 +130,201 @@ transform_region_bounding(pixman_region32_t *region, const pepper_mat4_t *matrix
 }
 
 static void
-view_update_geometry(pepper_view_t *view)
+view_update_output_overlap(pepper_view_t *view)
 {
-    if (view->parent)
-        view_update_geometry(view->parent);
+    pepper_list_t *l;
 
-    if (view->geometry_dirty)
+    view->output_overlap = 0;
+
+    PEPPER_LIST_FOR_EACH(&view->compositor->output_list, l)
     {
-        view->matrix_to_parent.m[ 0] = view->transform.m[ 0] + view->transform.m[12] * view->x;
-        view->matrix_to_parent.m[ 1] = view->transform.m[ 1] + view->transform.m[13] * view->x;
-        view->matrix_to_parent.m[ 2] = view->transform.m[ 2] + view->transform.m[14] * view->x;
-        view->matrix_to_parent.m[ 3] = view->transform.m[ 3] + view->transform.m[15] * view->x;
-
-        view->matrix_to_parent.m[ 4] = view->transform.m[ 4] + view->transform.m[12] * view->y;
-        view->matrix_to_parent.m[ 5] = view->transform.m[ 5] + view->transform.m[13] * view->y;
-        view->matrix_to_parent.m[ 6] = view->transform.m[ 6] + view->transform.m[14] * view->y;
-        view->matrix_to_parent.m[ 7] = view->transform.m[ 7] + view->transform.m[15] * view->y;
-
-        view->matrix_to_parent.m[ 8] = view->transform.m[ 8];
-        view->matrix_to_parent.m[ 9] = view->transform.m[ 9];
-        view->matrix_to_parent.m[10] = view->transform.m[10];
-        view->matrix_to_parent.m[11] = view->transform.m[11];
-
-        view->matrix_to_parent.m[12] = view->transform.m[12];
-        view->matrix_to_parent.m[13] = view->transform.m[13];
-        view->matrix_to_parent.m[14] = view->transform.m[14];
-        view->matrix_to_parent.m[15] = view->transform.m[15];
-
-        if (view->parent)
+        pepper_output_t *output = l->item;
+        pixman_box32_t   box =
         {
-            pepper_mat4_multiply(&view->matrix_to_global,
-                                   &view->parent->matrix_to_global, &view->matrix_to_parent);
-        }
-        else
+            output->geometry.x,
+            output->geometry.y,
+            output->geometry.x + output->geometry.w,
+            output->geometry.y + output->geometry.h
+        };
+
+        if (pixman_region32_contains_rectangle(&view->bounding_region, &box) != PIXMAN_REGION_OUT)
+            view->output_overlap |= (1 << output->id);
+    }
+}
+
+static pepper_list_t *
+view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
+{
+    if (pos->next != &view->compositor_link)
+    {
+        pepper_list_remove(&view->compositor_link, NULL);
+        pepper_list_insert(pos, &view->compositor_link);
+
+        if (view->visibility)
         {
-            pepper_mat4_copy(&view->matrix_to_global, &view->matrix_to_parent);
+            pepper_view_damage_below(view);
+            view_mark_plane_entries_damaged(view);
         }
+    }
 
-        if (view->surface)
-        {
-            view->w = view->surface->w;
-            view->h = view->surface->h;
-        }
+    pos = &view->compositor_link;
 
-        /* Bounding region. */
-        pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
-        transform_region_bounding(&view->bounding_region, &view->matrix_to_global);
+    if (subtree)
+    {
+        pepper_list_t *l;
 
-        /* Opaque region. */
-        pixman_region32_init(&view->opaque_region);
+        PEPPER_LIST_FOR_EACH(&view->children_list, l)
+            pos = view_insert((pepper_view_t *)l->item, pos, subtree);
+    }
 
-        if (view->surface && pepper_mat4_is_translation(&view->matrix_to_global))
-        {
-            pixman_region32_copy(&view->opaque_region, &view->surface->opaque_region);
-            pixman_region32_translate(&view->opaque_region,
-                                      view->matrix_to_global.m[3], view->matrix_to_global.m[7]);
-        }
+    return pos;
+}
+static void
+view_handle_plane_destroy(struct wl_listener *listener, void *data);
 
-        view->geometry_dirty = PEPPER_FALSE;
+static void
+plane_entry_set_plane(pepper_plane_entry_t *entry, pepper_plane_t *plane)
+{
+    if (entry->plane == plane)
+        return;
+
+    if (entry->plane)
+    {
+        pepper_view_damage_below((pepper_view_t *)entry->base.view);
+        entry->plane = NULL;
+        wl_list_remove(&entry->plane_destroy_listener.link);
+        pixman_region32_fini(&entry->base.visible_region);
+    }
+
+    entry->plane = plane;
+
+    if (entry->plane)
+    {
+        entry->plane_destroy_listener.notify = view_handle_plane_destroy;
+        pepper_object_add_destroy_listener(&plane->base, &entry->plane_destroy_listener);
+        pixman_region32_init(&entry->base.visible_region);
+        entry->need_damage = PEPPER_TRUE;
+    }
+}
+
+static void
+view_handle_plane_destroy(struct wl_listener *listener, void *data)
+{
+    pepper_plane_entry_t *entry =
+        pepper_container_of(listener, pepper_plane_entry_t, plane_destroy_listener);
+
+    PEPPER_ASSERT(entry->plane != NULL);
+    plane_entry_set_plane(entry, NULL);
+}
+
+void
+pepper_view_assign_plane(pepper_object_t *v, pepper_object_t *out, pepper_object_t *pln)
+{
+    pepper_view_t          *view = (pepper_view_t *)v;
+    pepper_output_t        *output = (pepper_output_t *)out;
+    pepper_plane_t         *plane = (pepper_plane_t *)pln;
+
+    CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
+    CHECK_MAGIC_AND_NON_NULL(out, PEPPER_OUTPUT);
+    CHECK_MAGIC_IF_NON_NULL(pln, PEPPER_PLANE);
+
+    if (plane && plane->output != output)
+    {
+        PEPPER_ERROR("Output mismatch.\n");
+        return;
+    }
+
+    plane_entry_set_plane(&view->plane_entries[output->id], plane);
+}
+
+void
+pepper_view_damage_below(pepper_view_t *view)
+{
+    int i;
+
+    for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
+    {
+        pepper_plane_entry_t *entry = &view->plane_entries[i];
+
+        if (entry->plane)
+            pepper_plane_add_damage_region(entry->plane, &entry->base.visible_region);
     }
 }
 
 void
-pepper_compositor_update_views(pepper_compositor_t *compositor)
+pepper_view_update_geometry(pepper_view_t *view)
 {
-    pepper_list_t      *l;
-    pixman_region32_t   visible;
-    pixman_region32_t   opaque;
-    pixman_region32_t   surface_damage;
-    pixman_region32_t   damage;
+    if (!view->geometry_dirty)
+        return;
 
-    pixman_region32_init(&visible);
-    pixman_region32_init(&opaque);
-    pixman_region32_init(&surface_damage);
-    pixman_region32_init(&damage);
+    pepper_mat4_init_translate(&view->global_transform, view->x, view->y, 0.0);
+    pepper_mat4_multiply(&view->global_transform, &view->transform, &view->global_transform);
 
-    /* Update views from front to back. */
-    PEPPER_LIST_FOR_EACH_REVERSE(&compositor->view_list, l)
+    if (view->parent)
     {
-        pepper_view_t *view = (pepper_view_t *)(((pepper_view_state_t *)l->item)->view);
-
-        view_update_geometry(view);
-
-        /* Calculate updated visible region. */
-        pixman_region32_subtract(&visible, &view->bounding_region, &opaque);
-        pixman_region32_subtract(&damage, &visible, &view->visible_region);
-
-        /* Inflict damage for the visible region change. */
-        pepper_compositor_add_damage(view->compositor, &damage);
-
-        /* Update visible region of the view. */
-        pixman_region32_copy(&view->visible_region, &visible);
-
-        /* Inflict surface damage. */
-        if (pixman_region32_not_empty(&view->surface->damage_region))
-        {
-            pepper_surface_flush_damage(view->surface);
-
-            pixman_region32_copy(&surface_damage, &view->surface->damage_region);
-
-            /* Transform surface damage into global coordinate space. */
-            transform_region_bounding(&surface_damage, &view->matrix_to_global);
-
-            /* Clip surface damage with view's bounding region. */
-            pixman_region32_intersect(&surface_damage, &surface_damage, &view->bounding_region);
-
-            /* Subtract area covered by opaque views. */
-            pixman_region32_subtract(&surface_damage, &surface_damage, &opaque);
-
-            pepper_compositor_add_damage(view->compositor, &surface_damage);
-        }
-
-        /* Accumulate opaque region. */
-        pixman_region32_union(&opaque, &opaque, &view->opaque_region);
+        pepper_view_update_geometry(view->parent);
+        pepper_mat4_multiply(&view->global_transform,
+                             &view->parent->global_transform, &view->global_transform);
     }
 
-    pixman_region32_fini(&visible);
-    pixman_region32_fini(&opaque);
-    pixman_region32_fini(&surface_damage);
-    pixman_region32_fini(&damage);
+    if (view->surface)
+    {
+        view->w = view->surface->w;
+        view->h = view->surface->h;
+    }
+
+    /* Bounding region. */
+    pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
+    transform_region_bounding(&view->bounding_region, &view->global_transform);
+
+    /* Opaque region. */
+    pixman_region32_init(&view->opaque_region);
+
+    if (view->surface && pepper_mat4_is_translation(&view->global_transform))
+    {
+        pixman_region32_copy(&view->opaque_region, &view->surface->opaque_region);
+        pixman_region32_translate(&view->opaque_region,
+                                  view->global_transform.m[3], view->global_transform.m[7]);
+    }
+
+    view->geometry_dirty = PEPPER_FALSE;
+    view_update_output_overlap(view);
+    view_mark_plane_entries_damaged(view);
 }
+
+static void
+view_init(pepper_view_t *view, pepper_compositor_t *compositor)
+{
+    int i;
+
+    view->compositor = compositor;
+    view->compositor_link.item = view;
+    pepper_list_insert(compositor->view_list.prev, &view->compositor_link);
+
+    view->parent_link.item = view;
+    pepper_list_init(&view->children_list);
+
+    pepper_mat4_init_identity(&view->transform);
+    pepper_mat4_init_identity(&view->global_transform);
+    pixman_region32_init(&view->bounding_region);
+    pixman_region32_init(&view->opaque_region);
+
+    for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
+    {
+        view->plane_entries[i].base.view = &view->base;
+        view->plane_entries[i].link.item = &view->plane_entries[i];
+    }
+}
+
 PEPPER_API pepper_object_t *
 pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
 {
     pepper_view_t       *view;
     pepper_compositor_t *compositor = (pepper_compositor_t *)comp;
+    pepper_surface_t    *surface = (pepper_surface_t *)sfc;
 
     CHECK_MAGIC_AND_NON_NULL(comp, PEPPER_COMPOSITOR);
-    CHECK_MAGIC_IF_NON_NULL(sfc, PEPPER_SURFACE);
+    CHECK_MAGIC_AND_NON_NULL(sfc, PEPPER_SURFACE);
 
     view = (pepper_view_t *)pepper_object_alloc(sizeof(pepper_view_t), PEPPER_VIEW);
     if (!view)
@@ -257,50 +333,21 @@ pepper_compositor_add_surface_view(pepper_object_t *comp, pepper_object_t *sfc)
         return NULL;
     }
 
-    view->compositor = compositor;
+    view_init(view, compositor);
 
     view->x = 0.0;
     view->y = 0.0;
-
-    view->w = 0;
-    view->h = 0;
-
-    pepper_mat4_init_identity(&view->transform);
-    pepper_mat4_init_identity(&view->matrix_to_parent);
-    pepper_mat4_init_identity(&view->matrix_to_global);
-
-    view->parent_link.item = (void *)view;
-
-    pepper_list_init(&view->children_list);
-    pepper_list_insert(compositor->root_view_list.prev, &view->parent_link);
-    pepper_list_insert(compositor->view_list.prev, &view->z_link);
-
-    if (sfc)
-    {
-        pepper_surface_t *surface = (pepper_surface_t *)sfc;
-
-        view->surface = surface;
-        wl_list_insert(&surface->view_list, &view->surface_link);
-
-        view->surface_destroy_listener.notify = view_handle_surface_destroy;
-        pepper_object_add_destroy_listener(&surface->base, &view->surface_destroy_listener);
-
-        view->w = surface->w;
-        view->h = surface->h;
-    }
-
-    pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
-    pixman_region32_init(&view->opaque_region);
-    pixman_region32_init(&view->visible_region);
-
-    view->state.view        = &view->base;
-    view->state.transform   = &view->matrix_to_global;
-    view->state.bounding    = &view->bounding_region;
-    view->state.opaque      = &view->opaque_region;
-    view->state.visible     = &view->visible_region;
-    view->z_link.item = &view->state;
+    view->w = surface->w;
+    view->h = surface->h;
 
     view->geometry_dirty = PEPPER_TRUE;
+
+    view->surface = surface;
+    view->surface_link.item = view;
+    pepper_list_insert(&surface->view_list, &view->surface_link);
+    view->surface_destroy_listener.notify = view_handle_surface_destroy;
+    pepper_object_add_destroy_listener(&surface->base, &view->surface_destroy_listener);
+
     return &view->base;
 }
 
@@ -309,6 +356,7 @@ pepper_view_destroy(pepper_object_t *v)
 {
     pepper_view_t  *view = (pepper_view_t *)v;
     pepper_list_t  *l, *next;
+    int             i;
 
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
 
@@ -318,22 +366,26 @@ pepper_view_destroy(pepper_object_t *v)
     pepper_object_fini(&view->base);
     view_unmap(view);
 
+    for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
+        plane_entry_set_plane(&view->plane_entries[i], NULL);
+
     PEPPER_LIST_FOR_EACH_SAFE(&view->children_list, l, next)
         pepper_view_destroy((pepper_object_t *)(l->item));
 
     PEPPER_ASSERT(pepper_list_empty(&view->children_list));
 
-    pepper_list_remove(&view->parent_link, NULL);
-    pepper_list_remove(&view->z_link, NULL);
+    if (view->parent)
+        pepper_list_remove(&view->parent_link, NULL);
+
+    pepper_list_remove(&view->compositor_link, NULL);
 
     if (view->surface)
     {
-        wl_list_remove(&view->surface_link);
+        pepper_list_remove(&view->surface_link, NULL);
         wl_list_remove(&view->surface_destroy_listener.link);
     }
 
     pixman_region32_fini(&view->opaque_region);
-    pixman_region32_fini(&view->visible_region);
     pixman_region32_fini(&view->bounding_region);
 
     pepper_free(view);
@@ -375,8 +427,6 @@ pepper_view_set_parent(pepper_object_t *v, pepper_object_t *p)
 
     if (view->parent)
         pepper_list_insert(view->parent->children_list.prev, &view->parent_link);
-    else
-        pepper_list_insert(view->compositor->root_view_list.prev, &view->parent_link);
 
     view_geometry_dirty(view);
 }
@@ -389,31 +439,6 @@ pepper_view_get_parent(pepper_object_t *v)
     return &view->parent->base;
 }
 
-static pepper_list_t *
-view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
-{
-    if (pos->next != &view->z_link)
-    {
-        pepper_list_remove(&view->z_link, NULL);
-        pepper_list_insert(pos, &view->z_link);
-
-        if (view->visibility)
-            pepper_compositor_add_damage(view->compositor, &view->visible_region);
-    }
-
-    pos = &view->z_link;
-
-    if (subtree)
-    {
-        pepper_list_t *l;
-
-        PEPPER_LIST_FOR_EACH(&view->children_list, l)
-            pos = view_insert((pepper_view_t *)l->item, pos, subtree);
-    }
-
-    return pos;
-}
-
 PEPPER_API pepper_bool_t
 pepper_view_stack_above(pepper_object_t *v, pepper_object_t *b, pepper_bool_t subtree)
 {
@@ -423,7 +448,7 @@ pepper_view_stack_above(pepper_object_t *v, pepper_object_t *b, pepper_bool_t su
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     CHECK_MAGIC_AND_NON_NULL(b, PEPPER_VIEW);
 
-    view_insert(view, &below->z_link, subtree);
+    view_insert(view, &below->compositor_link, subtree);
     return PEPPER_TRUE;
 }
 
@@ -436,7 +461,7 @@ pepper_view_stack_below(pepper_object_t *v, pepper_object_t *a, pepper_bool_t su
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
     CHECK_MAGIC_AND_NON_NULL(a, PEPPER_VIEW);
 
-    view_insert(view, above->z_link.prev, subtree);
+    view_insert(view, above->compositor_link.prev, subtree);
     return PEPPER_TRUE;
 }
 
@@ -461,7 +486,7 @@ pepper_view_get_above(pepper_object_t *v)
 {
     pepper_view_t *view  = (pepper_view_t *)v;
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    return view->z_link.next->item;
+    return view->compositor_link.next->item;
 }
 
 PEPPER_API pepper_object_t *
@@ -469,7 +494,7 @@ pepper_view_get_below(pepper_object_t *v)
 {
     pepper_view_t *view  = (pepper_view_t *)v;
     CHECK_MAGIC_AND_NON_NULL(v, PEPPER_VIEW);
-    return view->z_link.prev->item;
+    return view->compositor_link.prev->item;
 }
 
 PEPPER_API const pepper_list_t *

@@ -1,5 +1,6 @@
 #include "x11-internal.h"
 
+#include <pepper-output-backend.h>
 #include "pepper-gl-renderer.h"
 #include "pepper-pixman-renderer.h"
 
@@ -444,45 +445,72 @@ x11_output_add_mode_change_listener(void *o, struct wl_listener *listener)
 }
 
 static void
-x11_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
+x11_output_assign_planes(void *o, const pepper_list_t *view_list)
+{
+    x11_output_t   *output = (x11_output_t *)o;
+    pepper_list_t  *l;
+
+    PEPPER_LIST_FOR_EACH(view_list, l)
+    {
+        pepper_object_t *view = l->item;
+        pepper_view_assign_plane(view, output->base, output->primary_plane);
+    }
+}
+
+static void
+x11_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     x11_output_t *output = o;
+    pepper_list_t  *l;
 
-    pepper_renderer_set_target(output->renderer, output->target);
-    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
-
-    if (output->renderer == output->connection->pixman_renderer)
+    PEPPER_LIST_FOR_EACH(plane_list, l)
     {
-        xcb_void_cookie_t    cookie;
-        xcb_generic_error_t *err;
+        pepper_object_t *plane = l->item;
 
-        cookie = xcb_shm_put_image_checked(output->connection->xcb_connection,
-                                           output->window,
-                                           output->gc,
-                                           output->w * output->scale,   /* total_width  */
-                                           output->h * output->scale,   /* total_height */
-                                           0,   /* src_x */
-                                           0,   /* src_y */
-                                           output->shm.w,  /* src_w */
-                                           output->shm.h, /* src_h */
-                                           0,   /* dst_x */
-                                           0,   /* dst_y */
-                                           output->depth,   /* depth */
-                                           XCB_IMAGE_FORMAT_Z_PIXMAP,   /* format */
-                                           0,   /* send_event */
-                                           output->shm.segment, /* xcb shm segment */
-                                           0);  /* offset */
-
-        err = xcb_request_check(output->connection->xcb_connection, cookie);
-        if (err)
+        if (plane == output->primary_plane)
         {
-            PEPPER_ERROR("Failed to put shm image, err: %d\n", err->error_code);
-            free(err);
-        }
-    }
+            const pepper_list_t *render_list = pepper_plane_get_render_list(plane);
+            pixman_region32_t   *damage = pepper_plane_get_damage_region(plane);
 
-    /* XXX: frame_done callback called after 10ms, referenced from weston */
-    wl_event_source_timer_update(output->frame_done_timer, 10);
+            pepper_renderer_set_target(output->renderer, output->target);
+            pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+
+            if (output->renderer == output->connection->pixman_renderer)
+            {
+                xcb_void_cookie_t    cookie;
+                xcb_generic_error_t *err;
+
+                cookie = xcb_shm_put_image_checked(output->connection->xcb_connection,
+                                                   output->window,
+                                                   output->gc,
+                                                   output->w * output->scale,   /* total_width  */
+                                                   output->h * output->scale,   /* total_height */
+                                                   0,   /* src_x */
+                                                   0,   /* src_y */
+                                                   output->shm.w,  /* src_w */
+                                                   output->shm.h, /* src_h */
+                                                   0,   /* dst_x */
+                                                   0,   /* dst_y */
+                                                   output->depth,   /* depth */
+                                                   XCB_IMAGE_FORMAT_Z_PIXMAP,   /* format */
+                                                   0,   /* send_event */
+                                                   output->shm.segment, /* xcb shm segment */
+                                                   0);  /* offset */
+
+                err = xcb_request_check(output->connection->xcb_connection, cookie);
+                if (err)
+                {
+                    PEPPER_ERROR("Failed to put shm image, err: %d\n", err->error_code);
+                    free(err);
+                }
+            }
+
+            /* XXX: frame_done callback called after 10ms, referenced from weston */
+            wl_event_source_timer_update(output->frame_done_timer, 10);
+        }
+
+        /* TODO: Cursor??? */
+    }
 }
 
 static void
@@ -513,6 +541,7 @@ static const pepper_output_backend_t x11_output_backend =
     x11_output_get_mode,
     x11_output_set_mode,
 
+    x11_output_assign_planes,
     x11_output_repaint,
     x11_output_attach_surface,
     x11_output_add_frame_listener,
@@ -647,8 +676,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
 
     /* Register output object */
     base = pepper_compositor_add_output(connection->compositor,
-                                        &x11_output_backend,
-                                        output);
+                                        &x11_output_backend, output);
     if (!base)
     {
         PEPPER_ERROR("pepper_compositor_add_output failed\n");
@@ -657,6 +685,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
     }
 
     output->base = base;
+    output->primary_plane = pepper_output_add_plane(output->base, NULL);
 
     /* X11 input seat create */
     if (!connection->use_xinput)

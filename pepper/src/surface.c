@@ -259,7 +259,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
     pixman_region32_init(&surface->input_region);
 
     wl_list_init(&surface->frame_callbacks);
-    wl_list_init(&surface->view_list);
+    pepper_list_init(&surface->view_list);
 
     return surface;
 }

@@ -14,6 +14,7 @@
 
 #include "drm-internal.h"
 
+#include <pepper-output-backend.h>
 #include <pepper-pixman-renderer.h>
 #include <pepper-gl-renderer.h>
 
@@ -249,36 +250,68 @@ update_back_buffer(drm_output_t *output)
 }
 
 static void
-drm_output_repaint(void *o, const pepper_list_t *view_list, const pixman_region32_t *damage)
+drm_output_assign_planes(void *o, const pepper_list_t *view_list)
+{
+    drm_output_t   *output = (drm_output_t *)o;
+    pepper_list_t  *l;
+
+    PEPPER_LIST_FOR_EACH(view_list, l)
+    {
+        pepper_object_t *view = l->item;
+        pepper_view_assign_plane(view, output->base, output->primary_plane);
+    }
+}
+
+static void
+drm_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     int             ret;
     drm_output_t   *output = (drm_output_t *)o;
+    pepper_list_t  *l;
 
-    pepper_renderer_set_target(output->renderer, output->render_target);
-    pepper_renderer_repaint_output(output->renderer, output->base, view_list, damage);
-
-    update_back_buffer(output);
-
-    if (!output->back_fb)
-        return;
-
-    if (!output->front_fb)
+    PEPPER_LIST_FOR_EACH(plane_list, l)
     {
-        ret = drmModeSetCrtc(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
-                             0, 0, &output->conn_id, 1, output->current_mode);
+        pepper_object_t *plane = l->item;
+
+        if (plane == output->primary_plane)
+        {
+            pixman_region32_t   *damage = pepper_plane_get_damage_region(plane);
+            const pepper_list_t *render_list = pepper_plane_get_render_list(plane);
+
+            pepper_renderer_set_target(output->renderer, output->render_target);
+            pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+
+            /* NULL means that whole damage region is updated.
+             * If only visible damage region is updated, pass that region to this function
+             * so that pepper core correctly manage remaining damage region. */
+            pepper_plane_subtract_damage_region(plane, NULL);
+
+            update_back_buffer(output);
+
+            if (!output->back_fb)
+                return;
+
+            if (!output->front_fb)
+            {
+                ret = drmModeSetCrtc(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
+                                     0, 0, &output->conn_id, 1, output->current_mode);
+            }
+
+            ret = drmModePageFlip(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
+                                  DRM_MODE_PAGE_FLIP_EVENT, output);
+            if (ret < 0)
+            {
+                PEPPER_ERROR("Failed to queue pageflip in %s\n", __FUNCTION__);
+                return;
+            }
+
+            output->page_flip_pending = PEPPER_TRUE;
+        }
+
+        /* TODO: Cursor plane. */
+
+        /* TODO: drmModeSetPlane(). */
     }
-
-    ret = drmModePageFlip(output->drm->drm_fd, output->crtc_id, output->back_fb->id,
-                          DRM_MODE_PAGE_FLIP_EVENT, output);
-    if (ret < 0)
-    {
-        PEPPER_ERROR("Failed to queue pageflip in %s\n", __FUNCTION__);
-        return;
-    }
-
-    output->page_flip_pending = PEPPER_TRUE;
-
-    /* TODO: set planes */
 }
 
 static void
@@ -308,6 +341,7 @@ struct pepper_output_backend drm_output_backend =
     drm_output_get_mode,
     drm_output_set_mode,
 
+    drm_output_assign_planes,
     drm_output_repaint,
     drm_output_attach_surface,
     drm_output_add_frame_listener,
@@ -782,6 +816,7 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
             continue;
         }
 
+        output->primary_plane = pepper_output_add_plane(output->base, NULL);
         drmModeFreeConnector(conn);
     }
 
@@ -895,6 +930,8 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
                 drmModeFreeConnector(conn);
                 continue;
             }
+
+            output->primary_plane = pepper_output_add_plane(output->base, NULL);
         }
 
         drmModeFreeConnector(conn);

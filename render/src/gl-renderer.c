@@ -488,7 +488,7 @@ gl_renderer_read_pixels(pepper_renderer_t *renderer,
 
 static void
 gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_object_t *out,
-                           const pepper_list_t *list, const pixman_region32_t *damage)
+                           const pepper_list_t *list, pixman_region32_t *damage)
 {
     gl_renderer_t  *gr = (gl_renderer_t *)renderer;
 

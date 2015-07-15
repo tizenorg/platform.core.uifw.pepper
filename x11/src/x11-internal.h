@@ -42,8 +42,8 @@ struct x11_shm_image
 
 struct x11_output
 {
-    pepper_object_t         *base;
-    pepper_x11_connection_t *connection;
+    pepper_object_t            *base;
+    pepper_x11_connection_t    *connection;
 
     int32_t                  x, y;
     uint32_t                 w, h;
@@ -69,6 +69,8 @@ struct x11_output
     struct wl_listener       conn_destroy_listener;
 
     struct wl_list           link;
+
+    pepper_object_t         *primary_plane;
 };
 
 struct x11_seat

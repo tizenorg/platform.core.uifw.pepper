@@ -85,6 +85,8 @@ struct drm_output
     pepper_bool_t               vblank_pending;
     pepper_bool_t               page_flip_pending;
 
+    pepper_object_t            *primary_plane;
+
     /* TODO */
 };
 

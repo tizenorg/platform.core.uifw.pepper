@@ -11,26 +11,11 @@ extern "C" {
 #endif
 
 typedef struct pepper_object            pepper_object_t;
-
 typedef struct pepper_output_geometry   pepper_output_geometry_t;
 typedef struct pepper_output_mode       pepper_output_mode_t;
-typedef struct pepper_output_backend    pepper_output_backend_t;
-
 typedef struct pepper_seat_backend      pepper_seat_backend_t;
-
 typedef struct pepper_input_event       pepper_input_event_t;
 typedef struct pepper_event_hook        pepper_event_hook_t;
-
-typedef struct pepper_view_state        pepper_view_state_t;
-
-struct pepper_view_state
-{
-    pepper_object_t            *view;
-    const pepper_mat4_t        *transform;
-    const pixman_region32_t    *bounding;
-    const pixman_region32_t    *opaque;
-    const pixman_region32_t    *visible;
-};
 
 struct pepper_output_geometry
 {
@@ -49,28 +34,6 @@ struct pepper_output_mode
     uint32_t    flags;
     int32_t     w, h;
     int32_t     refresh;
-};
-
-struct pepper_output_backend
-{
-    void            (*destroy)(void *output);
-
-    void            (*add_destroy_listener)(void *output, struct wl_listener *listener);
-    void            (*add_mode_change_listener)(void *output, struct wl_listener *listener);
-
-    int32_t         (*get_subpixel_order)(void *output);
-    const char *    (*get_maker_name)(void *output);
-    const char *    (*get_model_name)(void *output);
-
-    int             (*get_mode_count)(void *output);
-    void            (*get_mode)(void *output, int index, pepper_output_mode_t *mode);
-    pepper_bool_t   (*set_mode)(void *output, const pepper_output_mode_t *mode);
-
-    void            (*repaint)(void *output,
-                               const pepper_list_t *view_list, const pixman_region32_t *damage);
-    void            (*attach_surface)(void *output, pepper_object_t *surface, int *w, int *h);
-
-    void            (*add_frame_listener)(void *output, struct wl_listener *listener);
 };
 
 /* Generic object functions. */
@@ -93,11 +56,6 @@ pepper_compositor_destroy(pepper_object_t *compositor);
 
 PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_object_t *compositor);
-
-PEPPER_API pepper_object_t *
-pepper_compositor_add_output(pepper_object_t *compositor,
-                             const pepper_output_backend_t *backend,
-                             void *data);
 
 PEPPER_API pepper_object_t *
 pepper_compositor_add_seat(pepper_object_t *compositor,
@@ -127,16 +85,6 @@ pepper_output_get_mode(pepper_object_t *output, int index);
 
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_object_t *output, const pepper_output_mode_t *mode);
-
-PEPPER_API void
-pepper_output_add_damage(pepper_object_t *output,
-                         const pixman_region32_t *region, int x, int y);
-
-PEPPER_API void
-pepper_output_add_damage_rect(pepper_object_t *output, int x, int y, unsigned int w, unsigned int h);
-
-PEPPER_API void
-pepper_output_add_damage_whole(pepper_object_t *output);
 
 /* Input. */
 struct pepper_seat_backend

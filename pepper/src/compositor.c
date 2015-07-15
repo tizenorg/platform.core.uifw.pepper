@@ -75,10 +75,8 @@ pepper_compositor_create(const char *socket_name)
                      compositor_bind);
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
-    wl_list_init(&compositor->output_list);
+    pepper_list_init(&compositor->output_list);
     wl_list_init(&compositor->event_hook_chain);
-
-    pepper_list_init(&compositor->root_view_list);
     pepper_list_init(&compositor->view_list);
 
     /* Install default input event handler */
@@ -131,37 +129,4 @@ pepper_compositor_get_display(pepper_object_t *cmp)
     pepper_compositor_t *compositor = (pepper_compositor_t *)cmp;
     CHECK_MAGIC_AND_NON_NULL(cmp, PEPPER_COMPOSITOR);
     return compositor->display;
-}
-
-void
-pepper_compositor_add_damage(pepper_compositor_t *compositor, const pixman_region32_t *region)
-{
-    pepper_output_t    *output;
-
-    CHECK_MAGIC_AND_NON_NULL(&compositor->base, PEPPER_COMPOSITOR);
-
-    wl_list_for_each(output, &compositor->output_list, link)
-        pepper_output_add_damage(&output->base, region, output->geometry.x, output->geometry.y);
-}
-
-void
-pepper_compositor_add_damage_rect(pepper_compositor_t *compositor,
-                                  int x, int y, unsigned int w, unsigned int h)
-{
-    pixman_region32_t region;
-
-    pixman_region32_init_rect(&region, x, y, w, h);
-    pepper_compositor_add_damage(compositor, &region);
-    pixman_region32_fini(&region);
-}
-
-void
-pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
-{
-    pepper_output_t    *output;
-
-    CHECK_MAGIC_AND_NON_NULL(&compositor->base, PEPPER_COMPOSITOR);
-
-    wl_list_for_each(output, &compositor->output_list, link)
-        pepper_output_schedule_repaint(output);
 }
