@@ -1,5 +1,5 @@
 lib_LTLIBRARIES = libpepper.la
-include_HEADERS = pepper.h pepper-utils.h pepper-output-backend.h
+include_HEADERS = pepper.h pepper-utils.h pepper-output-backend.h pepper-input-backend.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pepper.pc

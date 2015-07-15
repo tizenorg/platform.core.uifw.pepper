@@ -5,7 +5,8 @@
 #include "pepper.h"
 #include <wayland-util.h>
 #include <pixman.h>
-#include <pepper-output-backend.h>
+#include "pepper-output-backend.h"
+#include "pepper-input-backend.h"
 
 #define PEPPER_MAX_OUTPUT_COUNT 32
 

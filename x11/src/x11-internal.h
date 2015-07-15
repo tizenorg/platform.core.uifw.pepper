@@ -10,6 +10,7 @@
 #include <string.h>
 #include <pixman.h>
 #include <pepper-output-backend.h>
+#include <pepper-input-backend.h>
 #include <pepper-render.h>
 #include <stdio.h>
 

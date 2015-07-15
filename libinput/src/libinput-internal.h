@@ -2,6 +2,7 @@
 #define LIBINPUT_INTERNAL_H
 
 #include "pepper-libinput.h"
+#include <pepper-input-backend.h>
 
 /* TODO: Error logging. */
 #define PEPPER_ERROR(...)

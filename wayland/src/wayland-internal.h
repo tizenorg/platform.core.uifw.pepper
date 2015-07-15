@@ -3,6 +3,7 @@
 #include <wayland-client.h>
 #include <pixman.h>
 #include <pepper-output-backend.h>
+#include <pepper-input-backend.h>
 #include <pepper-render.h>
 #include <pepper-pixman-renderer.h>
 #include <pepper-gl-renderer.h>

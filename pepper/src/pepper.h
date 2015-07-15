@@ -24,7 +24,6 @@ typedef struct pepper_touch             pepper_touch_t;
 
 typedef struct pepper_output_geometry   pepper_output_geometry_t;
 typedef struct pepper_output_mode       pepper_output_mode_t;
-typedef struct pepper_seat_backend      pepper_seat_backend_t;
 typedef struct pepper_input_event       pepper_input_event_t;
 typedef struct pepper_event_hook        pepper_event_hook_t;
 
@@ -68,11 +67,6 @@ pepper_compositor_destroy(pepper_compositor_t *compositor);
 PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_compositor_t *compositor);
 
-PEPPER_API pepper_seat_t *
-pepper_compositor_add_seat(pepper_compositor_t *compositor,
-                           const pepper_seat_backend_t *backend,
-                           void *data);
-
 PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output);
 
@@ -98,16 +92,6 @@ PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode);
 
 /* Input. */
-struct pepper_seat_backend
-{
-    void            (*destroy)(void *data);
-    void            (*add_capabilities_listener)(void *data, struct wl_listener *listener);
-    void            (*add_name_listener)(void *data, struct wl_listener *listener);
-
-    uint32_t        (*get_capabilities)(void *data);
-    const char *    (*get_name)(void *data);
-};
-
 enum pepper_input_event_type
 {
     PEPPER_INPUT_EVENT_POINTER_BUTTON,
