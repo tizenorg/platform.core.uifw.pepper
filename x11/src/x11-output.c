@@ -473,6 +473,7 @@ x11_output_repaint(void *o, const pepper_list_t *plane_list)
 
             pepper_renderer_set_target(output->renderer, output->target);
             pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+            pepper_plane_clear_damage_region(plane);
 
             if (output->renderer == output->connection->pixman_renderer)
             {

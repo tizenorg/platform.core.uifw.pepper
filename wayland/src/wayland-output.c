@@ -197,6 +197,7 @@ wayland_output_repaint(void *o, const pepper_list_t *plane_list)
                 output->render_pre(output);
 
             pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+            pepper_plane_clear_damage_region(plane);
 
             if (output->render_post)
                 output->render_post(output);

@@ -63,6 +63,9 @@ PEPPER_API void
 pepper_plane_subtract_damage_region(pepper_plane_t *plane, pixman_region32_t *damage);
 
 PEPPER_API void
+pepper_plane_clear_damage_region(pepper_plane_t *plane);
+
+PEPPER_API void
 pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_plane_t *plane);
 
 PEPPER_API void

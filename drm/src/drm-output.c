@@ -276,11 +276,7 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
 
             pepper_renderer_set_target(output->renderer, output->render_target);
             pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
-
-            /* NULL means that whole damage region is updated.
-             * If only visible damage region is updated, pass that region to this function
-             * so that pepper core correctly manage remaining damage region. */
-            pepper_plane_subtract_damage_region(plane, NULL);
+            pepper_plane_clear_damage_region(plane);
 
             update_back_buffer(output);
 

@@ -146,3 +146,9 @@ pepper_plane_subtract_damage_region(pepper_plane_t *plane, pixman_region32_t *da
 {
     pixman_region32_subtract(&plane->damage_region, &plane->damage_region, damage);
 }
+
+PEPPER_API void
+pepper_plane_clear_damage_region(pepper_plane_t *plane)
+{
+    pixman_region32_clear(&plane->damage_region);
+}
