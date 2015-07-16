@@ -29,8 +29,7 @@ AC_SUBST([PEPPER_FBDEV_REQUIRES], [$PEPPER_FBDEV_MODULES])
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper-fbdev.pc
+pepper-fbdev.pc
 ])
 
 AC_OUTPUT

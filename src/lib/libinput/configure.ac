@@ -28,8 +28,7 @@ AC_SUBST([PEPPER_LIBINPUT_REQUIRES], [$PEPPER_LIBINPUT_MODULES])
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper-libinput.pc
+pepper-libinput.pc
 ])
 
 AC_OUTPUT

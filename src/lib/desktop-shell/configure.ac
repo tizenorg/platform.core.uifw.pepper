@@ -35,8 +35,7 @@ fi
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper-desktop-shell.pc
+pepper-desktop-shell.pc
 ])
 
 AC_OUTPUT

@@ -27,8 +27,7 @@ AC_SUBST([PEPPER_WAYLAND_REQUIRES], [$PEPPER_WAYLAND_MODULES])
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper-wayland.pc
+pepper-wayland.pc
 ])
 
 AC_OUTPUT

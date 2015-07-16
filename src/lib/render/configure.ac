@@ -52,8 +52,7 @@ AC_SUBST([PEPPER_RENDER_REQUIRES], [$PEPPER_RENDER_MODULES])
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper-render.pc
+pepper-render.pc
 ])
 
 AC_OUTPUT

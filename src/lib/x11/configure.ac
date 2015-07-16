@@ -27,8 +27,7 @@ AC_SUBST([PEPPER_X11_REQUIRES], [$PEPPER_X11_MODULES])
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper-x11.pc
+pepper-x11.pc
 ])
 
 AC_OUTPUT

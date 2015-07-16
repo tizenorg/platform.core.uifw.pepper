@@ -29,8 +29,7 @@ AC_SUBST([PEPPER_DRM_REQUIRES], [$PEPPER_DRM_MODULES])
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper-drm.pc
+pepper-drm.pc
 ])
 
 AC_OUTPUT

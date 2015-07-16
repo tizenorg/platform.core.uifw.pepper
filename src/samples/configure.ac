@@ -49,7 +49,6 @@ PKG_CHECK_MODULES(SIMPLE_SHM, [wayland-client pepper])
 
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
 ])
 
 AC_OUTPUT

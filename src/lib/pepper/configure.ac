@@ -28,8 +28,7 @@ AC_SUBST([PEPPER_REQUIRES], [$PEPPER_MODULES])
 # Output files
 AC_CONFIG_FILES([
 Makefile
-src/Makefile
-src/pepper.pc
+pepper.pc
 ])
 
 AC_OUTPUT
