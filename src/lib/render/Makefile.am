@@ -8,7 +8,8 @@ include_HEADERS += pepper-render.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pepper-render.pc
 
-libpepper_render_la_CFLAGS = $(PEPPER_RENDER_CFLAGS) -Wall
+libpepper_render_la_CFLAGS = $(PEPPER_RENDER_CFLAGS) -Wall \
+                             -I$(top_srcdir)/src/lib/pepper
 libpepper_render_la_LIBADD = $(PEPPER_RENDER_LIBS)
 
 libpepper_render_la_SOURCES = pepper-render.h		\
