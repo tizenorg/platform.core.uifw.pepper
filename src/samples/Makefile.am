@@ -46,6 +46,7 @@ wayland_backend_LDADD = $(WAYLAND_SERVER_LIBS)                  \
 wayland_backend_SOURCES = wayland-backend.c
 
 # x11-backend
+if ENABLE_X11
 noinst_PROGRAMS += x11-backend
 
 x11_backend_CFLAGS = $(WAYLAND_SERVER_CFLAGS)                   \
@@ -59,6 +60,7 @@ x11_backend_LDADD = $(WAYLAND_SERVER_LIBS)                      \
                     $(PEPPER_DESKTOP_SHELL_INTERNAL_LIBS)
 
 x11_backend_SOURCES = x11-backend.c
+endif
 
 # simple-touch
 noinst_PROGRAMS += simple-touch

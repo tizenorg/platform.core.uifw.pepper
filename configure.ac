@@ -101,16 +101,24 @@ AC_SUBST(PEPPER_WAYLAND_INTERNAL_LIBS)
 AC_SUBST(PEPPER_WAYLAND_REQUIRES)
 
 # pepper-x11
-PEPPER_X11_REQUIRES="x11 xcb-shm x11-xcb"
-PKG_CHECK_MODULES(PEPPER_X11, [$PEPPER_X11_REQUIRES])
-PEPPER_X11_REQUIRES="$PEPPER_X11_REQUIRES pepper pepper-render"
+AC_ARG_ENABLE(x11,
+              AC_HELP_STRING([--disable-x11],
+                             [disable x11 backend module]),
+              enable_x11=$enableval,
+              enable_x11=yes)
+AM_CONDITIONAL(ENABLE_X11, test x$enable_x11 = xyes)
+if test x$enable_x11 = xyes; then
+    PEPPER_X11_REQUIRES="x11 xcb-shm x11-xcb"
+    PKG_CHECK_MODULES(PEPPER_X11, [$PEPPER_X11_REQUIRES])
+    PEPPER_X11_REQUIRES="$PEPPER_X11_REQUIRES pepper pepper-render"
 
-PEPPER_X11_INTERNAL_CFLAGS="$PEPPER_CFLAGS $PEPPER_RENDER_CFLAGS -I\$(top_srcdir)/src/lib/x11"
-PEPPER_X11_INTERNAL_LIBS="\$(top_srcdir)/src/lib/x11/libpepper-x11.la"
+    PEPPER_X11_INTERNAL_CFLAGS="$PEPPER_CFLAGS $PEPPER_RENDER_CFLAGS -I\$(top_srcdir)/src/lib/x11"
+    PEPPER_X11_INTERNAL_LIBS="\$(top_srcdir)/src/lib/x11/libpepper-x11.la"
 
-AC_SUBST(PEPPER_X11_INTERNAL_CFLAGS)
-AC_SUBST(PEPPER_X11_INTERNAL_LIBS)
-AC_SUBST(PEPPER_X11_REQUIRES)
+    AC_SUBST(PEPPER_X11_INTERNAL_CFLAGS)
+    AC_SUBST(PEPPER_X11_INTERNAL_LIBS)
+    AC_SUBST(PEPPER_X11_REQUIRES)
+fi
 
 # doctor
 DOCTOR_REQUIRES="wayland-server"
@@ -143,7 +151,6 @@ src/lib/libinput/Makefile
 src/lib/desktop-shell/Makefile
 src/lib/render/Makefile
 src/lib/drm/Makefile
-src/lib/x11/Makefile
 src/lib/fbdev/Makefile
 src/lib/wayland/Makefile
 src/bin/doctor/Makefile
@@ -154,8 +161,14 @@ pkgconfig/pepper-drm.pc
 pkgconfig/pepper-fbdev.pc
 pkgconfig/pepper-libinput.pc
 pkgconfig/pepper-wayland.pc
-pkgconfig/pepper-x11.pc
 pkgconfig/pepper-desktop-shell.pc
 ])
+
+if test x$enable_x11 = xyes; then
+    AC_CONFIG_FILES([
+        src/lib/x11/Makefile
+        pkgconfig/pepper-x11.pc
+    ])
+fi
 
 AC_OUTPUT

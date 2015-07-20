@@ -4,7 +4,11 @@ SUBDIRS = lib/pepper        \
           lib/render        \
           lib/drm           \
           lib/fbdev         \
-          lib/wayland       \
-          lib/x11           \
-          samples           \
-          bin/doctor
+          lib/wayland
+
+if ENABLE_X11
+SUBDIRS += lib/x11
+endif
+
+SUBDIRS += samples          \
+           bin/doctor
