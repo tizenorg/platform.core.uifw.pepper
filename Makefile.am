@@ -10,5 +10,7 @@ pkgconfig_DATA += pkgconfig/pepper-drm.pc
 pkgconfig_DATA += pkgconfig/pepper-fbdev.pc
 pkgconfig_DATA += pkgconfig/pepper-libinput.pc
 pkgconfig_DATA += pkgconfig/pepper-wayland.pc
+if ENABLE_X11
 pkgconfig_DATA += pkgconfig/pepper-x11.pc
+endif
 pkgconfig_DATA += pkgconfig/pepper-desktop-shell.pc
