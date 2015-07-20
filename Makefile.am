@@ -1,1 +1,14 @@
 SUBDIRS = src
+
+pkgconfigdir = $(libdir)/pkgconfig
+
+pkgconfig_DATA =
+
+pkgconfig_DATA += pkgconfig/pepper.pc
+pkgconfig_DATA += pkgconfig/pepper-render.pc
+pkgconfig_DATA += pkgconfig/pepper-drm.pc
+pkgconfig_DATA += pkgconfig/pepper-fbdev.pc
+pkgconfig_DATA += pkgconfig/pepper-libinput.pc
+pkgconfig_DATA += pkgconfig/pepper-wayland.pc
+pkgconfig_DATA += pkgconfig/pepper-x11.pc
+pkgconfig_DATA += pkgconfig/pepper-desktop-shell.pc

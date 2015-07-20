@@ -32,6 +32,7 @@
 #include <sys/mman.h>
 
 #include <wayland-client.h>
+#include <pepper-utils.h>
 
 #define ARRAY_LENGTH(a) (sizeof (a) / sizeof (a)[0])
 

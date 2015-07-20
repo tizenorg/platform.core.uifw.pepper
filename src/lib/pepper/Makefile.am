@@ -1,11 +1,8 @@
 lib_LTLIBRARIES = libpepper.la
 include_HEADERS = pepper.h pepper-utils.h pepper-output-backend.h pepper-input-backend.h
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = pepper.pc
-
-libpepper_la_CFLAGS = $(PEPPER_CFLAGS) -Wall
-libpepper_la_LIBADD = $(PEPPER_LIBS) -lm
+libpepper_la_CFLAGS = $(WAYLAND_SERVER_CFLAGS) $(PIXMAN_CFLAGS)
+libpepper_la_LIBADD = $(WAYLAND_SERVER_LIBS) $(PIXMAN_LIBS) -lm
 
 libpepper_la_SOURCES = pepper.h                 \
                        pepper-internal.h        \
