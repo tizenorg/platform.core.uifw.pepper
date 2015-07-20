@@ -45,11 +45,36 @@ wl_shell_surface_set_fullscreen(struct wl_client *client, struct wl_resource *re
 }
 
 static void
-wl_shell_surface_set_popup(struct wl_client *client, struct wl_resource *resource,
-                        struct wl_resource *seat, uint32_t serial, struct wl_resource *parent,
-                        int32_t x, int32_t y, uint32_t flags)
+wl_shell_surface_set_popup(struct wl_client     *client,
+                           struct wl_resource   *resource,
+                           struct wl_resource   *seat_res,
+                           uint32_t              serial,
+                           struct wl_resource   *parent_res,
+                           int32_t               x,
+                           int32_t               y,
+                           uint32_t              flags)
 {
-    /* TODO */
+    shell_surface_t     *shsurf = wl_resource_get_user_data(resource);
+    pepper_seat_t       *seat;
+    pepper_surface_t    *parent;
+
+    if (!seat_res)
+    {
+        wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
+                               "Invalid seat");
+        return ;
+    }
+    seat = wl_resource_get_user_data(seat_res);
+
+    if (!parent_res)
+    {
+        wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
+                               "Invalid parent surface");
+        return ;
+    }
+    parent = wl_resource_get_user_data(parent_res);
+
+    shell_surface_set_popup(shsurf, seat, parent, x, y, flags);
 }
 
 static void

@@ -205,10 +205,52 @@ xdg_shell_get_xdg_popup(struct wl_client    *client,
                         int32_t              x,
                         int32_t              y)
 {
-    shell_client_t     *shell_client = wl_resource_get_user_data(resource);
-    pepper_surface_t   *surface      = wl_resource_get_user_data(surface_resource);
-    shell_surface_t    *shsurf;
+    shell_client_t      *shell_client = wl_resource_get_user_data(resource);
+    pepper_surface_t    *surface;
+    pepper_seat_t       *seat;
+    pepper_surface_t    *parent;
+    shell_surface_t     *shsurf;
 
+    /* Check parameters */
+    if (!surface_resource)
+    {
+        wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT, "Invalid surface");
+        return ;
+    }
+    surface = wl_resource_get_user_data(surface_resource);
+
+    if (!seat_resource)
+    {
+        wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT, "Invalid seat");
+        return ;
+    }
+    seat = wl_resource_get_user_data(seat_resource);
+
+    if (!parent_resource)
+    {
+        wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT, "Invalid parent surface");
+        return ;
+    }
+    parent = wl_resource_get_user_data(parent_resource);
+
+    /**
+     * TODO: check parent state
+     *       1. Parent must have either a xdg_surface or xdg_popup role
+     *       2. If there is an existing popup when creating a new popup, the
+     *          parent must be the current topmost popup.
+     */
+    {
+        const char *role = pepper_surface_get_role(parent);
+
+        if (strcmp(role, "xdg_surface") && strcmp(role, "xdg_popup"))
+        {
+            wl_resource_post_error(resource, WL_DISPLAY_ERROR_INVALID_OBJECT,
+                                   "Invalid xdg_popup parent");
+            return ;
+        }
+    }
+
+    /* Set role */
     if (!pepper_surface_set_role(surface, "xdg_popup"))
     {
         wl_resource_post_error(resource, XDG_SHELL_ERROR_ROLE,
@@ -222,6 +264,8 @@ xdg_shell_get_xdg_popup(struct wl_client    *client,
                                   &xdg_popup_implementation, 1, id);
     if (!shsurf)
         wl_client_post_no_memory(client);
+
+    shell_surface_set_popup(shsurf, seat, parent, x, y, 0);
 }
 
 static void

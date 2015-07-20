@@ -238,6 +238,24 @@ shell_surface_set_toplevel(shell_surface_t *shsurf)
     shsurf->mapped = PEPPER_FALSE;
 }
 
+void
+shell_surface_set_popup(shell_surface_t     *shsurf,
+                        pepper_seat_t       *seat,
+                        pepper_surface_t    *parent,
+                        int32_t              x,
+                        int32_t              y,
+                        uint32_t             flags)
+{
+    shell_surface_set_parent(shsurf, parent);
+
+    shsurf->popup.x     = x;
+    shsurf->popup.y     = y;
+    shsurf->popup.flags = flags;
+    shsurf->popup.seat  = seat;
+
+    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_POPUP);
+}
+
 static void
 shell_surface_set_position(shell_surface_t *shsurf, int32_t x, int32_t y)
 {
@@ -261,6 +279,20 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
     shsurf->mapped = PEPPER_TRUE;
 }
 
+static void
+shell_surface_map_popup(shell_surface_t *shsurf)
+{
+    shell_surface_t *parent = get_shsurf_from_surface(shsurf->parent, shsurf->shell);
+
+    /* Set position as relatively */
+    pepper_view_set_parent(shsurf->view, parent->view);
+    shell_surface_set_position(shsurf, shsurf->popup.x, shsurf->popup.y);
+
+    pepper_view_map(shsurf->view);
+
+    /* TODO: add_popup_grab(), but how? */
+}
+
 void
 shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
 {
@@ -273,6 +305,9 @@ shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
         break;
     case SHELL_SURFACE_TYPE_TOPLEVEL:
         shsurf->shell_surface_map = shell_surface_map_toplevel;
+        break;
+    case SHELL_SURFACE_TYPE_POPUP:
+        shsurf->shell_surface_map = shell_surface_map_popup;
         break;
     default :
         /* XXX: Maybe some logs be needed */

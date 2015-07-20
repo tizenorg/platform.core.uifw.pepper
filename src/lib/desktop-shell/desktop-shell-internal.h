@@ -77,6 +77,13 @@ struct shell_surface
     /* Data structures per surface type */
     shell_surface_type_t     type;
 
+    struct
+    {
+        int32_t              x, y;
+        uint32_t             flags;
+        pepper_seat_t       *seat;
+    } popup;
+
     /* (*map) */
     void (*shell_surface_map)(shell_surface_t *shsurf);
     pepper_bool_t            mapped;
@@ -132,6 +139,10 @@ shell_surface_set_class(shell_surface_t *shsurf, const char* class_);
 
 void
 shell_surface_set_toplevel(shell_surface_t *shsurf);
+
+void
+shell_surface_set_popup(shell_surface_t *shsurf, pepper_seat_t *seat, pepper_surface_t *parent,
+                        int32_t x, int32_t y, uint32_t flags);
 
 pepper_bool_t
 init_wl_shell(desktop_shell_t *shell);
