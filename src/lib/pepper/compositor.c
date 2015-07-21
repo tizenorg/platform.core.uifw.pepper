@@ -46,6 +46,15 @@ compositor_bind(struct wl_client *client,
     wl_resource_set_implementation(resource, &compositor_interface, compositor, NULL);
 }
 
+void
+pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
+{
+    pepper_list_t   *l;
+
+    PEPPER_LIST_FOR_EACH(&compositor->output_list, l)
+        pepper_output_schedule_repaint((pepper_output_t *)l->item);
+}
+
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name)
 {

@@ -391,7 +391,7 @@ pepper_surface_commit(pepper_surface_t *surface)
     pixman_region32_copy(&surface->opaque_region, &surface->pending.opaque_region);
     pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
 
-    pepper_surface_schedule_repaint(surface);
+    pepper_surface_flush_damage(surface);
 }
 
 void
@@ -474,5 +474,13 @@ pepper_surface_get_input_region(pepper_surface_t *surface)
 void
 pepper_surface_flush_damage(pepper_surface_t *surface)
 {
-    /* TODO: */
+    pepper_list_t *l;
+
+    if (!pixman_region32_not_empty(&surface->damage_region))
+        return;
+
+    PEPPER_LIST_FOR_EACH(&surface->view_list, l)
+        pepper_view_surface_damage((pepper_view_t *)l->item);
+
+    /* TODO: Call backend.urface_flush(). */
 }

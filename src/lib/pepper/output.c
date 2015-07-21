@@ -151,7 +151,7 @@ output_repaint(pepper_output_t *output)
     pepper_list_t          *l;
 
     PEPPER_LIST_FOR_EACH(&output->compositor->view_list, l)
-        pepper_view_update_geometry((pepper_view_t *)l->item);
+        pepper_view_update((pepper_view_t *)l->item);
 
     pepper_list_init(&output->view_list);
 
@@ -160,7 +160,7 @@ output_repaint(pepper_output_t *output)
     {
         pepper_view_t *view = l->item;
 
-        if (!view->visibility || !(view->output_overlap & (1 << output->id)))
+        if (!view->visible || !(view->output_overlap & (1 << output->id)))
         {
             /* Detach from the previously assigned plane. */
             pepper_view_assign_plane(view, output, NULL);

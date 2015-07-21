@@ -51,7 +51,7 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
 
         if (entry->need_damage)
         {
-            pepper_view_damage_below(view);
+            pepper_plane_add_damage_region(plane, &entry->base.visible_region);
             entry->need_damage = PEPPER_FALSE;
         }
     }

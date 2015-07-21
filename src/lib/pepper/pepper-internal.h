@@ -42,6 +42,8 @@ struct pepper_compositor
     pepper_list_t       output_list;
     uint32_t            output_id_allocator;
     struct wl_list      event_hook_chain;
+
+    pepper_bool_t       update_scheduled;
     pepper_list_t       view_list;
 };
 
@@ -180,6 +182,9 @@ pepper_region_create(pepper_compositor_t *compositor,
 void
 pepper_region_destroy(pepper_region_t *region);
 
+void
+pepper_transform_pixman_region(pixman_region32_t *region, const pepper_mat4_t *matrix);
+
 /* Input */
 struct pepper_seat
 {
@@ -265,11 +270,20 @@ struct pepper_plane_entry
     pepper_list_t           link;
 };
 
+enum
+{
+    PEPPER_VIEW_VISIBILITY_DIRTY    = 0x00000001,
+    PEPPER_VIEW_GEOMETRY_DIRTY      = 0x00000002,
+    PEPPER_VIEW_Z_ORDER_DIRTY       = 0x00000004,
+};
+
 struct pepper_view
 {
     pepper_object_t         base;
     pepper_compositor_t    *compositor;
     pepper_list_t           compositor_link;
+
+    uint32_t                dirty;
 
     /* Hierarchy. */
     pepper_view_t          *parent;
@@ -277,7 +291,6 @@ struct pepper_view
     pepper_list_t           children_list;
 
     /* Geometry. */
-    pepper_bool_t           geometry_dirty;
     double                  x, y;
     int                     w, h;
     pepper_mat4_t           transform;
@@ -287,7 +300,8 @@ struct pepper_view
     pixman_region32_t       opaque_region;
 
     /* Visibility. */
-    pepper_bool_t           visibility;
+    pepper_bool_t           visible;
+    pepper_bool_t           prev_visible;
     pepper_bool_t           mapped;
 
     /* Content. */
@@ -304,10 +318,10 @@ struct pepper_view
 };
 
 void
-pepper_view_damage_below(pepper_view_t *view);
+pepper_view_update(pepper_view_t *view);
 
 void
-pepper_view_update_geometry(pepper_view_t *view);
+pepper_view_surface_damage(pepper_view_t *view);
 
 struct pepper_plane
 {
