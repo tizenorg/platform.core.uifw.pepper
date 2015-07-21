@@ -31,10 +31,17 @@ wl_shell_surface_set_toplevel(struct wl_client *client, struct wl_resource *reso
 }
 
 static void
-wl_shell_surface_set_transient(struct wl_client *client, struct wl_resource *resource,
-                            struct wl_resource *parent, int32_t x, int32_t y, uint32_t flags)
+wl_shell_surface_set_transient(struct wl_client     *client,
+                               struct wl_resource   *resource,
+                               struct wl_resource   *parent_resource,
+                               int32_t               x,
+                               int32_t               y,
+                               uint32_t              flags)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    pepper_surface_t *parent = wl_resource_get_user_data(parent_resource);
+
+    shell_surface_set_transient(shsurf, parent, x, y, flags);
 }
 
 static void

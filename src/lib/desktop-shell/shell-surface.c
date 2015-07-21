@@ -256,6 +256,22 @@ shell_surface_set_popup(shell_surface_t     *shsurf,
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_POPUP);
 }
 
+void
+shell_surface_set_transient(shell_surface_t     *shsurf,
+                            pepper_surface_t    *parent,
+                            int32_t              x,
+                            int32_t              y,
+                            uint32_t             flags)
+{
+    shell_surface_set_parent(shsurf, parent);
+
+    shsurf->transient.x = x;
+    shsurf->transient.y = y;
+    shsurf->transient.flags = flags;
+
+    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TRANSIENT);
+}
+
 static void
 shell_surface_set_position(shell_surface_t *shsurf, int32_t x, int32_t y)
 {
@@ -290,7 +306,31 @@ shell_surface_map_popup(shell_surface_t *shsurf)
 
     pepper_view_map(shsurf->view);
 
+    pepper_view_stack_top(shsurf->view, PEPPER_TRUE);
+
     /* TODO: add_popup_grab(), but how? */
+}
+
+static void
+shell_surface_map_transient(shell_surface_t *shsurf)
+{
+    shell_surface_t *parent = get_shsurf_from_surface(shsurf->parent, shsurf->shell);
+    double x, y;
+
+    pepper_view_get_position(parent->view, &x, &y);
+
+    pepper_view_set_parent(shsurf->view, parent->view);
+
+    shell_surface_set_position(shsurf,
+                               x + shsurf->transient.x,
+                               y + shsurf->transient.y);
+
+    if (shsurf->transient.flags != WL_SHELL_SURFACE_TRANSIENT_INACTIVE)
+    {
+        /* TODO: set keyboard focus to view */
+    }
+
+    pepper_view_map(shsurf->view);
 }
 
 void
@@ -308,6 +348,9 @@ shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
         break;
     case SHELL_SURFACE_TYPE_POPUP:
         shsurf->shell_surface_map = shell_surface_map_popup;
+        break;
+    case SHELL_SURFACE_TYPE_TRANSIENT:
+        shsurf->shell_surface_map = shell_surface_map_transient;
         break;
     default :
         /* XXX: Maybe some logs be needed */

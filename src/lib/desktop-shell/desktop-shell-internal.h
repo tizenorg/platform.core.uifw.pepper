@@ -84,6 +84,12 @@ struct shell_surface
         pepper_seat_t       *seat;
     } popup;
 
+    struct
+    {
+        int32_t              x, y;
+        uint32_t             flags;
+    } transient;
+
     /* (*map) */
     void (*shell_surface_map)(shell_surface_t *shsurf);
     pepper_bool_t            mapped;
@@ -143,6 +149,10 @@ shell_surface_set_toplevel(shell_surface_t *shsurf);
 void
 shell_surface_set_popup(shell_surface_t *shsurf, pepper_seat_t *seat, pepper_surface_t *parent,
                         int32_t x, int32_t y, uint32_t flags);
+
+void
+shell_surface_set_transient(shell_surface_t *shsurf, pepper_surface_t *parent,
+                            int32_t x, int32_t y, uint32_t flags);
 
 pepper_bool_t
 init_wl_shell(desktop_shell_t *shell);
