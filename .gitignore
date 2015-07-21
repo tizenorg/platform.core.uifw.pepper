@@ -25,8 +25,8 @@ ltmain.sh
 missing
 .deps/
 .libs/
-*/protocol/*.c
-*/protocol/*.h
+*/*/*/protocol/*.c
+*/*/*/protocol/*.h
 Makefile
 stamp-h1
 
