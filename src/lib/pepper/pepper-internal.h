@@ -19,12 +19,13 @@ typedef struct pepper_data_offer    pepper_data_offer_t;
 
 struct pepper_object
 {
-    struct wl_signal    destroy_signal;
-    pepper_map_t       *user_data_map;
+    pepper_object_type_t    type;
+    struct wl_signal        destroy_signal;
+    pepper_map_t           *user_data_map;
 };
 
 pepper_object_t *
-pepper_object_alloc(size_t size);
+pepper_object_alloc(pepper_object_type_t type, size_t size);
 
 void
 pepper_object_fini(pepper_object_t *object);

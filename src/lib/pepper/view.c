@@ -280,7 +280,8 @@ view_init(pepper_view_t *view, pepper_compositor_t *compositor)
 PEPPER_API pepper_view_t *
 pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surface_t *surface)
 {
-    pepper_view_t *view = (pepper_view_t *)pepper_object_alloc(sizeof(pepper_view_t));
+    pepper_view_t *view = (pepper_view_t *)pepper_object_alloc(PEPPER_OBJECT_VIEW,
+                                                               sizeof(pepper_view_t));
     if (!view)
     {
         PEPPER_ERROR("Failed to allocate a pepper object.\n");

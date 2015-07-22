@@ -59,7 +59,8 @@ PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name)
 {
     pepper_compositor_t *compositor =
-        (pepper_compositor_t *)pepper_object_alloc(sizeof(pepper_compositor_t));
+        (pepper_compositor_t *)pepper_object_alloc(PEPPER_OBJECT_COMPOSITOR,
+                                                   sizeof(pepper_compositor_t));
 
     if (!compositor)
         return NULL;

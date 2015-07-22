@@ -253,7 +253,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 
     id = id - 1;
 
-    output = (pepper_output_t *)pepper_object_alloc(sizeof(pepper_output_t));
+    output = (pepper_output_t *)pepper_object_alloc(PEPPER_OBJECT_OUTPUT, sizeof(pepper_output_t));
     if (!output)
         return NULL;
 

@@ -145,7 +145,8 @@ pointer_create(pepper_seat_t *seat)
 {
     pepper_pointer_t *pointer;
 
-    pointer = (pepper_pointer_t *)pepper_object_alloc(sizeof(pepper_pointer_t));
+    pointer = (pepper_pointer_t *)pepper_object_alloc(PEPPER_OBJECT_POINTER,
+                                                      sizeof(pepper_pointer_t));
     if (!pointer)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -174,7 +175,8 @@ keyboard_create(pepper_seat_t *seat)
 {
     pepper_keyboard_t   *keyboard;
 
-    keyboard = (pepper_keyboard_t *)pepper_object_alloc(sizeof(pepper_keyboard_t));
+    keyboard = (pepper_keyboard_t *)pepper_object_alloc(PEPPER_OBJECT_KEYBOARD,
+                                                        sizeof(pepper_keyboard_t));
     if (!keyboard)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -203,7 +205,7 @@ touch_create(pepper_seat_t *seat)
 {
     pepper_touch_t *touch;
 
-    touch = (pepper_touch_t *)pepper_object_alloc(sizeof(pepper_touch_t));
+    touch = (pepper_touch_t *)pepper_object_alloc(PEPPER_OBJECT_TOUCH, sizeof(pepper_touch_t));
     if (!touch)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -315,7 +317,8 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
                            const pepper_seat_backend_t *backend,
                            void *data)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)pepper_object_alloc(sizeof(pepper_seat_t));
+    pepper_seat_t *seat = (pepper_seat_t *)pepper_object_alloc(PEPPER_OBJECT_SEAT,
+                                                               sizeof(pepper_seat_t));
     if (!seat)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);

@@ -46,7 +46,24 @@ struct pepper_output_mode
     int32_t     refresh;
 };
 
+typedef enum pepper_object_type
+{
+    PEPPER_OBJECT_COMPOSITOR,
+    PEPPER_OBJECT_OUTPUT,
+    PEPPER_OBJECT_SURFACE,
+    PEPPER_OBJECT_BUFFER,
+    PEPPER_OBJECT_VIEW,
+    PEPPER_OBJECT_SEAT,
+    PEPPER_OBJECT_POINTER,
+    PEPPER_OBJECT_KEYBOARD,
+    PEPPER_OBJECT_TOUCH,
+    PEPPER_OBJECT_PLANE,
+} pepper_object_type_t;
+
 /* Generic object functions. */
+PEPPER_API pepper_object_type_t
+pepper_object_get_type(pepper_object_t *object);
+
 PEPPER_API void
 pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data,
                             pepper_free_func_t free_func);

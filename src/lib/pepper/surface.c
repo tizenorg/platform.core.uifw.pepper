@@ -223,7 +223,8 @@ pepper_surface_create(pepper_compositor_t *compositor,
                       struct wl_resource *resource,
                       uint32_t id)
 {
-    pepper_surface_t *surface = (pepper_surface_t *)pepper_object_alloc(sizeof(pepper_surface_t));
+    pepper_surface_t *surface = (pepper_surface_t *)pepper_object_alloc(PEPPER_OBJECT_SURFACE,
+                                                                        sizeof(pepper_surface_t));
     if (!surface)
     {
         PEPPER_ERROR("Surface memory allocation failed\n");

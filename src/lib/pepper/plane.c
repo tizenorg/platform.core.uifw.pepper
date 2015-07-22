@@ -68,7 +68,7 @@ pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above)
     if (above && above->output != output)
         return NULL;
 
-    plane = (pepper_plane_t *)pepper_object_alloc(sizeof(pepper_plane_t));
+    plane = (pepper_plane_t *)pepper_object_alloc(PEPPER_OBJECT_PLANE, sizeof(pepper_plane_t));
     if (!plane)
         return NULL;
 

@@ -25,12 +25,13 @@ user_data_key_compare(const void *key0, int key0_length, const void *key1, int k
 }
 
 pepper_object_t *
-pepper_object_alloc(size_t size)
+pepper_object_alloc(pepper_object_type_t type, size_t size)
 {
     pepper_object_t *object = pepper_calloc(1, size);
     if (!object)
         return NULL;
 
+    object->type = type;
     wl_signal_init(&object->destroy_signal);
     object->user_data_map = pepper_map_create(5, user_data_hash, user_data_key_length,
                                               user_data_key_compare);
@@ -49,6 +50,12 @@ pepper_object_fini(pepper_object_t *object)
 {
     wl_signal_emit(&object->destroy_signal, (void *)object);
     pepper_map_destroy(object->user_data_map);
+}
+
+PEPPER_API pepper_object_type_t
+pepper_object_get_type(pepper_object_t *object)
+{
+    return object->type;
 }
 
 PEPPER_API void

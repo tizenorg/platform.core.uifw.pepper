@@ -24,7 +24,7 @@ pepper_buffer_from_resource(struct wl_resource *resource)
     if (listener)
         return pepper_container_of(listener, pepper_buffer_t, resource_destroy_listener);
 
-    buffer = (pepper_buffer_t *)pepper_object_alloc(sizeof(pepper_buffer_t));
+    buffer = (pepper_buffer_t *)pepper_object_alloc(PEPPER_OBJECT_BUFFER, sizeof(pepper_buffer_t));
     if (!buffer)
         return NULL;
 
