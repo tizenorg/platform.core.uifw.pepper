@@ -25,56 +25,56 @@ Pepper is a lightweight and flexible library for developing various types of way
 
 ###### pepper-core
 %package -n pepper-core
-Summary: core module for pepper package
+Summary: Core module for pepper package
 
 %description -n pepper-core
 This package includes core module and developer files common to all packages.
 
 ###### libinput
 %package -n pepper-libinput
-Summary: libinput module for pepper package
+Summary: Libinput module for pepper package
 
 %description -n pepper-libinput
 This package includes libinput module files.
 
 ###### desktop-shell
 %package -n pepper-desktop-shell
-Summary: desktop-shell module for pepper package
+Summary: Desktop-shell module for pepper package
 
 %description -n pepper-desktop-shell
 This package includes desktop-shell module files.
 
 ###### render
 %package -n pepper-render
-Summary: render module for pepper package
+Summary: Render module for pepper package
 
 %description -n pepper-render
 This package includes render module files.
 
 ###### drm backend
 %package -n pepper-drm
-Summary: drm backend module for pepper package
+Summary: Drm backend module for pepper package
 
 %description -n pepper-drm
 This package includes drm backend module files.
 
 ###### fbdev backend
 %package -n pepper-fbdev
-Summary: fbdev backend module for pepper package
+Summary: Fbdev backend module for pepper package
 
 %description -n pepper-fbdev
 This package includes fbdev backend module files.
 
 ###### wayland backend
 %package -n pepper-wayland
-Summary: wayland backend module for pepper package
+Summary: Wayland backend module for pepper package
 
 %description -n pepper-wayland
 This package includes wayland backend module files.
 
 ###### doctor server
 %package -n pepper-doctor
-Summary: doctor server for pepper package
+Summary: Doctor server for pepper package
 
 %description -n pepper-doctor
 This package includes doctor server files.
@@ -92,25 +92,25 @@ make %{?_smp_mflags}
 %make_install
 
 %post -n pepper-core -p /sbin/ldconfig
-%postun -n pepper-core -p /sbin/ldconfiga
+%postun -n pepper-core -p /sbin/ldconfig
 
 %post -n pepper-libinput -p /sbin/ldconfig
-%postun -n pepper-libinput -p /sbin/ldconfiga
+%postun -n pepper-libinput -p /sbin/ldconfig
 
 %post -n pepper-desktop-shell -p /sbin/ldconfig
-%postun -n pepper-desktop-shell -p /sbin/ldconfiga
+%postun -n pepper-desktop-shell -p /sbin/ldconfig
 
 %post -n pepper-render -p /sbin/ldconfig
-%postun -n pepper-render -p /sbin/ldconfiga
+%postun -n pepper-render -p /sbin/ldconfig
 
 %post -n pepper-drm -p /sbin/ldconfig
-%postun -n pepper-drm -p /sbin/ldconfiga
+%postun -n pepper-drm -p /sbin/ldconfig
 
 %post -n pepper-fbdev -p /sbin/ldconfig
-%postun -n pepper-fbdev -p /sbin/ldconfiga
+%postun -n pepper-fbdev -p /sbin/ldconfig
 
 %post -n pepper-wayland -p /sbin/ldconfig
-%postun -n pepper-wayland -p /sbin/ldconfiga
+%postun -n pepper-wayland -p /sbin/ldconfig
 
 %files -n pepper-core
 %defattr(-,root,root,-)
