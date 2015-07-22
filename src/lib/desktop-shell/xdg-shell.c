@@ -5,7 +5,7 @@ static void
 xdg_surface_destroy(struct wl_client    *client,
                     struct wl_resource  *resource)
 {
-    /* TODO: */
+    wl_resource_destroy(resource);
 }
 
 static void
@@ -13,7 +13,18 @@ xdg_surface_set_parent(struct wl_client     *client,
                        struct wl_resource   *resource,
                        struct wl_resource   *parent_resource)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    shell_surface_t *parent = NULL;
+
+    if (parent_resource)
+    {
+        parent = wl_resource_get_user_data(resource);
+        shell_surface_set_parent(shsurf, parent->surface);
+    }
+    else
+    {
+        shell_surface_set_parent(shsurf, NULL);
+    }
 }
 
 static void
@@ -71,7 +82,9 @@ xdg_surface_ack_configure(struct wl_client      *client,
                           struct wl_resource    *resource,
                           uint32_t               serial)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_ack_configure(shsurf, serial);
 }
 
 static void
@@ -82,21 +95,27 @@ xdg_surface_set_window_geometry(struct wl_client    *client,
                                 int32_t              width,
                                 int32_t              height)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_set_geometry(shsurf, x, y, width, height);
 }
 
 static void
 xdg_surface_set_maximized(struct wl_client      *client,
                           struct wl_resource    *resource)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_set_maximized(shsurf, NULL);
 }
 
 static void
 xdg_surface_unset_maximized(struct wl_client    *client,
                             struct wl_resource  *resource)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_unset_maximized(shsurf);
 }
 
 static void
@@ -104,21 +123,31 @@ xdg_surface_set_fullscreen(struct wl_client     *client,
                            struct wl_resource   *resource,
                            struct wl_resource   *output_resource)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    pepper_output_t *output = NULL;
+
+    if (output_resource)
+        output = wl_resource_get_user_data(output_resource);
+
+    shell_surface_set_fullscreen(shsurf, output, 0, 0);
 }
 
 static void
 xdg_surface_unset_fullscreen(struct wl_client   *client,
                              struct wl_resource *resource)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_unset_fullscreen(shsurf);
 }
 
 static void
 xdg_surface_set_minimized(struct wl_client      *client,
                           struct wl_resource    *resource)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+
+    shell_surface_set_minimized(shsurf);
 }
 
 static const struct xdg_surface_interface xdg_surface_implementation =
@@ -144,6 +173,7 @@ xdg_shell_destroy(struct wl_client   *client,
                   struct wl_resource *resource)
 {
     /* TODO: */
+    wl_resource_destroy(resource);
 }
 
 static void
@@ -185,7 +215,6 @@ static void
 xdg_popup_destroy(struct wl_client *client,
                   struct wl_resource *resource)
 {
-    /* TODO: */
     wl_resource_destroy(resource);
 }
 

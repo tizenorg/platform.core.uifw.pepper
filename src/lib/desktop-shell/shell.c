@@ -1,6 +1,29 @@
 #include "desktop-shell-internal.h"
 #include <stdlib.h>
 
+void
+shell_get_output_workarea(desktop_shell_t       *shell,
+                          pepper_output_t       *output,
+                          pixman_rectangle32_t  *area)
+{
+    const pepper_output_geometry_t *geom;
+
+    /**
+     ** TODO: Get given output's workarea size and position in global coordinate
+     **      return (output_size - (panel_size + margin + caption + ... ));
+     **/
+
+    geom = pepper_output_get_geometry(output);
+
+    if (area)
+    {
+        area->x = geom->x;
+        area->y = geom->y;
+        area->width = geom->w;
+        area->height = geom->h;
+    }
+}
+
 static void
 handle_shell_client_destroy(struct wl_listener *listener, void *data)
 {
@@ -70,6 +93,14 @@ pepper_desktop_shell_init(pepper_compositor_t *compositor)
     if (!init_wl_shell(shell))
     {
         PEPPER_ERROR("wl_shell initialize failed\n");
+        free(shell);
+        return PEPPER_FALSE;
+    }
+
+    if (!init_xdg_shell(shell))
+    {
+        PEPPER_ERROR("wl_shell initialize failed\n");
+        fini_wl_shell(shell);
         free(shell);
         return PEPPER_FALSE;
     }

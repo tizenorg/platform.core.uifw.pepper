@@ -45,10 +45,19 @@ wl_shell_surface_set_transient(struct wl_client     *client,
 }
 
 static void
-wl_shell_surface_set_fullscreen(struct wl_client *client, struct wl_resource *resource,
-                             uint32_t method, uint32_t framerate, struct wl_resource *output)
+wl_shell_surface_set_fullscreen(struct wl_client    *client,
+                                struct wl_resource  *resource,
+                                uint32_t             method,
+                                uint32_t             framerate,
+                                struct wl_resource  *output_resource)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    pepper_output_t *output = NULL;
+
+    if (output_resource)
+        output = wl_resource_get_user_data(output_resource);
+
+    shell_surface_set_fullscreen(shsurf, output, method, framerate);
 }
 
 static void
@@ -88,7 +97,13 @@ static void
 wl_shell_surface_set_maximized(struct wl_client *client, struct wl_resource *resource,
                             struct wl_resource *output_res)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    pepper_output_t *output = NULL;
+
+    if (output_res)
+        output = wl_resource_get_user_data(output_res);
+
+    shell_surface_set_maximized(shsurf, output);
 }
 
 static void

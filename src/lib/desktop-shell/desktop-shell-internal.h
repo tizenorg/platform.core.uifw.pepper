@@ -51,7 +51,8 @@ typedef enum
     SHELL_SURFACE_TYPE_TRANSIENT,
     SHELL_SURFACE_TYPE_FULLSCREEN,
     SHELL_SURFACE_TYPE_POPUP,
-    SHELL_SURFACE_TYPE_MAXIMIZED
+    SHELL_SURFACE_TYPE_MAXIMIZED,
+    SHELL_SURFACE_TYPE_MINIMIZED,
 } shell_surface_type_t;
 
 struct shell_surface
@@ -75,7 +76,8 @@ struct shell_surface
     char                    *title, *class_;
 
     /* Data structures per surface type */
-    shell_surface_type_t     type;
+    shell_surface_type_t     type;          /* Current surface type */
+    shell_surface_type_t     next_type;     /* Requested surface type */
 
     struct
     {
@@ -90,12 +92,38 @@ struct shell_surface
         uint32_t             flags;
     } transient;
 
-    /* (*map) */
+    struct
+    {
+        pepper_output_t     *output;
+    } maximized;
+
+    struct
+    {
+        uint32_t             method;
+        uint32_t             framerate;
+        pepper_surface_t    *background_surface;
+        pepper_view_t       *background_view;
+        pepper_output_t     *output;
+    } fullscreen;
+
+    struct
+    {
+        int32_t              x, y, w, h;
+        uint32_t             framerate;
+    } saved;
+
+    /* map */
     void (*shell_surface_map)(shell_surface_t *shsurf);
+
+    /* (*map) was called */
     pepper_bool_t            mapped;
 
+    /* configure */
+    void (*send_configure)(shell_surface_t *shsurf, int32_t width, int32_t height);
+
+    pepper_bool_t           ack_configure;
+
     /* Listeners */
-    struct wl_listener      client_destroy_listener;
     struct wl_listener      surface_destroy_listener;
     struct wl_listener      surface_commit_listener;
 
