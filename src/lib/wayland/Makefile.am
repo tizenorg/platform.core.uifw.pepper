@@ -1,13 +1,10 @@
 lib_LTLIBRARIES = libpepper-wayland.la
-include_HEADERS = pepper-wayland.h
 
-libpepper_wayland_la_CFLAGS = $(PEPPER_WAYLAND_CFLAGS)          \
-                              $(PEPPER_INTERNAL_CFLAGS)         \
-                              $(PEPPER_RENDER_INTERNAL_CFLAGS)
+libpepper_wayland_includedir=$(includedir)/pepper
+libpepper_wayland_include_HEADERS = pepper-wayland.h
 
-libpepper_wayland_la_LIBADD = $(PEPPER_WAYLAND_LIBS)            \
-                              $(PEPPER_INTERNAL_LIBS)           \
-                              $(PEPPER_RENDER_INTERNAL_LIBS)
+libpepper_wayland_la_CFLAGS = $(PEPPER_WAYLAND_CFLAGS)
+libpepper_wayland_la_LIBADD = $(PEPPER_WAYLAND_LIBS)
 
 libpepper_wayland_la_SOURCES =  pepper-wayland.h        \
                                 wayland-internal.h      \

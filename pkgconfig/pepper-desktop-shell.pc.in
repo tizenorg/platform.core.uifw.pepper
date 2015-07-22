@@ -10,5 +10,5 @@ Description: Pepper desktop shell library header and library files
 Version: @PEPPER_DESKTOP_SHELL_VERSION@
 
 Requires.private: @PEPPER_DESKTOP_SHELL_REQUIRES@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/pepper
 Libs: -L${libdir} -lpepper-desktop-shell

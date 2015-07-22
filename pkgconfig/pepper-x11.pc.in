@@ -10,5 +10,5 @@ Description: Pepper x11 backend library header and library files
 Version: @PEPPER_X11_VERSION@
 
 Requires.private: @PEPPER_X11_REQUIRES@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/pepper
 Libs: -L${libdir} -lpepper-x11

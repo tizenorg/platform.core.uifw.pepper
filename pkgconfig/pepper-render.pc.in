@@ -10,5 +10,5 @@ Description: Pepper rendering library header and library files
 Version: @PEPPER_RENDER_VERSION@
 
 Requires.private: @PEPPER_RENDER_REQUIRES@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/pepper
 Libs: -L${libdir} -lpepper-render

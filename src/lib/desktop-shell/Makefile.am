@@ -1,10 +1,12 @@
 lib_LTLIBRARIES = libpepper-desktop-shell.la
-include_HEADERS = pepper-desktop-shell.h
+
+libpepper_desktop_includedir=$(includedir)/pepper
+libpepper_desktop_include_HEADERS = pepper-desktop-shell.h
 
 libpepper_desktop_shell_la_CFLAGS = -I$(srcdir)/protocol/           \
-                                    $(PEPPER_INTERNAL_CFLAGS)
+                                    $(PEPPER_DESKTOP_SHELL_CFLAGS)
 
-libpepper_desktop_shell_la_LIBADD = $(PEPPER_INTERNAL_LIBS)
+libpepper_desktop_shell_la_LIBADD = $(PEPPER_DESKTOP_SHELL_LIBS)
 
 libpepper_desktop_shell_la_SOURCES = desktop-shell-internal.h                   \
                                      shell.c                                    \

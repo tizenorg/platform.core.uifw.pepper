@@ -10,5 +10,5 @@ Description: Pepper wayland backend library header and library files
 Version: @PEPPER_WAYLAND_VERSION@
 
 Requires.private: @PEPPER_WAYLAND_REQUIRES@
-Cflags: -I${includedir}
+Cflags: -I${includedir}/pepper
 Libs: -L${libdir} -lpepper-wayland

@@ -1,5 +1,6 @@
 lib_LTLIBRARIES = libpepper.la
-include_HEADERS = pepper.h pepper-utils.h pepper-output-backend.h pepper-input-backend.h
+libpepper_includedir=$(includedir)/pepper
+libpepper_include_HEADERS = pepper.h pepper-utils.h pepper-output-backend.h pepper-input-backend.h
 
 libpepper_la_CFLAGS = $(PEPPER_CFLAGS)
 libpepper_la_LIBADD = $(PEPPER_LIBS) -lm
