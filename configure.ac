@@ -144,7 +144,7 @@ if test x$enable_x11 = xyes; then
 fi
 
 # doctor
-DOCTOR_REQUIRES="wayland-server"
+DOCTOR_REQUIRES="wayland-server pixman-1"
 PKG_CHECK_MODULES(DOCTOR, [$DOCTOR_REQUIRES])
 DOCTOR_REQUIRES="$DOCTOR_REQUIRES pepper pepper-drm pepper-desktop-shell"
 
