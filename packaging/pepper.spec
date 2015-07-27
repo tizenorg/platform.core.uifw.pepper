@@ -114,47 +114,47 @@ make %{?_smp_mflags}
 
 %files -n pepper-core
 %defattr(-,root,root,-)
-%{_includedir}/pepper.h
-%{_includedir}/pepper-utils.h
-%{_includedir}/pepper-output-backend.h
-%{_includedir}/pepper-input-backend.h
+%{_includedir}/pepper/pepper.h
+%{_includedir}/pepper/pepper-utils.h
+%{_includedir}/pepper/pepper-output-backend.h
+%{_includedir}/pepper/pepper-input-backend.h
 %{_libdir}/libpepper.so*
 %{_libdir}/pkgconfig/pepper.pc
 
 %files -n pepper-libinput
 %defattr(-,root,root,-)
-%{_includedir}/pepper-libinput.h
+%{_includedir}/pepper/pepper-libinput.h
 %{_libdir}/libpepper-libinput.so*
 %{_libdir}/pkgconfig/pepper-libinput.pc
 
 %files -n pepper-desktop-shell
 %defattr(-,root,root,-)
-%{_includedir}/pepper-desktop-shell.h
+%{_includedir}/pepper/pepper-desktop-shell.h
 %{_libdir}/libpepper-desktop-shell.so*
 %{_libdir}/pkgconfig/pepper-desktop-shell.pc
 
 %files -n pepper-render
 %defattr(-,root,root,-)
-%{_includedir}/pepper-render.h
-%{_includedir}/pepper-*-renderer.h
+%{_includedir}/pepper/pepper-render.h
+%{_includedir}/pepper/pepper-*-renderer.h
 %{_libdir}/libpepper-render.so*
 %{_libdir}/pkgconfig/pepper-render.pc
 
 %files -n pepper-drm
 %defattr(-,root,root,-)
-%{_includedir}/pepper-drm.h
+%{_includedir}/pepper/pepper-drm.h
 %{_libdir}/libpepper-drm.so*
 %{_libdir}/pkgconfig/pepper-drm.pc
 
 %files -n pepper-fbdev
 %defattr(-,root,root,-)
-%{_includedir}/pepper-fbdev.h
+%{_includedir}/pepper/pepper-fbdev.h
 %{_libdir}/libpepper-fbdev.so*
 %{_libdir}/pkgconfig/pepper-fbdev.pc
 
 %files -n pepper-wayland
 %defattr(-,root,root,-)
-%{_includedir}/pepper-wayland.h
+%{_includedir}/pepper/pepper-wayland.h
 %{_libdir}/libpepper-wayland.so*
 %{_libdir}/pkgconfig/pepper-wayland.pc
 
