@@ -109,25 +109,29 @@ struct wayland_output
 
 struct wayland_seat
 {
-    pepper_seat_t              *base;
-
-    uint32_t                    id;
-    uint32_t                    caps;
-    char                       *name;
-
+    pepper_wayland_t           *conn;
     struct wl_seat             *seat;
-    struct wl_pointer          *pointer;
-    struct wl_keyboard         *keyboard;
-    struct wl_touch            *touch;
+    uint32_t                    id;
 
-    wl_fixed_t                  pointer_x_last;
-    wl_fixed_t                  pointer_y_last;
-    wl_fixed_t                  touch_x_last;   /* FIXME */
-    wl_fixed_t                  touch_y_last;   /* FIXME */
+    struct
+    {
+        pepper_pointer_device_t    *base;
+        struct wl_pointer          *wl_pointer;
+    } pointer;
+
+    struct
+    {
+        pepper_keyboard_device_t   *base;
+        struct wl_keyboard         *wl_keyboard;
+    } keyboard;
+
+    struct
+    {
+        pepper_touch_device_t      *base;
+        struct wl_touch            *wl_touch;
+    } touch;
 
     struct wl_list              link;
-    struct wl_signal            capabilities_signal;
-    struct wl_signal            name_signal;
 };
 
 void

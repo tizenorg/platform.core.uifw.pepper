@@ -7,22 +7,23 @@
 extern "C" {
 #endif
 
-typedef struct pepper_seat_backend      pepper_seat_backend_t;
+PEPPER_API pepper_pointer_device_t *
+pepper_pointer_device_create(pepper_compositor_t *compositor);
 
-struct pepper_seat_backend
-{
-    void            (*destroy)(void *data);
-    void            (*add_capabilities_listener)(void *data, struct wl_listener *listener);
-    void            (*add_name_listener)(void *data, struct wl_listener *listener);
+PEPPER_API void
+pepper_pointer_device_destroy(pepper_pointer_device_t *device);
 
-    uint32_t        (*get_capabilities)(void *data);
-    const char *    (*get_name)(void *data);
-};
+PEPPER_API pepper_keyboard_device_t *
+pepper_keyboard_device_create(pepper_compositor_t *compositor);
 
-PEPPER_API pepper_seat_t *
-pepper_compositor_add_seat(pepper_compositor_t *compositor,
-                           const pepper_seat_backend_t *backend,
-                           void *data);
+PEPPER_API void
+pepper_keyboard_device_destroy(pepper_keyboard_device_t *device);
+
+PEPPER_API pepper_touch_device_t *
+pepper_touch_device_create(pepper_compositor_t *compositor);
+
+PEPPER_API void
+pepper_touch_device_destroy(pepper_touch_device_t *device);
 
 #ifdef __cplusplus
 }

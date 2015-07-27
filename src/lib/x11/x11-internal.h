@@ -77,22 +77,17 @@ struct x11_output
 
 struct x11_seat
 {
-    pepper_seat_t           *base;
+    pepper_pointer_device_t        *pointer;
+    pepper_keyboard_device_t       *keyboard;
+    pepper_touch_device_t          *touch;
 
-    uint32_t                 id;
-    uint32_t                 caps;
-    char                    *name;
+    uint32_t                        id;
+    uint32_t                        caps;
+    char                           *name;
 
-    wl_fixed_t               pointer_x_last;
-    wl_fixed_t               pointer_y_last;
-    wl_fixed_t               touch_x_last;   /* FIXME */
-    wl_fixed_t               touch_y_last;   /* FIXME */
+    struct wl_list                  link;
 
-    struct wl_list           link;
-    struct wl_signal         capabilities_signal;
-    struct wl_signal         name_signal;
-
-    struct wl_listener       conn_destroy_listener;
+    struct wl_listener              conn_destroy_listener;
 };
 
 struct pepper_x11_connection

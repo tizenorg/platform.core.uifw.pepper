@@ -687,9 +687,5 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
     output->base = base;
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
 
-    /* X11 input seat create */
-    if (!connection->use_xinput)
-        pepper_x11_seat_create(connection);
-
     return base;
 }

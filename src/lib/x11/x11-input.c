@@ -91,7 +91,7 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
         PEPPER_ERROR("unknown input event, [0x%x]\n", type);
     }
 
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO: send input event */
 }
 
 void
@@ -122,43 +122,6 @@ x11_seat_destroy(void *data)
 
     free(seat);
 }
-
-static void
-x11_seat_add_capability_listener(void *data, struct wl_listener *listener)
-{
-    x11_seat_t *seat = (x11_seat_t *)data;
-    wl_signal_add(&seat->capabilities_signal, listener);
-}
-
-static void
-x11_seat_add_name_listener(void *data, struct wl_listener *listener)
-{
-    x11_seat_t *seat = (x11_seat_t *)data;
-    wl_signal_add(&seat->name_signal, listener);
-}
-
-static uint32_t
-x11_seat_get_capabilities(void *data)
-{
-    x11_seat_t *seat = (x11_seat_t *)data;
-    return seat->caps;
-}
-
-static const char *
-x11_seat_get_name(void *data)
-{
-    x11_seat_t *seat = (x11_seat_t *)data;
-    return seat->name;
-}
-
-static const pepper_seat_backend_t x11_seat_backend =
-{
-    x11_seat_destroy,
-    x11_seat_add_capability_listener,
-    x11_seat_add_name_listener,
-    x11_seat_get_capabilities,
-    x11_seat_get_name,
-};
 
 static void
 handle_connection_destroy(struct wl_listener *listener, void *data)
@@ -194,19 +157,26 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     /* XXX: if x-input-module used without x-output-module,
      * need to create dummy window for input with output-size */
 
-    wl_signal_init(&seat->capabilities_signal);
-    wl_signal_init(&seat->name_signal);
-
     seat->conn_destroy_listener.notify = handle_connection_destroy;
     wl_signal_add(&conn->destroy_signal, &seat->conn_destroy_listener);
 
-    seat->base = pepper_compositor_add_seat(conn->compositor, &x11_seat_backend, seat);
     seat->id = X11_BACKEND_INPUT_ID;
 
     /* Hard-coded: */
+    seat->pointer = pepper_pointer_device_create(conn->compositor);
+    if (!seat->pointer)
+    {
+        PEPPER_ERROR("failed to create pepper pointer device\n");
+        /* TODO: error handling */
+    }
     seat->caps |= WL_SEAT_CAPABILITY_POINTER;
+    seat->keyboard = pepper_keyboard_device_create(conn->compositor);
+    if (!seat->keyboard)
+    {
+        PEPPER_ERROR("failed to create pepper keyboard device\n");
+        /* TODO: error handling */
+    }
     seat->caps |= WL_SEAT_CAPABILITY_KEYBOARD;
-    wl_signal_emit(&seat->capabilities_signal, seat);
 
     /* x-connection has only 1 seat */
     conn->seat = seat;

@@ -191,6 +191,7 @@ struct pepper_seat
 {
     pepper_object_t             base;
     pepper_compositor_t        *compositor;
+
     pepper_pointer_t           *pointer;
     pepper_keyboard_t          *keyboard;
     pepper_touch_t             *touch;
@@ -199,16 +200,12 @@ struct pepper_seat
     struct wl_list              resources;
     struct wl_list              link;
 
-    struct wl_listener          capabilities_listener;
-    struct wl_listener          name_listener;
-
     enum wl_seat_capability     caps;
-    const char                 *name;
+    char                       *name;
 
     uint32_t                    modifier;
 
     /* Backend-specific variables. */
-    pepper_seat_backend_t      *backend;
     void                       *data;
 };
 
@@ -216,21 +213,69 @@ struct pepper_pointer
 {
     pepper_object_t             base;
     pepper_seat_t              *seat;
+
+    pepper_view_t              *focus;
+    wl_fixed_t                  x;
+    wl_fixed_t                  y;
+
+    struct wl_list              devices;
     struct wl_list              resources;
+    struct wl_list              link;
 };
 
 struct pepper_keyboard
 {
     pepper_object_t             base;
     pepper_seat_t              *seat;
+
+    pepper_view_t              *focus;
+
+    struct wl_list              devices;
     struct wl_list              resources;
+    struct wl_list              link;
 };
 
 struct pepper_touch
 {
     pepper_object_t             base;
     pepper_seat_t              *seat;
+
+    pepper_output_t            *output;
+    pepper_view_t              *focus;
+
+    struct wl_list              devices;
     struct wl_list              resources;
+    struct wl_list              link;
+};
+
+struct pepper_pointer_device
+{
+    pepper_object_t             base;
+    pepper_pointer_t           *pointer;
+    struct wl_list              link;
+
+    /* Backend-specific variables. */
+    void                       *data;
+};
+
+struct pepper_keyboard_device
+{
+    pepper_object_t             base;
+    pepper_keyboard_t          *keyboard;
+    struct wl_list              link;
+
+    /* Backend-specific variables. */
+    void                       *data;
+};
+
+struct pepper_touch_device
+{
+    pepper_object_t             base;
+    pepper_touch_t             *touch;
+    struct wl_list              link;
+
+    /* Backend-specific variables. */
+    void                       *data;
 };
 
 void

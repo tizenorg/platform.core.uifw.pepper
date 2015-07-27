@@ -31,8 +31,8 @@ static const struct wl_pointer_interface pointer_interface =
 static void
 seat_get_pointer(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    struct wl_resource  *r;
+    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    struct wl_resource *r;
 
     if (!seat->pointer)
         return;
@@ -66,8 +66,8 @@ static const struct wl_keyboard_interface keyboard_interface =
 static void
 seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    struct wl_resource  *r;
+    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    struct wl_resource *r;
 
     if (!seat->keyboard)
         return;
@@ -81,7 +81,7 @@ seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32
     }
 
     wl_list_insert(&seat->keyboard->resources, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &keyboard_interface, seat, unbind_resource);
+    wl_resource_set_implementation(r, &keyboard_interface, seat->keyboard, unbind_resource);
 
     /* TODO */
 
@@ -101,8 +101,8 @@ static const struct wl_touch_interface touch_interface =
 static void
 seat_get_touch(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    struct wl_resource  *r;
+    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    struct wl_resource *r;
 
     if (!seat->touch)
         return;
@@ -115,7 +115,7 @@ seat_get_touch(struct wl_client *client, struct wl_resource *resource, uint32_t 
     }
 
     wl_list_insert(&seat->touch->resources, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &touch_interface, seat, unbind_resource);
+    wl_resource_set_implementation(r, &touch_interface, seat->touch, unbind_resource);
 
     /* TODO */
 
@@ -138,187 +138,19 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     wl_resource_set_implementation(resource, &seat_interface, data, unbind_resource);
 
     wl_seat_send_capabilities(resource, seat->caps);
-}
 
-static pepper_pointer_t *
-pointer_create(pepper_seat_t *seat)
-{
-    pepper_pointer_t *pointer;
-
-    pointer = (pepper_pointer_t *)pepper_object_alloc(PEPPER_OBJECT_POINTER,
-                                                      sizeof(pepper_pointer_t));
-    if (!pointer)
-    {
-        PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-        return NULL;
-    }
-
-    pointer->seat = seat;
-    wl_list_init(&pointer->resources);
-
-    return pointer;
-}
-
-static void
-pointer_destroy(pepper_seat_t *seat)
-{
-    struct wl_resource  *resource;
-    struct wl_list      *resource_list = &seat->pointer->resources;
-
-    wl_resource_for_each(resource, resource_list)
-        wl_resource_destroy(resource);
-    pepper_free(seat->pointer);
-}
-
-static pepper_keyboard_t *
-keyboard_create(pepper_seat_t *seat)
-{
-    pepper_keyboard_t   *keyboard;
-
-    keyboard = (pepper_keyboard_t *)pepper_object_alloc(PEPPER_OBJECT_KEYBOARD,
-                                                        sizeof(pepper_keyboard_t));
-    if (!keyboard)
-    {
-        PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-        return NULL;
-    }
-
-    keyboard->seat = seat;
-    wl_list_init(&keyboard->resources);
-
-    return keyboard;
-}
-
-static void
-keyboard_destroy(pepper_seat_t *seat)
-{
-    struct wl_resource  *resource;
-    struct wl_list      *resource_list = &seat->keyboard->resources;
-
-    wl_resource_for_each(resource, resource_list)
-        wl_resource_destroy(resource);
-    pepper_free(seat->keyboard);
-}
-
-static pepper_touch_t *
-touch_create(pepper_seat_t *seat)
-{
-    pepper_touch_t *touch;
-
-    touch = (pepper_touch_t *)pepper_object_alloc(PEPPER_OBJECT_TOUCH, sizeof(pepper_touch_t));
-    if (!touch)
-    {
-        PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-        return NULL;
-    }
-
-    touch->seat = seat;
-    wl_list_init(&touch->resources);
-
-    return touch;
-}
-
-static void
-touch_destroy(pepper_seat_t *seat)
-{
-    struct wl_resource  *resource;
-    struct wl_list      *resource_list = &seat->touch->resources;
-
-    wl_resource_for_each(resource, resource_list)
-        wl_resource_destroy(resource);
-    pepper_free(seat->touch);
-}
-
-static void
-seat_set_capabilities(pepper_seat_t *seat, uint32_t caps)
-{
-    struct wl_resource  *resource;
-
-    seat->caps = caps;
-
-    if ((caps & WL_SEAT_CAPABILITY_POINTER) && (!seat->pointer))
-    {
-        seat->pointer = pointer_create(seat);
-        if (!seat->pointer)
-        {
-            PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-            return;
-        }
-    }
-    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && (seat->pointer))
-    {
-        pointer_destroy(seat);
-    }
-
-    if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && (!seat->keyboard))
-    {
-        seat->keyboard = keyboard_create(seat);
-        if (!seat->keyboard)
-        {
-            PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-            return;
-        }
-    }
-    else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && (seat->keyboard))
-    {
-        keyboard_destroy(seat);
-    }
-
-    if ((caps & WL_SEAT_CAPABILITY_TOUCH) && (!seat->touch))
-    {
-        seat->touch = touch_create(seat);
-        if (!seat->touch)
-        {
-            PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-            return;
-        }
-    }
-    else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && (seat->touch))
-    {
-        touch_destroy(seat);
-    }
-
-    wl_resource_for_each(resource, &seat->resources)
-        wl_seat_send_capabilities(resource, caps);
-}
-
-static void
-handle_seat_set_capabilities(struct wl_listener *listener, void *data)
-{
-    pepper_seat_t  *seat = pepper_container_of(listener, pepper_seat_t, capabilities_listener);
-    uint32_t        caps;
-
-    caps = seat->backend->get_capabilities(data);
-    seat_set_capabilities(seat, caps);
-}
-
-static void
-seat_set_name(pepper_seat_t *seat, const char *name)
-{
-    struct wl_resource  *resource;
-
-    seat->name = name;
-    wl_resource_for_each(resource, &seat->resources)
-        wl_seat_send_name(resource, name);
-}
-
-static void
-handle_seat_set_name(struct wl_listener *listener, void *data)
-{
-    pepper_seat_t   *seat = pepper_container_of(listener, pepper_seat_t, name_listener);
-    const char      *name;
-
-    name = seat->backend->get_name(data);
-    seat_set_name(seat, name);
+    if ((seat->name) && (version >= WL_SEAT_NAME_SINCE_VERSION))
+        wl_seat_send_name(resource, seat->name);
 }
 
 PEPPER_API pepper_seat_t *
 pepper_compositor_add_seat(pepper_compositor_t *compositor,
-                           const pepper_seat_backend_t *backend,
+                           const char *seat_name,
                            void *data)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)pepper_object_alloc(PEPPER_OBJECT_SEAT,
-                                                               sizeof(pepper_seat_t));
+    pepper_seat_t  *seat;
+
+    seat = (pepper_seat_t *)pepper_object_alloc(PEPPER_OBJECT_SEAT, sizeof(pepper_seat_t));
     if (!seat)
     {
         PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
@@ -326,21 +158,115 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
     }
 
     seat->compositor = compositor;
-    seat->backend = (pepper_seat_backend_t *)backend;
     seat->data = data;
 
     wl_list_init(&seat->resources);
     wl_list_init(&seat->link);
     wl_list_insert(&compositor->seat_list, &seat->link);
 
-    seat->capabilities_listener.notify = handle_seat_set_capabilities;
-    seat->backend->add_capabilities_listener(seat->data, &seat->capabilities_listener);
-    seat->name_listener.notify = handle_seat_set_name;
-    seat->backend->add_name_listener(seat->data, &seat->name_listener);
+    if (seat_name)
+        seat->name = strdup(seat_name);
 
     seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat,
                                     bind_seat);
     return seat;
+}
+
+PEPPER_API pepper_pointer_t *
+pepper_seat_get_pointer(pepper_seat_t *seat)
+{
+    return seat->pointer;
+}
+
+PEPPER_API pepper_keyboard_t *
+pepper_seat_get_keyboard(pepper_seat_t *seat)
+{
+    return seat->keyboard;
+}
+
+PEPPER_API pepper_touch_t *
+pepper_seat_get_touch(pepper_seat_t *seat)
+{
+    return seat->touch;
+}
+
+static void
+send_capabilities(pepper_seat_t *seat)
+{
+    struct wl_resource *resource;
+    struct wl_list     *resource_list = &seat->resources;
+
+    wl_resource_for_each(resource, resource_list)
+        wl_seat_send_capabilities(resource, seat->caps);
+}
+
+PEPPER_API pepper_pointer_device_t *
+pepper_pointer_device_create(pepper_compositor_t *compositor)
+{
+    pepper_pointer_device_t    *device;
+
+    device = (pepper_pointer_device_t *)pepper_object_alloc(PEPPER_OBJECT_POINTER_DEVICE,
+                                                            sizeof(pepper_pointer_device_t));
+    if (!device)
+    {
+        PEPPER_ERROR("Failed to allocate memory\n");
+        return NULL;
+    }
+
+    return device;
+}
+
+PEPPER_API void
+pepper_pointer_device_destroy(pepper_pointer_device_t *device)
+{
+    pepper_object_fini((pepper_object_t *)device);
+    pepper_free(device);
+}
+
+PEPPER_API pepper_keyboard_device_t *
+pepper_keyboard_device_create(pepper_compositor_t *compositor)
+{
+    pepper_keyboard_device_t   *device;
+
+    device = (pepper_keyboard_device_t *)pepper_object_alloc(PEPPER_OBJECT_KEYBOARD_DEVICE,
+                                                            sizeof(pepper_keyboard_device_t));
+    if (!device)
+    {
+        PEPPER_ERROR("Failed to allocate memory\n");
+        return NULL;
+    }
+
+    return device;
+}
+
+PEPPER_API void
+pepper_keyboard_device_destroy(pepper_keyboard_device_t *device)
+{
+    pepper_object_fini((pepper_object_t *)device);
+    pepper_free(device);
+}
+
+PEPPER_API pepper_touch_device_t *
+pepper_touch_device_create(pepper_compositor_t *compositor)
+{
+    pepper_touch_device_t  *device;
+
+    device = (pepper_touch_device_t *)pepper_object_alloc(PEPPER_OBJECT_TOUCH_DEVICE,
+                                                            sizeof(pepper_touch_device_t));
+    if (!device)
+    {
+        PEPPER_ERROR("Failed to allocate memory\n");
+        return NULL;
+    }
+
+    return device;
+}
+
+PEPPER_API void
+pepper_touch_device_destroy(pepper_touch_device_t *device)
+{
+    pepper_object_fini((pepper_object_t *)device);
+    pepper_free(device);
 }
 
 void

@@ -6,11 +6,6 @@ pointer_handle_enter(void *data, struct wl_pointer *pointer,
                      uint32_t serial, struct wl_surface *surface,
                      wl_fixed_t surface_x, wl_fixed_t surface_y)
 {
-    wayland_seat_t  *seat = (wayland_seat_t *)data;
-
-    seat->pointer_x_last = surface_x;
-    seat->pointer_y_last = surface_y;
-
     /* TODO */
 }
 
@@ -18,64 +13,28 @@ static void
 pointer_handle_leave(void *data, struct wl_pointer *pointer,
                      uint32_t serial, struct wl_surface *surface)
 {
-    /* TODO: */
+    /* TODO */
 }
 
 static void
 pointer_handle_motion(void *data, struct wl_pointer *pointer,
                       uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_POINTER_MOTION;
-    event.time = time;
-    event.serial = 0;
-    event.index = 0;
-    event.state = 0;
-    event.value = 0;
-    event.x = seat->pointer_x_last = surface_x;
-    event.y = seat->pointer_y_last = surface_y;
-
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static void
 pointer_handle_button(void *data, struct wl_pointer *pointer,
                      uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_POINTER_BUTTON;
-    event.time = time;
-    event.serial = serial; /* FIXME */
-    event.index = button;
-    event.state = state;
-    event.value = 0;
-    event.x = seat->pointer_x_last;
-    event.y = seat->pointer_y_last;
-
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static void
 pointer_handle_axis(void *data, struct wl_pointer *pointer,
                     uint32_t time, uint32_t axis, wl_fixed_t value)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_POINTER_AXIS;
-    event.time = time;
-    event.serial = 0;
-    event.index = axis;
-    event.value = value;
-    event.state = 0;
-    event.x = 0;
-    event.y = 0;
-
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static const struct wl_pointer_listener pointer_listener =
@@ -88,10 +47,10 @@ static const struct wl_pointer_listener pointer_listener =
 };
 
 static void
-keyboard_handle_key_map(void *data, struct wl_keyboard *keyboard,
+keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard,
                         uint32_t format, int32_t fd, uint32_t size)
 {
-    /* TODO: */
+    /* TODO */
 }
 
 static void
@@ -99,33 +58,21 @@ keyboard_handle_enter(void *data, struct wl_keyboard *keyboard,
                       uint32_t serial, struct wl_surface *surface,
                       struct wl_array *keys)
 {
-    /* TODO: */
+    /* TODO */
 }
 
 static void
 keyboard_handle_leave(void *data, struct wl_keyboard *keyboard,
                       uint32_t serial, struct wl_surface *surface)
 {
-    /* TODO: */
+    /* TODO */
 }
 
 static void
 keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
                     uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_KEYBOARD_KEY;
-    event.time = time;
-    event.serial = serial;  /* FIXME */
-    event.index = key;
-    event.value = 0;
-    event.state = state;
-    event.x = 0;
-    event.y = 0;
-
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static void
@@ -133,19 +80,19 @@ keyboard_handle_modifiers(void *data, struct wl_keyboard *keyboard,
                           uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
                           uint32_t mods_locked, uint32_t group)
 {
-    /* TODO: */
+    /* TODO */
 }
 
 static void
 keyboard_handle_repeat_info(void *data, struct wl_keyboard *keyboard,
                             int32_t rate, int32_t delay)
 {
-    /* TODO: */
+    /* TODO */
 }
 
 static const struct wl_keyboard_listener keyboard_listener =
 {
-    keyboard_handle_key_map,
+    keyboard_handle_keymap,
     keyboard_handle_enter,
     keyboard_handle_leave,
     keyboard_handle_key,
@@ -158,77 +105,33 @@ touch_handle_down(void *data, struct wl_touch *touch,
                   uint32_t serial, uint32_t time, struct wl_surface *surface,
                   int32_t id, wl_fixed_t x, wl_fixed_t y)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_TOUCH_DOWN;
-    event.time = time;
-    event.serial = serial;  /* FIXME */
-    event.index = id;
-    event.value = 0;
-    event.state = 0;
-    event.x = seat->touch_x_last = x;
-    event.y = seat->touch_y_last = y;
-
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static void
 touch_handle_up(void *data, struct wl_touch *touch,
                 uint32_t serial, uint32_t time, int32_t id)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_TOUCH_UP;
-    event.time = time;
-    event.serial = serial;  /* FIXME */
-    event.index = id;
-    event.value = 0;
-    event.state = 0;
-    event.x = seat->touch_x_last;
-    event.y = seat->touch_y_last;
-
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static void
 touch_handle_motion(void *data, struct wl_touch *touch,
                     uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_TOUCH_MOTION;
-    event.time = time;
-    event.serial = 0;
-    event.index = id;
-    event.value = 0;
-    event.state = 0;
-    event.x = seat->touch_x_last = x;
-    event.y = seat->touch_y_last = y;
-
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static void
 touch_handle_frame(void *data, struct wl_touch *touch)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_TOUCH_FRAME;
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static void
 touch_handle_cancel(void *data, struct wl_touch *touch)
 {
-    wayland_seat_t         *seat = (wayland_seat_t *)data;
-    pepper_input_event_t    event;
-
-    event.type = PEPPER_INPUT_EVENT_TOUCH_CANCEL;
-    pepper_seat_handle_event(seat->base, &event);
+    /* TODO */
 }
 
 static const struct wl_touch_listener touch_listener =
@@ -248,105 +151,62 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
     if (seat->seat != s) /* FIXME */
         return;
 
-    if ((caps & WL_SEAT_CAPABILITY_POINTER) && (!seat->pointer))
+    if ((caps & WL_SEAT_CAPABILITY_POINTER) && (!seat->pointer.wl_pointer))
     {
-        seat->pointer = wl_seat_get_pointer(seat->seat);
-        if (seat->pointer)
-            wl_pointer_add_listener(seat->pointer, &pointer_listener, seat);
+        seat->pointer.wl_pointer = wl_seat_get_pointer(seat->seat);
+        if (seat->pointer.wl_pointer)
+            wl_pointer_add_listener(seat->pointer.wl_pointer, &pointer_listener, seat);
+
+        seat->pointer.base = pepper_pointer_device_create(seat->conn->pepper);
     }
-    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && (seat->pointer))
+    else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && (seat->pointer.wl_pointer))
     {
-        wl_pointer_release(seat->pointer);
-        seat->pointer = NULL;
+        pepper_pointer_device_destroy(seat->pointer.base);
+        wl_pointer_release(seat->pointer.wl_pointer);
+        seat->pointer.wl_pointer = NULL;
     }
 
-    if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && (!seat->keyboard))
+    if ((caps & WL_SEAT_CAPABILITY_KEYBOARD) && (!seat->keyboard.wl_keyboard))
     {
-        seat->keyboard = wl_seat_get_keyboard(seat->seat);
-        if (seat->keyboard)
-            wl_keyboard_add_listener(seat->keyboard, &keyboard_listener, seat);
+        seat->keyboard.wl_keyboard = wl_seat_get_keyboard(seat->seat);
+        if (seat->keyboard.wl_keyboard)
+            wl_keyboard_add_listener(seat->keyboard.wl_keyboard, &keyboard_listener, seat);
+
+        seat->keyboard.base = pepper_keyboard_device_create(seat->conn->pepper);
     }
-    else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && (seat->keyboard))
+    else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && (seat->keyboard.wl_keyboard))
     {
-        wl_keyboard_release(seat->keyboard);
-        seat->keyboard = NULL;
+        pepper_keyboard_device_destroy(seat->keyboard.base);
+        wl_keyboard_release(seat->keyboard.wl_keyboard);
+        seat->keyboard.wl_keyboard = NULL;
     }
 
-    if ((caps & WL_SEAT_CAPABILITY_TOUCH) && (!seat->touch))
+    if ((caps & WL_SEAT_CAPABILITY_TOUCH) && (!seat->touch.wl_touch))
     {
-        seat->touch = wl_seat_get_touch(seat->seat);
-        if (seat->touch)
-            wl_touch_add_listener(seat->touch, &touch_listener, seat);
-    }
-    else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && (seat->touch))
-    {
-        wl_touch_release(seat->touch);
-        seat->touch = NULL;
-    }
+        seat->touch.wl_touch = wl_seat_get_touch(seat->seat);
+        if (seat->touch.wl_touch)
+            wl_touch_add_listener(seat->touch.wl_touch, &touch_listener, seat);
 
-    seat->caps = caps;
-    wl_signal_emit(&seat->capabilities_signal, seat);
+        seat->touch.base = pepper_touch_device_create(seat->conn->pepper);
+    }
+    else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && (seat->touch.wl_touch))
+    {
+        pepper_touch_device_destroy(seat->touch.base);
+        wl_touch_release(seat->touch.wl_touch);
+        seat->touch.wl_touch = NULL;
+    }
 }
 
 static void
 seat_handle_name(void *data, struct wl_seat *s, const char *name)
 {
-    wayland_seat_t  *seat = (wayland_seat_t *)data;
-
-    if (seat->seat != s) /* FIXME */
-        return;
-
-    seat->name = string_copy(name);
-    wl_signal_emit(&seat->name_signal, seat);
+    /* TODO */
 }
 
 static const struct wl_seat_listener seat_listener =
 {
     seat_handle_caps,
     seat_handle_name,
-};
-
-static void
-wayland_seat_destroy(void *data)
-{
-    /* TODO: */
-}
-
-static void
-wayland_seat_add_capability_listener(void *data, struct wl_listener *listener)
-{
-    wayland_seat_t *seat = (wayland_seat_t *)data;
-    wl_signal_add(&seat->capabilities_signal, listener);
-}
-
-static void
-wayland_seat_add_name_listener(void *data, struct wl_listener *listener)
-{
-    wayland_seat_t *seat = (wayland_seat_t *)data;
-    wl_signal_add(&seat->name_signal, listener);
-}
-
-static uint32_t
-wayland_seat_get_capabilities(void *data)
-{
-    wayland_seat_t *seat = (wayland_seat_t *)data;
-    return seat->caps;
-}
-
-static const char *
-wayland_seat_get_name(void *data)
-{
-    wayland_seat_t *seat = (wayland_seat_t *)data;
-    return seat->name;
-}
-
-static const pepper_seat_backend_t wayland_seat_backend =
-{
-    wayland_seat_destroy,
-    wayland_seat_add_capability_listener,
-    wayland_seat_add_name_listener,
-    wayland_seat_get_capabilities,
-    wayland_seat_get_name,
 };
 
 void
@@ -365,12 +225,8 @@ wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
     seat->seat = wl_registry_bind(registry, name, &wl_seat_interface, 1);
     wl_seat_add_listener(seat->seat, &seat_listener, seat);
 
-    wl_signal_init(&seat->capabilities_signal);
-    wl_signal_init(&seat->name_signal);
-
-    seat->base = pepper_compositor_add_seat(conn->pepper, &wayland_seat_backend, seat);
+    seat->conn = conn;
     seat->id = name;
 
-    wl_list_init(&seat->link);
     wl_list_insert(&conn->seat_list, &seat->link);
 }

@@ -7,7 +7,8 @@
 /* TODO: Error logging. */
 #define PEPPER_ERROR(...)
 
-typedef struct li_seat         li_seat_t;
+typedef struct li_device            li_device_t;
+typedef struct li_device_property   li_device_property_t;
 
 struct pepper_libinput
 {
@@ -17,26 +18,27 @@ struct pepper_libinput
     struct wl_event_source     *libinput_event_source;
     int                         libinput_fd;
 
-    struct wl_list              seat_list;
+    struct wl_list              device_list;
 };
 
-struct li_seat
+struct li_device
 {
-    pepper_seat_t              *base;
     pepper_libinput_t          *input;
+    pepper_pointer_device_t    *pointer;
+    pepper_keyboard_device_t   *keyboard;
+    pepper_touch_device_t      *touch;
 
-    uint32_t                    id;
     uint32_t                    caps;
-    char                       *name;
 
-    int                         pointer_x_last;
-    int                         pointer_y_last;
-    int                         touch_x_last;   /* FIXME */
-    int                         touch_y_last;   /* FIXME */
-
+    struct wl_list              property_list;
     struct wl_list              link;
-    struct wl_signal            capabilities_signal;
-    struct wl_signal            name_signal;
+};
+
+struct li_device_property   /* FIXME */
+{
+    char                       *key;
+    char                       *data;
+    struct wl_list              link;
 };
 
 #endif /* LIBINPUT_INTERNAL_H */

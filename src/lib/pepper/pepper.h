@@ -21,6 +21,9 @@ typedef struct pepper_seat              pepper_seat_t;
 typedef struct pepper_pointer           pepper_pointer_t;
 typedef struct pepper_keyboard          pepper_keyboard_t;
 typedef struct pepper_touch             pepper_touch_t;
+typedef struct pepper_pointer_device    pepper_pointer_device_t;
+typedef struct pepper_keyboard_device   pepper_keyboard_device_t;
+typedef struct pepper_touch_device      pepper_touch_device_t;
 
 typedef struct pepper_output_geometry   pepper_output_geometry_t;
 typedef struct pepper_output_mode       pepper_output_mode_t;
@@ -57,6 +60,9 @@ typedef enum pepper_object_type
     PEPPER_OBJECT_POINTER,
     PEPPER_OBJECT_KEYBOARD,
     PEPPER_OBJECT_TOUCH,
+    PEPPER_OBJECT_POINTER_DEVICE,
+    PEPPER_OBJECT_KEYBOARD_DEVICE,
+    PEPPER_OBJECT_TOUCH_DEVICE,
     PEPPER_OBJECT_PLANE,
 } pepper_object_type_t;
 
@@ -145,6 +151,23 @@ struct pepper_input_event
     wl_fixed_t      x;
     wl_fixed_t      y;
 };
+
+PEPPER_API pepper_seat_t *
+pepper_compositor_add_seat(pepper_compositor_t *compositor,
+                           const char *seat_name,
+                           void *data);
+
+PEPPER_API void
+pepper_seat_destroy(pepper_seat_t *seat);
+
+PEPPER_API pepper_pointer_t *
+pepper_seat_get_pointer(pepper_seat_t *seat);
+
+PEPPER_API pepper_keyboard_t *
+pepper_seat_get_keyboard(pepper_seat_t *seat);
+
+PEPPER_API pepper_touch_t *
+pepper_seat_get_touch(pepper_seat_t *seat);
 
 PEPPER_API pepper_bool_t
 pepper_seat_handle_event(pepper_seat_t *seat, pepper_input_event_t *event);
