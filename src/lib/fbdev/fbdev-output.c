@@ -91,6 +91,9 @@ fbdev_output_destroy(void *o)
     wl_signal_emit(&output->destroy_signal, NULL);
     wl_list_remove(&output->link);
 
+    if (output->frame_done_timer)
+        wl_event_source_remove(output->frame_done_timer);
+
     if (output->render_target)
         pepper_render_target_destroy(output->render_target);
 
@@ -202,9 +205,9 @@ fbdev_output_repaint(void *o, const pepper_list_t *plane_list)
                                          output->frame_buffer_image, 0, 0, 0, 0, 0, 0,
                                          output->w, output->h);
         }
-
-        /* TODO: No overlays on fbdev??? */
     }
+
+    wl_event_source_timer_update(output->frame_done_timer, 16);
 }
 
 static void
@@ -274,6 +277,15 @@ init_renderer(fbdev_output_t *output, const char *renderer)
     return init_pixman_renderer(output);
 }
 
+static int
+frame_done_handler(void* data)
+{
+    fbdev_output_t *output = (fbdev_output_t *)data;
+    wl_signal_emit(&output->frame_signal, NULL);
+
+    return 1;
+}
+
 pepper_bool_t
 pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 {
@@ -281,6 +293,9 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     int                         fd;
     struct fb_fix_screeninfo    fixed_info;
     struct fb_var_screeninfo    var_info;
+
+    struct wl_display          *display;
+    struct wl_event_loop       *loop;
 
     /* fbdev open */
     fd = open("/dev/fb0"/*FIXME*/, O_RDWR | O_CLOEXEC);
@@ -378,6 +393,10 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
     wl_list_insert(&fbdev->output_list, &output->link);
+
+    display = pepper_compositor_get_display(fbdev->compositor);
+    loop = wl_display_get_event_loop(display);
+    output->frame_done_timer = wl_event_loop_add_timer(loop, frame_done_handler, output);
 
     return PEPPER_TRUE;
 
