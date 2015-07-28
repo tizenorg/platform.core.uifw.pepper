@@ -190,16 +190,6 @@ pepper_seat_get_touch(pepper_seat_t *seat)
     return seat->touch;
 }
 
-static void
-send_capabilities(pepper_seat_t *seat)
-{
-    struct wl_resource *resource;
-    struct wl_list     *resource_list = &seat->resources;
-
-    wl_resource_for_each(resource, resource_list)
-        wl_seat_send_capabilities(resource, seat->caps);
-}
-
 PEPPER_API pepper_pointer_device_t *
 pepper_pointer_device_create(pepper_compositor_t *compositor)
 {

@@ -206,8 +206,6 @@ view_update_geometry(pepper_view_t *view)
 static void
 view_update_visibility(pepper_view_t *view)
 {
-    pepper_bool_t visible;
-
     if (!(view->dirty & PEPPER_VIEW_VISIBILITY_DIRTY))
         return;
 

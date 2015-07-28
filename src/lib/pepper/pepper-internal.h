@@ -48,6 +48,9 @@ struct pepper_compositor
     pepper_list_t       view_list;
 };
 
+void
+pepper_compositor_schedule_repaint(pepper_compositor_t *compositor);
+
 struct pepper_output
 {
     pepper_object_t             base;
