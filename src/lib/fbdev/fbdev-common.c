@@ -5,7 +5,8 @@
 #include "fbdev-internal.h"
 
 PEPPER_API pepper_fbdev_t *
-pepper_fbdev_create(pepper_compositor_t *compositor, const char *device, const char *renderer)
+pepper_fbdev_create(pepper_compositor_t *compositor, struct udev *udev,
+                    const char *device, const char *renderer)
 {
     pepper_fbdev_t *fbdev;
 
@@ -23,22 +24,8 @@ pepper_fbdev_create(pepper_compositor_t *compositor, const char *device, const c
         goto error;
     }
 
-    fbdev->udev = udev_new();
-    if (!fbdev->udev)
-    {
-        PEPPER_ERROR("Failed to create udev context in %s\n", __FUNCTION__);
-        goto error;
-    }
-
     fbdev->compositor = compositor;
-    fbdev->input = pepper_libinput_create(compositor, fbdev->udev);
-
-    if (!fbdev->input)
-    {
-        PEPPER_ERROR("Failed to create pepper_libinput in %s\n", __FUNCTION__);
-        goto error;
-    }
-
+    fbdev->udev = udev;
     wl_list_init(&fbdev->output_list);
 
     if (!pepper_fbdev_output_create(fbdev, renderer))
@@ -69,12 +56,6 @@ pepper_fbdev_destroy(pepper_fbdev_t *fbdev)
         wl_list_for_each_safe(output, next, &fbdev->output_list, link)
             pepper_fbdev_output_destroy(output);
     }
-
-    if (fbdev->input)
-        pepper_libinput_destroy(fbdev->input);
-
-    if (fbdev->udev)
-        udev_unref(fbdev->udev);
 
     free(fbdev);
 }

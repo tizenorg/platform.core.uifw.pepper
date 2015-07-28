@@ -22,7 +22,6 @@ typedef struct drm_fb           drm_fb_t;
 struct pepper_drm
 {
     pepper_compositor_t        *compositor;
-    pepper_libinput_t          *input;
 
     struct wl_list              output_list;
 

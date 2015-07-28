@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include <signal.h>
 
+#include <libudev.h>
+
 #include <pepper.h>
+#include <pepper-libinput.h>
 #include <pepper-fbdev.h>
 #include <pepper-desktop-shell.h>
 
@@ -44,6 +47,10 @@ main(int argc, char **argv)
 {
     pepper_compositor_t    *compositor = NULL;
     pepper_fbdev_t         *fbdev = NULL;
+    pepper_libinput_t       *input = NULL;
+
+    struct udev             *udev = NULL;
+
     struct wl_display      *display = NULL;
     struct wl_event_loop   *loop = NULL;
     struct wl_event_source *sigint = NULL;
@@ -66,7 +73,15 @@ main(int argc, char **argv)
     if (!compositor)
         goto cleanup;
 
-    fbdev = pepper_fbdev_create(compositor, "", "pixman");
+    udev = udev_new();
+    if (!udev)
+        goto cleanup;
+
+    input = pepper_libinput_create(compositor, udev);
+    if (!input)
+        goto cleanup;
+
+    fbdev = pepper_fbdev_create(compositor, udev, "", "pixman");
     if (!fbdev)
         goto cleanup;
 
@@ -91,6 +106,12 @@ cleanup:
 
     if (fbdev)
         pepper_fbdev_destroy(fbdev);
+
+    if (input)
+        pepper_libinput_destroy(input);
+
+    if (udev)
+        udev_unref(udev);
 
     if (compositor)
         pepper_compositor_destroy(compositor);

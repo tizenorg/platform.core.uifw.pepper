@@ -6,7 +6,8 @@
 #include "drm-internal.h"
 
 PEPPER_API pepper_drm_t *
-pepper_drm_create(pepper_compositor_t *compositor, const char *device, const char *renderer)
+pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev,
+                  const char *device, const char *renderer)
 {
     pepper_drm_t    *drm;
 
@@ -17,22 +18,8 @@ pepper_drm_create(pepper_compositor_t *compositor, const char *device, const cha
         goto error;
     }
 
-    drm->udev = udev_new();
-    if (!drm->udev)
-    {
-        PEPPER_ERROR("Failed to create udev context in %s\n", __FUNCTION__);
-        goto error;
-    }
-
     drm->compositor = compositor;
-    drm->input = pepper_libinput_create(compositor, drm->udev);
-
-    if (!drm->input)
-    {
-        PEPPER_ERROR("Failed to create pepper_libinput in %s\n", __FUNCTION__);
-        goto error;
-    }
-
+    drm->udev = udev;
     wl_list_init(&drm->output_list);
 
     if (!pepper_drm_output_create(drm, renderer))
@@ -84,12 +71,6 @@ pepper_drm_destroy(pepper_drm_t *drm)
 
     if (drm->drm_fd)
         close(drm->drm_fd);
-
-    if (drm->input)
-        pepper_libinput_destroy(drm->input);
-
-    if (drm->udev)
-        udev_unref(drm->udev);
 
     free(drm);
 }
