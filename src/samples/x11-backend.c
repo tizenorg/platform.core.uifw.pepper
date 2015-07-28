@@ -24,12 +24,10 @@ main(int argc, char **argv)
     output = pepper_x11_output_create(conn, 640, 480, "pixman");
     PEPPER_ASSERT(output);
 
-#if 0
-    mode.w = 320;
-    mode.h = 240;
+    mode.w = 1024;
+    mode.h = 768;
     mode.refresh = 60000;
     pepper_output_set_mode(output, &mode);
-#endif
 
     if (!pepper_desktop_shell_init(compositor))
         PEPPER_ASSERT(0);

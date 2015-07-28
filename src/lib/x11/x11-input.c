@@ -1,10 +1,14 @@
 #include "x11-internal.h"
 #include <stdlib.h>
 
+#define UNUSED(x)   (void)(x)
+
 void
 x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev)
 {
     pepper_input_event_t event = {0,};
+
+    UNUSED(event); /* disable warning */
 
     switch (type)
     {

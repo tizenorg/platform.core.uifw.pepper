@@ -89,7 +89,7 @@ static pepper_bool_t
 gl_renderer_init(x11_output_t *output)
 {
     output->gl_target = pepper_gl_renderer_create_target(output->connection->gl_renderer,
-                                                         (void *)output->window,
+                                                         (void *)(intptr_t)output->window,
                                                          PEPPER_FORMAT_ARGB8888,
                                                          &output->connection->screen->root_visual);
 
