@@ -44,9 +44,6 @@ x11_handle_event(int fd, uint32_t mask, void *data)
 
     uint32_t                    count = 0;
 
-    if (!connection->use_xinput)
-        return 0;
-
     /* TODO: At now, x11-backend has only 1 seat per connection, "seat0"
      *       but if not, we need to find matched seat at here
      */
@@ -65,7 +62,8 @@ x11_handle_event(int fd, uint32_t mask, void *data)
         case XCB_BUTTON_PRESS:
         case XCB_BUTTON_RELEASE:
         case XCB_MOTION_NOTIFY:
-            x11_handle_input_event(seat, type, event);
+            if (connection->use_xinput)
+                x11_handle_input_event(seat, type, event);
             break;
         case XCB_EXPOSE:
             PEPPER_TRACE("XCB_EXPOSE\n");
