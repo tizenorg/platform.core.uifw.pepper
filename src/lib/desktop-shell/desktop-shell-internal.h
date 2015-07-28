@@ -182,5 +182,42 @@ void
 shell_surface_set_transient(shell_surface_t *shsurf, pepper_surface_t *parent,
                             int32_t x, int32_t y, uint32_t flags);
 
+void
+shell_surface_ack_configure(shell_surface_t *shsurf, uint32_t serial);
+
+void
+shell_surface_set_geometry(shell_surface_t *shsurf, int32_t x, int32_t y, int32_t w, int32_t h);
+
+void
+shell_surface_set_maximized(shell_surface_t *shsurf, pepper_output_t *output);
+
+void
+shell_surface_unset_maximized(shell_surface_t *shsurf);
+
+void
+shell_surface_set_fullscreen(shell_surface_t *shsurf, pepper_output_t *output,
+                             uint32_t method, uint32_t framerate);
+
+void
+shell_surface_unset_fullscreen(shell_surface_t *shsurf);
+
+void
+shell_surface_set_minimized(shell_surface_t *shsurf);
+
+void
+shell_get_output_workarea(desktop_shell_t *shell, pepper_output_t *output,
+                          pixman_rectangle32_t  *area);
+
+
 pepper_bool_t
 init_wl_shell(desktop_shell_t *shell);
+
+void
+fini_wl_shell(desktop_shell_t *shell);
+
+pepper_bool_t
+init_xdg_shell(desktop_shell_t *shell);
+
+void
+fini_xdg_shell(desktop_shell_t *shell);
+

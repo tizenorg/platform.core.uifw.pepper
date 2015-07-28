@@ -544,7 +544,7 @@ shell_surface_set_class(shell_surface_t *shsurf, const char* class_)
 static void
 shell_surface_map_toplevel(shell_surface_t *shsurf)
 {
-    int32_t x = 0, y = 0, w = 0, h = 0;
+    int32_t x = 0, y = 0;
 
     /* Restore original geometry */
     if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
@@ -688,7 +688,7 @@ shell_surface_center_on_output_by_scale(shell_surface_t                 *shsurf,
 static void
 switch_output_mode(pepper_output_t *output, pepper_output_mode_t *mode)
 {
-    pepper_output_mode_t *new_mode;
+    pepper_output_mode_t *new_mode = NULL;;
 
     /* TODO: Find the output mode to the smallest mode that can fit */
 
@@ -748,7 +748,7 @@ shell_surface_map_fullscreen(shell_surface_t *shsurf)
 
     /* TODO: Create background black view */
     {
-        pepper_surface_t *surface;
+        pepper_surface_t *surface = NULL;
 
         /**
          * surface->x = output_geom->w;
