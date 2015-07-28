@@ -86,6 +86,7 @@ pepper_compositor_create(const char *socket_name)
     pepper_list_init(&compositor->output_list);
     wl_list_init(&compositor->event_hook_chain);
     pepper_list_init(&compositor->view_list);
+    wl_list_init(&compositor->regions);
 
     /* Install default input event handler */
     if( NULL == pepper_compositor_add_event_hook(compositor,
