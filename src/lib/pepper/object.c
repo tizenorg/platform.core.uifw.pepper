@@ -41,6 +41,7 @@ pepper_object_alloc(pepper_object_type_t type, size_t size)
         return NULL;
     }
 
+    pepper_list_init(&object->event_listener_list);
     return object;
 }
 
