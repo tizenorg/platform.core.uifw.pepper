@@ -1,12 +1,12 @@
 #include "pepper-internal.h"
 
-static void
-buffer_destroy_handler(struct wl_listener *listener, void *data)
+static pepper_bool_t
+buffer_destroy_handler(pepper_event_listener_t *listener,
+                       pepper_object_t *object, uint32_t id, void *info)
 {
-    pepper_surface_state_t *state =
-        pepper_container_of(listener, pepper_surface_state_t, buffer_destroy_listener);
-
+    pepper_surface_state_t *state = listener->data;
     state->buffer = NULL;
+    return PEPPER_TRUE;
 }
 
 static void
@@ -23,7 +23,8 @@ pepper_surface_state_init(pepper_surface_state_t *state)
     pixman_region32_init(&state->input_region);
 
     wl_list_init(&state->frame_callbacks);
-    state->buffer_destroy_listener.notify = buffer_destroy_handler;
+    state->buffer_destroy_listener.callback = buffer_destroy_handler;
+    state->buffer_destroy_listener.data = state;
 }
 
 static void
@@ -76,7 +77,7 @@ surface_attach(struct wl_client    *client,
         return;
 
     if (surface->pending.buffer)
-        wl_list_remove(&surface->pending.buffer_destroy_listener.link);
+        pepper_event_listener_remove(&surface->pending.buffer_destroy_listener);
 
     surface->pending.buffer = buffer;
     surface->pending.x = x;
@@ -84,7 +85,10 @@ surface_attach(struct wl_client    *client,
     surface->pending.newly_attached = PEPPER_TRUE;
 
     if (buffer)
-        pepper_object_add_destroy_listener(&buffer->base, &surface->pending.buffer_destroy_listener);
+    {
+        pepper_object_add_event_listener(&buffer->base, &surface->pending.buffer_destroy_listener,
+                                         PEPPER_EVENT_OBJECT_DESTROY, 0);
+    }
 }
 
 static void
@@ -355,7 +359,7 @@ pepper_surface_commit(pepper_surface_t *surface)
     {
         if (surface->pending.buffer)
         {
-            wl_list_remove(&surface->pending.buffer_destroy_listener.link);
+            pepper_event_listener_remove(&surface->pending.buffer_destroy_listener);
             pepper_buffer_reference(surface->pending.buffer);
         }
 

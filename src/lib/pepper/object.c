@@ -32,7 +32,6 @@ pepper_object_alloc(pepper_object_type_t type, size_t size)
         return NULL;
 
     object->type = type;
-    wl_signal_init(&object->destroy_signal);
     object->user_data_map = pepper_map_create(5, user_data_hash, user_data_key_length,
                                               user_data_key_compare);
 
@@ -48,7 +47,7 @@ pepper_object_alloc(pepper_object_type_t type, size_t size)
 void
 pepper_object_fini(pepper_object_t *object)
 {
-    wl_signal_emit(&object->destroy_signal, (void *)object);
+    pepper_object_emit_event(object, PEPPER_EVENT_OBJECT_DESTROY, NULL);
     pepper_map_destroy(object->user_data_map);
 }
 
@@ -69,12 +68,6 @@ PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key)
 {
     return pepper_map_get(object->user_data_map, key);
-}
-
-PEPPER_API void
-pepper_object_add_destroy_listener(pepper_object_t *object, struct wl_listener *listener)
-{
-    wl_signal_add(&object->destroy_signal, listener);
 }
 
 static void
@@ -104,8 +97,9 @@ pepper_event_listener_init(pepper_event_listener_t *listener)
 }
 
 PEPPER_API void
-pepper_event_listener_insert(pepper_event_listener_t *listener,
-                             pepper_object_t *object, uint32_t id, int priority)
+pepper_object_add_event_listener(pepper_object_t *object,
+                                 pepper_event_listener_t *listener,
+                                 uint32_t id, int priority)
 {
     listener->object    = object;
     listener->id        = id;

@@ -20,7 +20,6 @@ typedef struct pepper_data_offer    pepper_data_offer_t;
 struct pepper_object
 {
     pepper_object_type_t    type;
-    struct wl_signal        destroy_signal;
     pepper_map_t           *user_data_map;
     pepper_list_t           event_listener_list;
 };
@@ -107,20 +106,20 @@ pepper_buffer_from_resource(struct wl_resource *resource);
 
 struct pepper_surface_state
 {
-    pepper_buffer_t    *buffer;
-    int32_t             x;
-    int32_t             y;
-    pepper_bool_t       newly_attached;
+    pepper_buffer_t        *buffer;
+    int32_t                 x;
+    int32_t                 y;
+    pepper_bool_t           newly_attached;
 
-    int32_t             transform;
-    int32_t             scale;
+    int32_t                 transform;
+    int32_t                 scale;
 
-    pixman_region32_t   damage_region;
-    pixman_region32_t   opaque_region;
-    pixman_region32_t   input_region;
+    pixman_region32_t       damage_region;
+    pixman_region32_t       opaque_region;
+    pixman_region32_t       input_region;
 
-    struct wl_list      frame_callbacks;
-    struct wl_listener  buffer_destroy_listener;
+    struct wl_list          frame_callbacks;
+    pepper_event_listener_t buffer_destroy_listener;
 };
 
 struct pepper_surface
@@ -310,7 +309,7 @@ struct pepper_plane_entry
     pepper_render_item_t    base;
 
     pepper_plane_t         *plane;
-    struct wl_listener      plane_destroy_listener;
+    pepper_event_listener_t plane_destroy_listener;
     pepper_bool_t           need_damage;
 
     pepper_list_t           link;
@@ -353,7 +352,7 @@ struct pepper_view
     /* Content. */
     pepper_surface_t       *surface;
     pepper_list_t           surface_link;
-    struct wl_listener      surface_destroy_listener;
+    pepper_event_listener_t surface_destroy_listener;
 
     /* Output info. */
     uint32_t                output_overlap;

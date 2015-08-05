@@ -201,8 +201,9 @@ PEPPER_API void
 pepper_event_listener_init(pepper_event_listener_t *listener);
 
 PEPPER_API void
-pepper_event_listener_insert(pepper_event_listener_t *listener,
-                             pepper_object_t *object, uint32_t id, int priority);
+pepper_object_add_event_listener(pepper_object_t *object,
+                                 pepper_event_listener_t *listener,
+                                 uint32_t id, int priority);
 
 PEPPER_API void
 pepper_event_listener_remove(pepper_event_listener_t *listener);
