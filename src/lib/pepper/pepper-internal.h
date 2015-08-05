@@ -31,18 +31,6 @@ pepper_object_alloc(pepper_object_type_t type, size_t size);
 void
 pepper_object_fini(pepper_object_t *object);
 
-struct pepper_event_listener
-{
-    pepper_object_t        *object;
-
-    uint32_t                id;
-    pepper_event_callback_t callback;
-    int                     priority;
-    void                   *data;
-
-    pepper_list_t           link;
-};
-
 /* compositor */
 struct pepper_compositor
 {
@@ -292,9 +280,6 @@ struct pepper_touch_device
     /* Backend-specific variables. */
     void                       *data;
 };
-
-void
-pepper_seat_update_modifier(pepper_seat_t *seat, pepper_input_event_t *event);
 
 /* Data device */
 struct pepper_data_source

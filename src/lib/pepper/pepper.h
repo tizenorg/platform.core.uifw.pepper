@@ -27,16 +27,8 @@ typedef struct pepper_touch_device      pepper_touch_device_t;
 
 typedef struct pepper_output_geometry   pepper_output_geometry_t;
 typedef struct pepper_output_mode       pepper_output_mode_t;
-typedef struct pepper_input_event       pepper_input_event_t;
-typedef struct pepper_event_hook        pepper_event_hook_t;
 
 typedef struct pepper_event_listener    pepper_event_listener_t;
-
-typedef pepper_bool_t   (*pepper_event_callback_t)(pepper_event_listener_t  *listener,
-                                                   pepper_object_t          *object,
-                                                   uint32_t                  id,
-                                                   void                     *data,
-                                                   void                     *info);
 
 struct pepper_output_geometry
 {
@@ -73,6 +65,22 @@ typedef enum pepper_object_type
     PEPPER_OBJECT_TOUCH_DEVICE,
     PEPPER_OBJECT_PLANE,
 } pepper_object_type_t;
+
+struct pepper_event_listener
+{
+    void               *data;
+
+    pepper_bool_t   (*callback)(pepper_event_listener_t    *listener,
+                                pepper_object_t            *object,
+                                uint32_t                    id,
+                                void                       *info);
+
+    /* Don't touch these variables. Used by pepepr internally. */
+    pepper_object_t    *object;
+    uint32_t            id;
+    int                 priority;
+    pepper_list_t       link;
+};
 
 enum pepper_object_events
 {
@@ -189,34 +197,21 @@ pepper_object_get_user_data(pepper_object_t *object, const void *key);
 PEPPER_API void
 pepper_object_add_destroy_listener(pepper_object_t *object, struct wl_listener *listener);
 
-PEPPER_API pepper_event_listener_t *
-pepper_object_add_event_listener(pepper_object_t *object,
-                                 uint32_t id, pepper_event_callback_t callback,
-                                 int priority, void *data);
+PEPPER_API void
+pepper_event_listener_init(pepper_event_listener_t *listener);
 
-PEPPER_API pepper_object_t *
-pepper_event_listener_get_object(pepper_event_listener_t *listener);
+PEPPER_API void
+pepper_event_listener_insert(pepper_event_listener_t *listener,
+                             pepper_object_t *object, uint32_t id, int priority);
 
-PEPPER_API uint32_t
-pepper_event_listener_get_id(pepper_event_listener_t *listener);
-
-PEPPER_API pepper_event_callback_t
-pepper_event_listener_get_callback(pepper_event_listener_t *listener);
-
-PEPPER_API int
-pepper_event_listener_get_priority(pepper_event_listener_t *listener);
-
-PEPPER_API void *
-pepper_event_listener_get_data(pepper_event_listener_t *listener);
+PEPPER_API void
+pepper_event_listener_remove(pepper_event_listener_t *listener);
 
 PEPPER_API void
 pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priority);
 
 PEPPER_API void
-pepper_event_listener_destroy(pepper_event_listener_t *listener);
-
-PEPPER_API void
-pepper_object_signal_event(pepper_object_t *object, uint32_t id, void *info);
+pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info);
 
 /* Compositor functions. */
 PEPPER_API pepper_compositor_t *
