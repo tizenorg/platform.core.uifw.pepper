@@ -96,9 +96,11 @@ get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
 
         state->surface = surface;
 
+        pepper_event_listener_init(&state->buffer_destroy_listener);
         state->buffer_destroy_listener.callback = surface_state_handle_buffer_destroy;
         state->buffer_destroy_listener.data = state;
 
+        pepper_event_listener_init(&state->surface_destroy_listener);
         state->surface_destroy_listener.callback = surface_state_handle_surface_destroy;
         state->surface_destroy_listener.data = state;
 

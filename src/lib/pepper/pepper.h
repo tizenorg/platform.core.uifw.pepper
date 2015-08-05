@@ -85,10 +85,7 @@ struct pepper_event_listener
 enum pepper_object_events
 {
     PEPPER_EVENT_OBJECT_DESTROY,
-};
 
-enum pepper_compositor_events
-{
     PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD,
     PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE,
     PEPPER_EVENT_COMPOSITOR_SEAT_ADD,
@@ -103,31 +100,16 @@ enum pepper_compositor_events
     PEPPER_EVENT_COMPOSITOR_KEYBOARD_DEVICE_REMOVE,
     PEPPER_EVENT_COMPOSITOR_TOUCH_DEVICE_ADD,
     PEPPER_EVENT_COMPOSITOR_TOUCH_DEVICE_REMOVE,
-};
 
-enum pepper_output_events
-{
     PEPPER_EVENT_OUTPUT_MODE_CHANGE,
     PEPPER_EVENT_OUTPUT_MOVE,
-};
 
-enum pepper_surface_events
-{
     PEPPER_EVENT_SURFACE_COMMIT,
-};
 
-enum pepper_buffer_events
-{
     PEPPER_EVENT_BUFFER_RELEASE,
-};
 
-enum pepper_view_events
-{
     PEPPER_EVENT_VIEW_STACK_CHANGE,
-};
 
-enum pepper_seat_events
-{
     PEPPER_EVENT_SEAT_POINTER_ADD,
     PEPPER_EVENT_SEAT_POINTER_REMOVE,
     PEPPER_EVENT_SEAT_KEYBOARD_ADD,
@@ -141,43 +123,25 @@ enum pepper_seat_events
     PEPPER_EVENT_SEAT_KEYBOARD_DEVICE_REMOVE,
     PEPPER_EVENT_SEAT_TOUCH_DEVICE_ADD,
     PEPPER_EVENT_SEAT_TOUCH_DEVICE_REMOVE,
-};
 
-enum pepper_pointer_events
-{
     PEPPER_EVENT_POINTER_MOTION,
     PEPPER_EVENT_POINTER_BUTTON,
     PEPPER_EVENT_POINTER_AXIS,
-};
 
-enum pepper_keyboard_events
-{
     PEPPER_EVENT_KEYBOARD_KEY,
     PEPPER_EVENT_KEYBOARD_MODIFIERS,
-};
 
-enum pepper_touch_events
-{
     PEPPER_EVENT_TOUCH_DOWN,
     PEPPER_EVENT_TOUCH_UP,
     PEPPER_EVENT_TOUCH_MOTION,
-};
 
-enum pepper_pointer_device_events
-{
     PEPPER_EVENT_POINTER_DEVICE_MOTION,
     PEPPER_EVENT_POINTER_DEVICE_BUTTON,
     PEPPER_EVENT_POINTER_DEVICE_AXIS,
-};
 
-enum pepper_keyboard_device_events
-{
     PEPPER_EVENT_KEYBOARD_DEVICE_KEY,
     PEPPER_EVENT_KEYBOARD_DEVICE_MODIFIERS,
-};
 
-enum pepper_touch_device_events
-{
     PEPPER_EVENT_TOUCH_DEVICE_DOWN,
     PEPPER_EVENT_TOUCH_DEVICE_UP,
     PEPPER_EVENT_TOUCH_DEVICE_MOTION,

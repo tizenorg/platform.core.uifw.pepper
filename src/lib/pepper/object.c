@@ -95,6 +95,7 @@ PEPPER_API void
 pepper_event_listener_init(pepper_event_listener_t *listener)
 {
     memset(listener, 0x00, sizeof(pepper_event_listener_t));
+    listener->link.item = listener;
 }
 
 PEPPER_API void
@@ -114,7 +115,7 @@ pepper_event_listener_remove(pepper_event_listener_t *listener)
 {
     if (!listener->object)
         return;
-    
+
     pepper_list_remove(&listener->link, NULL);
     listener->object = NULL;
 }

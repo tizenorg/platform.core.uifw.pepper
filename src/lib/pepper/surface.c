@@ -23,6 +23,7 @@ pepper_surface_state_init(pepper_surface_state_t *state)
     pixman_region32_init(&state->input_region);
 
     wl_list_init(&state->frame_callbacks);
+    pepper_event_listener_init(&state->buffer_destroy_listener);
     state->buffer_destroy_listener.callback = buffer_destroy_handler;
     state->buffer_destroy_listener.data = state;
 }

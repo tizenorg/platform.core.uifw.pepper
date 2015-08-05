@@ -196,6 +196,7 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
 
     wl_resource_set_implementation(shsurf->resource, implementation, shsurf, handle_resource_destroy);
 
+    pepper_event_listener_init(&shsurf->surface_destroy_listener);
     shsurf->surface_destroy_listener.callback = handle_surface_destroy;
     shsurf->surface_destroy_listener.data = shsurf;
     pepper_object_add_event_listener((pepper_object_t *)surface,
@@ -204,6 +205,7 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
 
+    pepper_event_listener_init(&shsurf->surface_commit_listener);
     shsurf->surface_commit_listener.callback = handle_surface_commit;
     shsurf->surface_commit_listener.data = shsurf;
     shsurf_start_listen_commit_event(shsurf);

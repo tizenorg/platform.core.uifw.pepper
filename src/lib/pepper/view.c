@@ -125,6 +125,7 @@ plane_entry_set_plane(pepper_plane_entry_t *entry, pepper_plane_t *plane)
 
     if (entry->plane)
     {
+        pepper_event_listener_init(&entry->plane_destroy_listener);
         entry->plane_destroy_listener.callback = view_handle_plane_destroy;
         entry->plane_destroy_listener.data = entry;
         pepper_object_add_event_listener(&plane->base,
@@ -304,6 +305,7 @@ pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surfa
     view->surface_link.item = view;
     pepper_list_insert(&surface->view_list, &view->surface_link);
 
+    pepper_event_listener_init(&view->surface_destroy_listener);
     view->surface_destroy_listener.callback = view_handle_surface_destroy;
     view->surface_destroy_listener.data = view;
     pepper_object_add_event_listener(&surface->base, &view->surface_destroy_listener,
