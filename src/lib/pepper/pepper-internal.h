@@ -31,9 +31,6 @@ pepper_object_alloc(pepper_object_type_t type, size_t size);
 void
 pepper_object_fini(pepper_object_t *object);
 
-void
-pepper_object_signal_event(pepper_object_t *object, uint32_t id, void *info);
-
 struct pepper_event_listener
 {
     pepper_object_t        *object;

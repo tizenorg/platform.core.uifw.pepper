@@ -215,6 +215,9 @@ pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priori
 PEPPER_API void
 pepper_event_listener_destroy(pepper_event_listener_t *listener);
 
+PEPPER_API void
+pepper_object_signal_event(pepper_object_t *object, uint32_t id, void *info);
+
 /* Compositor functions. */
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name);

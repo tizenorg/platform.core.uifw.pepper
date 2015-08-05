@@ -166,7 +166,7 @@ pepper_event_listener_destroy(pepper_event_listener_t *listener)
     pepper_free(listener);
 }
 
-void
+PEPPER_API void
 pepper_object_signal_event(pepper_object_t *object, uint32_t id, void *info)
 {
     pepper_event_listener_t *listener;
