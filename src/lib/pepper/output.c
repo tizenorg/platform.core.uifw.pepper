@@ -122,6 +122,7 @@ handle_mode_change(struct wl_listener *listener, void *data)
 {
     pepper_output_t *output = pepper_container_of(listener, pepper_output_t, mode_change_listener);
     output_update_mode(output);
+    pepper_object_emit_event(&output->base, PEPPER_EVENT_OUTPUT_MODE_CHANGE, NULL);
 }
 
 static void
@@ -307,6 +308,8 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     backend->add_frame_listener(data, &output->frame.frame_listener);
 
     pepper_list_init(&output->plane_list);
+    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD, NULL);
+
     return output;
 }
 
@@ -330,9 +333,10 @@ pepper_output_destroy(pepper_output_t *output)
     wl_list_remove(&output->mode_change_listener.link);
     wl_list_remove(&output->frame.frame_listener.link);
 
-    /* TODO: Handle removal of this output. e.g. Re-position outputs. */
-
     pepper_object_fini(&output->base);
+    pepper_object_emit_event(&output->compositor->base,
+                             PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE, output);
+
     pepper_free(output);
 }
 
@@ -345,7 +349,9 @@ pepper_output_move(pepper_output_t *output, int32_t x, int32_t y)
         output->geometry.y = y;
 
         /* TODO: pepper_output_add_damage_whole(out); */
+
         output_send_geometry(output);
+        pepper_object_emit_event(&output->base, PEPPER_EVENT_OUTPUT_MOVE, NULL);
     }
 }
 
