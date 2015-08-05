@@ -58,7 +58,6 @@ struct pepper_compositor
     struct wl_list      seat_list;
     pepper_list_t       output_list;
     uint32_t            output_id_allocator;
-    struct wl_list      event_hook_chain;
 
     pepper_bool_t       update_scheduled;
     pepper_list_t       view_list;
@@ -411,22 +410,6 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip);
 
 void
 pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list);
-
-/* Event hook */
-struct pepper_event_hook
-{
-    pepper_event_handler_t    handler;
-    void                     *data;
-    struct wl_list            link;
-
-    /* TODO:
-     * void *owner, *priority;
-     * or something elses
-     */
-};
-
-pepper_bool_t
-pepper_compositor_event_handler(pepper_seat_t *seat, pepper_input_event_t *event, void *data);
 
 void
 pepper_surface_flush_damage(pepper_surface_t *surface);

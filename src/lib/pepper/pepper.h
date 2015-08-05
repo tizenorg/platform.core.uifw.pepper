@@ -250,43 +250,6 @@ PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode);
 
 /* Input. */
-enum pepper_input_event_type
-{
-    PEPPER_INPUT_EVENT_POINTER_BUTTON,
-    PEPPER_INPUT_EVENT_POINTER_MOTION,
-    PEPPER_INPUT_EVENT_POINTER_AXIS,
-    PEPPER_INPUT_EVENT_KEYBOARD_KEY,
-    PEPPER_INPUT_EVENT_TOUCH_DOWN,
-    PEPPER_INPUT_EVENT_TOUCH_UP,
-    PEPPER_INPUT_EVENT_TOUCH_MOTION,
-    PEPPER_INPUT_EVENT_TOUCH_FRAME,
-    PEPPER_INPUT_EVENT_TOUCH_CANCEL,
-};
-
-enum pepper_input_event_state
-{
-    PEPPER_INPUT_EVENT_STATE_RELEASED,
-    PEPPER_INPUT_EVENT_STATE_PRESSED,
-};
-
-enum pepper_input_event_axis
-{
-    PEPPER_INPUT_EVENT_AXIS_VERTICAL,
-    PEPPER_INPUT_EVENT_AXIS_HORIZONTAL,
-};
-
-struct pepper_input_event
-{
-    uint32_t        type;
-    uint32_t        time;
-    uint32_t        serial;
-    uint32_t        index;  /* button, key, touch id or axis */
-    uint32_t        state;
-    wl_fixed_t      value;
-    wl_fixed_t      x;
-    wl_fixed_t      y;
-};
-
 PEPPER_API pepper_seat_t *
 pepper_compositor_add_seat(pepper_compositor_t *compositor,
                            const char *seat_name,
@@ -303,20 +266,6 @@ pepper_seat_get_keyboard(pepper_seat_t *seat);
 
 PEPPER_API pepper_touch_t *
 pepper_seat_get_touch(pepper_seat_t *seat);
-
-PEPPER_API pepper_bool_t
-pepper_seat_handle_event(pepper_seat_t *seat, pepper_input_event_t *event);
-
-/* Event hook */
-typedef pepper_bool_t (*pepper_event_handler_t)(pepper_seat_t *, pepper_input_event_t *, void *);
-
-PEPPER_API pepper_event_hook_t *
-pepper_compositor_add_event_hook(pepper_compositor_t        *compositor,
-                                 pepper_event_handler_t      handler,
-                                 void                       *data);
-
-PEPPER_API void
-pepper_event_hook_destroy(pepper_event_hook_t *hook);
 
 /* Surface. */
 PEPPER_API const char *

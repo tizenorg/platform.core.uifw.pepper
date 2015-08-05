@@ -6,10 +6,6 @@
 void
 x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev)
 {
-    pepper_input_event_t event = {0,};
-
-    UNUSED(event); /* disable warning */
-
     switch (type)
     {
     case XCB_ENTER_NOTIFY:
@@ -32,23 +28,14 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
             {
             case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
                 PEPPER_TRACE("left click\n");
-                event.index = 1;
                 break;
             case XCB_BUTTON_INDEX_3:/* FIXME: RIGHT */
                 PEPPER_TRACE("right click\n");
-                event.index = 3;
                 break;
             default:
                 PEPPER_TRACE("wheel or something pressed\n");
                 break;
             }
-            event.type   = PEPPER_INPUT_EVENT_POINTER_BUTTON;
-            event.time   = bp->time;
-            event.serial = bp->sequence;
-            event.state  = PEPPER_INPUT_EVENT_STATE_PRESSED;
-            event.value  = 0;
-            event.x      = bp->event_x;
-            event.y      = bp->event_y;;
         }
         break;
     case XCB_BUTTON_RELEASE:
@@ -58,37 +45,19 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
             {
             case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
                 PEPPER_TRACE("left released\n");
-                event.index = 1;
                 break;
             case XCB_BUTTON_INDEX_3:/* FIXME: RIGHT */
                 PEPPER_TRACE("right released\n");
-                event.index = 3;
                 break;
             default:
                 PEPPER_TRACE("wheel or something pressed\n");
                 break;
             }
-            event.type   = PEPPER_INPUT_EVENT_POINTER_BUTTON;
-            event.time   = br->time;
-            event.serial = br->sequence;
-            event.state  = PEPPER_INPUT_EVENT_STATE_RELEASED;
-            event.value  = 0;
-            event.x      = br->event_x;
-            event.y      = br->event_y;;
         }
         break;
     case XCB_MOTION_NOTIFY:
         {
             xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
-
-            event.type   = PEPPER_INPUT_EVENT_POINTER_MOTION;
-            event.time   = motion->time;
-            event.serial = motion->sequence;
-            event.index  = 0;
-            event.state  = 0;
-            event.value  = 0;
-            event.x      = motion->event_x;
-            event.y      = motion->event_y;
         }
         break;
     default :

@@ -84,18 +84,8 @@ pepper_compositor_create(const char *socket_name)
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
     pepper_list_init(&compositor->output_list);
-    wl_list_init(&compositor->event_hook_chain);
     pepper_list_init(&compositor->view_list);
     wl_list_init(&compositor->regions);
-
-    /* Install default input event handler */
-    if( NULL == pepper_compositor_add_event_hook(compositor,
-                                                 pepper_compositor_event_handler,
-                                                 compositor))
-    {
-        PEPPER_ERROR("Failed to install event handler\n");
-        goto error;
-    }
 
     if (wl_display_init_shm(compositor->display) != 0)
     {
