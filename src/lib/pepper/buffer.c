@@ -49,7 +49,10 @@ pepper_buffer_unreference(pepper_buffer_t *buffer)
     PEPPER_ASSERT(buffer->ref_count > 0);
 
     if (--buffer->ref_count == 0)
+    {
         wl_resource_queue_event(buffer->resource, WL_BUFFER_RELEASE);
+        pepper_object_emit_event(&buffer->base, PEPPER_EVENT_BUFFER_RELEASE, NULL);
+    }
 }
 
 PEPPER_API struct wl_resource *

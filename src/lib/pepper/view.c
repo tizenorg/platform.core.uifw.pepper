@@ -87,6 +87,7 @@ view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
         pepper_list_remove(&view->compositor_link, NULL);
         pepper_list_insert(pos, &view->compositor_link);
         view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
+        pepper_object_emit_event(&view->base, PEPPER_EVENT_VIEW_STACK_CHANGE, NULL);
     }
 
     pos = &view->compositor_link;

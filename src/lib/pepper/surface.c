@@ -397,6 +397,7 @@ pepper_surface_commit(pepper_surface_t *surface)
     pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
 
     pepper_surface_flush_damage(surface);
+    pepper_object_emit_event(&surface->base, PEPPER_EVENT_SURFACE_COMMIT, NULL);
 }
 
 void
