@@ -30,6 +30,14 @@ typedef struct pepper_output_mode       pepper_output_mode_t;
 typedef struct pepper_input_event       pepper_input_event_t;
 typedef struct pepper_event_hook        pepper_event_hook_t;
 
+typedef struct pepper_event_listener    pepper_event_listener_t;
+
+typedef pepper_bool_t   (*pepper_event_callback_t)(pepper_event_listener_t  *listener,
+                                                   pepper_object_t          *object,
+                                                   uint32_t                  id,
+                                                   void                     *data,
+                                                   void                     *info);
+
 struct pepper_output_geometry
 {
     int32_t     x;
@@ -66,6 +74,107 @@ typedef enum pepper_object_type
     PEPPER_OBJECT_PLANE,
 } pepper_object_type_t;
 
+enum pepper_object_events
+{
+    PEPPER_EVENT_OBJECT_DESTROY,
+};
+
+enum pepper_compositor_events
+{
+    PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD,
+    PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE,
+    PEPPER_EVENT_COMPOSITOR_SEAT_ADD,
+    PEPPER_EVENT_COMPOSITOR_SEAT_REMOVE,
+    PEPPER_EVENT_COMPOSITOR_SURFACE_ADD,
+    PEPPER_EVENT_COMPOSITOR_SURFACE_REMOVE,
+    PEPPER_EVENT_COMPOSITOR_VIEW_ADD,
+    PEPPER_EVENT_COMPOSITOR_VIEW_REMOVE,
+    PEPPER_EVENT_COMPOSITOR_POINTER_DEVICE_ADD,
+    PEPPER_EVENT_COMPOSITOR_POINTER_DEVICE_REMOVE,
+    PEPPER_EVENT_COMPOSITOR_KEYBOARD_DEVICE_ADD,
+    PEPPER_EVENT_COMPOSITOR_KEYBOARD_DEVICE_REMOVE,
+    PEPPER_EVENT_COMPOSITOR_TOUCH_DEVICE_ADD,
+    PEPPER_EVENT_COMPOSITOR_TOUCH_DEVICE_REMOVE,
+};
+
+enum pepper_output_events
+{
+    PEPPER_EVENT_OUTPUT_MODE_CHANGE,
+    PEPPER_EVENT_OUTPUT_MOVE,
+};
+
+enum pepper_surface_events
+{
+    PEPPER_EVENT_SURFACE_COMMIT,
+};
+
+enum pepper_buffer_events
+{
+    PEPPER_EVENT_BUFFER_RELEASE,
+};
+
+enum pepper_view_events
+{
+    PEPPER_EVENT_VIEW_STACK_CHANGE,
+};
+
+enum pepper_seat_events
+{
+    PEPPER_EVENT_SEAT_POINTER_ADD,
+    PEPPER_EVENT_SEAT_POINTER_REMOVE,
+    PEPPER_EVENT_SEAT_KEYBOARD_ADD,
+    PEPPER_EVENT_SEAT_KEYBOARD_REMOVE,
+    PEPPER_EVENT_SEAT_TOUCH_ADD,
+    PEPPER_EVENT_SEAT_TOUCH_REMOVE,
+
+    PEPPER_EVENT_SEAT_POINTER_DEVICE_ADD,
+    PEPPER_EVENT_SEAT_POINTER_DEVICE_REMOVE,
+    PEPPER_EVENT_SEAT_KEYBOARD_DEVICE_ADD,
+    PEPPER_EVENT_SEAT_KEYBOARD_DEVICE_REMOVE,
+    PEPPER_EVENT_SEAT_TOUCH_DEVICE_ADD,
+    PEPPER_EVENT_SEAT_TOUCH_DEVICE_REMOVE,
+};
+
+enum pepper_pointer_events
+{
+    PEPPER_EVENT_POINTER_MOTION,
+    PEPPER_EVENT_POINTER_BUTTON,
+    PEPPER_EVENT_POINTER_AXIS,
+};
+
+enum pepper_keyboard_events
+{
+    PEPPER_EVENT_KEYBOARD_KEY,
+    PEPPER_EVENT_KEYBOARD_MODIFIERS,
+};
+
+enum pepper_touch_events
+{
+    PEPPER_EVENT_TOUCH_DOWN,
+    PEPPER_EVENT_TOUCH_UP,
+    PEPPER_EVENT_TOUCH_MOTION,
+};
+
+enum pepper_pointer_device_events
+{
+    PEPPER_EVENT_POINTER_DEVICE_MOTION,
+    PEPPER_EVENT_POINTER_DEVICE_BUTTON,
+    PEPPER_EVENT_POINTER_DEVICE_AXIS,
+};
+
+enum pepper_keyboard_device_events
+{
+    PEPPER_EVENT_KEYBOARD_DEVICE_KEY,
+    PEPPER_EVENT_KEYBOARD_DEVICE_MODIFIERS,
+};
+
+enum pepper_touch_device_events
+{
+    PEPPER_EVENT_TOUCH_DEVICE_DOWN,
+    PEPPER_EVENT_TOUCH_DEVICE_UP,
+    PEPPER_EVENT_TOUCH_DEVICE_MOTION,
+};
+
 /* Generic object functions. */
 PEPPER_API pepper_object_type_t
 pepper_object_get_type(pepper_object_t *object);
@@ -79,6 +188,32 @@ pepper_object_get_user_data(pepper_object_t *object, const void *key);
 
 PEPPER_API void
 pepper_object_add_destroy_listener(pepper_object_t *object, struct wl_listener *listener);
+
+PEPPER_API pepper_event_listener_t *
+pepper_object_add_event_listener(pepper_object_t *object,
+                                 uint32_t id, pepper_event_callback_t callback,
+                                 int priority, void *data);
+
+PEPPER_API pepper_object_t *
+pepper_event_listener_get_object(pepper_event_listener_t *listener);
+
+PEPPER_API uint32_t
+pepper_event_listener_get_id(pepper_event_listener_t *listener);
+
+PEPPER_API pepper_event_callback_t
+pepper_event_listener_get_callback(pepper_event_listener_t *listener);
+
+PEPPER_API int
+pepper_event_listener_get_priority(pepper_event_listener_t *listener);
+
+PEPPER_API void *
+pepper_event_listener_get_data(pepper_event_listener_t *listener);
+
+PEPPER_API void
+pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priority);
+
+PEPPER_API void
+pepper_event_listener_destroy(pepper_event_listener_t *listener);
 
 /* Compositor functions. */
 PEPPER_API pepper_compositor_t *

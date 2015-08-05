@@ -22,6 +22,7 @@ struct pepper_object
     pepper_object_type_t    type;
     struct wl_signal        destroy_signal;
     pepper_map_t           *user_data_map;
+    pepper_list_t           event_listener_list;
 };
 
 pepper_object_t *
@@ -29,6 +30,21 @@ pepper_object_alloc(pepper_object_type_t type, size_t size);
 
 void
 pepper_object_fini(pepper_object_t *object);
+
+void
+pepper_object_signal_event(pepper_object_t *object, uint32_t id, void *info);
+
+struct pepper_event_listener
+{
+    pepper_object_t        *object;
+
+    uint32_t                id;
+    pepper_event_callback_t callback;
+    int                     priority;
+    void                   *data;
+
+    pepper_list_t           link;
+};
 
 /* compositor */
 struct pepper_compositor
