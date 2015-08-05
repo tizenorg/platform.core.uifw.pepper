@@ -317,18 +317,11 @@ pepper_view_destroy(pepper_view_t *view)
     pepper_list_t  *l, *next;
     int             i;
 
-    /* Destroy signal is emitted in here so that any children that are willing to survive this
-     * destruction can detach from their parent.
-     */
-    pepper_object_fini(&view->base);
-
     for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
         plane_entry_set_plane(&view->plane_entries[i], NULL);
 
     PEPPER_LIST_FOR_EACH_SAFE(&view->children_list, l, next)
         pepper_view_destroy((pepper_view_t *)(l->item));
-
-    PEPPER_ASSERT(pepper_list_empty(&view->children_list));
 
     if (view->parent)
         pepper_list_remove(&view->parent_link, NULL);
@@ -344,6 +337,7 @@ pepper_view_destroy(pepper_view_t *view)
     pixman_region32_fini(&view->opaque_region);
     pixman_region32_fini(&view->bounding_region);
 
+    pepper_object_fini(&view->base);
     pepper_free(view);
 }
 

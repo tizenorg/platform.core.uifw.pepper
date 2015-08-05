@@ -111,11 +111,10 @@ error:
 PEPPER_API void
 pepper_compositor_destroy(pepper_compositor_t *compositor)
 {
-    pepper_object_fini(&compositor->base);
-
     if (compositor->display)
         wl_display_destroy(compositor->display);
 
+    pepper_object_fini(&compositor->base);
     pepper_free(compositor);
 }
 

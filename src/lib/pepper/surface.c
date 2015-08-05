@@ -273,7 +273,6 @@ pepper_surface_destroy(pepper_surface_t *surface)
 {
     struct wl_resource *callback, *next;
 
-    pepper_object_fini(&surface->base);
     pepper_surface_state_fini(&surface->pending);
 
     if (surface->buffer.buffer)
@@ -294,6 +293,7 @@ pepper_surface_destroy(pepper_surface_t *surface)
     if (surface->user_data_map)
         pepper_map_destroy(surface->user_data_map);
 
+    pepper_object_fini(&surface->base);
     pepper_free(surface);
 }
 

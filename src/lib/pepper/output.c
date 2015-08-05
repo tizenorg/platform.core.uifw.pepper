@@ -319,8 +319,6 @@ pepper_output_get_compositor(pepper_output_t *output)
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output)
 {
-    pepper_object_fini(&output->base);
-
     output->compositor->output_id_allocator &= ~(1 << output->id);
     pepper_list_remove(&output->link, NULL);
 
@@ -334,6 +332,7 @@ pepper_output_destroy(pepper_output_t *output)
 
     /* TODO: Handle removal of this output. e.g. Re-position outputs. */
 
+    pepper_object_fini(&output->base);
     pepper_free(output);
 }
 
