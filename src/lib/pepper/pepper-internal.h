@@ -259,7 +259,6 @@ struct pepper_input_device
 
     void                                   *data;
     const pepper_input_device_backend_t    *backend;
-
 };
 
 /* Data device */

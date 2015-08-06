@@ -232,3 +232,9 @@ pepper_input_device_get_property(pepper_input_device_t *device, const char *key)
 
     return device->backend->get_property(device->data, key);
 }
+
+PEPPER_API uint32_t
+pepper_input_device_get_caps(pepper_input_device_t *device)
+{
+    return device->caps;
+}
