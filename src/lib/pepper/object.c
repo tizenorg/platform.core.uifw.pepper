@@ -135,9 +135,9 @@ PEPPER_API void
 pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
 {
     pepper_event_listener_t *listener;
-    pepper_list_t           *l;
+    pepper_list_t           *l, *tmp;
 
-    PEPPER_LIST_FOR_EACH(&object->event_listener_list, l)
+    PEPPER_LIST_FOR_EACH_SAFE(&object->event_listener_list, l, tmp)
     {
         listener = l->item;
 
