@@ -250,34 +250,16 @@ struct pepper_touch
     struct wl_list              link;
 };
 
-struct pepper_pointer_device
+struct pepper_input_device
 {
-    pepper_object_t             base;
-    pepper_pointer_t           *pointer;
-    struct wl_list              link;
+    pepper_object_t                         base;
+    pepper_compositor_t                    *compositor;
 
-    /* Backend-specific variables. */
-    void                       *data;
-};
+    uint32_t                                caps;
 
-struct pepper_keyboard_device
-{
-    pepper_object_t             base;
-    pepper_keyboard_t          *keyboard;
-    struct wl_list              link;
+    void                                   *data;
+    const pepper_input_device_backend_t    *backend;
 
-    /* Backend-specific variables. */
-    void                       *data;
-};
-
-struct pepper_touch_device
-{
-    pepper_object_t             base;
-    pepper_touch_t             *touch;
-    struct wl_list              link;
-
-    /* Backend-specific variables. */
-    void                       *data;
 };
 
 /* Data device */

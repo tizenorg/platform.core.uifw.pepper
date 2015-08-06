@@ -10,25 +10,33 @@
 extern "C" {
 #endif
 
-typedef struct pepper_object            pepper_object_t;
+typedef struct pepper_object                    pepper_object_t;
 
-typedef struct pepper_compositor        pepper_compositor_t;
-typedef struct pepper_output            pepper_output_t;
-typedef struct pepper_surface           pepper_surface_t;
-typedef struct pepper_buffer            pepper_buffer_t;
-typedef struct pepper_view              pepper_view_t;
-typedef struct pepper_seat              pepper_seat_t;
-typedef struct pepper_pointer           pepper_pointer_t;
-typedef struct pepper_keyboard          pepper_keyboard_t;
-typedef struct pepper_touch             pepper_touch_t;
-typedef struct pepper_pointer_device    pepper_pointer_device_t;
-typedef struct pepper_keyboard_device   pepper_keyboard_device_t;
-typedef struct pepper_touch_device      pepper_touch_device_t;
+typedef struct pepper_compositor                pepper_compositor_t;
+typedef struct pepper_output                    pepper_output_t;
+typedef struct pepper_surface                   pepper_surface_t;
+typedef struct pepper_buffer                    pepper_buffer_t;
+typedef struct pepper_view                      pepper_view_t;
+typedef struct pepper_seat                      pepper_seat_t;
+typedef struct pepper_pointer                   pepper_pointer_t;
+typedef struct pepper_keyboard                  pepper_keyboard_t;
+typedef struct pepper_touch                     pepper_touch_t;
 
-typedef struct pepper_output_geometry   pepper_output_geometry_t;
-typedef struct pepper_output_mode       pepper_output_mode_t;
+typedef struct pepper_output_geometry           pepper_output_geometry_t;
+typedef struct pepper_output_mode               pepper_output_mode_t;
 
-typedef struct pepper_event_listener    pepper_event_listener_t;
+typedef struct pepper_event_listener            pepper_event_listener_t;
+
+typedef struct pepper_input_device              pepper_input_device_t;
+typedef struct pepper_input_device_backend      pepper_input_device_backend_t;
+
+typedef struct pepper_pointer_motion_event      pepper_pointer_motion_event_t;
+typedef struct pepper_pointer_button_event      pepper_pointer_button_event_t;
+typedef struct pepper_pointer_axis_event        pepper_pointer_axis_event_t;
+typedef struct pepper_keyboard_key_event        pepper_keyboard_key_event_t;
+typedef struct pepper_touch_down_event          pepper_touch_down_event_t;
+typedef struct pepper_touch_up_event            pepper_touch_up_event_t;
+typedef struct pepper_touch_motion_event        pepper_touch_motion_event_t;
 
 struct pepper_output_geometry
 {
@@ -60,9 +68,7 @@ typedef enum pepper_object_type
     PEPPER_OBJECT_POINTER,
     PEPPER_OBJECT_KEYBOARD,
     PEPPER_OBJECT_TOUCH,
-    PEPPER_OBJECT_POINTER_DEVICE,
-    PEPPER_OBJECT_KEYBOARD_DEVICE,
-    PEPPER_OBJECT_TOUCH_DEVICE,
+    PEPPER_OBJECT_INPUT_DEVICE,
     PEPPER_OBJECT_PLANE,
 } pepper_object_type_t;
 
@@ -94,12 +100,8 @@ enum pepper_object_events
     PEPPER_EVENT_COMPOSITOR_SURFACE_REMOVE,
     PEPPER_EVENT_COMPOSITOR_VIEW_ADD,
     PEPPER_EVENT_COMPOSITOR_VIEW_REMOVE,
-    PEPPER_EVENT_COMPOSITOR_POINTER_DEVICE_ADD,
-    PEPPER_EVENT_COMPOSITOR_POINTER_DEVICE_REMOVE,
-    PEPPER_EVENT_COMPOSITOR_KEYBOARD_DEVICE_ADD,
-    PEPPER_EVENT_COMPOSITOR_KEYBOARD_DEVICE_REMOVE,
-    PEPPER_EVENT_COMPOSITOR_TOUCH_DEVICE_ADD,
-    PEPPER_EVENT_COMPOSITOR_TOUCH_DEVICE_REMOVE,
+    PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
+    PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE,
 
     PEPPER_EVENT_OUTPUT_MODE_CHANGE,
     PEPPER_EVENT_OUTPUT_MOVE,
@@ -134,17 +136,68 @@ enum pepper_object_events
     PEPPER_EVENT_TOUCH_DOWN,
     PEPPER_EVENT_TOUCH_UP,
     PEPPER_EVENT_TOUCH_MOTION,
+    PEPPER_EVENT_TOUCH_FRAME,
+    PEPPER_EVENT_TOUCH_CANCEL,
 
-    PEPPER_EVENT_POINTER_DEVICE_MOTION,
-    PEPPER_EVENT_POINTER_DEVICE_BUTTON,
-    PEPPER_EVENT_POINTER_DEVICE_AXIS,
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION,
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE,
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON,
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS,
 
-    PEPPER_EVENT_KEYBOARD_DEVICE_KEY,
-    PEPPER_EVENT_KEYBOARD_DEVICE_MODIFIERS,
+    PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY,
 
-    PEPPER_EVENT_TOUCH_DEVICE_DOWN,
-    PEPPER_EVENT_TOUCH_DEVICE_UP,
-    PEPPER_EVENT_TOUCH_DEVICE_MOTION,
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_DOWN,
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_UP,
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_MOTION,
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_FRAME,
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_CANCEL,
+};
+
+struct pepper_pointer_motion_event
+{
+    uint32_t    time;
+    double      x, y;
+};
+
+struct pepper_pointer_button_event
+{
+    uint32_t    time;
+    uint32_t    button;
+    uint32_t    state;
+};
+
+struct pepper_pointer_axis_event
+{
+    uint32_t    time;
+    uint32_t    axis;
+    double      value;
+};
+
+struct pepper_keyboard_key_event
+{
+    uint32_t    time;
+    uint32_t    key;
+    uint32_t    state;
+};
+
+struct pepper_touch_down_event
+{
+    uint32_t    time;
+    uint32_t    id;
+    double      x, y;
+};
+
+struct pepper_touch_up_event
+{
+    uint32_t    time;
+    uint32_t    id;
+};
+
+struct pepper_touch_motion_event
+{
+    uint32_t    time;
+    uint32_t    id;
+    double      x, y;
 };
 
 /* Generic object functions. */

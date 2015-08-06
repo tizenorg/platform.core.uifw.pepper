@@ -136,14 +136,17 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     seat->id = X11_BACKEND_INPUT_ID;
 
     /* Hard-coded: */
-    seat->pointer = pepper_pointer_device_create(conn->compositor);
+    seat->pointer = pepper_input_device_create(conn->compositor, WL_SEAT_CAPABILITY_POINTER,
+                                               NULL, NULL);
     if (!seat->pointer)
     {
         PEPPER_ERROR("failed to create pepper pointer device\n");
         /* TODO: error handling */
     }
     seat->caps |= WL_SEAT_CAPABILITY_POINTER;
-    seat->keyboard = pepper_keyboard_device_create(conn->compositor);
+
+    seat->keyboard = pepper_input_device_create(conn->compositor, WL_SEAT_CAPABILITY_KEYBOARD,
+                                               NULL, NULL);
     if (!seat->keyboard)
     {
         PEPPER_ERROR("failed to create pepper keyboard device\n");

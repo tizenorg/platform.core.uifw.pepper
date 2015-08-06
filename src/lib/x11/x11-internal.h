@@ -77,9 +77,9 @@ struct x11_output
 
 struct x11_seat
 {
-    pepper_pointer_device_t        *pointer;
-    pepper_keyboard_device_t       *keyboard;
-    pepper_touch_device_t          *touch;
+    pepper_input_device_t          *pointer;
+    pepper_input_device_t          *keyboard;
+    pepper_input_device_t          *touch;
 
     uint32_t                        id;
     uint32_t                        caps;

@@ -157,11 +157,13 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
         if (seat->pointer.wl_pointer)
             wl_pointer_add_listener(seat->pointer.wl_pointer, &pointer_listener, seat);
 
-        seat->pointer.base = pepper_pointer_device_create(seat->conn->pepper);
+        seat->pointer.base = pepper_input_device_create(seat->conn->pepper,
+                                                        WL_SEAT_CAPABILITY_POINTER,
+                                                        NULL, NULL);
     }
     else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && (seat->pointer.wl_pointer))
     {
-        pepper_pointer_device_destroy(seat->pointer.base);
+        pepper_input_device_destroy(seat->pointer.base);
         wl_pointer_release(seat->pointer.wl_pointer);
         seat->pointer.wl_pointer = NULL;
     }
@@ -172,11 +174,13 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
         if (seat->keyboard.wl_keyboard)
             wl_keyboard_add_listener(seat->keyboard.wl_keyboard, &keyboard_listener, seat);
 
-        seat->keyboard.base = pepper_keyboard_device_create(seat->conn->pepper);
+        seat->keyboard.base = pepper_input_device_create(seat->conn->pepper,
+                                                         WL_SEAT_CAPABILITY_KEYBOARD,
+                                                         NULL, NULL);
     }
     else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) && (seat->keyboard.wl_keyboard))
     {
-        pepper_keyboard_device_destroy(seat->keyboard.base);
+        pepper_input_device_destroy(seat->keyboard.base);
         wl_keyboard_release(seat->keyboard.wl_keyboard);
         seat->keyboard.wl_keyboard = NULL;
     }
@@ -187,11 +191,13 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
         if (seat->touch.wl_touch)
             wl_touch_add_listener(seat->touch.wl_touch, &touch_listener, seat);
 
-        seat->touch.base = pepper_touch_device_create(seat->conn->pepper);
+        seat->touch.base = pepper_input_device_create(seat->conn->pepper,
+                                                      WL_SEAT_CAPABILITY_KEYBOARD,
+                                                      NULL, NULL);
     }
     else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && (seat->touch.wl_touch))
     {
-        pepper_touch_device_destroy(seat->touch.base);
+        pepper_input_device_destroy(seat->touch.base);
         wl_touch_release(seat->touch.wl_touch);
         seat->touch.wl_touch = NULL;
     }

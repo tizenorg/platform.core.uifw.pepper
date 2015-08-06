@@ -190,71 +190,45 @@ pepper_seat_get_touch(pepper_seat_t *seat)
     return seat->touch;
 }
 
-PEPPER_API pepper_pointer_device_t *
-pepper_pointer_device_create(pepper_compositor_t *compositor)
+PEPPER_API pepper_input_device_t *
+pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
+                           const pepper_input_device_backend_t *backend, void *data)
 {
-    pepper_pointer_device_t    *device;
+    pepper_input_device_t  *device;
 
-    device = (pepper_pointer_device_t *)pepper_object_alloc(PEPPER_OBJECT_POINTER_DEVICE,
-                                                            sizeof(pepper_pointer_device_t));
+    device = (pepper_input_device_t *)pepper_object_alloc(PEPPER_OBJECT_INPUT_DEVICE,
+                                                            sizeof(pepper_input_device_t));
     if (!device)
     {
         PEPPER_ERROR("Failed to allocate memory\n");
         return NULL;
     }
 
+    device->compositor = compositor;
+    device->caps = caps;
+    device->backend = backend;
+    device->data = data;
+
+    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
+                             device);
     return device;
 }
 
 PEPPER_API void
-pepper_pointer_device_destroy(pepper_pointer_device_t *device)
+pepper_input_device_destroy(pepper_input_device_t *device)
 {
-    pepper_object_fini((pepper_object_t *)device);
+    pepper_object_emit_event(&device->compositor->base,
+                             PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE,
+                             device);
+    pepper_object_fini(&device->base);
     pepper_free(device);
 }
 
-PEPPER_API pepper_keyboard_device_t *
-pepper_keyboard_device_create(pepper_compositor_t *compositor)
+PEPPER_API const char *
+pepper_input_device_get_property(pepper_input_device_t *device, const char *key)
 {
-    pepper_keyboard_device_t   *device;
-
-    device = (pepper_keyboard_device_t *)pepper_object_alloc(PEPPER_OBJECT_KEYBOARD_DEVICE,
-                                                            sizeof(pepper_keyboard_device_t));
-    if (!device)
-    {
-        PEPPER_ERROR("Failed to allocate memory\n");
+    if (!device->backend)
         return NULL;
-    }
 
-    return device;
-}
-
-PEPPER_API void
-pepper_keyboard_device_destroy(pepper_keyboard_device_t *device)
-{
-    pepper_object_fini((pepper_object_t *)device);
-    pepper_free(device);
-}
-
-PEPPER_API pepper_touch_device_t *
-pepper_touch_device_create(pepper_compositor_t *compositor)
-{
-    pepper_touch_device_t  *device;
-
-    device = (pepper_touch_device_t *)pepper_object_alloc(PEPPER_OBJECT_TOUCH_DEVICE,
-                                                            sizeof(pepper_touch_device_t));
-    if (!device)
-    {
-        PEPPER_ERROR("Failed to allocate memory\n");
-        return NULL;
-    }
-
-    return device;
-}
-
-PEPPER_API void
-pepper_touch_device_destroy(pepper_touch_device_t *device)
-{
-    pepper_object_fini((pepper_object_t *)device);
-    pepper_free(device);
+    return device->backend->get_property(device->data, key);
 }

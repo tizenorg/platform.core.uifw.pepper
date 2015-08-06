@@ -115,19 +115,19 @@ struct wayland_seat
 
     struct
     {
-        pepper_pointer_device_t    *base;
+        pepper_input_device_t      *base;
         struct wl_pointer          *wl_pointer;
     } pointer;
 
     struct
     {
-        pepper_keyboard_device_t   *base;
+        pepper_input_device_t      *base;
         struct wl_keyboard         *wl_keyboard;
     } keyboard;
 
     struct
     {
-        pepper_touch_device_t      *base;
+        pepper_input_device_t      *base;
         struct wl_touch            *wl_touch;
     } touch;
 

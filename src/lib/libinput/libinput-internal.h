@@ -24,9 +24,7 @@ struct pepper_libinput
 struct li_device
 {
     pepper_libinput_t          *input;
-    pepper_pointer_device_t    *pointer;
-    pepper_keyboard_device_t   *keyboard;
-    pepper_touch_device_t      *touch;
+    pepper_input_device_t      *base;
 
     uint32_t                    caps;
 
