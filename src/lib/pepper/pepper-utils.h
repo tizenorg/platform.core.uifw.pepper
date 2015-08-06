@@ -163,6 +163,20 @@ pepper_list_insert_item(pepper_list_t *list, void *item)
     return elm;
 }
 
+static inline pepper_list_t *
+pepper_list_find_item(pepper_list_t *list, void *item)
+{
+    pepper_list_t *l;
+
+    PEPPER_LIST_FOR_EACH(list, l)
+    {
+        if (l->item == item)
+            return l;
+    }
+
+    return NULL;
+}
+
 static inline void
 pepper_list_remove(pepper_list_t *list, pepper_free_func_t free_func)
 {
