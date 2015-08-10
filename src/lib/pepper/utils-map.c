@@ -9,18 +9,6 @@ struct pepper_map_entry
     pepper_map_entry_t *next;
 };
 
-struct pepper_map
-{
-    pepper_hash_func_t          hash_func;
-    pepper_key_length_func_t    key_length_func;
-    pepper_key_compare_func_t   key_compare_func;
-
-    int                         bucket_bits;
-    int                         bucket_size;
-    int                         bucket_mask;
-    pepper_map_entry_t        **buckets;
-};
-
 static inline int
 get_bucket_index(pepper_map_t *map, const void *key)
 {
@@ -40,18 +28,14 @@ get_bucket(pepper_map_t *map, const void *key)
     return &map->buckets[get_bucket_index(map, key)];
 }
 
-pepper_map_t *
-pepper_map_create(int                       bucket_bits,
-                  pepper_hash_func_t        hash_func,
-                  pepper_key_length_func_t  key_length_func,
-                  pepper_key_compare_func_t key_compare_func)
+PEPPER_API void
+pepper_map_init(pepper_map_t               *map,
+                int                         bucket_bits,
+                pepper_hash_func_t          hash_func,
+                pepper_key_length_func_t    key_length_func,
+                pepper_key_compare_func_t   key_compare_func,
+                void                       *buckets)
 {
-    pepper_map_t *map;
-
-    map = pepper_calloc(1, sizeof(pepper_map_t));
-    if (!map)
-        return NULL;
-
     map->hash_func = hash_func;
     map->key_length_func = key_length_func;
     map->key_compare_func = key_compare_func;
@@ -60,20 +44,47 @@ pepper_map_create(int                       bucket_bits,
     map->bucket_size = 1 << bucket_bits;
     map->bucket_mask = map->bucket_size - 1;
 
-    map->buckets = pepper_calloc(map->bucket_size, sizeof(pepper_map_entry_t *));
-    if (!map->buckets)
-    {
-        pepper_free(map);
-        return NULL;
-    }
+    map->buckets = buckets;
+}
 
+PEPPER_API void
+pepper_map_fini(pepper_map_t *map)
+{
+    pepper_map_clear(map);
+}
+
+PEPPER_API pepper_map_t *
+pepper_map_create(int                       bucket_bits,
+                  pepper_hash_func_t        hash_func,
+                  pepper_key_length_func_t  key_length_func,
+                  pepper_key_compare_func_t key_compare_func)
+{
+    pepper_map_t   *map;
+    int             bucket_size = 1 << bucket_bits;
+
+    map = pepper_calloc(1, sizeof(pepper_map_t) + bucket_size * sizeof(pepper_map_entry_t *));
+    if (!map)
+        return NULL;
+
+    pepper_map_init(map, bucket_bits, hash_func, key_length_func, key_compare_func, map + 1);
     return map;
 }
 
-void
+PEPPER_API void
+pepper_map_destroy(pepper_map_t *map)
+{
+    pepper_map_fini(map);
+    pepper_free(map->buckets);
+    pepper_free(map);
+}
+
+PEPPER_API void
 pepper_map_clear(pepper_map_t *map)
 {
     int i;
+
+    if (!map->buckets)
+        return;
 
     for (i = 0; i < map->bucket_size; i++)
     {
@@ -94,15 +105,7 @@ pepper_map_clear(pepper_map_t *map)
     memset(map->buckets, 0x00, map->bucket_size * sizeof(pepper_map_entry_t *));
 }
 
-void
-pepper_map_destroy(pepper_map_t *map)
-{
-    pepper_map_clear(map);
-    pepper_free(map->buckets);
-    pepper_free(map);
-}
-
-void *
+PEPPER_API void *
 pepper_map_get(pepper_map_t *map, const void *key)
 {
     pepper_map_entry_t *curr = *get_bucket(map, key);
@@ -127,7 +130,7 @@ pepper_map_get(pepper_map_t *map, const void *key)
     return NULL;
 }
 
-void
+PEPPER_API void
 pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_t free_func)
 {
     pepper_map_entry_t    **bucket = get_bucket(map, key);

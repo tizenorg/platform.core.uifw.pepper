@@ -252,6 +252,29 @@ typedef int (*pepper_key_length_func_t)(const void *key);
 typedef int (*pepper_key_compare_func_t)(const void *key0, int key0_length,
                                          const void *key1, int key1_length);
 
+struct pepper_map
+{
+    pepper_hash_func_t          hash_func;
+    pepper_key_length_func_t    key_length_func;
+    pepper_key_compare_func_t   key_compare_func;
+
+    int                         bucket_bits;
+    int                         bucket_size;
+    int                         bucket_mask;
+    pepper_map_entry_t        **buckets;
+};
+
+PEPPER_API void
+pepper_map_init(pepper_map_t               *map,
+                int                         bucket_bits,
+                pepper_hash_func_t          hash_func,
+                pepper_key_length_func_t    key_length_func,
+                pepper_key_compare_func_t   key_compare_func,
+                void                       *buckets);
+
+PEPPER_API void
+pepper_map_fini(pepper_map_t *map);
+
 PEPPER_API pepper_map_t *
 pepper_map_create(int                       bucket_bits,
                   pepper_hash_func_t        hash_func,
@@ -259,10 +282,10 @@ pepper_map_create(int                       bucket_bits,
                   pepper_key_compare_func_t key_compare_func);
 
 PEPPER_API void
-pepper_map_clear(pepper_map_t *map);
+pepper_map_destroy(pepper_map_t *map);
 
 PEPPER_API void
-pepper_map_destroy(pepper_map_t *map);
+pepper_map_clear(pepper_map_t *map);
 
 PEPPER_API void *
 pepper_map_get(pepper_map_t *map, const void *key);
