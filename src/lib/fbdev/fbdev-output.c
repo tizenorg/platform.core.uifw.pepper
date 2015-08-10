@@ -384,7 +384,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     }
 
     output->base = pepper_compositor_add_output(output->fbdev->compositor,
-                                                &fbdev_output_backend, "fbcev", output);
+                                                &fbdev_output_backend, "fbdev", output);
     if (!output->base)
     {
         PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);
