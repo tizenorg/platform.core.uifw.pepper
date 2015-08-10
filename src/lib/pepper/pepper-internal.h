@@ -195,14 +195,39 @@ void
 pepper_transform_pixman_region(pixman_region32_t *region, const pepper_mat4_t *matrix);
 
 /* Input */
+struct pepper_pointer
+{
+    pepper_object_t             base;
+    pepper_seat_t              *seat;
+    pepper_bool_t               active;
+    struct wl_list              resource_list;
+};
+
+struct pepper_keyboard
+{
+    pepper_object_t             base;
+    pepper_seat_t              *seat;
+    pepper_bool_t               active;
+    struct wl_list              resource_list;
+};
+
+struct pepper_touch
+{
+    pepper_object_t             base;
+    pepper_seat_t              *seat;
+    pepper_bool_t               active;
+    struct wl_list              resource_list;
+};
+
 struct pepper_seat
 {
     pepper_object_t             base;
     pepper_compositor_t        *compositor;
 
-    pepper_pointer_t           *pointer;
-    pepper_keyboard_t          *keyboard;
-    pepper_touch_t             *touch;
+    pepper_list_t               input_device_list;
+    pepper_pointer_t            pointer;
+    pepper_keyboard_t           keyboard;
+    pepper_touch_t              touch;
 
     struct wl_global           *global;
     struct wl_list              resources;
@@ -215,45 +240,6 @@ struct pepper_seat
 
     /* Backend-specific variables. */
     void                       *data;
-};
-
-struct pepper_pointer
-{
-    pepper_object_t             base;
-    pepper_seat_t              *seat;
-
-    pepper_view_t              *focus;
-    wl_fixed_t                  x;
-    wl_fixed_t                  y;
-
-    struct wl_list              devices;
-    struct wl_list              resources;
-    struct wl_list              link;
-};
-
-struct pepper_keyboard
-{
-    pepper_object_t             base;
-    pepper_seat_t              *seat;
-
-    pepper_view_t              *focus;
-
-    struct wl_list              devices;
-    struct wl_list              resources;
-    struct wl_list              link;
-};
-
-struct pepper_touch
-{
-    pepper_object_t             base;
-    pepper_seat_t              *seat;
-
-    pepper_output_t            *output;
-    pepper_view_t              *focus;
-
-    struct wl_list              devices;
-    struct wl_list              resources;
-    struct wl_list              link;
 };
 
 struct pepper_input_device

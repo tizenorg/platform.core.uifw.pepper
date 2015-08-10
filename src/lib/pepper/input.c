@@ -3,6 +3,16 @@
 #undef PEPPER_TRACE
 #define PEPPER_TRACE(...)
 
+typedef struct pepper_input_device_entry pepper_input_device_entry_t;
+
+struct pepper_input_device_entry
+{
+    pepper_seat_t              *seat;
+    pepper_input_device_t      *device;
+    pepper_event_listener_t     listener;
+    pepper_list_t               link;
+};
+
 static void
 unbind_resource(struct wl_resource *resource)
 {
@@ -34,7 +44,7 @@ seat_get_pointer(struct wl_client *client, struct wl_resource *resource, uint32_
     pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
     struct wl_resource *r;
 
-    if (!seat->pointer)
+    if (!seat->pointer.active)
         return;
 
     r = wl_resource_create(client, &wl_pointer_interface,
@@ -45,8 +55,8 @@ seat_get_pointer(struct wl_client *client, struct wl_resource *resource, uint32_
         return;
     }
 
-    wl_list_insert(&seat->pointer->resources, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &pointer_interface, seat->pointer, unbind_resource);
+    wl_list_insert(&seat->pointer.resource_list, wl_resource_get_link(r));
+    wl_resource_set_implementation(r, &pointer_interface, &seat->pointer, unbind_resource);
 
     /* TODO */
 
@@ -69,7 +79,7 @@ seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32
     pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
     struct wl_resource *r;
 
-    if (!seat->keyboard)
+    if (!seat->keyboard.active)
         return;
 
     r = wl_resource_create(client, &wl_keyboard_interface,
@@ -80,8 +90,8 @@ seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32
         return;
     }
 
-    wl_list_insert(&seat->keyboard->resources, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &keyboard_interface, seat->keyboard, unbind_resource);
+    wl_list_insert(&seat->keyboard.resource_list, wl_resource_get_link(r));
+    wl_resource_set_implementation(r, &keyboard_interface, &seat->keyboard, unbind_resource);
 
     /* TODO */
 
@@ -104,7 +114,7 @@ seat_get_touch(struct wl_client *client, struct wl_resource *resource, uint32_t 
     pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
     struct wl_resource *r;
 
-    if (!seat->touch)
+    if (!seat->touch.active)
         return;
 
     r = wl_resource_create(client, &wl_touch_interface, wl_resource_get_version(resource), id);
@@ -114,8 +124,8 @@ seat_get_touch(struct wl_client *client, struct wl_resource *resource, uint32_t 
         return;
     }
 
-    wl_list_insert(&seat->touch->resources, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &touch_interface, seat->touch, unbind_resource);
+    wl_list_insert(&seat->touch.resource_list, wl_resource_get_link(r));
+    wl_resource_set_implementation(r, &touch_interface, &seat->touch, unbind_resource);
 
     /* TODO */
 
@@ -167,27 +177,209 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
     if (seat_name)
         seat->name = strdup(seat_name);
 
-    seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat,
-                                    bind_seat);
+    seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat, bind_seat);
+    pepper_list_init(&seat->input_device_list);
+
     return seat;
 }
 
 PEPPER_API pepper_pointer_t *
 pepper_seat_get_pointer(pepper_seat_t *seat)
 {
-    return seat->pointer;
+    if (seat->pointer.active)
+        return &seat->pointer;
+
+    return NULL;
 }
 
 PEPPER_API pepper_keyboard_t *
 pepper_seat_get_keyboard(pepper_seat_t *seat)
 {
-    return seat->keyboard;
+    if (seat->keyboard.active)
+        return &seat->keyboard;
+
+    return NULL;
 }
 
 PEPPER_API pepper_touch_t *
 pepper_seat_get_touch(pepper_seat_t *seat)
 {
-    return seat->touch;
+    if (seat->touch.active)
+        return &seat->touch;
+
+    return NULL;
+}
+
+static void
+seat_update_pointer_cap(pepper_seat_t *seat)
+{
+    if ((seat->caps & WL_SEAT_CAPABILITY_POINTER) && !seat->pointer.active)
+    {
+        seat->pointer.active = PEPPER_TRUE;
+        pepper_object_init(&seat->pointer.base, PEPPER_OBJECT_POINTER);
+        wl_list_init(&seat->pointer.resource_list);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_ADD, &seat->pointer);
+    }
+    else if (!(seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer.active)
+    {
+        seat->pointer.active = PEPPER_FALSE;
+        pepper_object_fini(&seat->pointer.base);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_REMOVE, &seat->pointer);
+    }
+}
+
+static void
+seat_update_keyboard_cap(pepper_seat_t *seat)
+{
+    if ((seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && !seat->keyboard.active)
+    {
+        seat->keyboard.active = PEPPER_TRUE;
+        pepper_object_init(&seat->keyboard.base, PEPPER_OBJECT_KEYBOARD);
+        wl_list_init(&seat->keyboard.resource_list);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_ADD, &seat->keyboard);
+    }
+    else if (!(seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard.active)
+    {
+        seat->keyboard.active = PEPPER_FALSE;
+        pepper_object_fini(&seat->keyboard.base);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE, &seat->keyboard);
+    }
+}
+
+static void
+seat_update_touch_cap(pepper_seat_t *seat)
+{
+    if ((seat->caps & WL_SEAT_CAPABILITY_TOUCH) && !seat->touch.active)
+    {
+        seat->touch.active = PEPPER_TRUE;
+        pepper_object_init(&seat->touch.base, PEPPER_OBJECT_TOUCH);
+        wl_list_init(&seat->touch.resource_list);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_ADD, &seat->touch);
+    }
+    else if (!(seat->caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch.active)
+    {
+        seat->touch.active = PEPPER_FALSE;
+        pepper_object_fini(&seat->touch.base);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_REMOVE, &seat->touch);
+    }
+}
+
+static void
+seat_update_caps(pepper_seat_t *seat)
+{
+    pepper_list_t  *l;
+    uint32_t        caps = 0;
+
+    PEPPER_LIST_FOR_EACH(&seat->input_device_list, l)
+    {
+        pepper_input_device_entry_t *entry = l->item;
+        caps |= entry->device->caps;
+    }
+
+    if (caps != seat->caps)
+    {
+        struct wl_resource *resource;
+
+        seat->caps = caps;
+
+        seat_update_pointer_cap(seat);
+        seat_update_keyboard_cap(seat);
+        seat_update_touch_cap(seat);
+
+        wl_resource_for_each(resource, &seat->resources)
+            wl_seat_send_capabilities(resource, seat->caps);
+    }
+}
+
+static pepper_bool_t
+seat_handle_device_event(pepper_event_listener_t *listener, pepper_object_t *object,
+                         uint32_t id, void *info)
+{
+    pepper_input_device_entry_t *entry = listener->data;
+
+    switch (id)
+    {
+    case PEPPER_EVENT_OBJECT_DESTROY:
+        pepper_seat_remove_input_device(entry->seat, entry->device);
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_DOWN:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_UP:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_MOTION:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_FRAME:
+        /* TODO: */
+        break;
+    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_CANCEL:
+        /* TODO: */
+        break;
+    }
+
+    return PEPPER_TRUE;
+}
+
+PEPPER_API void
+pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
+{
+    pepper_input_device_entry_t *entry;
+
+    if (pepper_list_find_item(&seat->input_device_list, device))
+        return;
+
+    entry = pepper_calloc(1, sizeof(pepper_input_device_entry_t));
+    if (!entry)
+        return;
+
+    entry->seat = seat;
+    entry->device = device;
+
+    pepper_event_listener_init(&entry->listener);
+    entry->listener.data = entry;
+    entry->listener.callback = seat_handle_device_event;
+
+    pepper_object_add_event_listener(&device->base, &entry->listener, PEPPER_EVENT_ALL, 0);
+    pepper_list_insert(&seat->input_device_list, &entry->link);
+
+    seat_update_caps(seat);
+}
+
+PEPPER_API void
+pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
+{
+    pepper_list_t *l;
+
+    PEPPER_LIST_FOR_EACH(&seat->input_device_list, l)
+    {
+        pepper_input_device_entry_t *entry = l->item;
+
+        if (entry->device == device)
+        {
+            pepper_list_remove(&entry->link, NULL);
+            pepper_event_listener_remove(&entry->listener);
+            pepper_free(entry);
+            seat_update_caps(seat);
+            return;
+        }
+    }
 }
 
 PEPPER_API pepper_input_device_t *

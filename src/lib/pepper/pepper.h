@@ -294,6 +294,12 @@ pepper_seat_get_keyboard(pepper_seat_t *seat);
 PEPPER_API pepper_touch_t *
 pepper_seat_get_touch(pepper_seat_t *seat);
 
+PEPPER_API void
+pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device);
+
+PEPPER_API void
+pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *device);
+
 /* Surface. */
 PEPPER_API const char *
 pepper_surface_get_role(pepper_surface_t *surface);
