@@ -8,7 +8,8 @@
 #include "pepper-output-backend.h"
 #include "pepper-input-backend.h"
 
-#define PEPPER_MAX_OUTPUT_COUNT 32
+#define PEPPER_OBJECT_BUCKET_BITS   5
+#define PEPPER_MAX_OUTPUT_COUNT     32
 
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
@@ -20,12 +21,16 @@ typedef struct pepper_data_offer    pepper_data_offer_t;
 struct pepper_object
 {
     pepper_object_type_t    type;
-    pepper_map_t           *user_data_map;
+    pepper_map_t            user_data_map;
+    pepper_map_entry_t     *buckets[1 << PEPPER_OBJECT_BUCKET_BITS];
     pepper_list_t           event_listener_list;
 };
 
 pepper_object_t *
 pepper_object_alloc(pepper_object_type_t type, size_t size);
+
+void
+pepper_object_init(pepper_object_t *object, pepper_object_type_t type);
 
 void
 pepper_object_fini(pepper_object_t *object);
