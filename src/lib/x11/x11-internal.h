@@ -46,6 +46,7 @@ struct x11_output
 {
     pepper_output_t            *base;
     pepper_x11_connection_t    *connection;
+    char                        name[32];
 
     int32_t                  x, y;
     uint32_t                 w, h;

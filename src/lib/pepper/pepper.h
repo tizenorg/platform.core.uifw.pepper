@@ -241,6 +241,9 @@ pepper_compositor_destroy(pepper_compositor_t *compositor);
 PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_compositor_t *compositor);
 
+PEPPER_API const pepper_list_t *
+pepper_compositor_get_output_list(pepper_compositor_t *compositor);
+
 PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output);
 
@@ -264,6 +267,12 @@ pepper_output_get_mode(pepper_output_t *output, int index);
 
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode);
+
+PEPPER_API const char *
+pepper_output_get_name(pepper_output_t *output);
+
+PEPPER_API pepper_output_t *
+pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name);
 
 /* Input. */
 PEPPER_API pepper_seat_t *

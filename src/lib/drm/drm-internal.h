@@ -50,6 +50,7 @@ struct drm_output
 {
     pepper_drm_t               *drm;
     pepper_output_t            *base;
+    char                        name[32];
 
     struct wl_list              link;
 

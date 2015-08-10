@@ -67,6 +67,7 @@ struct wayland_output
 {
     pepper_wayland_t           *conn;
     pepper_output_t            *base;
+    char                        name[32];
 
     struct wl_signal            destroy_signal;
     struct wl_signal            mode_change_signal;

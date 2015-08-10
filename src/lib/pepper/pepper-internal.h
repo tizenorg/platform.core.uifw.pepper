@@ -55,6 +55,7 @@ struct pepper_output
     pepper_object_t             base;
     pepper_compositor_t        *compositor;
     uint32_t                    id;
+    char                       *name;
 
     struct wl_global           *global;
     struct wl_list              resources;

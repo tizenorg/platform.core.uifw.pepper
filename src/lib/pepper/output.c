@@ -239,10 +239,28 @@ pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *regi
 
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-                             const pepper_output_backend_t *backend, void *data)
+                             const pepper_output_backend_t *backend, const char *name, void *data)
 {
-    pepper_output_t        *output;
-    uint32_t                id;
+    pepper_output_t    *output;
+    uint32_t            id;
+    pepper_list_t      *l;
+
+    if (!name)
+    {
+        PEPPER_ERROR("Output name must be given.\n");
+        return NULL;
+    }
+
+    PEPPER_LIST_FOR_EACH(&compositor->output_list, l)
+    {
+        output = l->item;
+
+        if (strcmp(output->name, name) == 0)
+        {
+            PEPPER_ERROR("Output with name = %s already exist.\n", name);
+            return NULL;
+        }
+    }
 
     id = ffs(~compositor->output_id_allocator);
 
@@ -273,6 +291,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 
     output->id = id;
     compositor->output_id_allocator |= (1 << output->id);
+    output->name = strdup(name);
 
     /* Create backend-side object. */
     output->backend = (pepper_output_backend_t *)backend;
@@ -337,6 +356,7 @@ pepper_output_destroy(pepper_output_t *output)
     pepper_object_emit_event(&output->compositor->base,
                              PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE, output);
 
+    free(output->name);
     pepper_free(output);
 }
 
@@ -395,4 +415,27 @@ pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode
     }
 
     return PEPPER_FALSE;
+}
+
+PEPPER_API const char *
+pepper_output_get_name(pepper_output_t *output)
+{
+    return output->name;
+}
+
+PEPPER_API pepper_output_t *
+pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name)
+{
+    pepper_output_t *output;
+    pepper_list_t   *l;
+
+    PEPPER_LIST_FOR_EACH(&compositor->output_list, l)
+    {
+        output = l->item;
+
+        if (strcmp(output->name, name) == 0)
+            return output;
+    }
+
+    return NULL;
 }

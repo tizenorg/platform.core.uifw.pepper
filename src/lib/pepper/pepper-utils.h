@@ -25,6 +25,8 @@ extern "C" {
     const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
     (type *)( (char *)__mptr - offsetof(type,member) );})
 
+#define PEPPER_ARRAY_LENGTH(arr)    (sizeof(arr) / sizeof(arr)[0])
+
 typedef void (*pepper_free_func_t)(void *);
 
 typedef unsigned int    pepper_bool_t;

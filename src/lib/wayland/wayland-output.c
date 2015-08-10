@@ -1,4 +1,5 @@
 #include "wayland-internal.h"
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <pepper-pixman-renderer.h>
@@ -368,9 +369,11 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
     output->shell_surface = wl_shell_get_shell_surface(conn->shell, output->surface);
     wl_shell_surface_add_listener(output->shell_surface, &shell_surface_listener, output);
     wl_shell_surface_set_toplevel(output->shell_surface);
+    snprintf(&output->name[0], 32, "wayland-%p", output);
 
     /* Add compositor base class output object for this output. */
-    output->base = pepper_compositor_add_output(conn->pepper, &wayland_output_backend, output);
+    output->base = pepper_compositor_add_output(conn->pepper, &wayland_output_backend,
+                                                output->name, output);
     if (!output->base)
     {
         wayland_output_destroy(output);

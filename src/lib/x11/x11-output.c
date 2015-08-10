@@ -675,8 +675,9 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
     renderer_init(output, renderer);
 
     /* Register output object */
+    snprintf(&output->name[0], 32, "x11-%p", output);
     base = pepper_compositor_add_output(connection->compositor,
-                                        &x11_output_backend, output);
+                                        &x11_output_backend, output->name, output);
     if (!base)
     {
         PEPPER_ERROR("pepper_compositor_add_output failed\n");

@@ -35,7 +35,7 @@ struct pepper_output_backend
 
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-                             const pepper_output_backend_t *backend, void *data);
+                             const pepper_output_backend_t *backend, const char *name, void *data);
 
 struct pepper_render_item
 {

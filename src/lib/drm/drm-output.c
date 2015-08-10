@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include <gbm.h>
 #include <libudev.h>
@@ -672,12 +673,31 @@ fini_renderer(drm_output_t *output)
         fini_gl_renderer(output);
 }
 
+static const char *connector_type_names[] = {
+    "None",
+    "VGA",
+    "DVI",
+    "DVI",
+    "DVI",
+    "Composite",
+    "TV",
+    "LVDS",
+    "CTV",
+    "DIN",
+    "DP",
+    "HDMI",
+    "HDMI",
+    "TV",
+    "eDP",
+};
+
 static drm_output_t *
 drm_output_create(pepper_drm_t *drm, struct udev_device *device,
                   drmModeRes *res, drmModeConnector *conn)
 {
     int             i;
     drm_output_t   *output;
+    const char     *type_name;
 
     output = (drm_output_t *)calloc(1, sizeof(drm_output_t));
     if (!output)
@@ -733,6 +753,12 @@ drm_output_create(pepper_drm_t *drm, struct udev_device *device,
         goto error;
     }
 
+    if (conn->connector_type < PEPPER_ARRAY_LENGTH(connector_type_names))
+        type_name = connector_type_names[conn->connector_type];
+    else
+        type_name = "UNKNOWN";
+
+    snprintf(&output->name[0], 32, "%s%d", type_name, conn->connector_type_id);
     return output;
 
 error:
@@ -799,7 +825,7 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
          *                              const pepper_output_backend_t *backend, void *data)
          */
         output->base = pepper_compositor_add_output(output->drm->compositor,
-                                                    &drm_output_backend, output);
+                                                    &drm_output_backend, output->name, output);
         if (!output->base)
         {
             PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);
@@ -914,7 +940,7 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
             }
 
             output->base = pepper_compositor_add_output(output->drm->compositor,
-                                                        &drm_output_backend, output);
+                                                        &drm_output_backend, output->name, output);
             if (!output->base)
             {
                 PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);
