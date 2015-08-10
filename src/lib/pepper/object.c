@@ -141,7 +141,7 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
     {
         listener = l->item;
 
-        if (listener->id == id)
+        if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
             listener->callback(listener, object, id, info);
     }
 }

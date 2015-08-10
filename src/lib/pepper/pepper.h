@@ -151,6 +151,8 @@ enum pepper_object_events
     PEPPER_EVENT_INPUT_DEVICE_TOUCH_MOTION,
     PEPPER_EVENT_INPUT_DEVICE_TOUCH_FRAME,
     PEPPER_EVENT_INPUT_DEVICE_TOUCH_CANCEL,
+
+    PEPPER_EVENT_ALL,
 };
 
 struct pepper_pointer_motion_event
