@@ -35,6 +35,17 @@ pepper_object_init(pepper_object_t *object, pepper_object_type_t type);
 void
 pepper_object_fini(pepper_object_t *object);
 
+struct pepper_event_listener
+{
+    pepper_object_t             *object;
+    uint32_t                    id;
+    int                         priority;
+    pepper_event_callback_t     callback;
+    void                       *data;
+
+    pepper_list_t               link;
+};
+
 /* compositor */
 struct pepper_compositor
 {
@@ -112,20 +123,20 @@ pepper_buffer_from_resource(struct wl_resource *resource);
 
 struct pepper_surface_state
 {
-    pepper_buffer_t        *buffer;
-    int32_t                 x;
-    int32_t                 y;
-    pepper_bool_t           newly_attached;
+    pepper_buffer_t            *buffer;
+    int32_t                     x;
+    int32_t                     y;
+    pepper_bool_t               newly_attached;
 
-    int32_t                 transform;
-    int32_t                 scale;
+    int32_t                     transform;
+    int32_t                     scale;
 
-    pixman_region32_t       damage_region;
-    pixman_region32_t       opaque_region;
-    pixman_region32_t       input_region;
+    pixman_region32_t           damage_region;
+    pixman_region32_t           opaque_region;
+    pixman_region32_t           input_region;
 
-    struct wl_list          frame_callbacks;
-    pepper_event_listener_t buffer_destroy_listener;
+    struct wl_list              frame_callbacks;
+    pepper_event_listener_t    *buffer_destroy_listener;
 };
 
 struct pepper_surface
@@ -279,13 +290,13 @@ pepper_data_device_manager_init(struct wl_display *display);
 
 struct pepper_plane_entry
 {
-    pepper_render_item_t    base;
+    pepper_render_item_t        base;
 
-    pepper_plane_t         *plane;
-    pepper_event_listener_t plane_destroy_listener;
-    pepper_bool_t           need_damage;
+    pepper_plane_t             *plane;
+    pepper_event_listener_t    *plane_destroy_listener;
+    pepper_bool_t               need_damage;
 
-    pepper_list_t           link;
+    pepper_list_t               link;
 };
 
 enum
@@ -297,42 +308,42 @@ enum
 
 struct pepper_view
 {
-    pepper_object_t         base;
-    pepper_compositor_t    *compositor;
-    pepper_list_t           compositor_link;
+    pepper_object_t             base;
+    pepper_compositor_t        *compositor;
+    pepper_list_t               compositor_link;
 
-    uint32_t                dirty;
+    uint32_t                    dirty;
 
     /* Hierarchy. */
-    pepper_view_t          *parent;
-    pepper_list_t           parent_link;
-    pepper_list_t           children_list;
+    pepper_view_t              *parent;
+    pepper_list_t               parent_link;
+    pepper_list_t               children_list;
 
     /* Geometry. */
-    double                  x, y;
-    int                     w, h;
-    pepper_mat4_t           transform;
-    pepper_mat4_t           global_transform;
+    double                      x, y;
+    int                         w, h;
+    pepper_mat4_t               transform;
+    pepper_mat4_t               global_transform;
 
-    pixman_region32_t       bounding_region;
-    pixman_region32_t       opaque_region;
+    pixman_region32_t           bounding_region;
+    pixman_region32_t           opaque_region;
 
     /* Visibility. */
-    pepper_bool_t           visible;
-    pepper_bool_t           prev_visible;
-    pepper_bool_t           mapped;
+    pepper_bool_t               visible;
+    pepper_bool_t               prev_visible;
+    pepper_bool_t               mapped;
 
     /* Content. */
-    pepper_surface_t       *surface;
-    pepper_list_t           surface_link;
-    pepper_event_listener_t surface_destroy_listener;
+    pepper_surface_t           *surface;
+    pepper_list_t               surface_link;
+    pepper_event_listener_t    *surface_destroy_listener;
 
     /* Output info. */
-    uint32_t                output_overlap;
-    pepper_plane_entry_t    plane_entries[PEPPER_MAX_OUTPUT_COUNT];
+    uint32_t                    output_overlap;
+    pepper_plane_entry_t        plane_entries[PEPPER_MAX_OUTPUT_COUNT];
 
     /* Temporary resource. */
-    pepper_list_t           link;
+    pepper_list_t               link;
 };
 
 void

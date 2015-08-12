@@ -26,8 +26,8 @@ struct pixman_surface_state
     int                 buffer_width, buffer_height;
     pixman_image_t     *image;
 
-    pepper_event_listener_t buffer_destroy_listener;
-    pepper_event_listener_t surface_destroy_listener;
+    pepper_event_listener_t *buffer_destroy_listener;
+    pepper_event_listener_t *surface_destroy_listener;
 };
 
 static void
@@ -52,35 +52,34 @@ surface_state_release_buffer(pixman_surface_state_t *state)
         pepper_buffer_unreference(state->buffer);
         state->buffer = NULL;
 
-        pepper_event_listener_remove(&state->buffer_destroy_listener);
+        pepper_event_listener_remove(state->buffer_destroy_listener);
     }
 }
 
-static pepper_bool_t
+static void
 surface_state_handle_surface_destroy(pepper_event_listener_t    *listener,
                                      pepper_object_t            *object,
                                      uint32_t                    id,
-                                     void                       *info)
+                                     void                       *info,
+                                     void                       *data)
 {
-    pixman_surface_state_t *state = listener->data;
+    pixman_surface_state_t *state = data;
 
     surface_state_release_buffer(state);
-    pepper_event_listener_remove(&state->surface_destroy_listener);
+    pepper_event_listener_remove(state->surface_destroy_listener);
     pepper_object_set_user_data((pepper_object_t *)state->surface, state->renderer, NULL, NULL);
     free(state);
-
-    return PEPPER_TRUE;
 }
 
-static pepper_bool_t
+static void
 surface_state_handle_buffer_destroy(pepper_event_listener_t    *listener,
                                     pepper_object_t            *object,
                                     uint32_t                    id,
-                                    void                       *info)
+                                    void                       *info,
+                                    void                       *data)
 {
-    pixman_surface_state_t *state = listener->data;
+    pixman_surface_state_t *state = data;
     surface_state_release_buffer(state);
-    return PEPPER_TRUE;
 }
 
 static pixman_surface_state_t *
@@ -95,18 +94,10 @@ get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
             return NULL;
 
         state->surface = surface;
-
-        pepper_event_listener_init(&state->buffer_destroy_listener);
-        state->buffer_destroy_listener.callback = surface_state_handle_buffer_destroy;
-        state->buffer_destroy_listener.data = state;
-
-        pepper_event_listener_init(&state->surface_destroy_listener);
-        state->surface_destroy_listener.callback = surface_state_handle_surface_destroy;
-        state->surface_destroy_listener.data = state;
-
-        pepper_object_add_event_listener((pepper_object_t *)surface,
-                                         &state->surface_destroy_listener,
-                                         PEPPER_EVENT_OBJECT_DESTROY, 0);
+        state->surface_destroy_listener =
+            pepper_object_add_event_listener((pepper_object_t *)surface,
+                                             PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                             surface_state_handle_surface_destroy, state);
 
         pepper_object_set_user_data((pepper_object_t *)surface, renderer, state, NULL);
     }
@@ -187,13 +178,14 @@ done:
     if (state->buffer)
     {
         pepper_buffer_unreference(state->buffer);
-        pepper_event_listener_remove(&state->buffer_destroy_listener);
+        pepper_event_listener_remove(state->buffer_destroy_listener);
     }
 
     /* Set new buffer. */
     state->buffer = buffer;
-    pepper_object_add_event_listener((pepper_object_t *)buffer, &state->buffer_destroy_listener,
-                                     PEPPER_EVENT_OBJECT_DESTROY, 0);
+    state->buffer_destroy_listener =
+        pepper_object_add_event_listener((pepper_object_t *)buffer, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                         surface_state_handle_buffer_destroy, state);
 
     /* Output buffer size info. */
     *w = state->buffer_width;

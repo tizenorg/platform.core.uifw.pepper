@@ -22,9 +22,9 @@ struct desktop_shell
     struct wl_list           shell_surface_list;
 
     /* TODO: */
-    pepper_event_listener_t  seat_create_listener;
-    pepper_event_listener_t  output_create_listener;
-    pepper_event_listener_t  output_change_listener;
+    pepper_event_listener_t *seat_create_listener;
+    pepper_event_listener_t *output_create_listener;
+    pepper_event_listener_t *output_change_listener;
 };
 
 struct shell_client
@@ -124,8 +124,8 @@ struct shell_surface
     pepper_bool_t           ack_configure;
 
     /* Listeners */
-    pepper_event_listener_t surface_destroy_listener;
-    pepper_event_listener_t surface_commit_listener;
+    pepper_event_listener_t *surface_destroy_listener;
+    pepper_event_listener_t *surface_commit_listener;
 
     struct wl_list          link;       /* link */
 };

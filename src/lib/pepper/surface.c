@@ -1,12 +1,11 @@
 #include "pepper-internal.h"
 
-static pepper_bool_t
-buffer_destroy_handler(pepper_event_listener_t *listener,
-                       pepper_object_t *object, uint32_t id, void *info)
+static void
+surface_state_handle_buffer_destroy(pepper_event_listener_t *listener,
+                                    pepper_object_t *object, uint32_t id, void *info, void *data)
 {
-    pepper_surface_state_t *state = listener->data;
+    pepper_surface_state_t *state = data;
     state->buffer = NULL;
-    return PEPPER_TRUE;
 }
 
 static void
@@ -23,9 +22,6 @@ pepper_surface_state_init(pepper_surface_state_t *state)
     pixman_region32_init(&state->input_region);
 
     wl_list_init(&state->frame_callbacks);
-    pepper_event_listener_init(&state->buffer_destroy_listener);
-    state->buffer_destroy_listener.callback = buffer_destroy_handler;
-    state->buffer_destroy_listener.data = state;
 }
 
 static void
@@ -78,7 +74,7 @@ surface_attach(struct wl_client    *client,
         return;
 
     if (surface->pending.buffer)
-        pepper_event_listener_remove(&surface->pending.buffer_destroy_listener);
+        pepper_event_listener_remove(surface->pending.buffer_destroy_listener);
 
     surface->pending.buffer = buffer;
     surface->pending.x = x;
@@ -87,8 +83,9 @@ surface_attach(struct wl_client    *client,
 
     if (buffer)
     {
-        pepper_object_add_event_listener(&buffer->base, &surface->pending.buffer_destroy_listener,
-                                         PEPPER_EVENT_OBJECT_DESTROY, 0);
+        surface->pending.buffer_destroy_listener =
+            pepper_object_add_event_listener(&buffer->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                             surface_state_handle_buffer_destroy, &surface->pending);
     }
 }
 
@@ -360,7 +357,7 @@ pepper_surface_commit(pepper_surface_t *surface)
     {
         if (surface->pending.buffer)
         {
-            pepper_event_listener_remove(&surface->pending.buffer_destroy_listener);
+            pepper_event_listener_remove(surface->pending.buffer_destroy_listener);
             pepper_buffer_reference(surface->pending.buffer);
         }
 

@@ -91,21 +91,25 @@ insert_listener(pepper_object_t *object, pepper_event_listener_t *listener)
         pepper_list_insert(object->event_listener_list.prev, &listener->link);
 }
 
-PEPPER_API void
-pepper_event_listener_init(pepper_event_listener_t *listener)
+PEPPER_API pepper_event_listener_t *
+pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int priority,
+                                 pepper_event_callback_t callback, void *data)
 {
-    memset(listener, 0x00, sizeof(pepper_event_listener_t));
-    listener->link.item = listener;
-}
+    pepper_event_listener_t *listener;
 
-PEPPER_API void
-pepper_object_add_event_listener(pepper_object_t *object,
-                                 pepper_event_listener_t *listener,
-                                 uint32_t id, int priority)
-{
+    if (!callback)
+        return NULL;
+
+    listener = pepper_calloc(1, sizeof(pepper_event_listener_t));
+    if (!listener)
+        return NULL;
+
+    listener->link.item = listener;
     listener->object    = object;
     listener->id        = id;
     listener->priority  = priority;
+    listener->callback  = callback;
+    listener->data      = data;
 
     insert_listener(object, listener);
 }
@@ -113,11 +117,8 @@ pepper_object_add_event_listener(pepper_object_t *object,
 PEPPER_API void
 pepper_event_listener_remove(pepper_event_listener_t *listener)
 {
-    if (!listener->object)
-        return;
-
     pepper_list_remove(&listener->link, NULL);
-    listener->object = NULL;
+    pepper_free(listener);
 }
 
 PEPPER_API void
@@ -142,6 +143,6 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
         listener = l->item;
 
         if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
-            listener->callback(listener, object, id, info);
+            listener->callback(listener, object, id, listener->data, info);
     }
 }

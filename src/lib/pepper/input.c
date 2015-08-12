@@ -9,7 +9,7 @@ struct pepper_input_device_entry
 {
     pepper_seat_t              *seat;
     pepper_input_device_t      *device;
-    pepper_event_listener_t     listener;
+    pepper_event_listener_t    *listener;
     pepper_list_t               link;
 };
 
@@ -291,11 +291,11 @@ seat_update_caps(pepper_seat_t *seat)
     }
 }
 
-static pepper_bool_t
+static void
 seat_handle_device_event(pepper_event_listener_t *listener, pepper_object_t *object,
-                         uint32_t id, void *info)
+                         uint32_t id, void *info, void *data)
 {
-    pepper_input_device_entry_t *entry = listener->data;
+    pepper_input_device_entry_t *entry = data;
 
     switch (id)
     {
@@ -333,8 +333,6 @@ seat_handle_device_event(pepper_event_listener_t *listener, pepper_object_t *obj
         /* TODO: */
         break;
     }
-
-    return PEPPER_TRUE;
 }
 
 PEPPER_API void
@@ -352,11 +350,8 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
     entry->seat = seat;
     entry->device = device;
 
-    pepper_event_listener_init(&entry->listener);
-    entry->listener.data = entry;
-    entry->listener.callback = seat_handle_device_event;
-
-    pepper_object_add_event_listener(&device->base, &entry->listener, PEPPER_EVENT_ALL, 0);
+    entry->listener = pepper_object_add_event_listener(&device->base, PEPPER_EVENT_ALL, 0,
+                                                       seat_handle_device_event, entry);
     pepper_list_insert(&seat->input_device_list, &entry->link);
 
     seat_update_caps(seat);
@@ -374,7 +369,7 @@ pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *devi
         if (entry->device == device)
         {
             pepper_list_remove(&entry->link, NULL);
-            pepper_event_listener_remove(&entry->listener);
+            pepper_event_listener_remove(entry->listener);
             pepper_free(entry);
             seat_update_caps(seat);
             return;

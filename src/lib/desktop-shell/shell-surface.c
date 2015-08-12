@@ -14,37 +14,36 @@ remove_ping_timer(shell_client_t *shell_client)
 static void
 shsurf_stop_listen_commit_event(shell_surface_t *shsurf)
 {
-    pepper_event_listener_remove(&shsurf->surface_commit_listener);
+    pepper_event_listener_remove(shsurf->surface_commit_listener);
 }
 
-static pepper_bool_t
+static void
 handle_surface_commit(pepper_event_listener_t *listener,
-                      pepper_object_t *surface, uint32_t id, void *info)
+                      pepper_object_t *surface, uint32_t id, void *info, void *data)
 {
-    shell_surface_t *shsurf = listener->data;
+    shell_surface_t *shsurf = data;
 
     if (!shsurf->mapped && shsurf->ack_configure && shsurf->shell_surface_map)
         shsurf->shell_surface_map(shsurf);
-
-    return PEPPER_TRUE;
 }
 
 static void
 shsurf_start_listen_commit_event(shell_surface_t *shsurf)
 {
-    pepper_object_add_event_listener((pepper_object_t *)shsurf->surface,
-                                     &shsurf->surface_commit_listener,
-                                     PEPPER_EVENT_SURFACE_COMMIT, 0);
+    shsurf->surface_commit_listener =
+        pepper_object_add_event_listener((pepper_object_t *)shsurf->surface,
+                                         PEPPER_EVENT_SURFACE_COMMIT, 0,
+                                         handle_surface_commit, shsurf);
 }
 
-static pepper_bool_t
+static void
 handle_surface_destroy(pepper_event_listener_t *listener,
-                       pepper_object_t *surface, uint32_t id, void *info)
+                       pepper_object_t *surface, uint32_t id, void *info, void *data)
 {
     shell_surface_t *child, *tmp;
-    shell_surface_t *shsurf = listener->data;
+    shell_surface_t *shsurf = data;
 
-    pepper_event_listener_remove(&shsurf->surface_destroy_listener);
+    pepper_event_listener_remove(shsurf->surface_destroy_listener);
     shsurf_stop_listen_commit_event(shsurf);
 
     if (shsurf->resource)
@@ -70,7 +69,6 @@ handle_surface_destroy(pepper_event_listener_t *listener,
         pepper_view_destroy(shsurf->fullscreen.background_view);
 
     free(shsurf);
-    return PEPPER_TRUE;
 }
 
 static void
@@ -196,18 +194,11 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
 
     wl_resource_set_implementation(shsurf->resource, implementation, shsurf, handle_resource_destroy);
 
-    pepper_event_listener_init(&shsurf->surface_destroy_listener);
-    shsurf->surface_destroy_listener.callback = handle_surface_destroy;
-    shsurf->surface_destroy_listener.data = shsurf;
-    pepper_object_add_event_listener((pepper_object_t *)surface,
-                                     &shsurf->surface_destroy_listener,
-                                     PEPPER_EVENT_OBJECT_DESTROY, 0);
+    shsurf->surface_destroy_listener =
+        pepper_object_add_event_listener((pepper_object_t *)surface, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                         handle_surface_destroy, shsurf);
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
-
-    pepper_event_listener_init(&shsurf->surface_commit_listener);
-    shsurf->surface_commit_listener.callback = handle_surface_commit;
-    shsurf->surface_commit_listener.data = shsurf;
     shsurf_start_listen_commit_event(shsurf);
 
     /* Set shell_surface_t to pepper_surface_t */

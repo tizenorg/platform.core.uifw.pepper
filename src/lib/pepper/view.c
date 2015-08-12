@@ -69,14 +69,13 @@ pepper_view_surface_damage(pepper_view_t *view)
     }
 }
 
-static pepper_bool_t
+static void
 view_handle_surface_destroy(pepper_event_listener_t *listener,
-                            pepper_object_t *object, uint32_t id, void *info)
+                            pepper_object_t *object, uint32_t id, void *info, void *data)
 {
-    pepper_view_t *view = listener->data;
+    pepper_view_t *view = data;
     PEPPER_ASSERT(view->surface != NULL);
     pepper_view_destroy(view);
-    return PEPPER_TRUE;
 }
 
 static pepper_list_t *
@@ -103,9 +102,9 @@ view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
     return pos;
 }
 
-static pepper_bool_t
-view_handle_plane_destroy(pepper_event_listener_t *listener,
-                          pepper_object_t *object, uint32_t id, void *info);
+static void
+plane_entry_handle_plane_destroy(pepper_event_listener_t *listener,
+                                 pepper_object_t *object, uint32_t id, void *info, void *data);
 
 static void
 plane_entry_set_plane(pepper_plane_entry_t *entry, pepper_plane_t *plane)
@@ -117,7 +116,7 @@ plane_entry_set_plane(pepper_plane_entry_t *entry, pepper_plane_t *plane)
     {
         view_damage_below((pepper_view_t *)entry->base.view);
         entry->plane = NULL;
-        pepper_event_listener_remove(&entry->plane_destroy_listener);
+        pepper_event_listener_remove(entry->plane_destroy_listener);
         pixman_region32_fini(&entry->base.visible_region);
     }
 
@@ -125,25 +124,22 @@ plane_entry_set_plane(pepper_plane_entry_t *entry, pepper_plane_t *plane)
 
     if (entry->plane)
     {
-        pepper_event_listener_init(&entry->plane_destroy_listener);
-        entry->plane_destroy_listener.callback = view_handle_plane_destroy;
-        entry->plane_destroy_listener.data = entry;
-        pepper_object_add_event_listener(&plane->base,
-                                         &entry->plane_destroy_listener,
-                                         PEPPER_EVENT_OBJECT_DESTROY, 0);
+        entry->plane_destroy_listener =
+            pepper_object_add_event_listener(&plane->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                             plane_entry_handle_plane_destroy, entry);
+
         pixman_region32_init(&entry->base.visible_region);
         entry->need_damage = PEPPER_TRUE;
     }
 }
 
-static pepper_bool_t
-view_handle_plane_destroy(pepper_event_listener_t *listener,
-                          pepper_object_t *object, uint32_t id, void *info)
+static void
+plane_entry_handle_plane_destroy(pepper_event_listener_t *listener,
+                                 pepper_object_t *object, uint32_t id, void *info, void *data)
 {
-    pepper_plane_entry_t *entry = listener->data;
+    pepper_plane_entry_t *entry = data;
     PEPPER_ASSERT(entry->plane != NULL);
     plane_entry_set_plane(entry, NULL);
-    return PEPPER_TRUE;
 }
 
 void
@@ -305,11 +301,9 @@ pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surfa
     view->surface_link.item = view;
     pepper_list_insert(&surface->view_list, &view->surface_link);
 
-    pepper_event_listener_init(&view->surface_destroy_listener);
-    view->surface_destroy_listener.callback = view_handle_surface_destroy;
-    view->surface_destroy_listener.data = view;
-    pepper_object_add_event_listener(&surface->base, &view->surface_destroy_listener,
-                                     PEPPER_EVENT_OBJECT_DESTROY, 0);
+    view->surface_destroy_listener =
+        pepper_object_add_event_listener(&surface->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                         view_handle_surface_destroy, view);
 
     return view;
 }
@@ -334,7 +328,7 @@ pepper_view_destroy(pepper_view_t *view)
     if (view->surface)
     {
         pepper_list_remove(&view->surface_link, NULL);
-        pepper_event_listener_remove(&view->surface_destroy_listener);
+        pepper_event_listener_remove(view->surface_destroy_listener);
     }
 
     pixman_region32_fini(&view->opaque_region);
