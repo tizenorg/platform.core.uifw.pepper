@@ -59,6 +59,9 @@ pepper_view_surface_damage(pepper_view_t *view)
 
             pixman_region32_init(&damage);
             pixman_region32_copy(&damage, &view->surface->damage_region);
+            pixman_region32_intersect_rect(&damage, &damage,
+                                           0, 0, view->surface->w, view->surface->h);
+
             pepper_transform_pixman_region(&damage, &view->global_transform);
             pixman_region32_translate(&damage,
                                       -entry->plane->output->geometry.x,
