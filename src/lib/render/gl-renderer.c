@@ -559,9 +559,13 @@ setup_egl_extensions(gl_renderer_t *gr)
     }
 
     if (strstr(extensions, "EGL_EXT_buffer_age"))
+    {
         gr->has_buffer_age = PEPPER_TRUE;
+    }
     else
+    {
         PEPPER_ERROR("Performance Warning: EGL_EXT_buffer_age not supported.\n");
+    }
 
     if (strstr(extensions, "EGL_EXT_platform_base"))
     {
@@ -832,7 +836,7 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
 
         if (eglGetConfigAttrib(gr->display, configs[i], EGL_BUFFER_SIZE, &attrib))
         {
-            if (attrib == PEPPER_FORMAT_BPP(format))
+            if (attrib == (EGLint)PEPPER_FORMAT_BPP(format))
             {
                 config = configs[i];
                 break;

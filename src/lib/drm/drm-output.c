@@ -24,7 +24,7 @@ init_renderer(drm_output_t *output, const char *renderer);
 static void
 fini_renderer(drm_output_t *output);
 
-void
+static void
 drm_output_destroy(void *o)
 {
     drm_output_t   *output = (drm_output_t *)o;
@@ -431,8 +431,8 @@ error:
     return -1;
 }
 
-static int
-find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
+static pepper_bool_t
+find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn, uint32_t *crtc_id)
 {
     int             i, j;
     drmModeEncoder *enc;
@@ -463,13 +463,14 @@ find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
             if (!crtc_used)
             {
                 drmModeFreeEncoder(enc);
-                return res->crtcs[j];
+                *crtc_id = res->crtcs[j];
+                return PEPPER_TRUE;
             }
         }
         drmModeFreeEncoder(enc);
     }
 
-    return -1;
+    return PEPPER_FALSE;
 }
 
 static void
@@ -716,8 +717,7 @@ drm_output_create(pepper_drm_t *drm, struct udev_device *device,
     wl_list_insert(&drm->output_list, &output->link);
 
     /* find crtc + connector */
-    output->crtc_id = find_crtc(drm, res, conn);
-    if (output->crtc_id < 0)
+    if (!find_crtc(drm, res, conn, &output->crtc_id))
     {
         PEPPER_ERROR("Failed to find crtc in %s\n", __FUNCTION__);
         goto error;

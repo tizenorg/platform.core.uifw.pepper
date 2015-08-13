@@ -9,7 +9,7 @@ static FILE *pepper_log_file;
 static int pepper_log_verbosity = 3;
 static int cached_tm_mday = -1;
 
-void __attribute__ ((constructor))
+static void __attribute__ ((constructor))
 before_main(void)
 {
     pepper_log_file = stdout;

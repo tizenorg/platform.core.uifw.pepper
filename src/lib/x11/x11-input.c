@@ -58,6 +58,7 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
     case XCB_MOTION_NOTIFY:
         {
             xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
+            UNUSED(motion);
         }
         break;
     default :
@@ -70,7 +71,7 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
 void
 x11_window_input_property_change(xcb_connection_t *conn, xcb_window_t window)
 {
-     const static uint32_t values[] =
+     static const uint32_t values[] =
      {
          XCB_EVENT_MASK_EXPOSURE |
          XCB_EVENT_MASK_STRUCTURE_NOTIFY |

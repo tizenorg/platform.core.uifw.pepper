@@ -21,7 +21,7 @@ static struct _vt_data
 } vt_data;
 
 PEPPER_API void
-pepper_virtual_terminal_restore()
+pepper_virtual_terminal_restore(void)
 {
     if (vt_data.tty_fd >= 0)
     {
@@ -29,17 +29,25 @@ pepper_virtual_terminal_restore()
         struct vt_mode  mode = {0};
 
         if ((vt_data.kb_mode >= 0) && (ioctl(fd, KDSKBMODE, vt_data.kb_mode) < 0))
+        {
             PEPPER_ERROR("");
+        }
 
         if (ioctl(fd, KDSETMODE, KD_TEXT) < 0)
+        {
             PEPPER_ERROR("");
+        }
 
         mode.mode = VT_AUTO;
         if (ioctl(fd, VT_SETMODE, &mode) < 0)
+        {
             PEPPER_ERROR("");
+        }
 
         if ((vt_data.saved_tty_num > 0) && (ioctl(fd, VT_ACTIVATE, vt_data.saved_tty_num) < 0))
+        {
             PEPPER_ERROR("");
+        }
 
         close(fd);
     }

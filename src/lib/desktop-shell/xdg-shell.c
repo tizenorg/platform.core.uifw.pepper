@@ -183,7 +183,9 @@ xdg_shell_use_unstable_version(struct wl_client     *client,
 {
     /* TODO: */
     if (version != XDG_SHELL_VERSION_CURRENT)
+    {
         PEPPER_ERROR("wl_client@%p want bad XDG_SHELL version %d\n", client, version);
+    }
 }
 
 static void

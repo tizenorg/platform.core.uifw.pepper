@@ -63,7 +63,9 @@ handle_surface_destroy(pepper_event_listener_t *listener,
     wl_list_remove(&shsurf->link);
 
     if (shsurf->fullscreen.background_surface)
+    {
         /* TODO: pepper_surface_destroy(shsurf->fullscreen.background_surface); */;
+    }
 
     if (shsurf->fullscreen.background_view)
         pepper_view_destroy(shsurf->fullscreen.background_view);
@@ -358,7 +360,7 @@ shell_surface_get_output(shell_surface_t *shsurf)
     return output;
 }
 
-void
+static void
 shell_surface_get_geometry(shell_surface_t *shsurf, pixman_rectangle32_t *geometry)
 {
     double x, y;

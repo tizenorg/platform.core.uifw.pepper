@@ -88,7 +88,7 @@ libinput_device_get_properties(struct libinput_device *libinput_device,
     }
 }
 
-const char *
+static const char *
 li_device_get_property(void *dev, const char *key)
 {
     li_device_t            *device = (li_device_t *)dev;

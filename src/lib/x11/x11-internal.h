@@ -49,7 +49,7 @@ struct x11_output
     char                        name[32];
 
     int32_t                  x, y;
-    uint32_t                 w, h;
+    int32_t                  w, h;
     uint32_t                 subpixel;
     uint32_t                 scale;
     uint8_t                  depth;

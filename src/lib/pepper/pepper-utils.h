@@ -628,7 +628,7 @@ PEPPER_API pepper_bool_t
 pepper_virtual_terminal_setup(int tty);
 
 PEPPER_API void
-pepper_virtual_terminal_restore();
+pepper_virtual_terminal_restore(void);
 
 #ifdef __cplusplus
 }

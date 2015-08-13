@@ -157,7 +157,7 @@ pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_pl
     plane_entry_set_plane(&view->plane_entries[output->id], plane);
 }
 
-void
+static void
 view_update_geometry(pepper_view_t *view)
 {
     pepper_list_t *l;

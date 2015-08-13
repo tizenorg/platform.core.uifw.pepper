@@ -83,7 +83,8 @@ fbdev_debug_print_var_screeninfo(const struct fb_var_screeninfo *info)
     printf("Blue channel:       %i bits at offset %i\n",
            info->red.length, info->blue.offset);
 }
-void
+
+static void
 fbdev_output_destroy(void *o)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
