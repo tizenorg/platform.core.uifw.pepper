@@ -21,6 +21,13 @@ AC_PROG_CC
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
+if test "x$GCC" = "xyes"; then
+GCC_CFLAGS="-Wall -Wextra -Wno-unused-parameter \
+            -Wno-missing-field-initializers -g -fvisibility=hidden \
+            -Wstrict-prototypes -Wmissing-prototypes -Wsign-compare"
+fi
+AC_SUBST(GCC_CFLAGS)
+
 # pepper
 PEPPER_REQUIRES="wayland-server pixman-1"
 PKG_CHECK_MODULES(PEPPER, [$PEPPER_REQUIRES])

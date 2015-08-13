@@ -1,9 +1,12 @@
 lib_LTLIBRARIES = libpepper-desktop-shell.la
 
+AM_CFLAGS = $(GCC_CFLAGS)
+
 libpepper_desktop_includedir=$(includedir)/pepper
 libpepper_desktop_include_HEADERS = pepper-desktop-shell.h
 
-libpepper_desktop_shell_la_CFLAGS = -I$(srcdir)/protocol/           \
+libpepper_desktop_shell_la_CFLAGS = $(AM_CFLAGS)                    \
+                                    -I$(srcdir)/protocol/           \
                                     $(PEPPER_DESKTOP_SHELL_CFLAGS)
 
 libpepper_desktop_shell_la_LIBADD = $(PEPPER_DESKTOP_SHELL_LIBS)
