@@ -305,6 +305,11 @@ pepper_log(const char* domain, int level, const char *format, ...);
         pepper_log("ERROR", 0, "%s:%s: "fmt, __FILE__, __FUNCTION__, ##__VA_ARGS__);	\
     } while (0)
 
+#define PEPPER_TRACE(fmt, ...)                                                          \
+    do {                                                                                \
+        pepper_log("DEBUG", 0, fmt, ##__VA_ARGS__);                                     \
+    } while (0)
+
 PEPPER_API void
 pepper_assert(pepper_bool_t exp);
 

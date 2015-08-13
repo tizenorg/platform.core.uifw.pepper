@@ -16,8 +16,6 @@
 
 #define X11_BACKEND_INPUT_ID    0x12345678
 
-#define PEPPER_TRACE(x)
-
 typedef struct x11_output       x11_output_t;
 typedef struct x11_cursor       x11_cursor_t;
 typedef struct x11_seat         x11_seat_t;

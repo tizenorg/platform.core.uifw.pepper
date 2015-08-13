@@ -1,8 +1,5 @@
 #include "pepper-internal.h"
 
-#undef PEPPER_TRACE
-#define PEPPER_TRACE(...)
-
 typedef struct pepper_input_device_entry pepper_input_device_entry_t;
 
 struct pepper_input_device_entry
