@@ -10,9 +10,6 @@
 
 #include "pepper-fbdev.h"
 
-/* TODO: Error Logging. */
-#define PEPPER_ERROR(...)
-
 typedef struct fbdev_output     fbdev_output_t;
 
 struct pepper_fbdev

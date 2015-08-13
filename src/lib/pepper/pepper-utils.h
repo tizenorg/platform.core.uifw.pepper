@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
+#include <assert.h>
 
 #include <pixman.h>
 
@@ -298,6 +299,16 @@ pepper_create_anonymous_file(off_t size);
 
 PEPPER_API int
 pepper_log(const char* domain, int level, const char *format, ...);
+
+#define PEPPER_ERROR(fmt, ...)                                                          \
+    do {                                                                                \
+        pepper_log("ERROR", 0, "%s:%s: "fmt, __FILE__, __FUNCTION__, ##__VA_ARGS__);	\
+    } while (0)
+
+PEPPER_API void
+pepper_assert(pepper_bool_t exp);
+
+#define PEPPER_ASSERT(exp)  assert(exp)
 
 typedef struct pepper_mat4  pepper_mat4_t;
 typedef struct pepper_vec4  pepper_vec4_t;

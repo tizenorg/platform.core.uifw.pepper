@@ -4,9 +4,6 @@
 #include "pepper-libinput.h"
 #include <pepper-input-backend.h>
 
-/* TODO: Error logging. */
-#define PEPPER_ERROR(...)
-
 typedef struct li_device            li_device_t;
 typedef struct li_device_property   li_device_property_t;
 

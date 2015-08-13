@@ -12,10 +12,6 @@
 #include <wayland-egl.h>
 #endif
 
-/* TODO: Error logging. */
-#define PEPPER_ERROR(...)
-#define PEPPER_ASSERT(exp)
-
 #define NUM_SHM_BUFFERS 2
 
 typedef struct wayland_output       wayland_output_t;

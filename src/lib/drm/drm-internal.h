@@ -13,9 +13,6 @@
 
 #define DUMB_FB_COUNT   2
 
-/* TODO: Error Logging. */
-#define PEPPER_ERROR(...)
-
 typedef struct drm_output       drm_output_t;
 typedef struct drm_fb           drm_fb_t;
 

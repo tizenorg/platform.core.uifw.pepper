@@ -1,9 +1,6 @@
 #include <pepper.h>
 #include <pepper-wayland.h>
 
-/* TODO: */
-#define PEPPER_ASSERT(exp)
-
 int
 main(int argc, char **argv)
 {

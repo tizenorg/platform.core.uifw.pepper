@@ -2,10 +2,6 @@
 #include "pepper-desktop-shell.h"
 #include <wayland-server.h>
 
-/* TODO: */
-#define PEPPER_ERROR(...)
-#define PEPPER_ASSERT(...)
-
 /* Ping timeout value in ms. */
 #define DESKTOP_SHELL_PING_TIMEOUT  200
 

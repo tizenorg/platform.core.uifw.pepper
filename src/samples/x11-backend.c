@@ -2,9 +2,6 @@
 #include <pepper-x11.h>
 #include <pepper-desktop-shell.h>
 
-/* TODO: */
-#define PEPPER_ASSERT(exp)
-
 int
 main(int argc, char **argv)
 {

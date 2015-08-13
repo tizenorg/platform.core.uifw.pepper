@@ -9,10 +9,6 @@
 #include <pepper-drm.h>
 #include <pepper-desktop-shell.h>
 
-/* TODO: */
-#define PEPPER_ASSERT(exp)
-#define PEPPER_ERROR(...)
-
 static void
 handle_signals(int s, siginfo_t *siginfo, void *context)
 {

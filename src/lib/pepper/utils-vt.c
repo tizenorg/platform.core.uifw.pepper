@@ -10,8 +10,6 @@
 
 #include "pepper-utils.h"
 
-#define PEPPER_ERROR(...)   /* TODO */
-
 static struct _vt_data
 {
     int     tty_fd;

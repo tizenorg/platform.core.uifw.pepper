@@ -3,10 +3,6 @@
 
 #include "pepper-render.h"
 
-/* TODO: Error logging. */
-#define PEPPER_ASSERT(exp)
-#define PEPPER_ERROR(...)
-
 struct pepper_render_target
 {
     /* Renderer from where this target is created. */
