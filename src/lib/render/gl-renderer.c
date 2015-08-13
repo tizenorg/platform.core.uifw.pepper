@@ -211,6 +211,7 @@ get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
         if (!state)
             return NULL;
 
+        state->renderer = (gl_renderer_t *)renderer;
         state->surface = surface;
         state->surface_destroy_listener =
             pepper_object_add_event_listener((pepper_object_t *)surface,
