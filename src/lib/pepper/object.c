@@ -112,6 +112,7 @@ pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int prior
     listener->data      = data;
 
     insert_listener(object, listener);
+    return listener;
 }
 
 PEPPER_API void
@@ -143,6 +144,6 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
         listener = l->item;
 
         if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
-            listener->callback(listener, object, id, listener->data, info);
+            listener->callback(listener, object, id, info, listener->data);
     }
 }
