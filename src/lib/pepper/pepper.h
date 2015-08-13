@@ -26,7 +26,6 @@ typedef struct pepper_output_geometry           pepper_output_geometry_t;
 typedef struct pepper_output_mode               pepper_output_mode_t;
 
 typedef struct pepper_input_device              pepper_input_device_t;
-typedef struct pepper_input_device_backend      pepper_input_device_backend_t;
 
 typedef struct pepper_pointer_motion_event      pepper_pointer_motion_event_t;
 typedef struct pepper_pointer_button_event      pepper_pointer_button_event_t;
@@ -228,9 +227,6 @@ pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data
 
 PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key);
-
-PEPPER_API void
-pepper_object_add_destroy_listener(pepper_object_t *object, struct wl_listener *listener);
 
 PEPPER_API pepper_event_listener_t *
 pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int priority,

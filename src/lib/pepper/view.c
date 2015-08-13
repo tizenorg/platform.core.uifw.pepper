@@ -210,19 +210,6 @@ view_update_geometry(pepper_view_t *view)
 
 }
 
-static void
-view_update_visibility(pepper_view_t *view)
-{
-    if (!(view->dirty & PEPPER_VIEW_VISIBILITY_DIRTY))
-        return;
-
-    if (view->parent)
-        view_update_visibility(view->parent);
-
-    view->visible = view->parent->visible && view->mapped;
-    view->dirty &= ~PEPPER_VIEW_VISIBILITY_DIRTY;
-}
-
 void
 pepper_view_update(pepper_view_t *view)
 {

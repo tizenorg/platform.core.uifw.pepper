@@ -296,15 +296,6 @@ pepper_surface_destroy(pepper_surface_t *surface)
 }
 
 static void
-pepper_surface_schedule_repaint(pepper_surface_t *surface)
-{
-    /* FIXME: Find outputs to be repainted */
-    pepper_output_t *output;
-    wl_list_for_each(output, &surface->compositor->output_list, link)
-        pepper_output_schedule_repaint(output);
-}
-
-static void
 surface_update_size(pepper_surface_t *surface)
 {
     surface->w = 0;
