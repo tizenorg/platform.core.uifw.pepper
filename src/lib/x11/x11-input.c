@@ -11,36 +11,52 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
     case XCB_ENTER_NOTIFY:
         {
             PEPPER_TRACE("enter\n");
-            break;
         }
+        break;
     case XCB_LEAVE_NOTIFY:
         {
             PEPPER_TRACE("leave\n");
-            break;
         }
+        break;
     case XCB_KEY_PRESS:
     case XCB_KEY_RELEASE:
         break;
     case XCB_BUTTON_PRESS:
         {
-            xcb_button_press_event_t *bp = (xcb_button_press_event_t *)xev;
+            xcb_button_press_event_t      *bp = (xcb_button_press_event_t *)xev;
+            pepper_pointer_button_event_t  event;
+
             switch (bp->detail)
             {
             case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
-                PEPPER_TRACE("left click\n");
-                break;
             case XCB_BUTTON_INDEX_3:/* FIXME: RIGHT */
-                PEPPER_TRACE("right click\n");
+                {
+                }
+                break;
+            case XCB_BUTTON_INDEX_4:
+                /* TODO: axis up */
+                break;
+            case XCB_BUTTON_INDEX_5:
+                /* TODO: axis down */
                 break;
             default:
                 PEPPER_TRACE("wheel or something pressed\n");
                 break;
             }
+
+            event.time   = bp->time;
+            event.button = bp->detail;
+            event.state  = WL_POINTER_BUTTON_STATE_PRESSED; /* FIXME */
+
+            pepper_object_emit_event((pepper_object_t *)seat->pointer,
+                                     PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
         }
         break;
     case XCB_BUTTON_RELEASE:
         {
-            xcb_button_release_event_t *br = (xcb_button_release_event_t *)xev;
+            xcb_button_release_event_t    *br = (xcb_button_release_event_t *)xev;
+            pepper_pointer_button_event_t  event;
+
             switch (br->detail)
             {
             case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
@@ -53,19 +69,31 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
                 PEPPER_TRACE("wheel or something pressed\n");
                 break;
             }
+
+            event.time   = br->time;
+            event.button = br->detail;
+            event.state  = WL_POINTER_BUTTON_STATE_RELEASED; /* FIXME */
+
+            pepper_object_emit_event((pepper_object_t *)seat->pointer,
+                                     PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
         }
         break;
     case XCB_MOTION_NOTIFY:
         {
-            xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
-            UNUSED(motion);
+            xcb_motion_notify_event_t     *motion = (xcb_motion_notify_event_t *)xev;
+            pepper_pointer_motion_event_t  event;
+
+            event.time = motion->time;
+            event.x = motion->event_x;
+            event.y = motion->event_y;
+
+            pepper_object_emit_event((pepper_object_t *)seat->pointer,
+                                     PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE, &event);
         }
         break;
     default :
         PEPPER_ERROR("unknown input event, [0x%x]\n", type);
     }
-
-    /* TODO: send input event */
 }
 
 void
@@ -93,6 +121,15 @@ static void
 x11_seat_destroy(void *data)
 {
     x11_seat_t *seat = (x11_seat_t *)data;
+
+    if (seat->pointer)
+        pepper_input_device_destroy(seat->pointer);
+
+    if (seat->keyboard)
+        pepper_input_device_destroy(seat->keyboard);
+
+    if (seat->conn)
+        seat->conn->seat = NULL;
 
     free(seat);
 }
@@ -142,7 +179,9 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     if (!seat->pointer)
     {
         PEPPER_ERROR("failed to create pepper pointer device\n");
-        /* TODO: error handling */
+
+        x11_seat_destroy(seat);
+        return ;
     }
     seat->caps |= WL_SEAT_CAPABILITY_POINTER;
 
@@ -151,10 +190,13 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     if (!seat->keyboard)
     {
         PEPPER_ERROR("failed to create pepper keyboard device\n");
-        /* TODO: error handling */
+
+        x11_seat_destroy(seat);
+        return ;
     }
     seat->caps |= WL_SEAT_CAPABILITY_KEYBOARD;
 
     /* x-connection has only 1 seat */
     conn->seat = seat;
+    seat->conn = conn;
 }

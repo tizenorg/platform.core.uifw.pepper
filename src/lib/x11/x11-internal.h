@@ -68,6 +68,8 @@ struct x11_output
 
 struct x11_seat
 {
+    pepper_x11_connection_t        *conn;
+
     pepper_input_device_t          *pointer;
     pepper_input_device_t          *keyboard;
     pepper_input_device_t          *touch;
