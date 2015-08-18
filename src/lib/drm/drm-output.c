@@ -18,6 +18,9 @@
 #include <pepper-pixman-renderer.h>
 #include <pepper-gl-renderer.h>
 
+#define DRM_CURSOR_WIDTH        64
+#define DRM_CURSOR_HEIGHT       64
+
 static pepper_bool_t
 init_renderer(drm_output_t *output, const char *renderer);
 
@@ -185,6 +188,8 @@ destroy_fb(struct gbm_bo *bo, void *data)
 static drm_fb_t *
 get_fb(drm_output_t *output, struct gbm_bo *bo)
 {
+    int         ret = -1;
+    uint32_t    handles[4], pitches[4], offsets[4];
     drm_fb_t   *fb = (drm_fb_t *)gbm_bo_get_user_data(bo);
 
     if (fb)
@@ -207,7 +212,16 @@ get_fb(drm_output_t *output, struct gbm_bo *bo)
     fb->size = fb->stride * fb->h;
     fb->bo = bo;
 
-    if (drmModeAddFB(fb->fd, fb->w, fb->h, 24, 32, fb->stride, fb->handle, &fb->id))
+    handles[0] = fb->handle;
+    pitches[0] = fb->stride;
+    offsets[0] = 0;
+
+    ret = drmModeAddFB2(fb->fd, fb->w, fb->h, GBM_FORMAT_XRGB8888 /* FIXME */,
+                        handles, pitches, offsets, &fb->id, 0);
+    if (ret)
+        printf("Failed to call drmModeAddFB2\n");
+
+    if (ret && drmModeAddFB(fb->fd, fb->w, fb->h, 24, 32, fb->stride, fb->handle, &fb->id))
     {
         PEPPER_ERROR("Failed to add fb in %s\n", __FUNCTION__);
         free(fb);
@@ -249,14 +263,181 @@ update_back_buffer(drm_output_t *output)
     }
 }
 
+static pepper_bool_t
+assign_cursor_plane(drm_output_t *output, pepper_view_t *view)
+{
+    int w, h;
+
+    pepper_view_get_size(view, &w, &h);
+    if ((w > DRM_CURSOR_WIDTH/* FIXME */) || (h > DRM_CURSOR_HEIGHT/* FIXME */))
+        return PEPPER_FALSE;
+
+    if (!output->drm->gbm_device)
+        return PEPPER_FALSE;
+
+    if (!output->cursor_plane)
+        return PEPPER_FALSE;
+
+    /* TODO */
+
+    output->cursor_view = view;
+    pepper_view_assign_plane(view, output->base, output->cursor_plane);
+
+    return PEPPER_TRUE;
+}
+
+static pepper_bool_t
+assign_drm_plane(drm_output_t *output, pepper_view_t *view, drm_plane_t *plane)
+{
+    pepper_surface_t   *surface;
+    pepper_buffer_t    *buffer;
+    struct wl_resource *resource;
+    struct gbm_bo      *bo;
+
+    double              x, y;
+    int                 w, h;
+
+    if (!output->drm->gbm_device)
+        return PEPPER_FALSE;
+
+    if (plane->output || plane->back_fb)
+        return PEPPER_FALSE;
+
+    surface = pepper_view_get_surface(view);
+    if (!surface)
+        return PEPPER_FALSE;
+
+    buffer = pepper_surface_get_buffer(surface);
+    if (!buffer)
+        return PEPPER_FALSE;
+
+    resource = pepper_buffer_get_resource(buffer);
+    if (!resource)
+        return PEPPER_FALSE;
+
+    if (wl_shm_buffer_get(resource))
+        return PEPPER_FALSE;
+
+    /* TODO: check conditions */
+
+    bo = gbm_bo_import(output->drm->gbm_device, GBM_BO_IMPORT_WL_BUFFER, resource,
+                       GBM_BO_USE_SCANOUT);
+
+    if (!bo)
+        return PEPPER_FALSE;
+
+    /* TODO: check format */
+
+    plane->back_fb = get_fb(output, bo);
+    if (!plane->back_fb)
+    {
+        gbm_bo_destroy(bo);
+        return PEPPER_FALSE;
+    }
+
+    /* set position  */
+    pepper_view_get_position(view, &x, &y);
+    pepper_view_get_size(view, &w, &h);
+    plane->dx = (int)x;
+    plane->dy = (int)y;
+    plane->dw = w;
+    plane->dh = h;
+
+    plane->sx = 0 /* FIXME */ << 16;
+    plane->sy = 0 /* FIXME */ << 16;
+    plane->sw = w << 16;
+    plane->sh = h << 16;
+
+    plane->output = output;
+
+    pepper_view_assign_plane(view, output->base, plane->base);
+
+    return PEPPER_TRUE;
+}
+
 static void
 drm_output_assign_planes(void *o, const pepper_list_t *view_list)
 {
     drm_output_t   *output = (drm_output_t *)o;
-    pepper_list_t  *l;
+    pepper_drm_t   *drm = output->drm;
+    pepper_list_t  *l, *p;
 
+    p = drm->plane_list.next;
     PEPPER_LIST_FOR_EACH(view_list, l)
-        pepper_view_assign_plane((pepper_view_t *)l->item, output->base, output->primary_plane);
+    {
+        pepper_view_t  *view = (pepper_view_t *)l->item;
+        drm_plane_t    *plane = (drm_plane_t *)p->item;
+
+        if (!output->cursor_view && assign_cursor_plane(output, view))
+            continue;
+
+        while (plane && !(plane->possible_crtcs & (1 << output->crtc_index)))
+        {
+            p = p->next;
+            plane = (drm_plane_t *)p->item;
+        }
+
+        if (plane && assign_drm_plane(output, view, plane))
+        {
+            p = p->next;
+            continue;
+        }
+
+        pepper_view_assign_plane(view, output->base, output->primary_plane);
+    }
+}
+
+static void
+set_planes(drm_output_t *output)
+{
+    pepper_list_t      *l;
+    drm_plane_t        *plane;
+    drmVBlank           vbl;
+
+    PEPPER_LIST_FOR_EACH(&output->drm->plane_list, l)
+    {
+        plane = (drm_plane_t *)l->item;
+
+        if (plane->output != output)
+            continue;
+
+        if (!plane->back_fb)
+            continue;
+
+        if (drmModeSetPlane(output->drm->drm_fd, plane->plane_id, output->crtc_id,
+                            plane->back_fb->id, 0 /* FIXME: flags */,
+                            plane->dx, plane->dy, plane->dw, plane->dh,
+                            plane->sx, plane->sy, plane->sw, plane->sh))
+        {
+            PEPPER_ERROR("Failed to set plane\n");
+            /* TODO: handle error */
+            continue;
+        }
+
+        vbl.request.type = DRM_VBLANK_RELATIVE | DRM_VBLANK_EVENT;
+
+        if (output->crtc_index > 1) /* FIXME */
+        {
+            vbl.request.type |= ((output->crtc_index << DRM_VBLANK_HIGH_CRTC_SHIFT) &
+                                 DRM_VBLANK_HIGH_CRTC_MASK);
+        }
+        else if (output->crtc_index > 0)
+        {
+            vbl.request.type |= DRM_VBLANK_SECONDARY;
+        }
+
+        vbl.request.sequence = 1;
+        vbl.request.signal = (unsigned long)plane;
+
+        if (drmWaitVBlank(output->drm->drm_fd, &vbl))
+        {
+            PEPPER_ERROR("Failed to request vblank event\n");
+            /* TODO: handle error */
+            continue;
+        }
+
+        output->vblank_pending = PEPPER_TRUE;
+    }
 }
 
 static void
@@ -300,11 +481,11 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
 
             output->page_flip_pending = PEPPER_TRUE;
         }
-
-        /* TODO: Cursor plane. */
-
-        /* TODO: drmModeSetPlane(). */
     }
+
+    /* TODO: Cursor plane. */
+
+    set_planes(output);
 }
 
 static void
@@ -431,8 +612,8 @@ error:
     return -1;
 }
 
-static pepper_bool_t
-find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn, uint32_t *crtc_id)
+static int
+find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
 {
     int             i, j;
     drmModeEncoder *enc;
@@ -463,14 +644,13 @@ find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn, uint32_t *
             if (!crtc_used)
             {
                 drmModeFreeEncoder(enc);
-                *crtc_id = res->crtcs[j];
-                return PEPPER_TRUE;
+                return j;
             }
         }
         drmModeFreeEncoder(enc);
     }
 
-    return PEPPER_FALSE;
+    return -1;
 }
 
 static void
@@ -717,11 +897,13 @@ drm_output_create(pepper_drm_t *drm, struct udev_device *device,
     wl_list_insert(&drm->output_list, &output->link);
 
     /* find crtc + connector */
-    if (!find_crtc(drm, res, conn, &output->crtc_id))
+    output->crtc_index = find_crtc(drm, res, conn);
+    if (output->crtc_index < 0)
     {
         PEPPER_ERROR("Failed to find crtc in %s\n", __FUNCTION__);
         goto error;
     }
+    output->crtc_id = res->crtcs[output->crtc_index];
     output->conn_id = conn->connector_id;
     output->saved_crtc = drmModeGetCrtc(drm->drm_fd, output->crtc_id);
 
@@ -851,10 +1033,37 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
 }
 
 static void
+remove_outputs(pepper_drm_t *drm)
+{
+    if (!wl_list_empty(&drm->output_list))
+    {
+        drm_output_t *output, *next;
+        wl_list_for_each_safe(output, next, &drm->output_list, link)
+            drm_output_destroy(output);
+    }
+}
+
+static void
 handle_vblank(int fd, unsigned int sequence, unsigned int tv_sec, unsigned int tv_usec,
               void *user_data)
 {
-    /* TODO */
+    drm_plane_t    *plane = (drm_plane_t *)user_data;
+    drm_output_t   *output = plane->output;
+
+    output->vblank_pending = PEPPER_FALSE;
+
+    if (plane->front_fb)
+    {
+        if (plane->front_fb->bo)
+            gbm_bo_destroy(plane->front_fb->bo);    /* FIXME: destroy fb? */
+    }
+
+    plane->front_fb = plane->back_fb;
+    plane->back_fb = NULL;
+    plane->output = NULL;
+
+    if (!output->page_flip_pending)
+        wl_signal_emit(&output->frame_signal, NULL);
 }
 
 static void
@@ -897,6 +1106,90 @@ handle_drm_events(int fd, uint32_t mask, void *data)
     drmHandleEvent(fd, &ctx);
 
     return 0;
+}
+
+static pepper_bool_t
+create_planes(pepper_drm_t *drm)
+{
+    uint32_t            i;
+    drmModePlaneRes    *res;
+    drmModePlane       *pl;
+
+    drm_output_t       *tmp, *output;
+    drm_plane_t        *plane;
+
+    res = drmModeGetPlaneResources(drm->drm_fd);
+    if (!res)
+    {
+        PEPPER_ERROR("Failed to get plane resources\n");
+        return PEPPER_FALSE;
+    }
+
+    for (i = 0; i < res->count_planes; i++)
+    {
+        pl = drmModeGetPlane(drm->drm_fd, res->planes[i]);
+        if (!pl)
+            continue;
+
+        output = NULL;
+        wl_list_for_each(tmp, &drm->output_list, link)
+        {
+            if (pl->possible_crtcs & (1 << tmp->crtc_index))
+            {
+                output = tmp;
+                break;
+            }
+        }
+
+        if (!output)
+        {
+            drmModeFreePlane(pl);
+            continue;
+        }
+
+        plane = (drm_plane_t *)calloc(1, sizeof(drm_plane_t));
+        if (!plane)
+        {
+            PEPPER_ERROR("Failed to allocate memory\n");
+            drmModeFreePlane(pl);
+            continue;
+        }
+
+        plane->drm = drm;
+        plane->possible_crtcs = pl->possible_crtcs;
+        plane->plane_id = pl->plane_id;
+        /* TODO */
+
+        plane->base = pepper_output_add_plane(output->base, output->primary_plane);
+        if (!plane->base)
+        {
+            PEPPER_ERROR("Failed to add plane\n");
+            free(plane);
+        }
+
+        pepper_list_insert(&drm->plane_list, &plane->link);
+        plane->link.item = plane;
+
+        drmModeFreePlane(pl);
+    }
+
+    drmModeFreePlaneResources(res);
+
+    return PEPPER_TRUE;
+}
+
+static void
+destroy_planes(pepper_drm_t *drm)
+{
+    pepper_list_t *l, *next;
+
+    PEPPER_LIST_FOR_EACH_SAFE(&drm->plane_list, l, next)
+    {
+        drm_plane_t *plane = (drm_plane_t *)l->item;
+        pepper_list_remove(l, NULL);
+        pepper_plane_destroy(plane->base);
+        free(plane);
+    }
 }
 
 static void
@@ -979,6 +1272,9 @@ handle_udev_drm_events(int fd, uint32_t mask, void *data)
 
     update_outputs(drm, device);
 
+    destroy_planes(drm);
+    create_planes(drm);
+
 done:
     udev_device_unref(device);
     return 0;
@@ -1046,6 +1342,9 @@ pepper_drm_output_create(pepper_drm_t *drm, const char *renderer)
         goto error;
     }
 
+    if (create_planes(drm) == PEPPER_FALSE)
+        PEPPER_ERROR("Failed to create planes\n");
+
     /* add drm fd to main loop */
     display = pepper_compositor_get_display(drm->compositor);
     loop = wl_display_get_event_loop(display);
@@ -1095,7 +1394,30 @@ error:
 }
 
 void
-pepper_drm_output_destroy(drm_output_t *output)
+pepper_drm_output_destroy(pepper_drm_t *drm)
 {
-    drm_output_destroy(output);
+
+    if (drm->renderer)
+        free(drm->renderer);
+
+    if (drm->udev_monitor_source)
+        wl_event_source_remove(drm->udev_monitor_source);
+
+    if (drm->udev_monitor)
+        udev_monitor_unref(drm->udev_monitor);
+
+    if (drm->drm_event_source)
+        wl_event_source_remove(drm->drm_event_source);
+
+    destroy_planes(drm);
+    remove_outputs(drm);
+
+    if (drm->crtcs)
+        free(drm->crtcs);
+
+    if (drm->gbm_device)
+        gbm_device_destroy(drm->gbm_device);
+
+    if (drm->drm_fd)
+        close(drm->drm_fd);
 }

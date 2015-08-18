@@ -15,6 +15,7 @@
 
 typedef struct drm_output       drm_output_t;
 typedef struct drm_fb           drm_fb_t;
+typedef struct drm_plane        drm_plane_t;
 
 struct pepper_drm
 {
@@ -41,6 +42,8 @@ struct pepper_drm
     char                       *renderer;
     pepper_renderer_t          *pixman_renderer;
     pepper_renderer_t          *gl_renderer;
+
+    pepper_list_t               plane_list;
 };
 
 struct drm_output
@@ -54,6 +57,7 @@ struct drm_output
     int32_t                     subpixel;
     uint32_t                    w, h;
 
+    int32_t                     crtc_index;
     uint32_t                    crtc_id;
     uint32_t                    conn_id;
 
@@ -83,6 +87,8 @@ struct drm_output
     pepper_bool_t               vblank_pending;
     pepper_bool_t               page_flip_pending;
 
+    pepper_view_t              *cursor_view;
+    pepper_plane_t             *cursor_plane;
     pepper_plane_t             *primary_plane;
 
     /* TODO */
@@ -105,10 +111,30 @@ struct drm_fb
     pepper_render_target_t     *target;
 };
 
+struct drm_plane
+{
+    pepper_drm_t               *drm;
+    pepper_plane_t             *base;
+    drm_output_t               *output;
+
+    uint32_t                    possible_crtcs;
+    uint32_t                    plane_id;
+
+    drm_fb_t                   *front_fb;
+    drm_fb_t                   *back_fb;
+
+    int                         sx, sy, sw, sh; /* src *//* FIXME: uint32_t? */
+    int                         dx, dy, dw, dh; /* dst *//* FIXME: uint32_t? */
+
+    /* TODO */
+
+    pepper_list_t               link;
+};
+
 pepper_bool_t
 pepper_drm_output_create(pepper_drm_t *drm, const char *renderer);
 
 void
-pepper_drm_output_destroy(drm_output_t *output);
+pepper_drm_output_destroy(pepper_drm_t *drm);
 
 #endif /* DRM_INTERNAL_H */

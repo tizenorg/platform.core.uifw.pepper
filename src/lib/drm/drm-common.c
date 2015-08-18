@@ -21,6 +21,7 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev,
     drm->compositor = compositor;
     drm->udev = udev;
     wl_list_init(&drm->output_list);
+    pepper_list_init(&drm->plane_list);
 
     if (!pepper_drm_output_create(drm, renderer))
     {
@@ -40,37 +41,9 @@ error:
 PEPPER_API void
 pepper_drm_destroy(pepper_drm_t *drm)
 {
-    drm_output_t *output, *next;
-
     if (!drm)
         return;
 
-    if (drm->renderer)
-        free(drm->renderer);
-
-    if (drm->udev_monitor_source)
-        wl_event_source_remove(drm->udev_monitor_source);
-
-    if (drm->udev_monitor)
-        udev_monitor_unref(drm->udev_monitor);
-
-    if (drm->drm_event_source)
-        wl_event_source_remove(drm->drm_event_source);
-
-    if (!wl_list_empty(&drm->output_list))
-    {
-        wl_list_for_each_safe(output, next, &drm->output_list, link)
-            pepper_drm_output_destroy(output);
-    }
-
-    if (drm->crtcs)
-        free(drm->crtcs);
-
-    if (drm->gbm_device)
-        gbm_device_destroy(drm->gbm_device);
-
-    if (drm->drm_fd)
-        close(drm->drm_fd);
-
+    pepper_drm_output_destroy(drm);
     free(drm);
 }
