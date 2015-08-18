@@ -21,6 +21,9 @@ main(int argc, char **argv)
     output = pepper_x11_output_create(conn, 640, 480, "pixman");
     PEPPER_ASSERT(output);
 
+    if (!pepper_x11_input_create(conn))
+        PEPPER_ASSERT(0);
+
     mode.w = 1024;
     mode.h = 768;
     mode.refresh = 60000;

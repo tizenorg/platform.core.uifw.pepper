@@ -141,8 +141,8 @@ handle_connection_destroy(struct wl_listener *listener, void *data)
     x11_seat_destroy(seat);
 }
 
-PEPPER_API void
-pepper_x11_seat_create(pepper_x11_connection_t* conn)
+PEPPER_API pepper_bool_t
+pepper_x11_input_create(pepper_x11_connection_t* conn)
 {
     x11_seat_t      *seat;
     x11_output_t    *out, *tmp;
@@ -150,14 +150,14 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
     if (!conn)
     {
         PEPPER_ERROR("connection is null...\n");
-        return ;
+        return PEPPER_FALSE;
     }
 
     seat = calloc(1, sizeof(x11_seat_t));
     if (!seat)
     {
         PEPPER_ERROR("failed to allocate memory\n");
-        return ;
+        return PEPPER_FALSE;
     }
 
     conn->use_xinput = PEPPER_TRUE;
@@ -181,7 +181,7 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
         PEPPER_ERROR("failed to create pepper pointer device\n");
 
         x11_seat_destroy(seat);
-        return ;
+        return PEPPER_FALSE;
     }
     seat->caps |= WL_SEAT_CAPABILITY_POINTER;
 
@@ -192,11 +192,13 @@ pepper_x11_seat_create(pepper_x11_connection_t* conn)
         PEPPER_ERROR("failed to create pepper keyboard device\n");
 
         x11_seat_destroy(seat);
-        return ;
+        return PEPPER_FALSE;
     }
     seat->caps |= WL_SEAT_CAPABILITY_KEYBOARD;
 
     /* x-connection has only 1 seat */
     conn->seat = seat;
     seat->conn = conn;
+
+    return PEPPER_TRUE;
 }
