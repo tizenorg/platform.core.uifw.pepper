@@ -87,6 +87,9 @@ x11_handle_event(int fd, uint32_t mask, void *data)
             break;
         case XCB_KEYMAP_NOTIFY:
             PEPPER_TRACE("XCB_KEYMAP_NOTIFY\n");
+            {
+                /* TODO: ignore at this time. */
+            }
             break;
         case XCB_CONFIGURE_NOTIFY:
             /* Window moved */

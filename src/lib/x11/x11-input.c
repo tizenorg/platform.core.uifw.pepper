@@ -19,7 +19,30 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
         }
         break;
     case XCB_KEY_PRESS:
+        {
+            xcb_key_press_event_t       *kp = (xcb_key_press_event_t *)xev;
+            pepper_keyboard_key_event_t  event;
+
+            event.time  = kp->time;
+            event.key   = xkb_state_key_get_one_sym(seat->xkb_state, kp->detail);
+            event.state = WL_KEYBOARD_KEY_STATE_PRESSED;    /* FIXME */
+
+            pepper_object_emit_event((pepper_object_t *)seat->keyboard,
+                                     PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
+        }
+        break;
     case XCB_KEY_RELEASE:
+        {
+            xcb_key_release_event_t     *kr = (xcb_key_release_event_t *)xev;
+            pepper_keyboard_key_event_t  event;
+
+            event.time  = kr->time;
+            event.key   = xkb_state_key_get_one_sym(seat->xkb_state, kr->detail);
+            event.state = WL_KEYBOARD_KEY_STATE_RELEASED;    /* FIXME */
+
+            pepper_object_emit_event((pepper_object_t *)seat->keyboard,
+                                     PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
+        }
         break;
     case XCB_BUTTON_PRESS:
         {
@@ -131,6 +154,15 @@ x11_seat_destroy(void *data)
     if (seat->conn)
         seat->conn->seat = NULL;
 
+    if (seat->xkb_state)
+        xkb_state_unref(seat->xkb_state);
+
+    if (seat->keymap)
+        xkb_keymap_unref(seat->keymap);
+
+    if (seat->xkb_ctx)
+        xkb_context_unref(seat->xkb_ctx);
+
     free(seat);
 }
 
@@ -173,6 +205,42 @@ pepper_x11_input_create(pepper_x11_connection_t* conn)
 
     seat->id = X11_BACKEND_INPUT_ID;
 
+    /* Init XKB extension */
+    seat->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    if (!seat->xkb_ctx)
+    {
+        PEPPER_ERROR("xkb_context_new failed\n");
+
+        goto failed;
+    }
+
+    seat->device_id = xkb_x11_get_core_keyboard_device_id(conn->xcb_connection);
+    if (seat->device_id == -1)
+    {
+        PEPPER_ERROR("xkb_x11_get_core_keyboard_device_id failed\n");
+
+        goto failed;
+    }
+
+    seat->keymap = xkb_x11_keymap_new_from_device(seat->xkb_ctx,
+                                                  conn->xcb_connection,
+                                                  seat->device_id,
+                                                  XKB_KEYMAP_COMPILE_NO_FLAGS);
+    if (!seat->keymap)
+    {
+        PEPPER_ERROR("xkb_x11_keymap_new_from_device failed\n");
+
+        goto failed;
+    }
+
+    seat->xkb_state = xkb_x11_state_new_from_device(seat->keymap, conn->xcb_connection, seat->device_id);
+    if (!seat->xkb_state)
+    {
+        PEPPER_ERROR("xkb_x11_state_new_from_device failed\n");
+
+        goto failed;
+    }
+
     /* Hard-coded: */
     seat->pointer = pepper_input_device_create(conn->compositor, WL_SEAT_CAPABILITY_POINTER,
                                                NULL, NULL);
@@ -180,8 +248,7 @@ pepper_x11_input_create(pepper_x11_connection_t* conn)
     {
         PEPPER_ERROR("failed to create pepper pointer device\n");
 
-        x11_seat_destroy(seat);
-        return PEPPER_FALSE;
+        goto failed;
     }
     seat->caps |= WL_SEAT_CAPABILITY_POINTER;
 
@@ -191,8 +258,7 @@ pepper_x11_input_create(pepper_x11_connection_t* conn)
     {
         PEPPER_ERROR("failed to create pepper keyboard device\n");
 
-        x11_seat_destroy(seat);
-        return PEPPER_FALSE;
+        goto failed;
     }
     seat->caps |= WL_SEAT_CAPABILITY_KEYBOARD;
 
@@ -201,4 +267,8 @@ pepper_x11_input_create(pepper_x11_connection_t* conn)
     seat->conn = conn;
 
     return PEPPER_TRUE;
+
+failed:
+    x11_seat_destroy(seat);
+    return PEPPER_FALSE;
 }
