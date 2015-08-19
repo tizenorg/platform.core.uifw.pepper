@@ -8,19 +8,30 @@
 typedef struct desktop_shell    desktop_shell_t;
 typedef struct shell_client     shell_client_t;
 typedef struct shell_surface    shell_surface_t;
+typedef struct shell_seat       shell_seat_t;
 
+struct shell_seat
+{
+    desktop_shell_t             *shell;
+    pepper_seat_t               *seat;
+    pepper_list_t                link;
+};
 
 struct desktop_shell
 {
-    pepper_compositor_t     *compositor;
+    pepper_compositor_t         *compositor;
 
-    struct wl_list           shell_client_list;
-    struct wl_list           shell_surface_list;
+    struct wl_list               shell_client_list;
+    struct wl_list               shell_surface_list;
 
-    /* TODO: */
-    pepper_event_listener_t *seat_create_listener;
-    pepper_event_listener_t *output_create_listener;
-    pepper_event_listener_t *output_change_listener;
+    pepper_list_t                shseat_list;
+
+    /* input device add/remove listeners */
+    pepper_event_listener_t     *input_device_add_listener;
+
+    /* seat add/remove */
+    pepper_event_listener_t     *seat_add_listener;
+    pepper_event_listener_t     *seat_remove_listener;
 };
 
 struct shell_client

@@ -73,6 +73,140 @@ shell_client_create(desktop_shell_t *shell, struct wl_client *client,
     return shell_client;
 }
 
+static void
+input_device_add_callback(pepper_event_listener_t    *listener,
+                          pepper_object_t            *object,
+                          uint32_t                    id,
+                          void                       *info,
+                          void                       *data)
+{
+    desktop_shell_t         *shell = (desktop_shell_t *)data;
+    pepper_input_device_t   *device = info;
+    shell_seat_t            *shseat;
+    const char              *target_seat_name;
+    const char              *seat_name;
+    pepper_list_t           *l;
+
+    target_seat_name = pepper_input_device_get_property(device, "seat_name");
+    if (!target_seat_name)
+        target_seat_name = "seat0";
+
+    PEPPER_LIST_FOR_EACH(&shell->shseat_list, l)
+    {
+        shseat = l->item;
+
+        seat_name = pepper_seat_get_name(shseat->seat);
+
+        /* Find seat to adding input device */
+        if ( seat_name && !strcmp(seat_name, target_seat_name))
+        {
+            /* TODO: How to check this device was already attached? */
+            pepper_seat_add_input_device(shseat->seat, device);
+            return ;
+        }
+    }
+
+    shseat = calloc(1, sizeof(shell_seat_t));
+    if (!shseat)
+    {
+        PEPPER_ERROR("Memory allocation faiiled\n");
+        return ;
+    }
+
+    /* Add a new seat to compositor */
+    shseat->seat = pepper_compositor_add_seat(shell->compositor, target_seat_name, NULL);
+    if (!shseat->seat)
+    {
+        PEPPER_ERROR("pepper_compositor_add_seat failed\n");
+        free(shseat);
+        return ;
+    }
+
+    shseat->shell = shell;
+
+    pepper_list_insert(&shell->shseat_list, &shseat->link);
+
+    /* Add this input_device to seat */
+    pepper_seat_add_input_device(shseat->seat, device);
+}
+
+static void
+seat_add_callback(pepper_event_listener_t    *listener,
+                  pepper_object_t            *object,
+                  uint32_t                    id,
+                  void                       *info,
+                  void                       *data)
+{
+    desktop_shell_t         *shell = data;
+    pepper_seat_t           *seat  = info;
+    shell_seat_t            *shseat;
+    pepper_list_t           *l;
+
+    PEPPER_LIST_FOR_EACH(&shell->shseat_list, l)
+    {
+        shseat = l->item;
+
+        if (shseat->seat == seat)
+            return ;
+    }
+
+    shseat = calloc(1, sizeof(shell_seat_t));
+    if (!shseat)
+    {
+        PEPPER_ERROR("Memory allocation failed\n");
+        return ;
+    }
+    shseat->seat  = seat;
+    shseat->shell = shell;
+
+    pepper_list_insert(&shell->shseat_list, &shseat->link);
+}
+
+static void
+seat_remove_callback(pepper_event_listener_t    *listener,
+                     pepper_object_t            *object,
+                     uint32_t                    id,
+                     void                       *info,
+                     void                       *data)
+{
+    desktop_shell_t         *shell = data;
+    pepper_seat_t           *seat  = info;
+    shell_seat_t            *shseat;
+    pepper_list_t           *l;
+
+    PEPPER_LIST_FOR_EACH(&shell->shseat_list, l)
+    {
+        shseat = l->item;
+
+        if (shseat->seat == seat)
+        {
+            pepper_list_remove(&shseat->link, NULL);
+
+            free(shseat);
+            return ;
+        }
+    }
+}
+
+static void
+init_listeners(desktop_shell_t *shell)
+{
+    pepper_object_t *compositor = (pepper_object_t *)shell->compositor;
+
+    /* input_device_add */
+    shell->input_device_add_listener =
+        pepper_object_add_event_listener(compositor, PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
+                                         0, input_device_add_callback, shell);
+
+    shell->seat_add_listener =
+        pepper_object_add_event_listener(compositor, PEPPER_EVENT_COMPOSITOR_SEAT_ADD,
+                                         0, seat_add_callback, shell);
+
+    shell->seat_remove_listener =
+        pepper_object_add_event_listener(compositor, PEPPER_EVENT_COMPOSITOR_SEAT_REMOVE,
+                                         0, seat_remove_callback, shell);
+}
+
 PEPPER_API pepper_bool_t
 pepper_desktop_shell_init(pepper_compositor_t *compositor)
 {
@@ -104,6 +238,8 @@ pepper_desktop_shell_init(pepper_compositor_t *compositor)
         free(shell);
         return PEPPER_FALSE;
     }
+
+    init_listeners(shell);
 
     return PEPPER_TRUE;
 }
