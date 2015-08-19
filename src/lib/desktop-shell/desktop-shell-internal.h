@@ -15,6 +15,30 @@ struct shell_seat
     desktop_shell_t             *shell;
     pepper_seat_t               *seat;
     pepper_list_t                link;
+
+    /* Seat's logical device add/remove */
+    pepper_event_listener_t     *pointer_add_listener;
+    pepper_event_listener_t     *pointer_remove_listener;
+
+    pepper_event_listener_t     *keyboard_add_listener;
+    pepper_event_listener_t     *keyboard_remove_listener;
+
+    pepper_event_listener_t     *touch_add_listener;
+    pepper_event_listener_t     *touch_remove_listener;
+
+    /* Input event listeners */
+    pepper_event_listener_t     *pointer_motion_listener;;
+    pepper_event_listener_t     *pointer_button_listener;;
+    pepper_event_listener_t     *pointer_axis_listener;;
+
+    pepper_event_listener_t     *keyboard_key_listener;;
+    pepper_event_listener_t     *keyboard_modifiers_listener;;
+
+    pepper_event_listener_t     *touch_down_listener;;
+    pepper_event_listener_t     *touch_up_listener;;
+    pepper_event_listener_t     *touch_motion_listener;;
+    pepper_event_listener_t     *touch_frame_listener;;
+    pepper_event_listener_t     *touch_cancel_listener;;
 };
 
 struct desktop_shell
