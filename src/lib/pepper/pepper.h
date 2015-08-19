@@ -293,6 +293,9 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
 PEPPER_API void
 pepper_seat_destroy(pepper_seat_t *seat);
 
+PEPPER_API const char *
+pepper_seat_get_name(pepper_seat_t *seat);
+
 PEPPER_API pepper_pointer_t *
 pepper_seat_get_pointer(pepper_seat_t *seat);
 
@@ -307,6 +310,10 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 
 PEPPER_API void
 pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *device);
+
+PEPPER_API const char *
+pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
+
 
 /* Surface. */
 PEPPER_API const char *

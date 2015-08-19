@@ -207,6 +207,12 @@ pepper_seat_get_touch(pepper_seat_t *seat)
     return NULL;
 }
 
+PEPPER_API const char *
+pepper_seat_get_name(pepper_seat_t *seat)
+{
+    return seat->name;
+}
+
 static void
 seat_update_pointer_cap(pepper_seat_t *seat)
 {

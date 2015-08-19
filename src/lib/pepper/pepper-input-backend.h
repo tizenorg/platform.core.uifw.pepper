@@ -21,9 +21,6 @@ pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
 PEPPER_API void
 pepper_input_device_destroy(pepper_input_device_t *device);
 
-PEPPER_API const char *
-pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
-
 PEPPER_API uint32_t
 pepper_input_device_get_caps(pepper_input_device_t *device);
 
