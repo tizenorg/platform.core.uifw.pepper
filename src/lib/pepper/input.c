@@ -229,6 +229,86 @@ pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y)
     /* TODO */
 }
 
+PEPPER_API pepper_view_t *
+pepper_pointer_get_focus_view(pepper_pointer_t *pointer)
+{
+    /* TODO */
+    return NULL;
+}
+
+PEPPER_API void
+pepper_pointer_set_focus_view(pepper_pointer_t *pointer, pepper_view_t *view)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *target_view)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *target_view)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_pointer_send_motion(pepper_pointer_t     *pointer,
+                           pepper_view_t        *target_view,
+                           uint32_t              time,
+                           int32_t               x,
+                           int32_t               y)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_pointer_send_button(pepper_pointer_t     *pointer,
+                           pepper_view_t        *target_view,
+                           uint32_t              time,
+                           uint32_t              button,
+                           uint32_t              state)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_pointer_send_axis(pepper_pointer_t   *pointer,
+                         pepper_view_t      *target_view,
+                         uint32_t            time,
+                         uint32_t            axis,
+                         uint32_t            amount)
+{
+    /* TODO */
+}
+
+PEPPER_API pepper_view_t *
+pepper_keyboard_get_focus_view(pepper_keyboard_t *keyboard)
+{
+    /* TODO */
+    return NULL;
+}
+
+PEPPER_API void
+pepper_keyboard_set_focus_view(pepper_keyboard_t *keyboard, pepper_view_t *view)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *target_view)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *target_view)
+{
+    /* TODO */
+}
+
 static void
 seat_update_pointer_cap(pepper_seat_t *seat)
 {

@@ -129,3 +129,10 @@ pepper_compositor_get_output_list(pepper_compositor_t *compositor)
 {
     return &compositor->output_list;
 }
+
+PEPPER_API pepper_view_t *
+pepper_compositor_pick_view(pepper_compositor_t *compositor, int32_t x, int32_t y)
+{
+    /* TODO */
+    return NULL;
+}

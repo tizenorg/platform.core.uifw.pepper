@@ -257,6 +257,9 @@ pepper_compositor_get_output_list(pepper_compositor_t *compositor);
 PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output);
 
+PEPPER_API pepper_view_t *
+pepper_compositor_pick_view(pepper_compositor_t *compositor, int32_t x, int32_t y);
+
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output);
 
@@ -316,6 +319,41 @@ pepper_pointer_set_position(pepper_pointer_t *pointer, int32_t x, int32_t y);
 
 PEPPER_API void
 pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y);
+
+PEPPER_API pepper_view_t *
+pepper_pointer_get_focus_view(pepper_pointer_t *pointer);
+
+PEPPER_API void
+pepper_pointer_set_focus_view(pepper_pointer_t *pointer, pepper_view_t *view);
+
+PEPPER_API void
+pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *target_view);
+
+PEPPER_API void
+pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *target_view);
+
+PEPPER_API void
+pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *target_view,
+                           uint32_t time, int32_t x, int32_t y);
+PEPPER_API void
+pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *target_view,
+                           uint32_t time, uint32_t button, uint32_t state);
+
+PEPPER_API void
+pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *target_view,
+                         uint32_t time, uint32_t axis, uint32_t amount);
+
+PEPPER_API pepper_view_t *
+pepper_keyboard_get_focus_view(pepper_keyboard_t *keyboard);
+
+PEPPER_API void
+pepper_keyboard_set_focus_view(pepper_keyboard_t *keyboard, pepper_view_t *view);
+
+PEPPER_API void
+pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *target_view);
+
+PEPPER_API void
+pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *target_view);
 
 PEPPER_API const char *
 pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
