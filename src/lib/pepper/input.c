@@ -365,9 +365,14 @@ PEPPER_API void
 pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 {
     pepper_input_device_entry_t *entry;
+    pepper_list_t               *l;
 
-    if (pepper_list_find_item(&seat->input_device_list, device))
-        return;
+    PEPPER_LIST_FOR_EACH(&seat->input_device_list, l)
+    {
+        pepper_input_device_entry_t *entry = l->item;
+        if (entry->device == device)
+            return ;
+    }
 
     entry = pepper_calloc(1, sizeof(pepper_input_device_entry_t));
     if (!entry)
@@ -376,6 +381,7 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
     entry->seat = seat;
     entry->device = device;
 
+    entry->link.item = entry;
     entry->listener = pepper_object_add_event_listener(&device->base, PEPPER_EVENT_ALL, 0,
                                                        seat_handle_device_event, entry);
     pepper_list_insert(&seat->input_device_list, &entry->link);
