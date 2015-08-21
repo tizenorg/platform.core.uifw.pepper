@@ -311,9 +311,14 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 PEPPER_API void
 pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *device);
 
+PEPPER_API void
+pepper_pointer_set_position(pepper_pointer_t *pointer, int32_t x, int32_t y);
+
+PEPPER_API void
+pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y);
+
 PEPPER_API const char *
 pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
-
 
 /* Surface. */
 PEPPER_API const char *

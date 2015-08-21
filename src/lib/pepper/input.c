@@ -177,6 +177,10 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
     seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat, bind_seat);
     pepper_list_init(&seat->input_device_list);
 
+    pepper_object_emit_event(&seat->compositor->base,
+                             PEPPER_EVENT_COMPOSITOR_SEAT_ADD,
+                             seat);
+
     return seat;
 }
 
@@ -211,6 +215,18 @@ PEPPER_API const char *
 pepper_seat_get_name(pepper_seat_t *seat)
 {
     return seat->name;
+}
+
+PEPPER_API void
+pepper_pointer_set_position(pepper_pointer_t *pointer, int32_t x, int32_t y)
+{
+    /* TODO */
+}
+
+PEPPER_API void
+pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y)
+{
+    /* TODO */
 }
 
 static void
@@ -309,7 +325,14 @@ seat_handle_device_event(pepper_event_listener_t *listener, pepper_object_t *obj
         /* TODO: */
         break;
     case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE:
-        /* TODO: */
+        {
+            pepper_pointer_t *pointer = pepper_seat_get_pointer(entry->seat);
+
+            pepper_object_emit_event(&pointer->base,
+                                     PEPPER_EVENT_POINTER_MOTION,
+                                     info);
+
+        }
         break;
     case PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON:
         /* TODO: */
