@@ -93,24 +93,96 @@ shell_pointer_default_grab_motion(shell_pointer_grab_t *grab,
                                   int32_t x, int32_t y, uint32_t time, void *userdata)
 {
     /* TODO */
-    PEPPER_ERROR("[%d, %d]\n", x, y);
+    shell_seat_t        *shseat = grab->shseat;
+    pepper_pointer_t    *pointer = pepper_seat_get_pointer(shseat->seat);
+    pepper_view_t       *view;
+    pepper_view_t       *pointer_focus_view;
+
+    view                = pepper_compositor_pick_view(shseat->shell->compositor, x, y);
+    pointer_focus_view  = pepper_pointer_get_focus_view(pointer);
+
+    if (view != pointer_focus_view )
+    {
+        /* Send pointer_leave  */
+        if (pointer_focus_view)
+        {
+            pepper_pointer_send_leave(pointer, pointer_focus_view);
+        }
+
+        /* Send pointer enter */
+        if (view)
+        {
+            pepper_pointer_send_enter(pointer, view);
+        }
+
+        pepper_pointer_set_focus_view(pointer, view);
+    }
+
+    if (view)
+    {
+        pepper_pointer_send_motion(pointer, view, time, x, y);
+    }
 }
 
 static void
 shell_pointer_default_grab_button(shell_pointer_grab_t *grab,
                                uint32_t button, uint32_t state, uint32_t time, void *userdata)
 {
-    /* TODO */
+    shell_seat_t        *shseat = grab->shseat;
+    pepper_pointer_t    *pointer = pepper_seat_get_pointer(shseat->seat);
+    pepper_view_t       *view;
+    pepper_view_t       *keyboard_focus_view;
+    int                  x, y;
+
+    pepper_pointer_get_position(pointer, &x, &y);
+
+    view = pepper_compositor_pick_view(shseat->shell->compositor, x, y);
+
+    if (view)
+    {
+        pepper_pointer_send_button(pointer, view, time, button, state);
+    }
+
+    /* Set keyboard focus */
+    if (state == 1 )    /* pressed */
+    {
+        pepper_keyboard_t *keyboard = pepper_seat_get_keyboard(shseat->seat);
+
+        keyboard_focus_view = pepper_keyboard_get_focus_view(keyboard);
+
+        /* Send keyboard_leave event */
+        if (keyboard_focus_view)
+        {
+            pepper_keyboard_send_leave(keyboard, keyboard_focus_view);
+        }
+
+        if (view)
+        {
+            pepper_keyboard_send_enter(keyboard, view);
+        }
+
+        pepper_keyboard_set_focus_view(keyboard, view);
+    }
 }
 
 static void
-shell_pointer_default_grab_axis(shell_pointer_grab_t *grab,
-                                uint32_t               time,
-                                enum wl_pointer_axis   axis,
-                                wl_fixed_t             amount,
-                                void                 *userdata)
+shell_pointer_default_grab_axis(shell_pointer_grab_t    *grab,
+                                uint32_t                 time,
+                                enum wl_pointer_axis     axis,
+                                wl_fixed_t               amount,
+                                void                    *userdata)
 {
-    /* TODO */
+    shell_seat_t        *shseat = grab->shseat;
+    pepper_pointer_t    *pointer = pepper_seat_get_pointer(shseat->seat);
+    pepper_view_t       *view;
+    int                  x, y;
+
+    pepper_pointer_get_position(pointer, &x, &y);
+
+    view = pepper_compositor_pick_view(shseat->shell->compositor, x, y);
+
+    if (view)
+        pepper_pointer_send_axis(pointer, view, time, axis, amount);
 }
 
 shell_pointer_grab_interface_t shell_pointer_default_grab =
