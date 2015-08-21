@@ -10,11 +10,37 @@ typedef struct shell_client     shell_client_t;
 typedef struct shell_surface    shell_surface_t;
 typedef struct shell_seat       shell_seat_t;
 
+typedef struct shell_pointer_grab              shell_pointer_grab_t;
+typedef struct shell_pointer_grab_interface    shell_pointer_grab_interface_t;
+
+struct shell_pointer_grab
+{
+    shell_seat_t                        *shseat;
+    pepper_pointer_t                    *pointer;
+    shell_pointer_grab_interface_t      *interface;
+    void                                *userdata;
+};
+
+struct shell_pointer_grab_interface
+{
+    void (*motion)(shell_pointer_grab_t *grab,
+                   int32_t x, int32_t y, uint32_t time, void *data);
+    void (*button)(shell_pointer_grab_t *grab,
+                   uint32_t button, uint32_t state, uint32_t time, void *data);
+    void (*axis)(shell_pointer_grab_t *grab,
+                 uint32_t time, enum wl_pointer_axis axis, wl_fixed_t amount, void *data);
+};
+
 struct shell_seat
 {
     desktop_shell_t             *shell;
     pepper_seat_t               *seat;
     pepper_list_t                link;
+
+    /* grab */
+    shell_pointer_grab_t         pointer_grab;
+    shell_pointer_grab_t         default_pointer_grab;
+    /* TODO: keyboard, touch*/
 
     /* Seat's logical device add/remove */
     pepper_event_listener_t     *pointer_add_listener;
@@ -27,18 +53,18 @@ struct shell_seat
     pepper_event_listener_t     *touch_remove_listener;
 
     /* Input event listeners */
-    pepper_event_listener_t     *pointer_motion_listener;;
-    pepper_event_listener_t     *pointer_button_listener;;
-    pepper_event_listener_t     *pointer_axis_listener;;
+    pepper_event_listener_t     *pointer_motion_listener;
+    pepper_event_listener_t     *pointer_button_listener;
+    pepper_event_listener_t     *pointer_axis_listener;
 
-    pepper_event_listener_t     *keyboard_key_listener;;
-    pepper_event_listener_t     *keyboard_modifiers_listener;;
+    pepper_event_listener_t     *keyboard_key_listener;
+    pepper_event_listener_t     *keyboard_modifiers_listener;
 
-    pepper_event_listener_t     *touch_down_listener;;
-    pepper_event_listener_t     *touch_up_listener;;
-    pepper_event_listener_t     *touch_motion_listener;;
-    pepper_event_listener_t     *touch_frame_listener;;
-    pepper_event_listener_t     *touch_cancel_listener;;
+    pepper_event_listener_t     *touch_down_listener;
+    pepper_event_listener_t     *touch_up_listener;
+    pepper_event_listener_t     *touch_motion_listener;
+    pepper_event_listener_t     *touch_frame_listener;
+    pepper_event_listener_t     *touch_cancel_listener;
 };
 
 struct desktop_shell
@@ -252,3 +278,8 @@ init_xdg_shell(desktop_shell_t *shell);
 void
 fini_xdg_shell(desktop_shell_t *shell);
 
+void
+shell_seat_pointer_start_grab(shell_seat_t *shseat, shell_pointer_grab_interface_t *grab, void *userdata);
+
+void
+shell_seat_pointer_end_grab(shell_seat_t *shseat);

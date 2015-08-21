@@ -73,6 +73,67 @@ shell_client_create(desktop_shell_t *shell, struct wl_client *client,
     return shell_client;
 }
 
+void
+shell_seat_pointer_start_grab(shell_seat_t *shseat, shell_pointer_grab_interface_t *grab, void *userdata)
+{
+    shseat->pointer_grab.shseat     = shseat;
+    shseat->pointer_grab.interface  = grab;
+    shseat->pointer_grab.userdata   = userdata;
+    shseat->pointer_grab.pointer    = pepper_seat_get_pointer(shseat->seat);
+}
+
+void
+shell_seat_pointer_end_grab(shell_seat_t *shseat)
+{
+    shseat->pointer_grab = shseat->default_pointer_grab;
+}
+
+static void
+shell_pointer_default_grab_motion(shell_pointer_grab_t *grab,
+                                  int32_t x, int32_t y, uint32_t time, void *userdata)
+{
+    /* TODO */
+    PEPPER_ERROR("[%d, %d]\n", x, y);
+}
+
+static void
+shell_pointer_default_grab_button(shell_pointer_grab_t *grab,
+                               uint32_t button, uint32_t state, uint32_t time, void *userdata)
+{
+    /* TODO */
+}
+
+static void
+shell_pointer_default_grab_axis(shell_pointer_grab_t *grab,
+                                uint32_t               time,
+                                enum wl_pointer_axis   axis,
+                                wl_fixed_t             amount,
+                                void                 *userdata)
+{
+    /* TODO */
+}
+
+shell_pointer_grab_interface_t shell_pointer_default_grab =
+{
+    shell_pointer_default_grab_motion,
+    shell_pointer_default_grab_button,
+    shell_pointer_default_grab_axis,
+};
+
+static void
+shell_seat_set_default_grab(shell_seat_t *shseat)
+{
+    shseat->default_pointer_grab.interface = &shell_pointer_default_grab;
+    shseat->default_pointer_grab.shseat    = shseat;
+    shseat->default_pointer_grab.userdata  = NULL;
+    /* FIXME: */
+    shseat->default_pointer_grab.pointer   = pepper_seat_get_pointer(shseat->seat);
+
+    shell_seat_pointer_start_grab(shseat, &shell_pointer_default_grab, NULL);
+
+    /* TODO: keyboard, touch */
+}
+
 static void
 input_device_add_callback(pepper_event_listener_t    *listener,
                           pepper_object_t            *object,
@@ -100,7 +161,6 @@ input_device_add_callback(pepper_event_listener_t    *listener,
         /* Find seat to adding input device */
         if ( seat_name && !strcmp(seat_name, target_seat_name))
         {
-            /* TODO: How to check this device was already attached? */
             pepper_seat_add_input_device(shseat->seat, device);
             return ;
         }
@@ -124,20 +184,82 @@ input_device_add_callback(pepper_event_listener_t    *listener,
 
     shseat->shell = shell;
 
+    shseat->link.item = shseat;
     pepper_list_insert(&shell->shseat_list, &shseat->link);
 
     /* Add this input_device to seat */
     pepper_seat_add_input_device(shseat->seat, device);
+
+    shell_seat_set_default_grab(shseat);
+
+    pepper_object_set_user_data((pepper_object_t *)shseat->seat,
+                                shell, shseat, NULL);
+
+    pepper_list_insert(&shell->shseat_list, &shseat->link);
+    pepper_seat_add_input_device(shseat->seat, device);
 }
 
 static void
-event_handler_callback(pepper_event_listener_t    *listener,
+pointer_event_handler(pepper_event_listener_t    *listener,
+                      pepper_object_t            *object,
+                      uint32_t                    id,
+                      void                       *info,
+                      void                       *data)
+{
+    shell_seat_t *shseat = data;
+
+    switch (id)
+    {
+    case PEPPER_EVENT_POINTER_MOTION:
+        {
+            pepper_pointer_motion_event_t   *event = info;
+
+            if (shseat->pointer_grab.interface && shseat->pointer_grab.interface->motion)
+            {
+                shseat->pointer_grab.interface->motion(&shseat->pointer_grab,
+                                                       event->x,
+                                                       event->y,
+                                                       event->time,
+                                                       shseat->pointer_grab.userdata);
+            }
+        }
+        break;
+        /* TODO */
+    default:
+        PEPPER_ERROR("unknown event %d\n", id);
+    }
+}
+
+static void
+keyboard_event_handler(pepper_event_listener_t    *listener,
                        pepper_object_t            *object,
                        uint32_t                    id,
                        void                       *info,
                        void                       *data)
 {
-    /* TODO */
+    switch (id)
+    {
+        /* TODO */
+        break;
+    default:
+        PEPPER_ERROR("unknown event %d\n", id);
+    }
+}
+
+static void
+touch_event_handler(pepper_event_listener_t    *listener,
+                    pepper_object_t            *object,
+                    uint32_t                    id,
+                    void                       *info,
+                    void                       *data)
+{
+    switch (id)
+    {
+        /* TODO */
+        break;
+    default:
+        PEPPER_ERROR("unknown event %d\n", id);
+    }
 }
 
 static void
@@ -157,15 +279,15 @@ seat_logical_device_add_callback(pepper_event_listener_t    *listener,
 
             shseat->pointer_motion_listener =
                 pepper_object_add_event_listener(pointer, PEPPER_EVENT_POINTER_MOTION,
-                                                 0, event_handler_callback, shseat);
+                                                 0, pointer_event_handler, shseat);
 
             shseat->pointer_button_listener =
                 pepper_object_add_event_listener(pointer, PEPPER_EVENT_POINTER_BUTTON,
-                                                 0, event_handler_callback, shseat);
+                                                 0, pointer_event_handler, shseat);
 
             shseat->pointer_axis_listener =
                 pepper_object_add_event_listener(pointer, PEPPER_EVENT_POINTER_AXIS,
-                                                 0, event_handler_callback, shseat);
+                                                 0, pointer_event_handler, shseat);
         }
         break;
     case PEPPER_EVENT_SEAT_KEYBOARD_ADD:
@@ -174,11 +296,11 @@ seat_logical_device_add_callback(pepper_event_listener_t    *listener,
 
             shseat->keyboard_key_listener =
                 pepper_object_add_event_listener(keyboard, PEPPER_EVENT_KEYBOARD_KEY,
-                                                 0, event_handler_callback, shseat);
+                                                 0, keyboard_event_handler, shseat);
 
             shseat->keyboard_modifiers_listener =
                 pepper_object_add_event_listener(keyboard, PEPPER_EVENT_KEYBOARD_MODIFIERS,
-                                                 0, event_handler_callback, shseat);
+                                                 0, keyboard_event_handler, shseat);
         }
         break;
     case PEPPER_EVENT_SEAT_TOUCH_ADD:
@@ -187,23 +309,23 @@ seat_logical_device_add_callback(pepper_event_listener_t    *listener,
 
             shseat->touch_down_listener =
                 pepper_object_add_event_listener(touch, PEPPER_EVENT_TOUCH_DOWN,
-                                                 0, event_handler_callback, shseat);
+                                                 0, touch_event_handler, shseat);
 
             shseat->touch_up_listener =
                 pepper_object_add_event_listener(touch, PEPPER_EVENT_TOUCH_UP,
-                                                 0, event_handler_callback, shseat);
+                                                 0, touch_event_handler, shseat);
 
             shseat->touch_motion_listener =
                 pepper_object_add_event_listener(touch, PEPPER_EVENT_TOUCH_MOTION,
-                                                 0, event_handler_callback, shseat);
+                                                 0, touch_event_handler, shseat);
 
             shseat->touch_frame_listener =
                 pepper_object_add_event_listener(touch, PEPPER_EVENT_TOUCH_FRAME,
-                                                 0, event_handler_callback, shseat);
+                                                 0, touch_event_handler, shseat);
 
             shseat->touch_cancel_listener =
                 pepper_object_add_event_listener(touch, PEPPER_EVENT_TOUCH_CANCEL,
-                                                 0, event_handler_callback, shseat);
+                                                 0, touch_event_handler, shseat);
         }
         break;
     default :
@@ -300,20 +422,25 @@ seat_add_callback(pepper_event_listener_t    *listener,
 
     pepper_list_insert(&shell->shseat_list, &shseat->link);
 
+    shell_seat_set_default_grab(shseat);
+
+    pepper_object_set_user_data((pepper_object_t *)seat,
+                                shell, shseat, NULL);
+
     pointer = pepper_seat_get_pointer(seat);
     if (pointer)
     {
         shseat->pointer_motion_listener =
             pepper_object_add_event_listener((pepper_object_t *)pointer, PEPPER_EVENT_POINTER_MOTION,
-                                             0, event_handler_callback, shseat);
+                                             0, pointer_event_handler, shseat);
 
         shseat->pointer_button_listener =
             pepper_object_add_event_listener((pepper_object_t *)pointer, PEPPER_EVENT_POINTER_BUTTON,
-                                             0, event_handler_callback, shseat);
+                                             0, pointer_event_handler, shseat);
 
         shseat->pointer_axis_listener =
             pepper_object_add_event_listener((pepper_object_t *)pointer, PEPPER_EVENT_POINTER_AXIS,
-                                             0, event_handler_callback, shseat);
+                                             0, pointer_event_handler, shseat);
     }
     else
     {
@@ -330,10 +457,10 @@ seat_add_callback(pepper_event_listener_t    *listener,
     {
         shseat->keyboard_key_listener =
             pepper_object_add_event_listener((pepper_object_t *)keyboard, PEPPER_EVENT_KEYBOARD_KEY,
-                                             0, event_handler_callback, shseat);
+                                             0, keyboard_event_handler, shseat);
         shseat->keyboard_modifiers_listener =
             pepper_object_add_event_listener((pepper_object_t *)keyboard, PEPPER_EVENT_KEYBOARD_MODIFIERS,
-                                             0, event_handler_callback, shseat);
+                                             0, keyboard_event_handler, shseat);
     }
     else
     {
@@ -350,19 +477,19 @@ seat_add_callback(pepper_event_listener_t    *listener,
     {
         shseat->touch_down_listener =
             pepper_object_add_event_listener((pepper_object_t *)touch, PEPPER_EVENT_TOUCH_DOWN,
-                                             0, event_handler_callback, shseat);
+                                             0, touch_event_handler, shseat);
         shseat->touch_up_listener =
             pepper_object_add_event_listener((pepper_object_t *)touch, PEPPER_EVENT_TOUCH_UP,
-                                             0, event_handler_callback, shseat);
+                                             0, touch_event_handler, shseat);
         shseat->touch_motion_listener =
             pepper_object_add_event_listener((pepper_object_t *)touch, PEPPER_EVENT_TOUCH_MOTION,
-                                             0, event_handler_callback, shseat);
+                                             0, touch_event_handler, shseat);
         shseat->touch_frame_listener =
             pepper_object_add_event_listener((pepper_object_t *)touch, PEPPER_EVENT_TOUCH_FRAME,
-                                             0, event_handler_callback, shseat);
+                                             0, touch_event_handler, shseat);
         shseat->touch_cancel_listener =
             pepper_object_add_event_listener((pepper_object_t *)touch, PEPPER_EVENT_TOUCH_CANCEL,
-                                             0, event_handler_callback, shseat);
+                                             0, touch_event_handler, shseat);
     }
     else
     {
@@ -371,7 +498,7 @@ seat_add_callback(pepper_event_listener_t    *listener,
                                              0, seat_logical_device_add_callback, shseat);
         shseat->touch_remove_listener =
             pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_TOUCH_REMOVE,
-                                             0, seat_logical_device_add_callback, shseat);
+                                             0, seat_logical_device_remove_callback, shseat);
     }
 }
 
@@ -436,6 +563,8 @@ pepper_desktop_shell_init(pepper_compositor_t *compositor)
 
     wl_list_init(&shell->shell_client_list);
     wl_list_init(&shell->shell_surface_list);
+
+    pepper_list_init(&shell->shseat_list);
 
     if (!init_wl_shell(shell))
     {
