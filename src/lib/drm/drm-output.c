@@ -1324,14 +1324,24 @@ pepper_drm_output_create(pepper_drm_t *drm, const char *renderer)
         drm->renderer = strdup(renderer);
 
     /* create gl-renderer & pixman-renderer */
-    drm->gbm_device = gbm_create_device(drm->drm_fd);
-    if (drm->gbm_device)
-        drm->gl_renderer = pepper_gl_renderer_create(drm->compositor, drm->gbm_device, "gbm");
-
-    drm->pixman_renderer = pepper_pixman_renderer_create(drm->compositor);
-    if (!drm->pixman_renderer)
+    if (strcmp(renderer, "gl") == 0)
     {
-        PEPPER_ERROR("Failed to create pixman-renderer\n");
+        drm->gbm_device = gbm_create_device(drm->drm_fd);
+        if (drm->gbm_device)
+            drm->gl_renderer = pepper_gl_renderer_create(drm->compositor, drm->gbm_device, "gbm");
+    }
+    else if (strcmp(renderer, "pixman") == 0)
+    {
+        drm->pixman_renderer = pepper_pixman_renderer_create(drm->compositor);
+        if (!drm->pixman_renderer)
+        {
+            PEPPER_ERROR("Failed to create pixman-renderer\n");
+            goto error;
+        }
+    }
+    else
+    {
+        PEPPER_ERROR("Unknown renderer: %s\n", renderer);
         goto error;
     }
 
