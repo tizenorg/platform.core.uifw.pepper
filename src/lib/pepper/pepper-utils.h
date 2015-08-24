@@ -615,7 +615,7 @@ pepper_mat4_transform_vec3(const pepper_mat4_t *matrix, pepper_vec3_t *v)
 
     x = m[0] * v->x + m[1] * v->y + m[ 2] * v->z + m[ 3];
     y = m[4] * v->x + m[5] * v->y + m[ 6] * v->z + m[ 7];
-    y = m[8] * v->x + m[9] * v->y + m[10] * v->z + m[11];
+    z = m[8] * v->x + m[9] * v->y + m[10] * v->z + m[11];
 
     v->x = x;
     v->y = y;
@@ -630,8 +630,8 @@ pepper_mat4_transform_vec4(const pepper_mat4_t *matrix, pepper_vec4_t *v)
 
     x = m[ 0] * v->x + m[ 1] * v->y + m[ 2] * v->z + m[ 3] * v->w;
     y = m[ 4] * v->x + m[ 5] * v->y + m[ 6] * v->z + m[ 7] * v->w;
-    y = m[ 8] * v->x + m[ 9] * v->y + m[10] * v->z + m[11] * v->w;
-    y = m[12] * v->x + m[13] * v->y + m[14] * v->z + m[15] * v->w;
+    z = m[ 8] * v->x + m[ 9] * v->y + m[10] * v->z + m[11] * v->w;
+    w = m[12] * v->x + m[13] * v->y + m[14] * v->z + m[15] * v->w;
 
     v->x = x;
     v->y = y;
