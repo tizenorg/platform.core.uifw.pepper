@@ -64,7 +64,19 @@ xdg_surface_move(struct wl_client   *client,
                  struct wl_resource *seat_resource,
                  uint32_t            serial)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    pepper_seat_t   *seat   = wl_resource_get_user_data(seat_resource);
+
+    if (!seat_resource)
+    {
+        wl_resource_post_error(resource,
+                               WL_DISPLAY_ERROR_INVALID_OBJECT,
+                               "Invalid seat");
+        return ;
+    }
+    seat = wl_resource_get_user_data(seat_resource);
+
+    shell_surface_move(shsurf, seat, serial);
 }
 
 static void

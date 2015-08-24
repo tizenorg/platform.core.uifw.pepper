@@ -89,8 +89,59 @@ shell_seat_pointer_end_grab(shell_seat_t *shseat)
 }
 
 static void
-shell_pointer_default_grab_motion(shell_pointer_grab_t *grab,
-                                  int32_t x, int32_t y, uint32_t time, void *userdata)
+shell_pointer_move_grab_motion(shell_pointer_grab_t *grab,
+                               uint32_t              time,
+                               int32_t               x,
+                               int32_t               y,
+                               void                 *userdata)
+{
+    pepper_pointer_t    *pointer = grab->pointer;
+    shell_surface_t     *shsurf = userdata;
+
+    pepper_pointer_set_position(pointer, x, y);
+
+    pepper_view_set_position(shsurf->view,
+                             shsurf->move.vx + (x - shsurf->move.px),
+                             shsurf->move.vy + (y - shsurf->move.py));
+}
+
+static void
+shell_pointer_move_grab_button(shell_pointer_grab_t *grab,
+                               uint32_t              time,
+                               uint32_t              button,
+                               uint32_t              state,
+                               void                 *userdata)
+{
+    /* FIXME */
+    if (state == WL_POINTER_BUTTON_STATE_RELEASED)
+    {
+        shell_seat_pointer_end_grab(grab->shseat);
+    }
+}
+
+static void
+shell_pointer_move_grab_axis(shell_pointer_grab_t   *grab,
+                             uint32_t                time,
+                             enum wl_pointer_axis    axis,
+                             wl_fixed_t              amount,
+                             void                   *userdata)
+{
+    /* TODO */
+}
+
+shell_pointer_grab_interface_t shell_pointer_move_grab =
+{
+    shell_pointer_move_grab_motion,
+    shell_pointer_move_grab_button,
+    shell_pointer_move_grab_axis,
+};
+
+static void
+shell_pointer_default_grab_motion(shell_pointer_grab_t  *grab,
+                                  uint32_t               time,
+                                  int32_t                x,
+                                  int32_t                y,
+                                  void                  *userdata)
 {
     /* TODO */
     shell_seat_t        *shseat = grab->shseat;
@@ -125,8 +176,11 @@ shell_pointer_default_grab_motion(shell_pointer_grab_t *grab,
 }
 
 static void
-shell_pointer_default_grab_button(shell_pointer_grab_t *grab,
-                               uint32_t button, uint32_t state, uint32_t time, void *userdata)
+shell_pointer_default_grab_button(shell_pointer_grab_t  *grab,
+                                  uint32_t               time,
+                                  uint32_t               button,
+                                  uint32_t               state,
+                                  void                  *userdata)
 {
     shell_seat_t        *shseat = grab->shseat;
     pepper_pointer_t    *pointer = pepper_seat_get_pointer(shseat->seat);

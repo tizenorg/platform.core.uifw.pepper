@@ -1,6 +1,9 @@
 #include "desktop-shell-internal.h"
 #include "xdg-shell-server-protocol.h"
 
+
+extern shell_pointer_grab_interface_t shell_pointer_move_grab;
+
 void
 remove_ping_timer(shell_client_t *shell_client)
 {
@@ -812,4 +815,20 @@ shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
 
     shsurf->next_type = type;
     shsurf->mapped    = PEPPER_FALSE;
+}
+
+void
+shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial)
+{
+    shell_seat_t *shseat = pepper_object_get_user_data((pepper_object_t *)seat, shsurf->shell);
+
+    double x, y;
+
+    pepper_view_get_position(shsurf->view, &x, &y);
+    shsurf->move.vx = (int)x;
+    shsurf->move.vy = (int)y;
+
+    pepper_pointer_get_position(shseat->pointer_grab.pointer, &shsurf->move.px, &shsurf->move.py);
+
+    shell_seat_pointer_start_grab(shseat, &shell_pointer_move_grab, shsurf);
 }

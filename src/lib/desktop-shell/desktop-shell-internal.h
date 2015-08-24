@@ -24,9 +24,9 @@ struct shell_pointer_grab
 struct shell_pointer_grab_interface
 {
     void (*motion)(shell_pointer_grab_t *grab,
-                   int32_t x, int32_t y, uint32_t time, void *data);
+                   uint32_t time, int32_t x, int32_t y, void *data);
     void (*button)(shell_pointer_grab_t *grab,
-                   uint32_t button, uint32_t state, uint32_t time, void *data);
+                   uint32_t time, uint32_t button, uint32_t state, void *data);
     void (*axis)(shell_pointer_grab_t *grab,
                  uint32_t time, enum wl_pointer_axis axis, wl_fixed_t amount, void *data);
 };
@@ -131,6 +131,12 @@ struct shell_surface
     pepper_view_t           *view;
 
     char                    *title, *class_;
+
+    struct
+    {
+        int32_t px, py;         /* Initial pointer position */
+        int32_t vx, vy;         /* Initial view position */
+    } move;
 
     /* Data structures per surface type */
     shell_surface_type_t     type;          /* Current surface type */
@@ -283,3 +289,6 @@ shell_seat_pointer_start_grab(shell_seat_t *shseat, shell_pointer_grab_interface
 
 void
 shell_seat_pointer_end_grab(shell_seat_t *shseat);
+
+void
+shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial);

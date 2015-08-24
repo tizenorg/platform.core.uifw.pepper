@@ -9,10 +9,15 @@ wl_shell_surface_pong(struct wl_client *client, struct wl_resource *resource, ui
 }
 
 static void
-wl_shell_surface_move(struct wl_client *client, struct wl_resource *resource,
-                   struct wl_resource *seat, uint32_t serial)
+wl_shell_surface_move(struct wl_client      *client,
+                      struct wl_resource    *resource,
+                      struct wl_resource    *seat_resource,
+                      uint32_t               serial)
 {
-    /* TODO */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    pepper_seat_t   *seat   = wl_resource_get_user_data(seat_resource);
+
+    shell_surface_move(shsurf, seat, serial);
 }
 
 static void
