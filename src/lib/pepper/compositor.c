@@ -63,24 +63,24 @@ pepper_compositor_create(const char *socket_name)
                                                    sizeof(pepper_compositor_t));
 
     if (!compositor)
-        return NULL;
+    {
+        PEPPER_ERROR("pepper_object_alloc() failed.\n");
+        goto error;
+    }
 
     compositor->display = wl_display_create();
-
     if (!compositor->display)
     {
-        PEPPER_ERROR("Failed to create wayland display object.\n");
+        PEPPER_ERROR("wl_display_create() failed.\n");
         goto error;
     }
 
     if (wl_display_add_socket(compositor->display, socket_name) != 0)
     {
-        PEPPER_ERROR("Failed to add socket display = %p socket_name = %s\n",
-                     compositor->display, socket_name);
+        PEPPER_ERROR("wl_display_add_socket(%p, %s) failed.\n", compositor->display, socket_name);
         goto error;
     }
 
-    wl_global_create(compositor->display, &wl_compositor_interface, 3, compositor, compositor_bind);
     wl_list_init(&compositor->surfaces);
     wl_list_init(&compositor->seat_list);
     pepper_list_init(&compositor->output_list);
@@ -89,13 +89,21 @@ pepper_compositor_create(const char *socket_name)
 
     if (wl_display_init_shm(compositor->display) != 0)
     {
-        PEPPER_ERROR("Failed to initialze shm.\n");
+        PEPPER_ERROR("wl_display_init_shm() failed.\n");
+        goto error;
+    }
+
+    compositor->global = wl_global_create(compositor->display, &wl_compositor_interface,
+                                          3, compositor, compositor_bind);
+    if (!compositor->global)
+    {
+        PEPPER_ERROR("wl_global_create() failed.\n");
         goto error;
     }
 
     if (!pepper_data_device_manager_init(compositor->display))
     {
-        PEPPER_ERROR("Failed to initialze data device manager.\n");
+        PEPPER_ERROR("pepper_data_device_manager_init() failed.\n");
         goto error;
     }
 
@@ -103,7 +111,18 @@ pepper_compositor_create(const char *socket_name)
 
 error:
     if (compositor)
-        pepper_compositor_destroy(compositor);
+    {
+        /* TODO: Data device manager fini. */
+
+        if (compositor->global)
+            wl_global_destroy(compositor->global);
+
+        if (compositor->display)
+            wl_display_destroy(compositor->display);
+
+        pepper_object_fini(&compositor->base);
+        pepper_free(compositor);
+    }
 
     return NULL;
 }
@@ -111,9 +130,10 @@ error:
 PEPPER_API void
 pepper_compositor_destroy(pepper_compositor_t *compositor)
 {
-    if (compositor->display)
-        wl_display_destroy(compositor->display);
+    /* TODO: Data device manager fini. */
 
+    wl_global_destroy(compositor->global);
+    wl_display_destroy(compositor->display);
     pepper_object_fini(&compositor->base);
     pepper_free(compositor);
 }
