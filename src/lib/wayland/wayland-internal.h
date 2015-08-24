@@ -32,6 +32,7 @@ struct pepper_wayland
     struct wl_compositor   *compositor;
     struct wl_shell        *shell;
     struct wl_list          seat_list;
+    struct wl_list          output_list;
 
     struct wl_signal        destroy_signal;
 
@@ -64,10 +65,6 @@ struct wayland_output
     pepper_wayland_t           *conn;
     pepper_output_t            *base;
     char                        name[32];
-
-    struct wl_signal            destroy_signal;
-    struct wl_signal            mode_change_signal;
-    struct wl_signal            frame_signal;
 
     struct wl_listener          conn_destroy_listener;
 
@@ -102,6 +99,7 @@ struct wayland_output
 #endif
 
     pepper_plane_t             *primary_plane;
+    struct wl_list              link;
 };
 
 struct wayland_seat
@@ -128,7 +126,7 @@ struct wayland_seat
         struct wl_touch            *wl_touch;
     } touch;
 
-    struct wl_list              link;
+    struct wl_list                  link;
 };
 
 void

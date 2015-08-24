@@ -140,7 +140,7 @@ x11_window_input_property_change(xcb_connection_t *conn, xcb_window_t window)
      xcb_flush(conn);
 }
 
-static void
+void
 x11_seat_destroy(void *data)
 {
     x11_seat_t *seat = (x11_seat_t *)data;
@@ -164,13 +164,6 @@ x11_seat_destroy(void *data)
         xkb_context_unref(seat->xkb_ctx);
 
     free(seat);
-}
-
-static void
-handle_connection_destroy(struct wl_listener *listener, void *data)
-{
-    x11_seat_t *seat = wl_container_of(listener, seat, conn_destroy_listener);
-    x11_seat_destroy(seat);
 }
 
 PEPPER_API pepper_bool_t
@@ -199,9 +192,6 @@ pepper_x11_input_create(pepper_x11_connection_t* conn)
 
     /* XXX: if x-input-module used without x-output-module,
      * need to create dummy window for input with output-size */
-
-    seat->conn_destroy_listener.notify = handle_connection_destroy;
-    wl_signal_add(&conn->destroy_signal, &seat->conn_destroy_listener);
 
     seat->id = X11_BACKEND_INPUT_ID;
 

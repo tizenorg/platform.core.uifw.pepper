@@ -61,10 +61,6 @@ struct drm_output
     uint32_t                    crtc_id;
     uint32_t                    conn_id;
 
-    struct wl_signal            destroy_signal;
-    struct wl_signal            mode_change_signal;
-    struct wl_signal            frame_signal;
-
     int                         mode_count;
     drmModeModeInfo            *modes;
     drmModeModeInfo            *current_mode;

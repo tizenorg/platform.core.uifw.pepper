@@ -15,9 +15,6 @@ struct pepper_output_backend
 {
     void            (*destroy)(void *output);
 
-    void            (*add_destroy_listener)(void *output, struct wl_listener *listener);
-    void            (*add_mode_change_listener)(void *output, struct wl_listener *listener);
-
     int32_t         (*get_subpixel_order)(void *output);
     const char *    (*get_maker_name)(void *output);
     const char *    (*get_model_name)(void *output);
@@ -29,8 +26,6 @@ struct pepper_output_backend
     void            (*assign_planes)(void *output, const pepper_list_t *view_list);
     void            (*repaint)(void *output, const pepper_list_t *plane_list);
     void            (*attach_surface)(void *output, pepper_surface_t *surface, int *w, int *h);
-
-    void            (*add_frame_listener)(void *output, struct wl_listener *listener);
 };
 
 PEPPER_API pepper_output_t *
@@ -70,6 +65,15 @@ pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_pl
 
 PEPPER_API void
 pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *region);
+
+PEPPER_API void
+pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts);
+
+PEPPER_API void
+pepper_output_remove(pepper_output_t *output);
+
+PEPPER_API void
+pepper_output_update_mode(pepper_output_t *output);
 
 #ifdef __cplusplus
 }

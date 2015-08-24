@@ -80,8 +80,7 @@ static int
 frame_done_handler(void* data)
 {
     x11_output_t *output = data;
-    wl_signal_emit(&output->frame_signal, NULL);
-
+    pepper_output_finish_frame(output->base, NULL);
     return 1;
 }
 
@@ -311,8 +310,6 @@ x11_output_destroy(void *o)
 
     xcb_destroy_window(conn->xcb_connection, output->window);
 
-    wl_signal_emit(&output->destroy_signal, output);
-
     wl_list_remove(&output->link);
 
     xcb_flush(conn->xcb_connection);
@@ -423,24 +420,10 @@ x11_output_set_mode(void *o, const pepper_output_mode_t *mode)
             xcb_flush(output->connection->xcb_connection);
         }
 
-        wl_signal_emit(&output->mode_change_signal, output);
+        pepper_output_update_mode(output->base);
     }
 
     return PEPPER_TRUE;
-}
-
-static void
-x11_output_add_destroy_listener(void *o, struct wl_listener *listener)
-{
-    x11_output_t *output = o;
-    wl_signal_add(&output->destroy_signal, listener);
-}
-
-static void
-x11_output_add_mode_change_listener(void *o, struct wl_listener *listener)
-{
-    x11_output_t *output = o;
-    wl_signal_add(&output->mode_change_signal, listener);
 }
 
 static void
@@ -519,19 +502,10 @@ x11_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
     pepper_renderer_attach_surface(((x11_output_t *)o)->renderer, surface, w, h);
 }
 
-static void
-x11_output_add_frame_listener(void *o, struct wl_listener *listener)
-{
-    x11_output_t *output = o;
-    wl_signal_add(&output->frame_signal, listener);
-}
-
 /* X11 output backend to export for PePPer core */
 static const pepper_output_backend_t x11_output_backend =
 {
     x11_output_destroy,
-    x11_output_add_destroy_listener,
-    x11_output_add_mode_change_listener,
 
     x11_output_get_subpixel_order,
     x11_output_get_maker_name,
@@ -544,15 +518,7 @@ static const pepper_output_backend_t x11_output_backend =
     x11_output_assign_planes,
     x11_output_repaint,
     x11_output_attach_surface,
-    x11_output_add_frame_listener,
 };
-
-static void
-handle_connection_destroy(struct wl_listener *listener, void *data)
-{
-    x11_output_t *output = pepper_container_of(listener, x11_output_t, conn_destroy_listener);
-    x11_output_destroy(output);
-}
 
 PEPPER_API pepper_output_t *
 pepper_x11_output_create(pepper_x11_connection_t *connection,
@@ -653,23 +619,13 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
                                              output->window);
 
         wl_list_insert(&connection->outputs, &output->link);
-
         xcb_flush(connection->xcb_connection);
-
         x11_output_wait_for_map(output);
     }
-
-    /* Init signals and listeners */
-    wl_signal_init(&output->destroy_signal);
-    wl_signal_init(&output->mode_change_signal);
-    wl_signal_init(&output->frame_signal);
 
     wldisplay = pepper_compositor_get_display(connection->compositor);
     loop = wl_display_get_event_loop(wldisplay);
     output->frame_done_timer = wl_event_loop_add_timer(loop, frame_done_handler, output);
-
-    output->conn_destroy_listener.notify = handle_connection_destroy;
-    wl_signal_add(&connection->destroy_signal, &output->conn_destroy_listener);
 
     /* Init renderer */
     renderer_init(output, renderer);

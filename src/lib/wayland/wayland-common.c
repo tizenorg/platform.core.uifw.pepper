@@ -119,7 +119,7 @@ pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name)
     wl_event_source_check(conn->event_source);
 
     wl_list_init(&conn->seat_list);
-    wl_signal_init(&conn->destroy_signal);
+    wl_list_init(&conn->output_list);
 
     conn->registry = wl_display_get_registry(conn->display);
     wl_registry_add_listener(conn->registry, &registry_listener, conn);
@@ -131,7 +131,10 @@ pepper_wayland_connect(pepper_compositor_t *compositor, const char *socket_name)
 PEPPER_API void
 pepper_wayland_destroy(pepper_wayland_t *conn)
 {
-    wl_signal_emit(&conn->destroy_signal, conn);
+    wayland_output_t *output, *tmp;
+
+    wl_list_for_each_safe(output, tmp, &conn->output_list, link)
+        pepper_output_destroy(output->base);
 
     if (conn->pixman_renderer)
         pepper_renderer_destroy(conn->pixman_renderer);

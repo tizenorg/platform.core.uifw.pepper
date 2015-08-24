@@ -87,15 +87,10 @@ struct pepper_output
     pepper_output_backend_t    *backend;
     void                       *data;
 
-    /* Listeners for backend-side events. */
-    struct wl_listener          data_destroy_listener;
-    struct wl_listener          mode_change_listener;
-
     /* Frame state flags. */
     struct {
         pepper_bool_t           scheduled;
         pepper_bool_t           pending;
-        struct wl_listener      frame_listener;
     } frame;
 
     pepper_list_t               plane_list;

@@ -56,10 +56,6 @@ struct x11_output
     pepper_render_target_t  *target;
     pepper_render_target_t  *gl_target;
 
-    struct wl_signal         destroy_signal;
-    struct wl_signal         mode_change_signal;
-    struct wl_signal         frame_signal;
-
     struct wl_event_source  *frame_done_timer;
     struct wl_listener       conn_destroy_listener;
 
@@ -125,8 +121,6 @@ struct pepper_x11_connection
         xcb_atom_t          xkb_names;
     } atom;
 
-    struct wl_signal        destroy_signal;
-
     pepper_renderer_t       *pixman_renderer;
     pepper_renderer_t       *gl_renderer;
 };
@@ -162,5 +156,8 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
 
 void
 x11_output_destroy(void *o);
+
+void
+x11_seat_destroy(void *data);
 
 #endif  /*X11_INTERNAL_H*/

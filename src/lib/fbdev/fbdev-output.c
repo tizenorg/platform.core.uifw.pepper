@@ -89,7 +89,6 @@ fbdev_output_destroy(void *o)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
 
-    wl_signal_emit(&output->destroy_signal, NULL);
     wl_list_remove(&output->link);
 
     if (output->frame_done_timer)
@@ -108,20 +107,6 @@ fbdev_output_destroy(void *o)
         munmap(output->frame_buffer_pixels, output->h * output->stride);
 
     free(output);
-}
-
-static void
-fbdev_output_add_destroy_listener(void *o, struct wl_listener *listener)
-{
-    fbdev_output_t *output = (fbdev_output_t *)o;
-    wl_signal_add(&output->destroy_signal, listener);
-}
-
-static void
-fbdev_output_add_mode_change_listener(void *o, struct wl_listener *listener)
-{
-    fbdev_output_t *output = (fbdev_output_t *)o;
-    wl_signal_add(&output->mode_change_signal, listener);
 }
 
 static int32_t
@@ -217,18 +202,9 @@ fbdev_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
     pepper_renderer_attach_surface(((fbdev_output_t *)o)->renderer, surface, w, h);
 }
 
-static void
-fbdev_output_add_frame_listener(void *o, struct wl_listener *listener)
-{
-    fbdev_output_t *output = (fbdev_output_t *)o;
-    wl_signal_add(&output->frame_signal, listener);
-}
-
 struct pepper_output_backend fbdev_output_backend =
 {
     fbdev_output_destroy,
-    fbdev_output_add_destroy_listener,
-    fbdev_output_add_mode_change_listener,
 
     fbdev_output_get_subpixel_order,
     fbdev_output_get_maker_name,
@@ -241,7 +217,6 @@ struct pepper_output_backend fbdev_output_backend =
     fbdev_output_assign_planes,
     fbdev_output_repaint,
     fbdev_output_attach_surface,
-    fbdev_output_add_frame_listener,
 };
 
 static pepper_bool_t
@@ -282,8 +257,7 @@ static int
 frame_done_handler(void* data)
 {
     fbdev_output_t *output = (fbdev_output_t *)data;
-    wl_signal_emit(&output->frame_signal, NULL);
-
+    pepper_output_finish_frame(output->base, NULL);
     return 1;
 }
 
@@ -338,10 +312,6 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     output->h = var_info.yres;
     output->bpp = var_info.bits_per_pixel;
     output->stride = output->w * (output->bpp / 8);
-
-    wl_signal_init(&output->destroy_signal);
-    wl_signal_init(&output->mode_change_signal);
-    wl_signal_init(&output->frame_signal);
 
     output->frame_buffer_pixels = mmap(NULL, output->h * output->stride,
                                        PROT_WRITE, MAP_SHARED, fd, 0);

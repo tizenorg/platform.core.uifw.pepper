@@ -6,6 +6,8 @@
 #define WL_HIDE_DEPRECATED
 #include <wayland-server.h>
 
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -41,8 +41,7 @@ shell_surface_configure(void *data, struct wl_shell_surface *shell_surface, uint
     PEPPER_ASSERT(wl_list_empty(&output->shm.free_buffers));
     PEPPER_ASSERT(wl_list_empty(&output->shm.attached_buffers));
 
-    /* We are ready to emit mode change signal. */
-    wl_signal_emit(&output->mode_change_signal, NULL);
+    pepper_output_update_mode(output->base);
 }
 
 static void
@@ -62,28 +61,12 @@ wayland_output_destroy(void *o)
 {
     wayland_output_t *output = o;
 
-    wl_signal_emit(&output->destroy_signal, output);
-
     wl_list_remove(&output->conn_destroy_listener.link);
 
     wl_surface_destroy(output->surface);
     wl_shell_surface_destroy(output->shell_surface);
 
     free(output);
-}
-
-static void
-wayland_output_add_destroy_listener(void *o, struct wl_listener *listener)
-{
-    wayland_output_t *output = o;
-    wl_signal_add(&output->destroy_signal, listener);
-}
-
-static void
-wayland_output_add_mode_change_listener(void *o, struct wl_listener *listener)
-{
-    wayland_output_t *output = o;
-    wl_signal_add(&output->mode_change_signal, listener);
 }
 
 static int32_t
@@ -144,7 +127,7 @@ wayland_output_set_mode(void *o, const pepper_output_mode_t *mode)
 
         /* TODO: Handle resize here. */
 
-        wl_signal_emit(&output->mode_change_signal, output);
+        pepper_output_update_mode(output->base);
     }
 
     return PEPPER_TRUE;
@@ -156,7 +139,7 @@ frame_done(void *data, struct wl_callback *callback, uint32_t time)
     wayland_output_t *output = data;
 
     wl_callback_destroy(callback);
-    wl_signal_emit(&output->frame_signal, NULL);
+    pepper_output_finish_frame(output->base, NULL);
 }
 
 static const struct wl_callback_listener frame_listener =
@@ -217,18 +200,9 @@ wayland_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h
     pepper_renderer_attach_surface(((wayland_output_t *)o)->renderer, surface, w, h);
 }
 
-static void
-wayland_output_add_frame_listener(void *o, struct wl_listener *listener)
-{
-    wayland_output_t *output = o;
-    wl_signal_add(&output->frame_signal, listener);
-}
-
 static const pepper_output_backend_t wayland_output_backend =
 {
     wayland_output_destroy,
-    wayland_output_add_destroy_listener,
-    wayland_output_add_mode_change_listener,
 
     wayland_output_get_subpixel_order,
     wayland_output_get_maker_name,
@@ -241,17 +215,7 @@ static const pepper_output_backend_t wayland_output_backend =
     wayland_output_assign_planes,
     wayland_output_repaint,
     wayland_output_attach_surface,
-    wayland_output_add_frame_listener,
 };
-
-static void
-handle_connection_destroy(struct wl_listener *listener, void *data)
-{
-    wayland_output_t *output =
-        pepper_container_of(listener, wayland_output_t, conn_destroy_listener);
-
-    wayland_output_destroy(output);
-}
 
 static void
 pixman_render_pre(wayland_output_t *output)
@@ -353,11 +317,6 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
         return NULL;
 
     output->conn = conn;
-
-    wl_signal_init(&output->destroy_signal);
-    wl_signal_init(&output->mode_change_signal);
-    wl_signal_init(&output->frame_signal);
-
     output->w = w;
     output->h = h;
 
@@ -380,9 +339,6 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
         return NULL;
     }
 
-    output->conn_destroy_listener.notify = handle_connection_destroy;
-    wl_signal_add(&conn->destroy_signal, &output->conn_destroy_listener);
-
     /* Create renderer. */
     if (!init_renderer(output, renderer))
     {
@@ -391,5 +347,7 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
     }
 
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
+    wl_list_insert(&conn->output_list, &output->link);
+
     return output->base;
 }

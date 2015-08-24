@@ -32,6 +32,7 @@ x11_find_output_by_window(pepper_x11_connection_t *conn, xcb_window_t window)
             if ( window == output->window )
                 return output;
     }
+
     return NULL;
 }
 
@@ -255,7 +256,6 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 
     wl_event_source_check(connection->xcb_event_source);
     wl_list_init(&connection->outputs);
-    wl_signal_init(&connection->destroy_signal);
 
     return connection;
 }
@@ -263,7 +263,12 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 PEPPER_API void
 pepper_x11_destroy(pepper_x11_connection_t *conn)
 {
-    wl_signal_emit(&conn->destroy_signal, conn);
+    x11_output_t *output, *tmp;
+
+    x11_seat_destroy(conn->seat);
+
+    wl_list_for_each_safe(output, tmp, &conn->outputs, link)
+        x11_output_destroy(output);
 
     if (conn->xcb_event_source)
         wl_event_source_remove(conn->xcb_event_source);

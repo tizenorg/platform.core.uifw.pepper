@@ -94,23 +94,6 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 }
 
 static void
-handle_output_data_destroy(struct wl_listener *listener, void *data)
-{
-    pepper_output_t *output = pepper_container_of(listener, pepper_output_t, data_destroy_listener);
-    output->data = NULL;
-    output->backend = NULL;
-    pepper_output_destroy(output);
-}
-
-static void
-handle_mode_change(struct wl_listener *listener, void *data)
-{
-    pepper_output_t *output = pepper_container_of(listener, pepper_output_t, mode_change_listener);
-    output_update_mode(output);
-    pepper_object_emit_event(&output->base, PEPPER_EVENT_OUTPUT_MODE_CHANGE, NULL);
-}
-
-static void
 output_accumulate_damage(pepper_output_t *output)
 {
     pepper_list_t      *l;
@@ -177,18 +160,6 @@ output_repaint(pepper_output_t *output)
 }
 
 static void
-handle_output_frame(struct wl_listener *listener, void *data)
-{
-    pepper_output_t *output = pepper_container_of(listener, pepper_output_t, frame.frame_listener);
-
-    output->frame.pending = PEPPER_FALSE;
-
-    /* TODO: Better repaint scheduling by putting a delay before repaint. */
-    if (output->frame.scheduled)
-        output_repaint(output);
-}
-
-static void
 idle_repaint(void *data)
 {
     pepper_output_t *output = data;
@@ -220,6 +191,29 @@ pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *regi
     pepper_list_t   *l;
     PEPPER_LIST_FOR_EACH(&output->plane_list, l)
         pepper_plane_add_damage_region((pepper_plane_t *)l->item, region);
+}
+
+PEPPER_API void
+pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
+{
+    output->frame.pending = PEPPER_FALSE;
+
+    /* TODO: Better repaint scheduling by putting a delay before repaint. */
+    if (output->frame.scheduled)
+        output_repaint(output);
+}
+
+PEPPER_API void
+pepper_output_remove(pepper_output_t *output)
+{
+    pepper_output_destroy(output);
+}
+
+PEPPER_API void
+pepper_output_update_mode(pepper_output_t *output)
+{
+    output_update_mode(output);
+    pepper_object_emit_event(&output->base, PEPPER_EVENT_OUTPUT_MODE_CHANGE, NULL);
 }
 
 PEPPER_API pepper_output_t *
@@ -301,16 +295,6 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     pepper_list_insert(&compositor->output_list, &output->link);
     output->link.item = output;
 
-    /* Install listeners. */
-    output->data_destroy_listener.notify = handle_output_data_destroy;
-    backend->add_destroy_listener(data, &output->data_destroy_listener);
-
-    output->mode_change_listener.notify = handle_mode_change;
-    backend->add_mode_change_listener(data, &output->mode_change_listener);
-
-    output->frame.frame_listener.notify = handle_output_frame;
-    backend->add_frame_listener(data, &output->frame.frame_listener);
-
     pepper_list_init(&output->plane_list);
     pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD, NULL);
 
@@ -329,13 +313,9 @@ pepper_output_destroy(pepper_output_t *output)
     output->compositor->output_id_allocator &= ~(1 << output->id);
     pepper_list_remove(&output->link, NULL);
 
-    if (output->backend && output->data)
-        output->backend->destroy(output->data);
+    output->backend->destroy(output->data);
 
     wl_global_destroy(output->global);
-    wl_list_remove(&output->data_destroy_listener.link);
-    wl_list_remove(&output->mode_change_listener.link);
-    wl_list_remove(&output->frame.frame_listener.link);
 
     pepper_object_fini(&output->base);
     pepper_object_emit_event(&output->compositor->base,

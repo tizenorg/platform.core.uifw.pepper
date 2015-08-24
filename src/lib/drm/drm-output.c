@@ -47,23 +47,7 @@ drm_output_destroy(void *o)
     if (output->modes)
         free(output->modes);
 
-    wl_signal_emit(&output->destroy_signal, NULL);
-
     free(output);
-}
-
-static void
-drm_output_add_destroy_listener(void *o, struct wl_listener *listener)
-{
-    drm_output_t *output = (drm_output_t *)o;
-    wl_signal_add(&output->destroy_signal, listener);
-}
-
-static void
-drm_output_add_mode_change_listener(void *o, struct wl_listener *listener)
-{
-    drm_output_t *output = (drm_output_t *)o;
-    wl_signal_add(&output->mode_change_signal, listener);
 }
 
 static int32_t
@@ -166,7 +150,7 @@ drm_output_set_mode(void *o, const pepper_output_mode_t *mode)
 
             /* TODO: Resize handleing. */
 
-            wl_signal_emit(&output->mode_change_signal, NULL);
+            pepper_output_update_mode(output->base);
             return PEPPER_TRUE;
         }
     }
@@ -494,18 +478,9 @@ drm_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
     pepper_renderer_attach_surface(((drm_output_t *)o)->renderer, surface, w, h);
 }
 
-static void
-drm_output_add_frame_listener(void *o, struct wl_listener *listener)
-{
-    drm_output_t *output = (drm_output_t *)o;
-    wl_signal_add(&output->frame_signal, listener);
-}
-
 struct pepper_output_backend drm_output_backend =
 {
     drm_output_destroy,
-    drm_output_add_destroy_listener,
-    drm_output_add_mode_change_listener,
 
     drm_output_get_subpixel_order,
     drm_output_get_maker_name,
@@ -518,7 +493,6 @@ struct pepper_output_backend drm_output_backend =
     drm_output_assign_planes,
     drm_output_repaint,
     drm_output_attach_surface,
-    drm_output_add_frame_listener,
 };
 
 static struct udev_device *
@@ -890,10 +864,6 @@ drm_output_create(pepper_drm_t *drm, struct udev_device *device,
     output->drm = drm;
     output->subpixel = conn->subpixel;
 
-    wl_signal_init(&output->destroy_signal);
-    wl_signal_init(&output->mode_change_signal);
-    wl_signal_init(&output->frame_signal);
-
     wl_list_insert(&drm->output_list, &output->link);
 
     /* find crtc + connector */
@@ -1038,8 +1008,9 @@ remove_outputs(pepper_drm_t *drm)
     if (!wl_list_empty(&drm->output_list))
     {
         drm_output_t *output, *next;
+
         wl_list_for_each_safe(output, next, &drm->output_list, link)
-            drm_output_destroy(output);
+            pepper_output_remove(output->base);
     }
 }
 
@@ -1063,7 +1034,7 @@ handle_vblank(int fd, unsigned int sequence, unsigned int tv_sec, unsigned int t
     plane->output = NULL;
 
     if (!output->page_flip_pending)
-        wl_signal_emit(&output->frame_signal, NULL);
+        pepper_output_finish_frame(output->base, NULL);
 }
 
 static void
@@ -1089,9 +1060,7 @@ handle_page_flip(int fd, unsigned int sequence, unsigned int tv_sec, unsigned in
     output->page_flip_pending = PEPPER_FALSE;
 
     if (!output->vblank_pending)
-    {
-        wl_signal_emit(&output->frame_signal, NULL);
-    }
+        pepper_output_finish_frame(output->base, NULL);
 }
 
 static int
@@ -1219,7 +1188,7 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
 
         if (output && conn->connection != DRM_MODE_CONNECTED)
         {
-            drm_output_destroy(output);
+            pepper_output_remove(output->base);
         }
         else if (!output && conn->connection == DRM_MODE_CONNECTED)
         {
@@ -1406,7 +1375,6 @@ error:
 void
 pepper_drm_output_destroy(pepper_drm_t *drm)
 {
-
     if (drm->renderer)
         free(drm->renderer);
 
