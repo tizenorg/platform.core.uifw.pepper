@@ -58,6 +58,13 @@ struct pepper_output_mode
     int32_t     refresh;
 };
 
+enum pepper_output_mode_flag
+{
+    PEPPER_OUTPUT_MODE_INVALID      = (1 << 0),
+    PEPPER_OUTPUT_MODE_CURRENT      = (1 << 1),
+    PEPPER_OUTPUT_MODE_PREFERRED    = (1 << 2),
+};
+
 typedef enum pepper_object_type
 {
     PEPPER_OBJECT_COMPOSITOR,
@@ -260,6 +267,7 @@ pepper_output_get_compositor(pepper_output_t *output);
 PEPPER_API pepper_view_t *
 pepper_compositor_pick_view(pepper_compositor_t *compositor, int32_t x, int32_t y);
 
+/* Output. */
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output);
 
@@ -275,8 +283,8 @@ pepper_output_get_scale(pepper_output_t *output);
 PEPPER_API int
 pepper_output_get_mode_count(pepper_output_t *output);
 
-PEPPER_API const pepper_output_mode_t *
-pepper_output_get_mode(pepper_output_t *output, int index);
+PEPPER_API void
+pepper_output_get_mode(pepper_output_t *output, int index, pepper_output_mode_t *mode);
 
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode);

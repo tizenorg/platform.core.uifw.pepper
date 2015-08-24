@@ -1,51 +1,45 @@
 #include "pepper-internal.h"
 
 static void
+output_send_modes(pepper_output_t *output, struct wl_resource *resource)
+{
+    int i;
+    int mode_count = output->backend->get_mode_count(output->data);
+
+    for (i = 0; i < mode_count; i++)
+    {
+        pepper_output_mode_t mode;
+
+        output->backend->get_mode(output->data, i, &mode);
+        wl_output_send_mode(resource, mode.flags, mode.w, mode.h, mode.refresh);
+    }
+
+    wl_output_send_done(resource);
+}
+
+static void
 output_update_mode(pepper_output_t *output)
 {
-    int                     i;
-    struct wl_resource     *resource;
-    pepper_output_mode_t   *preferred_mode = NULL;
+    struct wl_resource *resource;
+    int                 i;
+    int                 mode_count = output->backend->get_mode_count(output->data);
 
-    output->current_mode = NULL;
-
-    if (output->modes)
-        pepper_free(output->modes);
-
-    output->mode_count = output->backend->get_mode_count(output->data);
-    PEPPER_ASSERT(output->mode_count > 0);
-
-    output->modes = pepper_calloc(output->mode_count, sizeof(pepper_output_mode_t));
-    if (!output->modes)
+    for (i = 0; i < mode_count; i++)
     {
-        pepper_output_destroy(output);
-        return;
-    }
+        pepper_output_mode_t mode;
 
-    for (i = 0; i < output->mode_count; i++)
-    {
-        output->backend->get_mode(output->data, i, &output->modes[i]);
+        output->backend->get_mode(output->data, i, &mode);
 
-        if (output->modes[i].flags & WL_OUTPUT_MODE_CURRENT)
-            output->current_mode = &output->modes[i];
-
-        if (output->modes[i].flags & WL_OUTPUT_MODE_PREFERRED)
-            preferred_mode = &output->modes[i];
-    }
-
-    if (!output->current_mode)
-        output->current_mode = preferred_mode;
-
-    wl_resource_for_each(resource, &output->resources)
-    {
-        for (i = 0; i < output->mode_count; i++)
+        if (mode.flags & WL_OUTPUT_MODE_CURRENT)
         {
-            wl_output_send_mode(resource, output->modes[i].flags,
-                                output->modes[i].w, output->modes[i].h,
-                                output->modes[i].refresh);
-        }
+            output->current_mode = mode;
 
-        wl_output_send_done(resource);
+            wl_resource_for_each(resource, &output->resources)
+            {
+                wl_output_send_mode(resource, mode.flags, mode.w, mode.h, mode.refresh);
+                wl_output_send_done(resource);
+            }
+        }
     }
 }
 
@@ -76,7 +70,6 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 {
     struct wl_resource      *resource;
     pepper_output_t         *output = (pepper_output_t *)data;
-    int                     i;
 
     resource = wl_resource_create(client, &wl_output_interface, 2, id);
 
@@ -97,15 +90,7 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
                             output->geometry.transform);
 
     wl_output_send_scale(resource, output->scale);
-
-    for (i = 0; i < output->mode_count; i++)
-    {
-        wl_output_send_mode(resource, output->modes[i].flags,
-                            output->modes[i].w, output->modes[i].h,
-                            output->modes[i].refresh);
-    }
-
-    wl_output_send_done(resource);
+    output_send_modes(output, resource);
 }
 
 static void
@@ -310,8 +295,8 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     output->geometry.model = backend->get_model_name(data);
     output->geometry.x = 0;
     output->geometry.y = 0;
-    output->geometry.w = output->current_mode->w;
-    output->geometry.h = output->current_mode->h;
+    output->geometry.w = output->current_mode.w;
+    output->geometry.h = output->current_mode.h;
 
     pepper_list_insert(&compositor->output_list, &output->link);
     output->link.item = output;
@@ -390,22 +375,20 @@ pepper_output_get_scale(pepper_output_t *output)
 PEPPER_API int
 pepper_output_get_mode_count(pepper_output_t *output)
 {
-    return output->mode_count;
+    return output->backend->get_mode_count(output->data);
 }
 
-PEPPER_API const pepper_output_mode_t *
-pepper_output_get_mode(pepper_output_t *output, int index)
+PEPPER_API void
+pepper_output_get_mode(pepper_output_t *output, int index, pepper_output_mode_t *mode)
 {
-    if (index < 0 || index >= output->mode_count)
-        return NULL;
-
-    return &output->modes[index];
+    return output->backend->get_mode(output->data, index, mode);
 }
 
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode)
 {
-    if (output->current_mode == mode)
+    if (output->current_mode.w == mode->w && output->current_mode.h == mode->h &&
+        output->current_mode.refresh == mode->refresh)
         return PEPPER_TRUE;
 
     if (output->backend->set_mode(output->data, mode))

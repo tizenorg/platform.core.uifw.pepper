@@ -81,9 +81,7 @@ struct pepper_output
     pepper_output_geometry_t    geometry;
     int32_t                     scale;
 
-    int                         mode_count;
-    pepper_output_mode_t       *modes;
-    pepper_output_mode_t       *current_mode;
+    pepper_output_mode_t        current_mode;
 
     /* Backend-specific variables. */
     pepper_output_backend_t    *backend;
