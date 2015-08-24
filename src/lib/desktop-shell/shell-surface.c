@@ -3,6 +3,7 @@
 
 
 extern shell_pointer_grab_interface_t shell_pointer_move_grab;
+extern shell_pointer_grab_interface_t shell_pointer_resize_grab;
 
 void
 remove_ping_timer(shell_client_t *shell_client)
@@ -119,7 +120,13 @@ shsurf_xdg_surface_send_configure(shell_surface_t *shsurf, int32_t width, int32_
         *state = XDG_SURFACE_STATE_FULLSCREEN;
     }
 
-    /* TODO: XDG_SURFACE_STATE_RESIZING, XDG_SURFACE_STATE_ACTIVATED */
+    if (shsurf->resize.resizing )
+    {
+        state  = wl_array_add(&states, sizeof(uint32_t));
+        *state = XDG_SURFACE_STATE_RESIZING;
+    }
+
+    /* TODO: XDG_SURFACE_STATE_ACTIVATED */
 
     /* Send configure event */
     display = pepper_compositor_get_display(shsurf->shell->compositor);
@@ -831,4 +838,32 @@ shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial
     pepper_pointer_get_position(shseat->pointer_grab.pointer, &shsurf->move.px, &shsurf->move.py);
 
     shell_seat_pointer_start_grab(shseat, &shell_pointer_move_grab, shsurf);
+}
+
+void
+shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial, uint32_t edges)
+{
+    double x, y;
+    shell_seat_t *shseat = pepper_object_get_user_data((pepper_object_t *)seat, shsurf->shell);
+
+    pepper_view_get_position(shsurf->view, &x, &y);
+    pepper_pointer_get_position(shseat->pointer_grab.pointer,
+                                &shsurf->resize.px,
+                                &shsurf->resize.py);
+
+    shsurf->resize.vx = (int)x;
+    shsurf->resize.vy = (int)y;
+
+    pepper_view_get_size(shsurf->view, &shsurf->resize.vw, &shsurf->resize.vh);
+
+    shsurf->resize.edges = edges;
+    shsurf->resize.resizing = PEPPER_TRUE;
+
+    if (shsurf_is_xdg_surface(shsurf))
+    {
+        /* FIXME */
+        shsurf->send_configure(shsurf, 0, 0);
+    }
+
+    shell_seat_pointer_start_grab(shseat, &shell_pointer_resize_grab, shsurf);
 }

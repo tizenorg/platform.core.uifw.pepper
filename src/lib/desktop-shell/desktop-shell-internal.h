@@ -138,6 +138,15 @@ struct shell_surface
         int32_t vx, vy;         /* Initial view position */
     } move;
 
+    struct
+    {
+        int32_t       px, py;     /* pointer x, y */
+        int32_t       vx, vy;     /* view    x, y */
+        int32_t       vw, vh;     /* view    w, h */
+        uint32_t      edges;
+        pepper_bool_t resizing;
+    } resize;
+
     /* Data structures per surface type */
     shell_surface_type_t     type;          /* Current surface type */
     shell_surface_type_t     next_type;     /* Requested surface type */
@@ -292,3 +301,6 @@ shell_seat_pointer_end_grab(shell_seat_t *shseat);
 
 void
 shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial);
+
+void
+shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial, uint32_t edges);

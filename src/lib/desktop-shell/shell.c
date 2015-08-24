@@ -137,6 +137,80 @@ shell_pointer_grab_interface_t shell_pointer_move_grab =
 };
 
 static void
+shell_pointer_resize_grab_motion(shell_pointer_grab_t   *grab,
+                                 uint32_t                time,
+                                 int32_t                 x,
+                                 int32_t                 y,
+                                 void                   *userdata)
+{
+    pepper_pointer_t    *pointer = grab->pointer;
+    shell_surface_t     *shsurf = userdata;
+
+    uint32_t width = 0, height = 0;
+    int32_t dx = 0, dy = 0;
+
+    pepper_pointer_set_position(pointer, x, y);
+
+    if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_LEFT)
+    {
+        dx = shsurf->resize.px - x;
+    }
+    else if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_RIGHT)
+    {
+        dx = x - shsurf->resize.px;
+    }
+
+    if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_TOP)
+    {
+        dy = shsurf->resize.py - y;
+    }
+    else if(shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_BOTTOM)
+    {
+        dy = y - shsurf->resize.py;
+    }
+
+    width  = shsurf->resize.vw + dx;
+    height = shsurf->resize.vh + dy;
+
+    shsurf->send_configure(shsurf, width, height);
+}
+
+static void
+shell_pointer_resize_grab_button(shell_pointer_grab_t   *grab,
+                                 uint32_t                time,
+                                 uint32_t                button,
+                                 uint32_t                state,
+                                 void                   *userdata)
+{
+    shell_surface_t     *shsurf = userdata;
+
+    /* FIXME */
+
+    if (state == WL_POINTER_BUTTON_STATE_RELEASED)
+    {
+        shell_seat_pointer_end_grab(grab->shseat);
+        shsurf->resize.resizing = PEPPER_FALSE;
+    }
+}
+
+static void
+shell_pointer_resize_grab_axis(shell_pointer_grab_t *grab,
+                               uint32_t              time,
+                               enum wl_pointer_axis  axis,
+                               wl_fixed_t            amount,
+                               void                 *userdata)
+{
+    /* TODO */
+}
+
+shell_pointer_grab_interface_t shell_pointer_resize_grab =
+{
+    shell_pointer_resize_grab_motion,
+    shell_pointer_resize_grab_button,
+    shell_pointer_resize_grab_axis,
+};
+
+static void
 shell_pointer_default_grab_motion(shell_pointer_grab_t  *grab,
                                   uint32_t               time,
                                   int32_t                x,

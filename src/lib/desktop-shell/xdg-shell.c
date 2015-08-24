@@ -65,7 +65,7 @@ xdg_surface_move(struct wl_client   *client,
                  uint32_t            serial)
 {
     shell_surface_t *shsurf = wl_resource_get_user_data(resource);
-    pepper_seat_t   *seat   = wl_resource_get_user_data(seat_resource);
+    pepper_seat_t   *seat;
 
     if (!seat_resource)
     {
@@ -86,7 +86,19 @@ xdg_surface_resize(struct wl_client     *client,
                    uint32_t              serial,
                    uint32_t              edges)
 {
-    /* TODO: */
+    shell_surface_t *shsurf = wl_resource_get_user_data(resource);
+    pepper_seat_t   *seat;
+
+    if (!seat_resource)
+    {
+        wl_resource_post_error(resource,
+                               WL_DISPLAY_ERROR_INVALID_OBJECT,
+                               "Invalid seat");
+        return ;
+    }
+    seat = wl_resource_get_user_data(seat_resource);
+
+    shell_surface_resize(shsurf, seat, serial, edges);
 }
 
 static void
