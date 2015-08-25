@@ -153,7 +153,7 @@ wayland_output_assign_planes(void *o, const pepper_list_t *view_list)
     wayland_output_t   *output = (wayland_output_t *)o;
     pepper_list_t      *l;
 
-    PEPPER_LIST_FOR_EACH(view_list, l)
+    pepper_list_for_each(l, view_list)
     {
         pepper_view_t *view = l->item;
         pepper_view_assign_plane(view, output->base, output->primary_plane);
@@ -168,7 +168,7 @@ wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 
     pepper_list_t  *l;
 
-    PEPPER_LIST_FOR_EACH(plane_list, l)
+    pepper_list_for_each(l, plane_list)
     {
         pepper_plane_t *plane = l->item;
 
@@ -233,7 +233,7 @@ pixman_render_pre(wayland_output_t *output)
     }
     else
     {
-        buffer = pepper_container_of(output->shm.free_buffers.next, wayland_shm_buffer_t, link);
+        buffer = pepper_container_of(output->shm.free_buffers.next, buffer, link);
         wl_list_remove(&buffer->link);
     }
 

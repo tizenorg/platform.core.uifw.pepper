@@ -9,7 +9,7 @@ pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list)
 
     pepper_list_init(&plane->entry_list);
 
-    PEPPER_LIST_FOR_EACH(view_list, l)
+    pepper_list_for_each(l, view_list)
     {
         pepper_view_t          *view  = l->item;
         pepper_plane_entry_t   *entry = &view->plane_entries[plane->output->id];
@@ -37,7 +37,7 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
 
     pixman_region32_init(clip);
 
-    PEPPER_LIST_FOR_EACH_REVERSE(&plane->entry_list, l)
+    pepper_list_for_each_reverse(l, &plane->entry_list)
     {
         pepper_plane_entry_t   *entry = l->item;
         pepper_view_t          *view = (pepper_view_t *)entry->base.view;
@@ -92,7 +92,7 @@ pepper_plane_destroy(pepper_plane_t *plane)
 {
     pepper_list_t  *l;
 
-    PEPPER_LIST_FOR_EACH(&plane->entry_list, l)
+    pepper_list_for_each(l, &plane->entry_list)
     {
         pepper_plane_entry_t *entry = l->item;
         pepper_view_assign_plane(entry->base.view, plane->output, NULL);

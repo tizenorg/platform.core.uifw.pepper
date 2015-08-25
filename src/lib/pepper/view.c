@@ -14,7 +14,7 @@ view_mark_dirty(pepper_view_t *view, uint32_t flag)
     if ((flag & PEPPER_VIEW_VISIBILITY_DIRTY) ||
         (flag & PEPPER_VIEW_GEOMETRY_DIRTY))
     {
-        PEPPER_LIST_FOR_EACH(&view->children_list, l)
+        pepper_list_for_each(l, &view->children_list)
             view_mark_dirty((pepper_view_t *)l->item, flag);
     }
 
@@ -98,7 +98,7 @@ view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
     {
         pepper_list_t *l;
 
-        PEPPER_LIST_FOR_EACH(&view->children_list, l)
+        pepper_list_for_each(l, &view->children_list)
             pos = view_insert((pepper_view_t *)l->item, pos, subtree);
     }
 
@@ -193,7 +193,7 @@ view_update_geometry(pepper_view_t *view)
 
     view->output_overlap = 0;
 
-    PEPPER_LIST_FOR_EACH(&view->compositor->output_list, l)
+    pepper_list_for_each(l, &view->compositor->output_list)
     {
         pepper_output_t *output = l->item;
         pixman_box32_t   box =
@@ -307,7 +307,7 @@ pepper_view_destroy(pepper_view_t *view)
     for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
         plane_entry_set_plane(&view->plane_entries[i], NULL);
 
-    PEPPER_LIST_FOR_EACH_SAFE(&view->children_list, l, next)
+    pepper_list_for_each_safe(l, next, &view->children_list)
         pepper_view_destroy((pepper_view_t *)(l->item));
 
     if (view->parent)

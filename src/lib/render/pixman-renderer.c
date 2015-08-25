@@ -276,7 +276,7 @@ pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *out
     {
         pepper_list_t *l;
 
-        PEPPER_LIST_FOR_EACH_REVERSE(render_list, l)
+        pepper_list_for_each_reverse(l, render_list)
             repaint_view(renderer, (pepper_render_item_t *)l->item, damage);
     }
 }

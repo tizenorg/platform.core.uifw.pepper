@@ -3,8 +3,7 @@
 static void
 buffer_resource_destroy_handler(struct wl_listener *listener, void *data)
 {
-    pepper_buffer_t *buffer =
-        pepper_container_of(listener, pepper_buffer_t, resource_destroy_listener);
+    pepper_buffer_t *buffer = pepper_container_of(listener, buffer, resource_destroy_listener);
 
     /* Ensure no reference to this buffer. */
     PEPPER_ASSERT(buffer->ref_count == 0);
@@ -22,7 +21,7 @@ pepper_buffer_from_resource(struct wl_resource *resource)
     listener = wl_resource_get_destroy_listener(resource, buffer_resource_destroy_handler);
 
     if (listener)
-        return pepper_container_of(listener, pepper_buffer_t, resource_destroy_listener);
+        return pepper_container_of(listener, buffer, resource_destroy_listener);
 
     buffer = (pepper_buffer_t *)pepper_object_alloc(PEPPER_OBJECT_BUFFER, sizeof(pepper_buffer_t));
     if (!buffer)

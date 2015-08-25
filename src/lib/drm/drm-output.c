@@ -347,7 +347,7 @@ drm_output_assign_planes(void *o, const pepper_list_t *view_list)
     pepper_list_t  *l, *p;
 
     p = drm->plane_list.next;
-    PEPPER_LIST_FOR_EACH(view_list, l)
+    pepper_list_for_each(l, view_list)
     {
         pepper_view_t  *view = (pepper_view_t *)l->item;
         drm_plane_t    *plane = (drm_plane_t *)p->item;
@@ -375,12 +375,11 @@ static void
 set_planes(drm_output_t *output)
 {
     pepper_list_t      *l;
-    drm_plane_t        *plane;
-    drmVBlank           vbl;
 
-    PEPPER_LIST_FOR_EACH(&output->drm->plane_list, l)
+    pepper_list_for_each(l, &output->drm->plane_list)
     {
-        plane = (drm_plane_t *)l->item;
+        drm_plane_t *plane = (drm_plane_t *)l->item;
+        drmVBlank    vbl;
 
         if (plane->output != output)
             continue;
@@ -431,7 +430,7 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
     drm_output_t   *output = (drm_output_t *)o;
     pepper_list_t  *l;
 
-    PEPPER_LIST_FOR_EACH(plane_list, l)
+    pepper_list_for_each(l, plane_list)
     {
         pepper_plane_t *plane = l->item;
 
@@ -1152,7 +1151,7 @@ destroy_planes(pepper_drm_t *drm)
 {
     pepper_list_t *l, *next;
 
-    PEPPER_LIST_FOR_EACH_SAFE(&drm->plane_list, l, next)
+    pepper_list_for_each_safe(l, next, &drm->plane_list)
     {
         drm_plane_t *plane = (drm_plane_t *)l->item;
         pepper_list_remove(l, NULL);

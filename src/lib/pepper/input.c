@@ -369,7 +369,7 @@ seat_update_caps(pepper_seat_t *seat)
     pepper_list_t  *l;
     uint32_t        caps = 0;
 
-    PEPPER_LIST_FOR_EACH(&seat->input_device_list, l)
+    pepper_list_for_each(l, &seat->input_device_list)
     {
         pepper_input_device_entry_t *entry = l->item;
         caps |= entry->device->caps;
@@ -447,7 +447,7 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
     pepper_input_device_entry_t *entry;
     pepper_list_t               *l;
 
-    PEPPER_LIST_FOR_EACH(&seat->input_device_list, l)
+    pepper_list_for_each(l, &seat->input_device_list)
     {
         pepper_input_device_entry_t *entry = l->item;
         if (entry->device == device)
@@ -474,7 +474,7 @@ pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *devi
 {
     pepper_list_t *l;
 
-    PEPPER_LIST_FOR_EACH(&seat->input_device_list, l)
+    pepper_list_for_each(l, &seat->input_device_list)
     {
         pepper_input_device_entry_t *entry = l->item;
 

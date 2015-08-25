@@ -76,7 +76,7 @@ insert_listener(pepper_object_t *object, pepper_event_listener_t *listener)
 {
     pepper_list_t   *l;
 
-    PEPPER_LIST_FOR_EACH(&object->event_listener_list, l)
+    pepper_list_for_each(l, &object->event_listener_list)
     {
         pepper_event_listener_t *pos = l->item;
 
@@ -139,7 +139,7 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
     pepper_event_listener_t *listener;
     pepper_list_t           *l, *tmp;
 
-    PEPPER_LIST_FOR_EACH_SAFE(&object->event_listener_list, l, tmp)
+    pepper_list_for_each_safe(l, tmp, &object->event_listener_list)
     {
         listener = l->item;
 

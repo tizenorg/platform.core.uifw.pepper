@@ -432,7 +432,7 @@ x11_output_assign_planes(void *o, const pepper_list_t *view_list)
     x11_output_t   *output = (x11_output_t *)o;
     pepper_list_t  *l;
 
-    PEPPER_LIST_FOR_EACH(view_list, l)
+    pepper_list_for_each(l, view_list)
     {
         pepper_view_t *view = l->item;
         pepper_view_assign_plane(view, output->base, output->primary_plane);
@@ -445,7 +445,7 @@ x11_output_repaint(void *o, const pepper_list_t *plane_list)
     x11_output_t *output = o;
     pepper_list_t  *l;
 
-    PEPPER_LIST_FOR_EACH(plane_list, l)
+    pepper_list_for_each(l, plane_list)
     {
         pepper_plane_t *plane = l->item;
 

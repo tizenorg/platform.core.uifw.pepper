@@ -51,7 +51,7 @@ pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
 {
     pepper_list_t   *l;
 
-    PEPPER_LIST_FOR_EACH(&compositor->output_list, l)
+    pepper_list_for_each(l, &compositor->output_list)
         pepper_output_schedule_repaint((pepper_output_t *)l->item);
 }
 

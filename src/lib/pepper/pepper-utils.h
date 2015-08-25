@@ -22,9 +22,8 @@ extern "C" {
 #define PEPPER_MAX(a, b)    ((a) > (b) ? (a) : (b))
 #define PEPPER_MIN(a, b)    ((a) < (b) ? (a) : (b))
 
-#define pepper_container_of(ptr, type, member) ({               \
-    const __typeof__( ((type *)0)->member ) *__mptr = (ptr);    \
-    (type *)( (char *)__mptr - offsetof(type,member) );})
+#define pepper_container_of(ptr, sample, member)                                    \
+	(__typeof__(sample))((char *)(ptr) - offsetof(__typeof__(*sample), member))
 
 #define PEPPER_ARRAY_LENGTH(arr)    (sizeof(arr) / sizeof(arr)[0])
 
@@ -106,25 +105,25 @@ get_pixman_format(pepper_format_t format)
 
 typedef struct pepper_list      pepper_list_t;
 
-#define PEPPER_LIST_FOR_EACH(head, pos)                     \
-    for (pos = (head)->next;                                \
-         pos != (head);                                     \
+#define pepper_list_for_each(pos, head)                                     \
+    for (pos = (head)->next;                                                \
+         pos != (head);                                                     \
          pos = pos->next)
 
-#define PEPPER_LIST_FOR_EACH_SAFE(head, pos, temp)          \
-    for (pos = (head)->next, temp = pos->next;              \
-         pos != (head);                                     \
-         pos = temp, temp = pos->next)
+#define pepper_list_for_each_safe(pos, tmp, head)                           \
+    for (pos = (head)->next, tmp = pos->next;                               \
+         pos != (head);                                                     \
+         pos = tmp, tmp = pos->next)
 
-#define PEPPER_LIST_FOR_EACH_REVERSE(head, pos)             \
-    for (pos = (head)->prev;                                \
-         pos != (head);                                     \
+#define pepper_list_for_each_reverse(pos, head)                             \
+    for (pos = (head)->prev;                                                \
+         pos != (head);                                                     \
          pos = pos->prev)
 
-#define PEPPER_LIST_FOR_EACH_REVERSE_SAFE(head, pos, temp)  \
-    for (pos = (head)->prev, temp = pos->prev;              \
-         pos != (head);                                     \
-         pos = temp, temp = pos->prev)
+#define pepper_list_for_each_reverse_safe(pos, tmp, head)                   \
+    for (pos = (head)->prev, tmp = pos->prev;                               \
+         pos != (head);                                                     \
+         pos = tmp, tmp = pos->prev)
 
 struct pepper_list
 {
@@ -171,7 +170,7 @@ pepper_list_find_item(pepper_list_t *list, void *item)
 {
     pepper_list_t *l;
 
-    PEPPER_LIST_FOR_EACH(list, l)
+    pepper_list_for_each(l, list)
     {
         if (l->item == item)
             return l;
@@ -200,7 +199,7 @@ pepper_list_remove_item(pepper_list_t *list, void *item, pepper_free_func_t free
 {
     pepper_list_t *l;
 
-    PEPPER_LIST_FOR_EACH(list, l)
+    pepper_list_for_each(l, list)
     {
         if (l->item == item)
         {
@@ -215,7 +214,7 @@ pepper_list_clear(pepper_list_t *list, pepper_free_func_t free_func)
 {
     pepper_list_t *l, *temp;
 
-    PEPPER_LIST_FOR_EACH_SAFE(list, l, temp)
+    pepper_list_for_each_safe(l, temp, list)
     {
         if (free_func)
             free_func(l->item);

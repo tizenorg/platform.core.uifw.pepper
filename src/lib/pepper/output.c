@@ -102,7 +102,7 @@ output_accumulate_damage(pepper_output_t *output)
 
     pixman_region32_init(&clip);
 
-    PEPPER_LIST_FOR_EACH_REVERSE(&output->plane_list, l)
+    pepper_list_for_each_reverse(l, &output->plane_list)
     {
         pepper_plane_t *plane = l->item;
 
@@ -119,13 +119,13 @@ output_repaint(pepper_output_t *output)
 {
     pepper_list_t          *l;
 
-    PEPPER_LIST_FOR_EACH(&output->compositor->view_list, l)
+    pepper_list_for_each(l, &output->compositor->view_list)
         pepper_view_update((pepper_view_t *)l->item);
 
     pepper_list_init(&output->view_list);
 
     /* Build a list of views in sorted z-order that are visible on the given output. */
-    PEPPER_LIST_FOR_EACH(&output->compositor->view_list, l)
+    pepper_list_for_each(l, &output->compositor->view_list)
     {
         pepper_view_t *view = l->item;
 
@@ -142,7 +142,7 @@ output_repaint(pepper_output_t *output)
 
     output->backend->assign_planes(output->data, &output->view_list);
 
-    PEPPER_LIST_FOR_EACH(&output->plane_list, l)
+    pepper_list_for_each(l, &output->plane_list)
         pepper_plane_update((pepper_plane_t *)l->item, &output->view_list);
 
     output_accumulate_damage(output);
@@ -151,7 +151,7 @@ output_repaint(pepper_output_t *output)
     output->frame.pending = PEPPER_TRUE;
     output->frame.scheduled = PEPPER_FALSE;
 
-    PEPPER_LIST_FOR_EACH(&output->view_list, l)
+    pepper_list_for_each(l, &output->view_list)
     {
         /* TODO: Output time stamp and presentation feedback. */
         pepper_view_t *view = l->item;
@@ -189,7 +189,7 @@ PEPPER_API void
 pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *region)
 {
     pepper_list_t   *l;
-    PEPPER_LIST_FOR_EACH(&output->plane_list, l)
+    pepper_list_for_each(l, &output->plane_list)
         pepper_plane_add_damage_region((pepper_plane_t *)l->item, region);
 }
 
@@ -230,7 +230,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
         return NULL;
     }
 
-    PEPPER_LIST_FOR_EACH(&compositor->output_list, l)
+    pepper_list_for_each(l, &compositor->output_list)
     {
         output = l->item;
 
@@ -392,7 +392,7 @@ pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name)
     pepper_output_t *output;
     pepper_list_t   *l;
 
-    PEPPER_LIST_FOR_EACH(&compositor->output_list, l)
+    pepper_list_for_each(l, &compositor->output_list)
     {
         output = l->item;
 

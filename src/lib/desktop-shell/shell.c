@@ -28,7 +28,7 @@ static void
 handle_shell_client_destroy(struct wl_listener *listener, void *data)
 {
     shell_client_t *shell_client = pepper_container_of(listener,
-                                                       shell_client_t,
+                                                       shell_client,
                                                        client_destroy_listener);
 
     remove_ping_timer(shell_client);
@@ -352,10 +352,9 @@ input_device_add_callback(pepper_event_listener_t    *listener,
     if (!target_seat_name)
         target_seat_name = "seat0";
 
-    PEPPER_LIST_FOR_EACH(&shell->shseat_list, l)
+    pepper_list_for_each(l, &shell->shseat_list)
     {
         shseat = l->item;
-
         seat_name = pepper_seat_get_name(shseat->seat);
 
         /* Find seat to adding input device */
@@ -383,8 +382,8 @@ input_device_add_callback(pepper_event_listener_t    *listener,
     }
 
     shseat->shell = shell;
-
     shseat->link.item = shseat;
+
     pepper_list_insert(&shell->shseat_list, &shseat->link);
 
     /* Add this input_device to seat */
@@ -598,12 +597,12 @@ seat_add_callback(pepper_event_listener_t    *listener,
     desktop_shell_t         *shell = data;
     pepper_seat_t           *seat  = info;
     shell_seat_t            *shseat;
-    pepper_list_t           *l;
     pepper_pointer_t        *pointer;
     pepper_keyboard_t       *keyboard;
     pepper_touch_t          *touch;
+    pepper_list_t           *l;
 
-    PEPPER_LIST_FOR_EACH(&shell->shseat_list, l)
+    pepper_list_for_each(l, &shell->shseat_list)
     {
         shseat = l->item;
 
@@ -617,38 +616,43 @@ seat_add_callback(pepper_event_listener_t    *listener,
         PEPPER_ERROR("Memory allocation failed\n");
         return ;
     }
+
     shseat->seat  = seat;
     shseat->shell = shell;
+    shseat->link.item = shseat;
 
     pepper_list_insert(&shell->shseat_list, &shseat->link);
-
     shell_seat_set_default_grab(shseat);
-
-    pepper_object_set_user_data((pepper_object_t *)seat,
-                                shell, shseat, NULL);
+    pepper_object_set_user_data((pepper_object_t *)seat, shell, shseat, NULL);
 
     pointer = pepper_seat_get_pointer(seat);
+
     if (pointer)
     {
         shseat->pointer_motion_listener =
-            pepper_object_add_event_listener((pepper_object_t *)pointer, PEPPER_EVENT_POINTER_MOTION,
+            pepper_object_add_event_listener((pepper_object_t *)pointer,
+                                             PEPPER_EVENT_POINTER_MOTION,
                                              0, pointer_event_handler, shseat);
 
         shseat->pointer_button_listener =
-            pepper_object_add_event_listener((pepper_object_t *)pointer, PEPPER_EVENT_POINTER_BUTTON,
+            pepper_object_add_event_listener((pepper_object_t *)pointer,
+                                             PEPPER_EVENT_POINTER_BUTTON,
                                              0, pointer_event_handler, shseat);
 
         shseat->pointer_axis_listener =
-            pepper_object_add_event_listener((pepper_object_t *)pointer, PEPPER_EVENT_POINTER_AXIS,
+            pepper_object_add_event_listener((pepper_object_t *)pointer,
+                                             PEPPER_EVENT_POINTER_AXIS,
                                              0, pointer_event_handler, shseat);
     }
     else
     {
         shseat->pointer_add_listener =
-            pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_POINTER_ADD,
+            pepper_object_add_event_listener((pepper_object_t *)seat,
+                                             PEPPER_EVENT_SEAT_POINTER_ADD,
                                              0, seat_logical_device_add_callback, shseat);
         shseat->pointer_remove_listener =
-            pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_POINTER_REMOVE,
+            pepper_object_add_event_listener((pepper_object_t *)seat,
+                                             PEPPER_EVENT_SEAT_POINTER_REMOVE,
                                              0, seat_logical_device_remove_callback, shseat);
     }
 
@@ -711,12 +715,11 @@ seat_remove_callback(pepper_event_listener_t    *listener,
 {
     desktop_shell_t         *shell = data;
     pepper_seat_t           *seat  = info;
-    shell_seat_t            *shseat;
     pepper_list_t           *l;
 
-    PEPPER_LIST_FOR_EACH(&shell->shseat_list, l)
+    pepper_list_for_each(l, &shell->shseat_list)
     {
-        shseat = l->item;
+        shell_seat_t *shseat = l->item;
 
         if (shseat->seat == seat)
         {

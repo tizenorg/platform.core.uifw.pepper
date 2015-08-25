@@ -474,7 +474,7 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
     if (!pixman_region32_not_empty(&surface->damage_region))
         return;
 
-    PEPPER_LIST_FOR_EACH(&surface->view_list, l)
+    pepper_list_for_each(l, &surface->view_list)
         pepper_view_surface_damage((pepper_view_t *)l->item);
 
     /* TODO: Call backend.urface_flush(). */
