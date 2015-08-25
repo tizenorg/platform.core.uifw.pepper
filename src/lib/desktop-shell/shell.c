@@ -27,14 +27,11 @@ shell_get_output_workarea(desktop_shell_t       *shell,
 static void
 handle_shell_client_destroy(struct wl_listener *listener, void *data)
 {
-    shell_client_t *shell_client = pepper_container_of(listener,
-                                                       shell_client,
+    shell_client_t *shell_client = pepper_container_of(listener, shell_client,
                                                        client_destroy_listener);
 
     remove_ping_timer(shell_client);
-
-    wl_list_remove(&shell_client->link);
-
+    pepper_list_remove(&shell_client->link);
     free(shell_client);
 }
 
@@ -66,15 +63,15 @@ shell_client_create(desktop_shell_t *shell, struct wl_client *client,
     shell_client->client_destroy_listener.notify = handle_shell_client_destroy;
     wl_client_add_destroy_listener(client, &shell_client->client_destroy_listener);
 
-    wl_list_insert(&shell->shell_client_list, &shell_client->link);
-
+    pepper_list_insert(&shell->shell_client_list, &shell_client->link);
     wl_resource_set_implementation(shell_client->resource, implementation, shell_client, NULL);
 
     return shell_client;
 }
 
 void
-shell_seat_pointer_start_grab(shell_seat_t *shseat, shell_pointer_grab_interface_t *grab, void *userdata)
+shell_seat_pointer_start_grab(shell_seat_t *shseat,
+                              shell_pointer_grab_interface_t *grab, void *userdata)
 {
     shseat->pointer_grab.shseat     = shseat;
     shseat->pointer_grab.interface  = grab;
@@ -346,15 +343,13 @@ input_device_add_callback(pepper_event_listener_t    *listener,
     shell_seat_t            *shseat;
     const char              *target_seat_name;
     const char              *seat_name;
-    pepper_list_t           *l;
 
     target_seat_name = pepper_input_device_get_property(device, "seat_name");
     if (!target_seat_name)
         target_seat_name = "seat0";
 
-    pepper_list_for_each(l, &shell->shseat_list)
+    pepper_list_for_each(shseat, &shell->shseat_list, link)
     {
-        shseat = l->item;
         seat_name = pepper_seat_get_name(shseat->seat);
 
         /* Find seat to adding input device */
@@ -382,7 +377,6 @@ input_device_add_callback(pepper_event_listener_t    *listener,
     }
 
     shseat->shell = shell;
-    shseat->link.item = shseat;
 
     /* Add this input_device to seat */
     shell_seat_set_default_grab(shseat);
@@ -594,12 +588,9 @@ seat_add_callback(pepper_event_listener_t    *listener,
     pepper_pointer_t        *pointer;
     pepper_keyboard_t       *keyboard;
     pepper_touch_t          *touch;
-    pepper_list_t           *l;
 
-    pepper_list_for_each(l, &shell->shseat_list)
+    pepper_list_for_each(shseat, &shell->shseat_list, link)
     {
-        shseat = l->item;
-
         if (shseat->seat == seat)
             return ;
     }
@@ -613,7 +604,6 @@ seat_add_callback(pepper_event_listener_t    *listener,
 
     shseat->seat  = seat;
     shseat->shell = shell;
-    shseat->link.item = shseat;
 
     pepper_list_insert(&shell->shseat_list, &shseat->link);
     shell_seat_set_default_grab(shseat);
@@ -709,16 +699,13 @@ seat_remove_callback(pepper_event_listener_t    *listener,
 {
     desktop_shell_t         *shell = data;
     pepper_seat_t           *seat  = info;
-    pepper_list_t           *l;
+    shell_seat_t            *shseat;
 
-    pepper_list_for_each(l, &shell->shseat_list)
+    pepper_list_for_each(shseat, &shell->shseat_list, link)
     {
-        shell_seat_t *shseat = l->item;
-
         if (shseat->seat == seat)
         {
-            pepper_list_remove(&shseat->link, NULL);
-
+            pepper_list_remove(&shseat->link);
             free(shseat);
             return ;
         }
@@ -758,9 +745,8 @@ pepper_desktop_shell_init(pepper_compositor_t *compositor)
 
     shell->compositor = compositor;
 
-    wl_list_init(&shell->shell_client_list);
-    wl_list_init(&shell->shell_surface_list);
-
+    pepper_list_init(&shell->shell_client_list);
+    pepper_list_init(&shell->shell_surface_list);
     pepper_list_init(&shell->shseat_list);
 
     if (!init_wl_shell(shell))

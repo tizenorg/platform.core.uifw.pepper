@@ -26,7 +26,7 @@ pepper_fbdev_create(pepper_compositor_t *compositor, struct udev *udev,
 
     fbdev->compositor = compositor;
     fbdev->udev = udev;
-    wl_list_init(&fbdev->output_list);
+    pepper_list_init(&fbdev->output_list);
 
     if (!pepper_fbdev_output_create(fbdev, renderer))
     {
@@ -46,14 +46,14 @@ error:
 PEPPER_API void
 pepper_fbdev_destroy(pepper_fbdev_t *fbdev)
 {
-    fbdev_output_t *output, *next;
-
     if (fbdev->pixman_renderer)
         pepper_renderer_destroy(fbdev->pixman_renderer);
 
-    if (!wl_list_empty(&fbdev->output_list))
+    if (!pepper_list_empty(&fbdev->output_list))
     {
-        wl_list_for_each_safe(output, next, &fbdev->output_list, link)
+        fbdev_output_t *output, *tmp;
+
+        pepper_list_for_each_safe(output, tmp, &fbdev->output_list, link)
             pepper_fbdev_output_destroy(output);
     }
 

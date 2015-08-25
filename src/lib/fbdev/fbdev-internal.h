@@ -16,7 +16,7 @@ struct pepper_fbdev
 {
     pepper_compositor_t        *compositor;
 
-    struct wl_list              output_list;
+    pepper_list_t               output_list;
 
     uint32_t                    min_width, min_height;
     uint32_t                    max_width, max_height;
@@ -30,8 +30,7 @@ struct fbdev_output
 {
     pepper_fbdev_t             *fbdev;
     pepper_output_t            *base;
-
-    struct wl_list              link;
+    pepper_list_t               link;
 
     pepper_renderer_t          *renderer;
 

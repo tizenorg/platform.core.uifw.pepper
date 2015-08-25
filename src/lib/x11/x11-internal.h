@@ -39,6 +39,7 @@ struct x11_output
     pepper_output_t            *base;
     pepper_x11_connection_t    *connection;
     char                        name[32];
+    pepper_list_t               link;
 
     int32_t                  x, y;
     int32_t                  w, h;
@@ -58,8 +59,6 @@ struct x11_output
 
     struct wl_event_source  *frame_done_timer;
     struct wl_listener       conn_destroy_listener;
-
-    struct wl_list           link;
 
     pepper_plane_t          *primary_plane;
 };
@@ -81,7 +80,7 @@ struct x11_seat
     struct xkb_keymap              *keymap;
     struct xkb_state               *xkb_state;
 
-    struct wl_list                  link;
+    pepper_list_t                   link;
 
     struct wl_listener              conn_destroy_listener;
 };
@@ -98,7 +97,7 @@ struct pepper_x11_connection
     struct wl_event_source *xcb_event_source;
     int fd;
 
-    struct wl_list          outputs;
+    pepper_list_t           output_list;
 
     pepper_bool_t           use_xinput;
     x11_seat_t             *seat;

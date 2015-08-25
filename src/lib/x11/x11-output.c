@@ -305,15 +305,10 @@ x11_output_destroy(void *o)
 
     /* XXX */
     x11_shm_image_deinit(conn->xcb_connection, &output->shm);
-
     wl_event_source_remove(output->frame_done_timer);
-
     xcb_destroy_window(conn->xcb_connection, output->window);
-
-    wl_list_remove(&output->link);
-
+    pepper_list_remove(&output->link);
     xcb_flush(conn->xcb_connection);
-
     free(output);
 }
 
@@ -432,7 +427,7 @@ x11_output_assign_planes(void *o, const pepper_list_t *view_list)
     x11_output_t   *output = (x11_output_t *)o;
     pepper_list_t  *l;
 
-    pepper_list_for_each(l, view_list)
+    pepper_list_for_each_list(l, view_list)
     {
         pepper_view_t *view = l->item;
         pepper_view_assign_plane(view, output->base, output->primary_plane);
@@ -445,7 +440,7 @@ x11_output_repaint(void *o, const pepper_list_t *plane_list)
     x11_output_t *output = o;
     pepper_list_t  *l;
 
-    pepper_list_for_each(l, plane_list)
+    pepper_list_for_each_list(l, plane_list)
     {
         pepper_plane_t *plane = l->item;
 
@@ -618,7 +613,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
             x11_window_input_property_change(connection->xcb_connection,
                                              output->window);
 
-        wl_list_insert(&connection->outputs, &output->link);
+        pepper_list_insert(&connection->output_list, &output->link);
         xcb_flush(connection->xcb_connection);
         x11_output_wait_for_map(output);
     }

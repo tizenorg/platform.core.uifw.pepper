@@ -49,10 +49,10 @@ compositor_bind(struct wl_client *client,
 void
 pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
 {
-    pepper_list_t   *l;
+    pepper_output_t *output;
 
-    pepper_list_for_each(l, &compositor->output_list)
-        pepper_output_schedule_repaint((pepper_output_t *)l->item);
+    pepper_list_for_each(output, &compositor->output_list, link)
+        pepper_output_schedule_repaint(output);
 }
 
 PEPPER_API pepper_compositor_t *
@@ -81,11 +81,11 @@ pepper_compositor_create(const char *socket_name)
         goto error;
     }
 
-    wl_list_init(&compositor->surfaces);
-    wl_list_init(&compositor->seat_list);
+    pepper_list_init(&compositor->surface_list);
+    pepper_list_init(&compositor->seat_list);
     pepper_list_init(&compositor->output_list);
     pepper_list_init(&compositor->view_list);
-    wl_list_init(&compositor->regions);
+    pepper_list_init(&compositor->region_list);
 
     if (wl_display_init_shm(compositor->display) != 0)
     {

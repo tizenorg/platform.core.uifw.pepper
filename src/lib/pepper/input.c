@@ -141,7 +141,7 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     struct wl_resource  *resource;
 
     resource = wl_resource_create(client, &wl_seat_interface, version/*FIXME*/, id);
-    wl_list_insert(&seat->resources, wl_resource_get_link(resource));
+    wl_list_insert(&seat->resource_list, wl_resource_get_link(resource));
     wl_resource_set_implementation(resource, &seat_interface, data, unbind_resource);
 
     wl_seat_send_capabilities(resource, seat->caps);
@@ -167,9 +167,10 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
     seat->compositor = compositor;
     seat->data = data;
 
-    wl_list_init(&seat->resources);
-    wl_list_init(&seat->link);
-    wl_list_insert(&compositor->seat_list, &seat->link);
+    wl_list_init(&seat->resource_list);
+
+    pepper_list_init(&seat->link);
+    pepper_list_insert(&compositor->seat_list, &seat->link);
 
     if (seat_name)
         seat->name = strdup(seat_name);
@@ -366,14 +367,11 @@ seat_update_touch_cap(pepper_seat_t *seat)
 static void
 seat_update_caps(pepper_seat_t *seat)
 {
-    pepper_list_t  *l;
-    uint32_t        caps = 0;
+    uint32_t                        caps = 0;
+    pepper_input_device_entry_t    *entry;
 
-    pepper_list_for_each(l, &seat->input_device_list)
-    {
-        pepper_input_device_entry_t *entry = l->item;
+    pepper_list_for_each(entry, &seat->input_device_list, link)
         caps |= entry->device->caps;
-    }
 
     if (caps != seat->caps)
     {
@@ -385,7 +383,7 @@ seat_update_caps(pepper_seat_t *seat)
         seat_update_keyboard_cap(seat);
         seat_update_touch_cap(seat);
 
-        wl_resource_for_each(resource, &seat->resources)
+        wl_resource_for_each(resource, &seat->resource_list)
             wl_seat_send_capabilities(resource, seat->caps);
     }
 }
@@ -445,13 +443,11 @@ PEPPER_API void
 pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 {
     pepper_input_device_entry_t *entry;
-    pepper_list_t               *l;
 
-    pepper_list_for_each(l, &seat->input_device_list)
+    pepper_list_for_each(entry, &seat->input_device_list, link)
     {
-        pepper_input_device_entry_t *entry = l->item;
         if (entry->device == device)
-            return ;
+            return;
     }
 
     entry = pepper_calloc(1, sizeof(pepper_input_device_entry_t));
@@ -460,27 +456,24 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 
     entry->seat = seat;
     entry->device = device;
-
-    entry->link.item = entry;
-    entry->listener = pepper_object_add_event_listener(&device->base, PEPPER_EVENT_ALL, 0,
-                                                       seat_handle_device_event, entry);
     pepper_list_insert(&seat->input_device_list, &entry->link);
 
     seat_update_caps(seat);
+
+    entry->listener = pepper_object_add_event_listener(&device->base, PEPPER_EVENT_ALL, 0,
+                                                       seat_handle_device_event, entry);
 }
 
 PEPPER_API void
 pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 {
-    pepper_list_t *l;
+    pepper_input_device_entry_t *entry;
 
-    pepper_list_for_each(l, &seat->input_device_list)
+    pepper_list_for_each(entry, &seat->input_device_list, link)
     {
-        pepper_input_device_entry_t *entry = l->item;
-
         if (entry->device == device)
         {
-            pepper_list_remove(&entry->link, NULL);
+            pepper_list_remove(&entry->link);
             pepper_event_listener_remove(entry->listener);
             pepper_free(entry);
             seat_update_caps(seat);

@@ -44,8 +44,8 @@ static void
 handle_surface_destroy(pepper_event_listener_t *listener,
                        pepper_object_t *surface, uint32_t id, void *info, void *data)
 {
-    shell_surface_t *child, *tmp;
     shell_surface_t *shsurf = data;
+    shell_surface_t *child, *tmp;
 
     pepper_event_listener_remove(shsurf->surface_destroy_listener);
     shsurf_stop_listen_commit_event(shsurf);
@@ -59,12 +59,11 @@ handle_surface_destroy(pepper_event_listener_t *listener,
     if (shsurf->class_)
         free(shsurf->class_);
 
-    wl_list_remove(&shsurf->parent_link);
-
-    wl_list_for_each_safe(child, tmp, &shsurf->child_list, parent_link)
+    pepper_list_for_each_safe(child, tmp, &shsurf->child_list, parent_link)
         shell_surface_set_parent(child, NULL);
 
-    wl_list_remove(&shsurf->link);
+    pepper_list_remove(&shsurf->parent_link);
+    pepper_list_remove(&shsurf->link);
 
     if (shsurf->fullscreen.background_surface)
     {
@@ -201,8 +200,9 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
         goto error;
     }
 
-    wl_list_init(&shsurf->child_list);
-    wl_list_init(&shsurf->parent_link);
+    pepper_list_init(&shsurf->child_list);
+    pepper_list_init(&shsurf->parent_link);
+    pepper_list_insert(&shsurf->shell->shell_surface_list, &shsurf->link);
 
     wl_resource_set_implementation(shsurf->resource, implementation, shsurf, handle_resource_destroy);
 
@@ -212,12 +212,7 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
     shsurf_start_listen_commit_event(shsurf);
-
-    /* Set shell_surface_t to pepper_surface_t */
     set_shsurf_to_surface(surface, shsurf);
-
-    wl_list_init(&shsurf->link);
-    wl_list_insert(&shsurf->shell->shell_surface_list, &shsurf->link);
 
     role = pepper_surface_get_role(shsurf->surface);
 
@@ -498,17 +493,18 @@ shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent)
 {
     shell_surface_t *parent_shsurf;
 
-    wl_list_remove(&shsurf->parent_link);
-    wl_list_init(&shsurf->parent_link);
+    pepper_list_remove(&shsurf->parent_link);
+    pepper_list_init(&shsurf->parent_link);
 
     shsurf->parent = parent;
 
     if (parent)
     {
         parent_shsurf = get_shsurf_from_surface(parent, shsurf->shell);
+
         if (parent_shsurf)
         {
-            wl_list_insert(&parent_shsurf->child_list, &shsurf->parent_link);
+            pepper_list_insert(&parent_shsurf->child_list, &shsurf->parent_link);
             pepper_view_set_parent(shsurf->view, parent_shsurf->view);
         }
     }

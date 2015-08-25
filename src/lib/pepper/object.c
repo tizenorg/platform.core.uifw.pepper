@@ -74,12 +74,10 @@ pepper_object_get_user_data(pepper_object_t *object, const void *key)
 static void
 insert_listener(pepper_object_t *object, pepper_event_listener_t *listener)
 {
-    pepper_list_t   *l;
+    pepper_event_listener_t *pos;
 
-    pepper_list_for_each(l, &object->event_listener_list)
+    pepper_list_for_each(pos, &object->event_listener_list, link)
     {
-        pepper_event_listener_t *pos = l->item;
-
         if (listener->priority >= pos->priority)
         {
             pepper_list_insert(pos->link.prev, &listener->link);
@@ -104,7 +102,6 @@ pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int prior
     if (!listener)
         return NULL;
 
-    listener->link.item = listener;
     listener->object    = object;
     listener->id        = id;
     listener->priority  = priority;
@@ -118,7 +115,7 @@ pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int prior
 PEPPER_API void
 pepper_event_listener_remove(pepper_event_listener_t *listener)
 {
-    pepper_list_remove(&listener->link, NULL);
+    pepper_list_remove(&listener->link);
     pepper_free(listener);
 }
 
@@ -129,20 +126,17 @@ pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priori
         return;
 
     listener->priority = priority;
-    pepper_list_remove(&listener->link, NULL);
+    pepper_list_remove(&listener->link);
     insert_listener(listener->object, listener);
 }
 
 PEPPER_API void
 pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
 {
-    pepper_event_listener_t *listener;
-    pepper_list_t           *l, *tmp;
+    pepper_event_listener_t *listener, *tmp;
 
-    pepper_list_for_each_safe(l, tmp, &object->event_listener_list)
+    pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
     {
-        listener = l->item;
-
         if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
             listener->callback(listener, object, id, info, listener->data);
     }

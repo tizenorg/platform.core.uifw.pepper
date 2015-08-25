@@ -32,7 +32,7 @@ drm_output_destroy(void *o)
 {
     drm_output_t   *output = (drm_output_t *)o;
 
-    wl_list_remove(&output->link);
+    pepper_list_remove(&output->link);
 
     if (output->saved_crtc)
     {
@@ -347,7 +347,8 @@ drm_output_assign_planes(void *o, const pepper_list_t *view_list)
     pepper_list_t  *l, *p;
 
     p = drm->plane_list.next;
-    pepper_list_for_each(l, view_list)
+
+    pepper_list_for_each_list(l, view_list)
     {
         pepper_view_t  *view = (pepper_view_t *)l->item;
         drm_plane_t    *plane = (drm_plane_t *)p->item;
@@ -374,11 +375,10 @@ drm_output_assign_planes(void *o, const pepper_list_t *view_list)
 static void
 set_planes(drm_output_t *output)
 {
-    pepper_list_t      *l;
+    drm_plane_t *plane;
 
-    pepper_list_for_each(l, &output->drm->plane_list)
+    pepper_list_for_each(plane, &output->drm->plane_list, link)
     {
-        drm_plane_t *plane = (drm_plane_t *)l->item;
         drmVBlank    vbl;
 
         if (plane->output != output)
@@ -430,7 +430,7 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
     drm_output_t   *output = (drm_output_t *)o;
     pepper_list_t  *l;
 
-    pepper_list_for_each(l, plane_list)
+    pepper_list_for_each_list(l, plane_list)
     {
         pepper_plane_t *plane = l->item;
 
@@ -590,7 +590,6 @@ find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
 {
     int             i, j;
     drmModeEncoder *enc;
-    drm_output_t   *output;
 
     for (i = 0; i < conn->count_encoders; i++)
     {
@@ -600,12 +599,13 @@ find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
 
         for (j = 0; j < res->count_crtcs; j++)
         {
-            pepper_bool_t crtc_used = PEPPER_FALSE;
+            pepper_bool_t   crtc_used = PEPPER_FALSE;
+            drm_output_t   *output;
 
             if (!(enc->possible_crtcs & (1 << j)))
                 continue;
 
-            wl_list_for_each(output, &drm->output_list, link)
+            pepper_list_for_each(output, &drm->output_list, link)
             {
                 if (res->crtcs[j] == output->crtc_id)
                 {
@@ -620,6 +620,7 @@ find_crtc(pepper_drm_t *drm, drmModeRes *res, drmModeConnector *conn)
                 return j;
             }
         }
+
         drmModeFreeEncoder(enc);
     }
 
@@ -863,7 +864,7 @@ drm_output_create(pepper_drm_t *drm, struct udev_device *device,
     output->drm = drm;
     output->subpixel = conn->subpixel;
 
-    wl_list_insert(&drm->output_list, &output->link);
+    pepper_list_insert(&drm->output_list, &output->link);
 
     /* find crtc + connector */
     output->crtc_index = find_crtc(drm, res, conn);
@@ -989,7 +990,7 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
         drmModeFreeConnector(conn);
     }
 
-    if (wl_list_empty(&drm->output_list))
+    if (pepper_list_empty(&drm->output_list))
     {
         PEPPER_ERROR("Failed to find active output in %s\n", __FUNCTION__);
         drmModeFreeResources(res);
@@ -1004,11 +1005,11 @@ add_outputs(pepper_drm_t *drm, struct udev_device *device)
 static void
 remove_outputs(pepper_drm_t *drm)
 {
-    if (!wl_list_empty(&drm->output_list))
+    if (!pepper_list_empty(&drm->output_list))
     {
-        drm_output_t *output, *next;
+        drm_output_t *output, *tmp;
 
-        wl_list_for_each_safe(output, next, &drm->output_list, link)
+        pepper_list_for_each_safe(output, tmp, &drm->output_list, link)
             pepper_output_remove(output->base);
     }
 }
@@ -1080,13 +1081,8 @@ static pepper_bool_t
 create_planes(pepper_drm_t *drm)
 {
     uint32_t            i;
-    drmModePlaneRes    *res;
-    drmModePlane       *pl;
+    drmModePlaneRes    *res = drmModeGetPlaneResources(drm->drm_fd);
 
-    drm_output_t       *tmp, *output;
-    drm_plane_t        *plane;
-
-    res = drmModeGetPlaneResources(drm->drm_fd);
     if (!res)
     {
         PEPPER_ERROR("Failed to get plane resources\n");
@@ -1095,16 +1091,18 @@ create_planes(pepper_drm_t *drm)
 
     for (i = 0; i < res->count_planes; i++)
     {
-        pl = drmModeGetPlane(drm->drm_fd, res->planes[i]);
+        drm_output_t   *output = NULL, *o;
+        drmModePlane   *pl = drmModeGetPlane(drm->drm_fd, res->planes[i]);
+        drm_plane_t    *plane;
+
         if (!pl)
             continue;
 
-        output = NULL;
-        wl_list_for_each(tmp, &drm->output_list, link)
+        pepper_list_for_each(o, &drm->output_list, link)
         {
-            if (pl->possible_crtcs & (1 << tmp->crtc_index))
+            if (pl->possible_crtcs & (1 << o->crtc_index))
             {
-                output = tmp;
+                output = o;
                 break;
             }
         }
@@ -1126,6 +1124,7 @@ create_planes(pepper_drm_t *drm)
         plane->drm = drm;
         plane->possible_crtcs = pl->possible_crtcs;
         plane->plane_id = pl->plane_id;
+
         /* TODO */
 
         plane->base = pepper_output_add_plane(output->base, output->primary_plane);
@@ -1136,25 +1135,21 @@ create_planes(pepper_drm_t *drm)
         }
 
         pepper_list_insert(&drm->plane_list, &plane->link);
-        plane->link.item = plane;
-
         drmModeFreePlane(pl);
     }
 
     drmModeFreePlaneResources(res);
-
     return PEPPER_TRUE;
 }
 
 static void
 destroy_planes(pepper_drm_t *drm)
 {
-    pepper_list_t *l, *next;
+    drm_plane_t *plane, *tmp;
 
-    pepper_list_for_each_safe(l, next, &drm->plane_list)
+    pepper_list_for_each_safe(plane, tmp, &drm->plane_list, link)
     {
-        drm_plane_t *plane = (drm_plane_t *)l->item;
-        pepper_list_remove(l, NULL);
+        pepper_list_remove(&plane->link);
         pepper_plane_destroy(plane->base);
         free(plane);
     }
@@ -1165,8 +1160,6 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
 {
     int                 i;
     drmModeRes         *res;
-    drmModeConnector   *conn;
-    drm_output_t       *output;
 
     res = drmModeGetResources(drm->drm_fd);
     if (!res)
@@ -1177,13 +1170,20 @@ update_outputs(pepper_drm_t *drm, struct udev_device *device)
 
     for (i = 0; i < res->count_connectors; i++)
     {
-        conn = drmModeGetConnector(drm->drm_fd, res->connectors[i]);
+        drmModeConnector   *conn = drmModeGetConnector(drm->drm_fd, res->connectors[i]);
+        drm_output_t       *output = NULL, *o;
+
         if (!conn)
             continue;
 
-        wl_list_for_each(output, &drm->output_list, link)
-            if (output->conn_id == conn->connector_id)
+        pepper_list_for_each(o, &drm->output_list, link)
+        {
+            if (o->conn_id == conn->connector_id)
+            {
+                output = o;
                 break;
+            }
+        }
 
         if (output && conn->connection != DRM_MODE_CONNECTED)
         {

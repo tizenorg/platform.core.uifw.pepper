@@ -187,7 +187,7 @@ pepper_x11_input_create(pepper_x11_connection_t* conn)
 
     conn->use_xinput = PEPPER_TRUE;
 
-    wl_list_for_each_safe(out, tmp, &conn->outputs, link)
+    pepper_list_for_each_safe(out, tmp, &conn->output_list, link)
         x11_window_input_property_change(conn->xcb_connection, out->window);
 
     /* XXX: if x-input-module used without x-output-module,

@@ -234,5 +234,5 @@ wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
     seat->conn = conn;
     seat->id = name;
 
-    wl_list_insert(&conn->seat_list, &seat->link);
+    pepper_list_insert(&conn->seat_list, &seat->link);
 }

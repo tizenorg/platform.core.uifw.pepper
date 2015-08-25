@@ -34,7 +34,7 @@ output_update_mode(pepper_output_t *output)
         {
             output->current_mode = mode;
 
-            wl_resource_for_each(resource, &output->resources)
+            wl_resource_for_each(resource, &output->resource_list)
             {
                 wl_output_send_mode(resource, mode.flags, mode.w, mode.h, mode.refresh);
                 wl_output_send_done(resource);
@@ -48,7 +48,7 @@ output_send_geometry(pepper_output_t *output)
 {
     struct wl_resource *resource;
 
-    wl_resource_for_each(resource, &output->resources)
+    wl_resource_for_each(resource, &output->resource_list)
     {
         wl_output_send_geometry(resource,
                                 output->geometry.x, output->geometry.y,
@@ -79,7 +79,7 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
         return;
     }
 
-    wl_list_insert(&output->resources, wl_resource_get_link(resource));
+    wl_list_insert(&output->resource_list, wl_resource_get_link(resource));
     wl_resource_set_implementation(resource, NULL, NULL, output_destroy);
 
     wl_output_send_geometry(resource,
@@ -96,16 +96,14 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 static void
 output_accumulate_damage(pepper_output_t *output)
 {
-    pepper_list_t      *l;
+    pepper_plane_t     *plane;
     pixman_region32_t   clip;
     pixman_region32_t   plane_clip;
 
     pixman_region32_init(&clip);
 
-    pepper_list_for_each_reverse(l, &output->plane_list)
+    pepper_list_for_each_reverse(plane, &output->plane_list, link)
     {
-        pepper_plane_t *plane = l->item;
-
         pepper_plane_accumulate_damage(plane, &plane_clip);
         pixman_region32_copy(&plane->clip_region, &clip);
         pixman_region32_union(&clip, &clip, &plane_clip);
@@ -117,18 +115,17 @@ output_accumulate_damage(pepper_output_t *output)
 static void
 output_repaint(pepper_output_t *output)
 {
-    pepper_list_t          *l;
+    pepper_view_t  *view;
+    pepper_plane_t *plane;
 
-    pepper_list_for_each(l, &output->compositor->view_list)
-        pepper_view_update((pepper_view_t *)l->item);
+    pepper_list_for_each(view, &output->compositor->view_list, compositor_link)
+        pepper_view_update(view);
 
     pepper_list_init(&output->view_list);
 
     /* Build a list of views in sorted z-order that are visible on the given output. */
-    pepper_list_for_each(l, &output->compositor->view_list)
+    pepper_list_for_each(view, &output->compositor->view_list, compositor_link)
     {
-        pepper_view_t *view = l->item;
-
         if (!view->visible || !(view->output_overlap & (1 << output->id)))
         {
             /* Detach from the previously assigned plane. */
@@ -137,13 +134,12 @@ output_repaint(pepper_output_t *output)
         }
 
         pepper_list_insert(&output->view_list, &view->link);
-        view->link.item = view;
     }
 
     output->backend->assign_planes(output->data, &output->view_list);
 
-    pepper_list_for_each(l, &output->plane_list)
-        pepper_plane_update((pepper_plane_t *)l->item, &output->view_list);
+    pepper_list_for_each(plane, &output->plane_list, link)
+        pepper_plane_update(plane, &output->view_list);
 
     output_accumulate_damage(output);
     output->backend->repaint(output->data, &output->plane_list);
@@ -151,10 +147,9 @@ output_repaint(pepper_output_t *output)
     output->frame.pending = PEPPER_TRUE;
     output->frame.scheduled = PEPPER_FALSE;
 
-    pepper_list_for_each(l, &output->view_list)
+    pepper_list_for_each(view, &output->view_list, link)
     {
         /* TODO: Output time stamp and presentation feedback. */
-        pepper_view_t *view = l->item;
         pepper_surface_send_frame_callback_done(view->surface, 0);
     }
 }
@@ -188,9 +183,9 @@ pepper_output_schedule_repaint(pepper_output_t *output)
 PEPPER_API void
 pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *region)
 {
-    pepper_list_t   *l;
-    pepper_list_for_each(l, &output->plane_list)
-        pepper_plane_add_damage_region((pepper_plane_t *)l->item, region);
+    pepper_plane_t *plane;
+    pepper_list_for_each(plane, &output->plane_list, link)
+        pepper_plane_add_damage_region(plane, region);
 }
 
 PEPPER_API void
@@ -222,7 +217,6 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 {
     pepper_output_t    *output;
     uint32_t            id;
-    pepper_list_t      *l;
 
     if (!name)
     {
@@ -230,10 +224,8 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
         return NULL;
     }
 
-    pepper_list_for_each(l, &compositor->output_list)
+    pepper_list_for_each(output, &compositor->output_list, link)
     {
-        output = l->item;
-
         if (strcmp(output->name, name) == 0)
         {
             PEPPER_ERROR("Output with name = %s already exist.\n", name);
@@ -255,8 +247,9 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     if (!output)
         return NULL;
 
-    wl_list_init(&output->resources);
     output->compositor = compositor;
+    output->link.item = output;
+    wl_list_init(&output->resource_list);
 
     /* Create global object for this output. */
     output->global = wl_global_create(compositor->display, &wl_output_interface, 2, output,
@@ -293,7 +286,6 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     output->geometry.h = output->current_mode.h;
 
     pepper_list_insert(&compositor->output_list, &output->link);
-    output->link.item = output;
 
     pepper_list_init(&output->plane_list);
     pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD, NULL);
@@ -311,7 +303,7 @@ PEPPER_API void
 pepper_output_destroy(pepper_output_t *output)
 {
     output->compositor->output_id_allocator &= ~(1 << output->id);
-    pepper_list_remove(&output->link, NULL);
+    pepper_list_remove(&output->link);
 
     output->backend->destroy(output->data);
 
@@ -390,12 +382,9 @@ PEPPER_API pepper_output_t *
 pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name)
 {
     pepper_output_t *output;
-    pepper_list_t   *l;
 
-    pepper_list_for_each(l, &compositor->output_list)
+    pepper_list_for_each(output, &compositor->output_list, link)
     {
-        output = l->item;
-
         if (strcmp(output->name, name) == 0)
             return output;
     }

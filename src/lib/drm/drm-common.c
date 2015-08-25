@@ -20,7 +20,7 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev,
 
     drm->compositor = compositor;
     drm->udev = udev;
-    wl_list_init(&drm->output_list);
+    pepper_list_init(&drm->output_list);
     pepper_list_init(&drm->plane_list);
 
     if (!pepper_drm_output_create(drm, renderer))

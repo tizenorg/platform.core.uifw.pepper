@@ -54,14 +54,14 @@ struct pepper_compositor
     struct wl_display  *display;
     struct wl_global   *global;
 
-    struct wl_list      surfaces;
-    struct wl_list      regions;
-    struct wl_list      seat_list;
+    pepper_list_t       surface_list;
+    pepper_list_t       region_list;
+    pepper_list_t       seat_list;
     pepper_list_t       output_list;
-    uint32_t            output_id_allocator;
-
-    pepper_bool_t       update_scheduled;
     pepper_list_t       view_list;
+
+    uint32_t            output_id_allocator;
+    pepper_bool_t       update_scheduled;
 };
 
 void
@@ -75,7 +75,7 @@ struct pepper_output
     char                       *name;
 
     struct wl_global           *global;
-    struct wl_list              resources;
+    struct wl_list              resource_list;
     pepper_list_t               link;
 
     pepper_output_geometry_t    geometry;
@@ -129,7 +129,7 @@ struct pepper_surface_state
     pixman_region32_t           opaque_region;
     pixman_region32_t           input_region;
 
-    struct wl_list              frame_callbacks;
+    struct wl_list              frame_callback_list;
     pepper_event_listener_t    *buffer_destroy_listener;
 };
 
@@ -138,6 +138,7 @@ struct pepper_surface
     pepper_object_t         base;
     pepper_compositor_t    *compositor;
     struct wl_resource     *resource;
+    pepper_list_t           link;
 
     struct {
         pepper_buffer_t    *buffer;
@@ -154,7 +155,7 @@ struct pepper_surface
     pixman_region32_t       opaque_region;
     pixman_region32_t       input_region;
 
-    struct wl_list          frame_callbacks;
+    struct wl_list          frame_callback_list;
 
     /* Surface states. wl_surface.commit will apply the pending state into current. */
     pepper_surface_state_t  pending;
@@ -184,6 +185,8 @@ struct pepper_region
     pepper_object_t         base;
     pepper_compositor_t    *compositor;
     struct wl_resource     *resource;
+    pepper_list_t           link;
+
     pixman_region32_t       pixman_region;
 };
 
@@ -235,8 +238,8 @@ struct pepper_seat
     pepper_touch_t              touch;
 
     struct wl_global           *global;
-    struct wl_list              resources;
-    struct wl_list              link;
+    struct wl_list              resource_list;
+    pepper_list_t               link;
 
     enum wl_seat_capability     caps;
     char                       *name;

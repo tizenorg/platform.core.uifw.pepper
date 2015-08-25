@@ -3,15 +3,14 @@
 void
 pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list)
 {
-    pepper_list_t  *l;
+    pepper_view_t  *view;
     double          output_x = plane->output->geometry.x;
     double          output_y = plane->output->geometry.y;
 
     pepper_list_init(&plane->entry_list);
 
-    pepper_list_for_each(l, view_list)
+    pepper_list_for_each(view, view_list, link)
     {
-        pepper_view_t          *view  = l->item;
         pepper_plane_entry_t   *entry = &view->plane_entries[plane->output->id];
 
         if (entry->plane == plane)
@@ -29,17 +28,16 @@ pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list)
 void
 pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
 {
-    pepper_list_t  *l;
-    int             x = plane->output->geometry.x;
-    int             y = plane->output->geometry.y;
-    int             w = plane->output->geometry.w;
-    int             h = plane->output->geometry.h;
+    int                     x = plane->output->geometry.x;
+    int                     y = plane->output->geometry.y;
+    int                     w = plane->output->geometry.w;
+    int                     h = plane->output->geometry.h;
+    pepper_plane_entry_t   *entry;
 
     pixman_region32_init(clip);
 
-    pepper_list_for_each_reverse(l, &plane->entry_list)
+    pepper_list_for_each_reverse(entry, &plane->entry_list, link)
     {
-        pepper_plane_entry_t   *entry = l->item;
         pepper_view_t          *view = (pepper_view_t *)entry->base.view;
 
         pixman_region32_subtract(&entry->base.visible_region, &view->bounding_region, clip);
@@ -90,15 +88,12 @@ pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above)
 PEPPER_API void
 pepper_plane_destroy(pepper_plane_t *plane)
 {
-    pepper_list_t  *l;
+    pepper_plane_entry_t *entry;
 
-    pepper_list_for_each(l, &plane->entry_list)
-    {
-        pepper_plane_entry_t *entry = l->item;
+    pepper_list_for_each(entry, &plane->entry_list, link)
         pepper_view_assign_plane(entry->base.view, plane->output, NULL);
-    }
 
-    pepper_list_remove(&plane->link, NULL);
+    pepper_list_remove(&plane->link);
     pixman_region32_fini(&plane->damage_region);
     pixman_region32_fini(&plane->clip_region);
 

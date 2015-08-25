@@ -4,8 +4,6 @@
 static void
 view_mark_dirty(pepper_view_t *view, uint32_t flag)
 {
-    pepper_list_t *l;
-
     if (view->dirty & flag)
         return;
 
@@ -14,8 +12,10 @@ view_mark_dirty(pepper_view_t *view, uint32_t flag)
     if ((flag & PEPPER_VIEW_VISIBILITY_DIRTY) ||
         (flag & PEPPER_VIEW_GEOMETRY_DIRTY))
     {
-        pepper_list_for_each(l, &view->children_list)
-            view_mark_dirty((pepper_view_t *)l->item, flag);
+        pepper_view_t *child;
+
+        pepper_list_for_each(child, &view->children_list, parent_link)
+            view_mark_dirty(child, flag);
     }
 
     pepper_compositor_schedule_repaint(view->compositor);
@@ -86,7 +86,7 @@ view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
 {
     if (pos->next != &view->compositor_link)
     {
-        pepper_list_remove(&view->compositor_link, NULL);
+        pepper_list_remove(&view->compositor_link);
         pepper_list_insert(pos, &view->compositor_link);
         view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
         pepper_object_emit_event(&view->base, PEPPER_EVENT_VIEW_STACK_CHANGE, NULL);
@@ -96,10 +96,10 @@ view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
 
     if (subtree)
     {
-        pepper_list_t *l;
+        pepper_view_t *child;
 
-        pepper_list_for_each(l, &view->children_list)
-            pos = view_insert((pepper_view_t *)l->item, pos, subtree);
+        pepper_list_for_each(child, &view->children_list, parent_link)
+            pos = view_insert(child, pos, subtree);
     }
 
     return pos;
@@ -160,7 +160,7 @@ pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_pl
 static void
 view_update_geometry(pepper_view_t *view)
 {
-    pepper_list_t *l;
+    pepper_output_t *output;
 
     if (view->surface)
     {
@@ -193,9 +193,8 @@ view_update_geometry(pepper_view_t *view)
 
     view->output_overlap = 0;
 
-    pepper_list_for_each(l, &view->compositor->output_list)
+    pepper_list_for_each(output, &view->compositor->output_list, link)
     {
-        pepper_output_t *output = l->item;
         pixman_box32_t   box =
         {
             output->geometry.x,
@@ -250,11 +249,14 @@ view_init(pepper_view_t *view, pepper_compositor_t *compositor)
 {
     int i;
 
-    view->compositor = compositor;
     view->compositor_link.item = view;
+    view->parent_link.item = view;
+    view->link.item = view;
+    view->surface_link.item = view;
+
+    view->compositor = compositor;
     pepper_list_insert(compositor->view_list.prev, &view->compositor_link);
 
-    view->parent_link.item = view;
     pepper_list_init(&view->children_list);
 
     pepper_mat4_init_identity(&view->transform);
@@ -288,7 +290,6 @@ pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surfa
     view->h = surface->h;
 
     view->surface = surface;
-    view->surface_link.item = view;
     pepper_list_insert(&surface->view_list, &view->surface_link);
 
     view->surface_destroy_listener =
@@ -301,23 +302,23 @@ pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surfa
 PEPPER_API void
 pepper_view_destroy(pepper_view_t *view)
 {
-    pepper_list_t  *l, *next;
     int             i;
+    pepper_view_t  *child, *tmp;
 
     for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
         plane_entry_set_plane(&view->plane_entries[i], NULL);
 
-    pepper_list_for_each_safe(l, next, &view->children_list)
-        pepper_view_destroy((pepper_view_t *)(l->item));
+    pepper_list_for_each_safe(child, tmp, &view->children_list, parent_link)
+        pepper_view_destroy(child);
 
     if (view->parent)
-        pepper_list_remove(&view->parent_link, NULL);
+        pepper_list_remove(&view->parent_link);
 
-    pepper_list_remove(&view->compositor_link, NULL);
+    pepper_list_remove(&view->compositor_link);
 
     if (view->surface)
     {
-        pepper_list_remove(&view->surface_link, NULL);
+        pepper_list_remove(&view->surface_link);
         pepper_event_listener_remove(view->surface_destroy_listener);
     }
 
@@ -347,7 +348,7 @@ pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent)
         return;
 
     if (view->parent)
-        pepper_list_remove(&view->parent_link, NULL);
+        pepper_list_remove(&view->parent_link);
 
     view->parent = parent;
 

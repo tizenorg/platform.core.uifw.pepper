@@ -89,7 +89,7 @@ fbdev_output_destroy(void *o)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
 
-    wl_list_remove(&output->link);
+    pepper_list_remove(&output->link);
 
     if (output->frame_done_timer)
         wl_event_source_remove(output->frame_done_timer);
@@ -160,7 +160,7 @@ fbdev_output_assign_planes(void *o, const pepper_list_t *view_list)
     fbdev_output_t *output = (fbdev_output_t *)o;
     pepper_list_t  *l;
 
-    pepper_list_for_each(l, view_list)
+    pepper_list_for_each_list(l, view_list)
     {
         pepper_view_t *view = l->item;
         pepper_view_assign_plane(view, output->base, output->primary_plane);
@@ -173,7 +173,7 @@ fbdev_output_repaint(void *o, const pepper_list_t *plane_list)
     fbdev_output_t *output = (fbdev_output_t *)o;
     pepper_list_t  *l;
 
-    pepper_list_for_each(l, plane_list)
+    pepper_list_for_each_list(l, plane_list)
     {
         pepper_plane_t *plane = l->item;
 
@@ -304,7 +304,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     }
 
     output->fbdev = fbdev;
-    wl_list_init(&output->link);
+    pepper_list_init(&output->link);
 
     output->format = PEPPER_FORMAT_XRGB8888;
     output->subpixel = WL_OUTPUT_SUBPIXEL_UNKNOWN;
@@ -363,7 +363,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
     }
 
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
-    wl_list_insert(&fbdev->output_list, &output->link);
+    pepper_list_insert(&fbdev->output_list, &output->link);
 
     display = pepper_compositor_get_display(fbdev->compositor);
     loop = wl_display_get_event_loop(display);

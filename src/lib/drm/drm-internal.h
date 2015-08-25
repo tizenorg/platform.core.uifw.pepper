@@ -21,7 +21,7 @@ struct pepper_drm
 {
     pepper_compositor_t        *compositor;
 
-    struct wl_list              output_list;
+    pepper_list_t               output_list;
 
     uint32_t                   *crtcs;
     uint32_t                    count_crtcs;
@@ -51,8 +51,7 @@ struct drm_output
     pepper_drm_t               *drm;
     pepper_output_t            *base;
     char                        name[32];
-
-    struct wl_list              link;
+    pepper_list_t               link;
 
     int32_t                     subpixel;
     uint32_t                    w, h;

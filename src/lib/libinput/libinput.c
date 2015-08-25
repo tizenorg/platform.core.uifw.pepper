@@ -62,13 +62,14 @@ get_capabilities(struct libinput_device *device)
 
 static void
 libinput_device_get_properties(struct libinput_device *libinput_device,
-                               struct wl_list *property_list)
+                               pepper_list_t *property_list)
 {
     /* get properties */
     struct udev_device     *udev_device = libinput_device_get_udev_device(libinput_device);
     struct udev_list_entry *e;
 
     e = udev_device_get_properties_list_entry(udev_device);
+
     while (e)
     {
         li_device_property_t *property;
@@ -82,8 +83,7 @@ libinput_device_get_properties(struct libinput_device *libinput_device,
         property->key = strdup(name);
         property->data = strdup(value);
 
-        wl_list_insert(property_list, &property->link);
-
+        pepper_list_insert(property_list, &property->link);
         e = udev_list_entry_get_next(e);
     }
 }
@@ -94,7 +94,7 @@ li_device_get_property(void *dev, const char *key)
     li_device_t            *device = (li_device_t *)dev;
     li_device_property_t   *property;
 
-    wl_list_for_each(property, &device->property_list, link)
+    pepper_list_for_each(property, &device->property_list, link)
     {
         if (!strcmp(property->key, key))
             return property->data;
@@ -111,7 +111,7 @@ static const pepper_input_device_backend_t li_device_backend =
 static void
 device_added(pepper_libinput_t *input, struct libinput_device *libinput_device)
 {
-    struct wl_list      property_list;
+    pepper_list_t       property_list;
     uint32_t            caps;
     li_device_t        *device;
 
@@ -136,26 +136,26 @@ device_added(pepper_libinput_t *input, struct libinput_device *libinput_device)
         return;
     }
 
-    wl_list_init(&property_list);                                       /* FIXME */
+    pepper_list_init(&property_list);                                   /* FIXME */
     libinput_device_get_properties(libinput_device, &property_list);    /* FIXME */
-    wl_list_init(&device->property_list);                               /* FIXME */
-    wl_list_insert_list(&device->property_list, &property_list);        /* FIXME */
+    pepper_list_init(&device->property_list);                           /* FIXME */
+    pepper_list_insert_list(&device->property_list, &property_list);    /* FIXME */
 
-    wl_list_insert(&input->device_list, &device->link);
+    pepper_list_insert(&input->device_list, &device->link);
     libinput_device_set_user_data(libinput_device, device);
 }
 
 static void
-clear_property_list(struct wl_list *list)
+clear_property_list(pepper_list_t *list)
 {
-    li_device_property_t   *property, *tmp;
+    li_device_property_t *property, *tmp;
 
-    if (wl_list_empty(list))
+    if (pepper_list_empty(list))
         return;
 
-    wl_list_for_each_safe(property, tmp, list, link)
+    pepper_list_for_each_safe(property, tmp, list, link)
     {
-        wl_list_remove(&property->link);
+        pepper_list_remove(&property->link);
 
         if (property->key)
             free(property->key);
@@ -169,7 +169,7 @@ clear_property_list(struct wl_list *list)
 static void
 li_device_destroy(li_device_t *device)
 {
-    wl_list_remove(&device->link);
+    pepper_list_remove(&device->link);
     clear_property_list(&device->property_list);
 
     if (device->base)
@@ -437,7 +437,7 @@ pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev)
 
     input->compositor = compositor;
     input->udev = udev;
-    wl_list_init(&input->device_list);
+    pepper_list_init(&input->device_list);
 
     input->libinput = libinput_udev_create_context(&libinput_interface, input, input->udev);
     if (!input->libinput)
@@ -480,9 +480,9 @@ error:
 PEPPER_API void
 pepper_libinput_destroy(pepper_libinput_t *input)
 {
-    li_device_t  *device, *tmp;
+    li_device_t *device, *tmp;
 
-    wl_list_for_each_safe(device, tmp, &input->device_list, link)
+    pepper_list_for_each_safe(device, tmp, &input->device_list, link)
         li_device_destroy(device);
 
     if (input->libinput)

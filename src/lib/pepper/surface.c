@@ -21,7 +21,7 @@ pepper_surface_state_init(pepper_surface_state_t *state)
     pixman_region32_init(&state->opaque_region);
     pixman_region32_init(&state->input_region);
 
-    wl_list_init(&state->frame_callbacks);
+    wl_list_init(&state->frame_callback_list);
 }
 
 static void
@@ -33,7 +33,7 @@ pepper_surface_state_fini(pepper_surface_state_t *state)
     pixman_region32_fini(&state->opaque_region);
     pixman_region32_fini(&state->input_region);
 
-    wl_resource_for_each_safe(callback, next, &state->frame_callbacks)
+    wl_resource_for_each_safe(callback, next, &state->frame_callback_list)
         wl_resource_destroy(callback);
 }
 
@@ -126,7 +126,7 @@ surface_frame(struct wl_client     *client,
 
     wl_resource_set_implementation(callback, NULL, NULL,
                                    frame_callback_resource_destroy_handler);
-    wl_list_insert(surface->pending.frame_callbacks.prev, wl_resource_get_link(callback));
+    wl_list_insert(surface->pending.frame_callback_list.prev, wl_resource_get_link(callback));
 }
 
 static void
@@ -249,8 +249,8 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     wl_resource_set_implementation(surface->resource, &surface_implementation, surface,
                                    surface_resource_destroy_handler);
-    wl_list_insert(&compositor->surfaces, wl_resource_get_link(surface->resource));
 
+    pepper_list_insert(&compositor->surface_list, &surface->link);
     pepper_surface_state_init(&surface->pending);
 
     surface->buffer.transform = WL_OUTPUT_TRANSFORM_NORMAL;
@@ -260,7 +260,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
     pixman_region32_init(&surface->opaque_region);
     pixman_region32_init(&surface->input_region);
 
-    wl_list_init(&surface->frame_callbacks);
+    wl_list_init(&surface->frame_callback_list);
     pepper_list_init(&surface->view_list);
 
     return surface;
@@ -280,9 +280,9 @@ pepper_surface_destroy(pepper_surface_t *surface)
     pixman_region32_fini(&surface->opaque_region);
     pixman_region32_fini(&surface->input_region);
 
-    wl_list_remove(wl_resource_get_link(surface->resource));
+    pepper_list_remove(&surface->link);
 
-    wl_resource_for_each_safe(callback, next, &surface->frame_callbacks)
+    wl_resource_for_each_safe(callback, next, &surface->frame_callback_list)
         wl_resource_destroy(callback);
 
     if (surface->role)
@@ -329,10 +329,11 @@ static void
 attach_surface_to_outputs(pepper_surface_t *surface)
 {
     pepper_output_t *output;
-    int              w, h;
 
-    wl_list_for_each(output, &surface->compositor->output_list, link)
+    pepper_list_for_each(output, &surface->compositor->output_list, link)
     {
+        int              w, h;
+
         output->backend->attach_surface(output->data, surface, &w, &h);
 
         surface->buffer.buffer->w = w;
@@ -373,8 +374,8 @@ pepper_surface_commit(pepper_surface_t *surface)
     surface_update_size(surface);
 
     /* surface.frame(). */
-    wl_list_insert_list(&surface->frame_callbacks, &surface->pending.frame_callbacks);
-    wl_list_init(&surface->pending.frame_callbacks);
+    wl_list_insert_list(&surface->frame_callback_list, &surface->pending.frame_callback_list);
+    wl_list_init(&surface->pending.frame_callback_list);
 
     /* surface.damage(). */
     pixman_region32_union(&surface->damage_region,
@@ -394,7 +395,7 @@ pepper_surface_send_frame_callback_done(pepper_surface_t *surface, uint32_t time
 {
     struct wl_resource *callback, *next;
 
-    wl_resource_for_each_safe(callback, next, &surface->frame_callbacks)
+    wl_resource_for_each_safe(callback, next, &surface->frame_callback_list)
     {
         wl_callback_send_done(callback, time);
         wl_resource_destroy(callback);
@@ -469,13 +470,13 @@ pepper_surface_get_input_region(pepper_surface_t *surface)
 void
 pepper_surface_flush_damage(pepper_surface_t *surface)
 {
-    pepper_list_t *l;
+    pepper_view_t *view;
 
     if (!pixman_region32_not_empty(&surface->damage_region))
         return;
 
-    pepper_list_for_each(l, &surface->view_list)
-        pepper_view_surface_damage((pepper_view_t *)l->item);
+    pepper_list_for_each(view, &surface->view_list, surface_link)
+        pepper_view_surface_damage(view);
 
     /* TODO: Call backend.urface_flush(). */
 }

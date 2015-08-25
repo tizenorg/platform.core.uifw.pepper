@@ -15,7 +15,7 @@ struct pepper_libinput
     struct wl_event_source     *libinput_event_source;
     int                         libinput_fd;
 
-    struct wl_list              device_list;
+    pepper_list_t               device_list;
 };
 
 struct li_device
@@ -25,15 +25,15 @@ struct li_device
 
     uint32_t                    caps;
 
-    struct wl_list              property_list;
-    struct wl_list              link;
+    pepper_list_t               property_list;
+    pepper_list_t               link;
 };
 
 struct li_device_property   /* FIXME */
 {
     char                       *key;
     char                       *data;
-    struct wl_list              link;
+    pepper_list_t               link;
 };
 
 #endif /* LIBINPUT_INTERNAL_H */

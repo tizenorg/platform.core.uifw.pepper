@@ -105,31 +105,54 @@ get_pixman_format(pepper_format_t format)
 
 typedef struct pepper_list      pepper_list_t;
 
-#define pepper_list_for_each(pos, head)                                     \
+#define pepper_list_for_each_list(pos, head)                                \
     for (pos = (head)->next;                                                \
          pos != (head);                                                     \
          pos = pos->next)
 
-#define pepper_list_for_each_safe(pos, tmp, head)                           \
+#define pepper_list_for_each_list_safe(pos, tmp, head)                      \
     for (pos = (head)->next, tmp = pos->next;                               \
          pos != (head);                                                     \
          pos = tmp, tmp = pos->next)
 
-#define pepper_list_for_each_reverse(pos, head)                             \
+#define pepper_list_for_each_list_reverse(pos, head)                        \
     for (pos = (head)->prev;                                                \
          pos != (head);                                                     \
          pos = pos->prev)
 
-#define pepper_list_for_each_reverse_safe(pos, tmp, head)                   \
+#define pepper_list_for_each_list_reverse_safe(pos, tmp, head)              \
     for (pos = (head)->prev, tmp = pos->prev;                               \
          pos != (head);                                                     \
          pos = tmp, tmp = pos->prev)
+
+#define pepper_list_for_each(pos, head, member)                             \
+    for (pos = pepper_container_of((head)->next, pos, member);              \
+         &pos->member != (head);                                            \
+         pos = pepper_container_of(pos->member.next, pos, member))
+
+#define pepper_list_for_each_safe(pos, tmp, head, member)                   \
+    for (pos = pepper_container_of((head)->next, pos, member),              \
+         tmp = pepper_container_of((pos)->member.next, tmp, member);        \
+         &pos->member != (head);                                            \
+         pos = tmp,                                                         \
+         tmp = pepper_container_of(pos->member.next, tmp, member))
+
+#define pepper_list_for_each_reverse(pos, head, member)                     \
+    for (pos = pepper_container_of((head)->prev, pos, member);              \
+         &pos->member != (head);                                            \
+         pos = pepper_container_of(pos->member.prev, pos, member))
+
+#define pepper_list_for_each_reverse_safe(pos, tmp, head, member)           \
+    for (pos = pepper_container_of((head)->prev, pos, member),              \
+         tmp = pepper_container_of((pos)->member.prev, tmp, member);        \
+         &pos->member != (head);                                            \
+         pos = tmp,                                                         \
+         tmp = pepper_container_of(pos->member.prev, tmp, member))
 
 struct pepper_list
 {
     pepper_list_t  *prev;
     pepper_list_t  *next;
-    pepper_bool_t   owns_mem;
     void           *item;
 };
 
@@ -150,80 +173,13 @@ pepper_list_insert(pepper_list_t *list, pepper_list_t *elm)
     elm->next->prev = elm;
 }
 
-static inline pepper_list_t *
-pepper_list_insert_item(pepper_list_t *list, void *item)
-{
-    pepper_list_t *elm;
-
-    elm = malloc(sizeof(pepper_list_t));
-    if (!elm)
-        return NULL;
-
-    elm->item = item;
-    elm->owns_mem = PEPPER_TRUE;
-    pepper_list_insert(list, elm);
-    return elm;
-}
-
-static inline pepper_list_t *
-pepper_list_find_item(pepper_list_t *list, void *item)
-{
-    pepper_list_t *l;
-
-    pepper_list_for_each(l, list)
-    {
-        if (l->item == item)
-            return l;
-    }
-
-    return NULL;
-}
-
 static inline void
-pepper_list_remove(pepper_list_t *list, pepper_free_func_t free_func)
+pepper_list_remove(pepper_list_t *list)
 {
     list->prev->next = list->next;
     list->next->prev = list->prev;
     list->prev = NULL;
     list->next = NULL;
-
-    if (free_func)
-        free_func(list->item);
-
-    if (list->owns_mem)
-        free(list);
-}
-
-static inline void
-pepper_list_remove_item(pepper_list_t *list, void *item, pepper_free_func_t free_func)
-{
-    pepper_list_t *l;
-
-    pepper_list_for_each(l, list)
-    {
-        if (l->item == item)
-        {
-            pepper_list_remove(l, free_func);
-            return;
-        }
-    }
-}
-
-static inline void
-pepper_list_clear(pepper_list_t *list, pepper_free_func_t free_func)
-{
-    pepper_list_t *l, *temp;
-
-    pepper_list_for_each_safe(l, temp, list)
-    {
-        if (free_func)
-            free_func(l->item);
-
-        if (l->owns_mem)
-            free(l);
-    }
-
-    pepper_list_init(list);
 }
 
 static inline pepper_bool_t

@@ -22,24 +22,24 @@ shell_surface_configure(void *data, struct wl_shell_surface *shell_surface, uint
                         int32_t w, int32_t h)
 {
     wayland_output_t       *output = data;
-    wayland_shm_buffer_t   *buffer, *next;
+    wayland_shm_buffer_t   *buffer, *tmp;
 
     output->w = w;
     output->h = h;
 
     /* Destroy free buffers immediately. */
-    wl_list_for_each_safe(buffer, next, &output->shm.free_buffers, link)
+    pepper_list_for_each_safe(buffer, tmp, &output->shm.free_buffers, link)
         wayland_shm_buffer_destroy(buffer);
 
     /* Orphan attached buffers. They will be destroyed when the compositor releases them. */
-    wl_list_for_each_safe(buffer, next, &output->shm.attached_buffers, link)
+    pepper_list_for_each_safe(buffer, tmp, &output->shm.attached_buffers, link)
     {
         buffer->output = NULL;
-        wl_list_remove(&buffer->link);
+        pepper_list_remove(&buffer->link);
     }
 
-    PEPPER_ASSERT(wl_list_empty(&output->shm.free_buffers));
-    PEPPER_ASSERT(wl_list_empty(&output->shm.attached_buffers));
+    PEPPER_ASSERT(pepper_list_empty(&output->shm.free_buffers));
+    PEPPER_ASSERT(pepper_list_empty(&output->shm.attached_buffers));
 
     pepper_output_update_mode(output->base);
 }
@@ -153,7 +153,7 @@ wayland_output_assign_planes(void *o, const pepper_list_t *view_list)
     wayland_output_t   *output = (wayland_output_t *)o;
     pepper_list_t      *l;
 
-    pepper_list_for_each(l, view_list)
+    pepper_list_for_each_list(l, view_list)
     {
         pepper_view_t *view = l->item;
         pepper_view_assign_plane(view, output->base, output->primary_plane);
@@ -168,7 +168,7 @@ wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 
     pepper_list_t  *l;
 
-    pepper_list_for_each(l, plane_list)
+    pepper_list_for_each_list(l, plane_list)
     {
         pepper_plane_t *plane = l->item;
 
@@ -222,7 +222,7 @@ pixman_render_pre(wayland_output_t *output)
 {
     wayland_shm_buffer_t *buffer = NULL;
 
-    if (wl_list_empty(&output->shm.free_buffers))
+    if (pepper_list_empty(&output->shm.free_buffers))
     {
         buffer = wayland_shm_buffer_create(output);
         if (!buffer)
@@ -234,10 +234,10 @@ pixman_render_pre(wayland_output_t *output)
     else
     {
         buffer = pepper_container_of(output->shm.free_buffers.next, buffer, link);
-        wl_list_remove(&buffer->link);
+        pepper_list_remove(&buffer->link);
     }
 
-    wl_list_insert(output->shm.attached_buffers.prev, &buffer->link);
+    pepper_list_insert(output->shm.attached_buffers.prev, &buffer->link);
     output->shm.current_buffer = buffer;
 
     pepper_renderer_set_target(output->renderer, buffer->target);
@@ -286,8 +286,8 @@ init_pixman_renderer(wayland_output_t *output)
     if (!output->conn->pixman_renderer)
         return PEPPER_FALSE;
 
-    wl_list_init(&output->shm.free_buffers);
-    wl_list_init(&output->shm.attached_buffers);
+    pepper_list_init(&output->shm.free_buffers);
+    pepper_list_init(&output->shm.attached_buffers);
 
     output->renderer    = output->conn->pixman_renderer;
     output->render_pre  = pixman_render_pre;
@@ -347,7 +347,7 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
     }
 
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
-    wl_list_insert(&conn->output_list, &output->link);
+    pepper_list_insert(&conn->output_list, &output->link);
 
     return output->base;
 }

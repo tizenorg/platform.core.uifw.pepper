@@ -71,9 +71,8 @@ struct desktop_shell
 {
     pepper_compositor_t         *compositor;
 
-    struct wl_list               shell_client_list;
-    struct wl_list               shell_surface_list;
-
+    pepper_list_t                shell_client_list;
+    pepper_list_t                shell_surface_list;
     pepper_list_t                shseat_list;
 
     /* input device add/remove listeners */
@@ -98,7 +97,7 @@ struct shell_client
     uint32_t                 ping_serial;
     pepper_bool_t            irresponsive;
 
-    struct wl_list           link;
+    pepper_list_t            link;
 };
 
 typedef enum
@@ -123,8 +122,8 @@ struct shell_surface
 
     /* Hierarchy */
     pepper_surface_t        *parent;
-    struct wl_list           child_list;   /* children surfaces of this */
-    struct wl_list           parent_link;
+    pepper_list_t            child_list;   /* children surfaces of this */
+    pepper_list_t            parent_link;
 
     /* Contents */
     pepper_surface_t        *surface;
@@ -199,7 +198,7 @@ struct shell_surface
     pepper_event_listener_t *surface_destroy_listener;
     pepper_event_listener_t *surface_commit_listener;
 
-    struct wl_list          link;       /* link */
+    pepper_list_t            link;
 };
 
 shell_client_t *

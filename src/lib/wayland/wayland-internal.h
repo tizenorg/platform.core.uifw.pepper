@@ -31,8 +31,8 @@ struct pepper_wayland
     struct wl_registry     *registry;
     struct wl_compositor   *compositor;
     struct wl_shell        *shell;
-    struct wl_list          seat_list;
-    struct wl_list          output_list;
+    pepper_list_t           seat_list;
+    pepper_list_t           output_list;
 
     struct wl_signal        destroy_signal;
 
@@ -45,7 +45,7 @@ struct pepper_wayland
 struct wayland_shm_buffer
 {
     wayland_output_t       *output;
-    struct wl_list          link;
+    pepper_list_t           link;
 
     struct wl_buffer       *buffer;
 
@@ -83,10 +83,10 @@ struct wayland_output
 
     struct {
         /* list containing free buffers. */
-        struct wl_list          free_buffers;
+        pepper_list_t           free_buffers;
 
         /* list containing attached but not released (from the compositor) buffers. */
-        struct wl_list          attached_buffers;
+        pepper_list_t           attached_buffers;
 
         /* current render target buffer. */
         wayland_shm_buffer_t   *current_buffer;
@@ -99,7 +99,7 @@ struct wayland_output
 #endif
 
     pepper_plane_t             *primary_plane;
-    struct wl_list              link;
+    pepper_list_t               link;
 };
 
 struct wayland_seat
@@ -126,7 +126,7 @@ struct wayland_seat
         struct wl_touch            *wl_touch;
     } touch;
 
-    struct wl_list                  link;
+    pepper_list_t                   link;
 };
 
 void

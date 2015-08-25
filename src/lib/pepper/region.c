@@ -69,8 +69,8 @@ pepper_region_create(pepper_compositor_t   *compositor,
 
     wl_resource_set_implementation(region->resource, &region_implementation,
                                    region, region_resource_destroy_handler);
-    wl_list_insert(&compositor->regions, wl_resource_get_link(region->resource));
 
+    pepper_list_insert(&compositor->region_list, &region->link);
     return region;
 }
 
@@ -78,6 +78,7 @@ void
 pepper_region_destroy(pepper_region_t *region)
 {
     pixman_region32_fini(&region->pixman_region);
+    pepper_list_remove(&region->link);
     pepper_free(region);
 }
 

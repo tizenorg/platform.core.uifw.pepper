@@ -14,8 +14,8 @@ buffer_release(void *data, struct wl_buffer *buf)
     if (buffer->output)
     {
         /* Move to free buffer list. */
-        wl_list_remove(&buffer->link);
-        wl_list_insert(buffer->output->shm.free_buffers.next, &buffer->link);
+        pepper_list_remove(&buffer->link);
+        pepper_list_insert(buffer->output->shm.free_buffers.next, &buffer->link);
     }
     else
     {
@@ -41,7 +41,7 @@ wayland_shm_buffer_create(wayland_output_t *output)
         return NULL;
 
     buffer->output = output;
-    wl_list_init(&buffer->link);
+    pepper_list_init(&buffer->link);
 
     buffer->w = output->w;
     buffer->h = output->h;
@@ -100,5 +100,5 @@ wayland_shm_buffer_destroy(wayland_shm_buffer_t *buffer)
     pixman_region32_fini(&buffer->damage);
     wl_buffer_destroy(buffer->buffer);
     munmap(buffer->pixels, buffer->size);
-    wl_list_remove(&buffer->link);
+    pepper_list_remove(&buffer->link);
 }

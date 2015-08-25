@@ -24,13 +24,12 @@ x11_get_next_event(xcb_connection_t *xcb_conn, xcb_generic_event_t **event, uint
 static x11_output_t *
 x11_find_output_by_window(pepper_x11_connection_t *conn, xcb_window_t window)
 {
-    x11_output_t *output = NULL;
+    x11_output_t *output;
 
-    if (!wl_list_empty(&conn->outputs))
+    pepper_list_for_each(output, &conn->output_list, link)
     {
-        wl_list_for_each(output, &conn->outputs, link)
-            if ( window == output->window )
-                return output;
+        if ( window == output->window )
+            return output;
     }
 
     return NULL;
@@ -255,7 +254,7 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
                                                         connection);
 
     wl_event_source_check(connection->xcb_event_source);
-    wl_list_init(&connection->outputs);
+    pepper_list_init(&connection->output_list);
 
     return connection;
 }
@@ -267,7 +266,7 @@ pepper_x11_destroy(pepper_x11_connection_t *conn)
 
     x11_seat_destroy(conn->seat);
 
-    wl_list_for_each_safe(output, tmp, &conn->outputs, link)
+    pepper_list_for_each_safe(output, tmp, &conn->output_list, link)
         x11_output_destroy(output);
 
     if (conn->xcb_event_source)
