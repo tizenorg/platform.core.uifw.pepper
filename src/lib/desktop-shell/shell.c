@@ -384,15 +384,9 @@ input_device_add_callback(pepper_event_listener_t    *listener,
     shseat->shell = shell;
     shseat->link.item = shseat;
 
-    pepper_list_insert(&shell->shseat_list, &shseat->link);
-
     /* Add this input_device to seat */
-    pepper_seat_add_input_device(shseat->seat, device);
-
     shell_seat_set_default_grab(shseat);
-
-    pepper_object_set_user_data((pepper_object_t *)shseat->seat,
-                                shell, shseat, NULL);
+    pepper_object_set_user_data((pepper_object_t *)shseat->seat, shell, shseat, NULL);
 
     pepper_list_insert(&shell->shseat_list, &shseat->link);
     pepper_seat_add_input_device(shseat->seat, device);
