@@ -82,7 +82,7 @@ shell_seat_pointer_start_grab(shell_seat_t *shseat,
 void
 shell_seat_pointer_end_grab(shell_seat_t *shseat)
 {
-    shseat->pointer_grab = shseat->default_pointer_grab;
+    shseat->pointer_grab.interface = shseat->default_pointer_grab.interface;
 }
 
 static void
@@ -323,8 +323,6 @@ shell_seat_set_default_grab(shell_seat_t *shseat)
     shseat->default_pointer_grab.interface = &shell_pointer_default_grab;
     shseat->default_pointer_grab.shseat    = shseat;
     shseat->default_pointer_grab.userdata  = NULL;
-    /* FIXME: */
-    shseat->default_pointer_grab.pointer   = pepper_seat_get_pointer(shseat->seat);
 
     shell_seat_pointer_start_grab(shseat, &shell_pointer_default_grab, NULL);
 
@@ -341,6 +339,7 @@ input_device_add_callback(pepper_event_listener_t    *listener,
     desktop_shell_t         *shell = (desktop_shell_t *)data;
     pepper_input_device_t   *device = info;
     shell_seat_t            *shseat;
+    pepper_seat_t           *seat;
     const char              *target_seat_name;
     const char              *seat_name;
 
@@ -360,30 +359,8 @@ input_device_add_callback(pepper_event_listener_t    *listener,
         }
     }
 
-    shseat = calloc(1, sizeof(shell_seat_t));
-    if (!shseat)
-    {
-        PEPPER_ERROR("Memory allocation faiiled\n");
-        return ;
-    }
-
-    /* Add a new seat to compositor */
-    shseat->seat = pepper_compositor_add_seat(shell->compositor, target_seat_name, NULL);
-    if (!shseat->seat)
-    {
-        PEPPER_ERROR("pepper_compositor_add_seat failed\n");
-        free(shseat);
-        return ;
-    }
-
-    shseat->shell = shell;
-
-    /* Add this input_device to seat */
-    shell_seat_set_default_grab(shseat);
-    pepper_object_set_user_data((pepper_object_t *)shseat->seat, shell, shseat, NULL);
-
-    pepper_list_insert(&shell->shseat_list, &shseat->link);
-    pepper_seat_add_input_device(shseat->seat, device);
+    seat = pepper_compositor_add_seat(shell->compositor, target_seat_name, NULL);
+    pepper_seat_add_input_device(seat, device);
 }
 
 static void
@@ -404,9 +381,9 @@ pointer_event_handler(pepper_event_listener_t    *listener,
             if (shseat->pointer_grab.interface && shseat->pointer_grab.interface->motion)
             {
                 shseat->pointer_grab.interface->motion(&shseat->pointer_grab,
+                                                       event->time,
                                                        event->x,
                                                        event->y,
-                                                       event->time,
                                                        shseat->pointer_grab.userdata);
             }
         }
@@ -475,6 +452,8 @@ seat_logical_device_add_callback(pepper_event_listener_t    *listener,
             shseat->pointer_axis_listener =
                 pepper_object_add_event_listener(pointer, PEPPER_EVENT_POINTER_AXIS,
                                                  0, pointer_event_handler, shseat);
+
+            shseat->pointer_grab.pointer = (pepper_pointer_t *)pointer;
         }
         break;
     case PEPPER_EVENT_SEAT_KEYBOARD_ADD:
