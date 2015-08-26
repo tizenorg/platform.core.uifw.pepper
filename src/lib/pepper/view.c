@@ -72,6 +72,38 @@ pepper_view_surface_damage(pepper_view_t *view)
     }
 }
 
+void
+pepper_view_get_local_coordinate(pepper_view_t *view,
+                                 double global_x, double global_y,
+                                 double *local_x, double *local_y)
+{
+    pepper_vec4_t pos = { global_x, global_y, 0.0, 1.0 };
+
+    pepper_view_update(view);
+    pepper_mat4_transform_vec4(&view->global_transform_inverse, &pos);
+
+    PEPPER_ASSERT(pos.w >= 1e-6);
+
+    *local_x = pos.x / pos.w;
+    *local_y = pos.y / pos.w;
+}
+
+void
+pepper_view_get_global_coordinate(pepper_view_t *view,
+                                  double local_x, double local_y,
+                                  double *global_x, double *global_y)
+{
+    pepper_vec4_t pos = { local_x, local_y, 0.0, 1.0 };
+
+    pepper_view_update(view);
+    pepper_mat4_transform_vec4(&view->global_transform, &pos);
+
+    PEPPER_ASSERT(pos.w >= 1e-6);
+
+    *global_x = pos.x / pos.w;
+    *global_y = pos.y / pos.w;
+}
+
 static void
 view_handle_surface_destroy(pepper_event_listener_t *listener,
                             pepper_object_t *object, uint32_t id, void *info, void *data)
@@ -176,6 +208,8 @@ view_update_geometry(pepper_view_t *view)
         pepper_mat4_multiply(&view->global_transform,
                              &view->parent->global_transform, &view->global_transform);
     }
+
+    pepper_mat4_inverse(&view->global_transform_inverse, &view->global_transform);
 
     /* Bounding region. */
     pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
