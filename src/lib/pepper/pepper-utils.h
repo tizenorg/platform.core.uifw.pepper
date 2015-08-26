@@ -550,6 +550,173 @@ pepper_mat4_copy(pepper_mat4_t *dst, const pepper_mat4_t *src)
 }
 
 static inline void
+pepper_mat4_inverse(pepper_mat4_t *dst, const pepper_mat4_t *src)
+{
+    pepper_mat4_t   tmp;
+    double         *d = &tmp.m[0];
+    const double   *m = &src->m[0];
+    double          det;
+
+    if (!(src->flags & PEPPER_MATRIX_COMPLEX) &&
+        !(src->flags & PEPPER_MATRIX_ROTATE))
+    {
+        pepper_mat4_copy(dst, src);
+
+        dst->m[12] = -m[12] / m[ 0];
+        dst->m[13] = -m[13] / m[ 5];
+        dst->m[14] = -m[14] / m[10];
+
+        dst->m[ 0] = 1.0 / m[ 0];
+        dst->m[ 5] = 1.0 / m[ 5];
+        dst->m[10] = 1.0 / m[10];
+
+        return;
+    }
+
+    d[ 0] =  m[ 5] * m[10] * m[15] -
+             m[ 5] * m[11] * m[14] -
+             m[ 9] * m[ 6] * m[15] +
+             m[ 9] * m[ 7] * m[14] +
+             m[13] * m[ 6] * m[11] -
+             m[13] * m[ 7] * m[10];
+
+    d[ 4] = -m[ 4] * m[10] * m[15] +
+             m[ 4] * m[11] * m[14] +
+             m[ 8] * m[ 6] * m[15] -
+             m[ 8] * m[ 7] * m[14] -
+             m[12] * m[ 6] * m[11] +
+             m[12] * m[ 7] * m[10];
+
+    d[ 8] =  m[ 4] * m[ 9] * m[15] -
+             m[ 4] * m[11] * m[13] -
+             m[ 8] * m[ 5] * m[15] +
+             m[ 8] * m[ 7] * m[13] +
+             m[12] * m[ 5] * m[11] -
+             m[12] * m[ 7] * m[ 9];
+
+    d[12] = -m[ 4] * m[ 9] * m[14] +
+             m[ 4] * m[10] * m[13] +
+             m[ 8] * m[ 5] * m[14] -
+             m[ 8] * m[ 6] * m[13] -
+             m[12] * m[ 5] * m[10] +
+             m[12] * m[ 6] * m[ 9];
+
+    d[ 1] = -m[ 1] * m[10] * m[15] +
+             m[ 1] * m[11] * m[14] +
+             m[ 9] * m[ 2] * m[15] -
+             m[ 9] * m[ 3] * m[14] -
+             m[13] * m[ 2] * m[11] +
+             m[13] * m[ 3] * m[10];
+
+    d[ 5] =  m[ 0] * m[10] * m[15] -
+             m[ 0] * m[11] * m[14] -
+             m[ 8] * m[ 2] * m[15] +
+             m[ 8] * m[ 3] * m[14] +
+             m[12] * m[ 2] * m[11] -
+             m[12] * m[ 3] * m[10];
+
+    d[ 9] = -m[ 0] * m[ 9] * m[15] +
+             m[ 0] * m[11] * m[13] +
+             m[ 8] * m[ 1] * m[15] -
+             m[ 8] * m[ 3] * m[13] -
+             m[12] * m[ 1] * m[11] +
+             m[12] * m[ 3] * m[ 9];
+
+    d[13] =  m[ 0] * m[ 9] * m[14] -
+             m[ 0] * m[10] * m[13] -
+             m[ 8] * m[ 1] * m[14] +
+             m[ 8] * m[ 2] * m[13] +
+             m[12] * m[ 1] * m[10] -
+             m[12] * m[ 2] * m[ 9];
+
+    d[ 2] =  m[ 1] * m[ 6] * m[15] -
+             m[ 1] * m[ 7] * m[14] -
+             m[ 5] * m[ 2] * m[15] +
+             m[ 5] * m[ 3] * m[14] +
+             m[13] * m[ 2] * m[ 7] -
+             m[13] * m[ 3] * m[ 6];
+
+    d[ 6] = -m[ 0] * m[ 6] * m[15] +
+             m[ 0] * m[ 7] * m[14] +
+             m[ 4] * m[ 2] * m[15] -
+             m[ 4] * m[ 3] * m[14] -
+             m[12] * m[ 2] * m[ 7] +
+             m[12] * m[ 3] * m[ 6];
+
+    d[10] =  m[ 0] * m[ 5] * m[15] -
+             m[ 0] * m[ 7] * m[13] -
+             m[ 4] * m[ 1] * m[15] +
+             m[ 4] * m[ 3] * m[13] +
+             m[12] * m[ 1] * m[ 7] -
+             m[12] * m[ 3] * m[ 5];
+
+    d[14] = -m[ 0] * m[ 5] * m[14] +
+             m[ 0] * m[ 6] * m[13] +
+             m[ 4] * m[ 1] * m[14] -
+             m[ 4] * m[ 2] * m[13] -
+             m[12] * m[ 1] * m[ 6] +
+             m[12] * m[ 2] * m[ 5];
+
+    d[ 3] = -m[ 1] * m[ 6] * m[11] +
+             m[ 1] * m[ 7] * m[10] +
+             m[ 5] * m[ 2] * m[11] -
+             m[ 5] * m[ 3] * m[10] -
+             m[ 9] * m[ 2] * m[ 7] +
+             m[ 9] * m[ 3] * m[ 6];
+
+    d[ 7] =  m[ 0] * m[ 6] * m[11] -
+             m[ 0] * m[ 7] * m[10] -
+             m[ 4] * m[ 2] * m[11] +
+             m[ 4] * m[ 3] * m[10] +
+             m[ 8] * m[ 2] * m[ 7] -
+             m[ 8] * m[ 3] * m[ 6];
+
+    d[11] = -m[ 0] * m[ 5] * m[11] +
+             m[ 0] * m[ 7] * m[ 9] +
+             m[ 4] * m[ 1] * m[11] -
+             m[ 4] * m[ 3] * m[ 9] -
+             m[ 8] * m[ 1] * m[ 7] +
+             m[ 8] * m[ 3] * m[ 5];
+
+    d[15] =  m[ 0] * m[ 5] * m[10] -
+             m[ 0] * m[ 6] * m[ 9] -
+             m[ 4] * m[ 1] * m[10] +
+             m[ 4] * m[ 2] * m[ 9] +
+             m[ 8] * m[ 1] * m[ 6] -
+             m[ 8] * m[ 2] * m[ 5];
+
+    det = m[0] * d[0] + m[1] * d[4] + m[2] * d[8] + m[3] * d[12];
+
+    if (det == 0.0)
+    {
+        PEPPER_ERROR("Matrix is singular. Unable to get inverse matrix.\n");
+        return;
+    }
+
+    det = 1.0 / det;
+
+    d[ 0] *= det;
+    d[ 1] *= det;
+    d[ 2] *= det;
+    d[ 3] *= det;
+    d[ 4] *= det;
+    d[ 5] *= det;
+    d[ 6] *= det;
+    d[ 7] *= det;
+    d[ 8] *= det;
+    d[ 9] *= det;
+    d[10] *= det;
+    d[11] *= det;
+    d[12] *= det;
+    d[13] *= det;
+    d[14] *= det;
+    d[15] *= det;
+
+    pepper_mat4_copy(dst, &tmp);
+    dst->flags = src->flags;
+}
+
+static inline void
 pepper_mat4_transform_vec2(const pepper_mat4_t *matrix, pepper_vec2_t *v)
 {
     double x, y;
