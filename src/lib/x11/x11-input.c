@@ -1,5 +1,6 @@
 #include "x11-internal.h"
 #include <stdlib.h>
+#include <linux/input.h>
 
 #define UNUSED(x)   (void)(x)
 
@@ -46,33 +47,71 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
         break;
     case XCB_BUTTON_PRESS:
         {
-            xcb_button_press_event_t      *bp = (xcb_button_press_event_t *)xev;
-            pepper_pointer_button_event_t  event;
+            xcb_button_press_event_t        *bp = (xcb_button_press_event_t *)xev;
+            pepper_pointer_button_event_t    button_event;
+            pepper_pointer_axis_event_t      axis_event;
+            void                            *event = NULL;
+            int32_t                          type = 0;
 
             switch (bp->detail)
             {
-            case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
-            case XCB_BUTTON_INDEX_3:/* FIXME: RIGHT */
+            case XCB_BUTTON_INDEX_1:
                 {
+                    button_event.time   = bp->time;
+                    button_event.button = BTN_LEFT;
+                    button_event.state  = WL_POINTER_BUTTON_STATE_PRESSED;
+
+                    type  = PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON;
+                    event = &button_event;
+                }
+                break;
+            case XCB_BUTTON_INDEX_2:
+                {
+                    button_event.time   = bp->time;
+                    button_event.button = BTN_MIDDLE;
+                    button_event.state  = WL_POINTER_BUTTON_STATE_PRESSED;
+
+                    type  = PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON;
+                    event = &button_event;
+                }
+                break;
+            case XCB_BUTTON_INDEX_3:
+                {
+                    button_event.time   = bp->time;
+                    button_event.button = BTN_RIGHT;
+                    button_event.state  = WL_POINTER_BUTTON_STATE_PRESSED;
+
+                    type  = PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON;
+                    event = &button_event;
                 }
                 break;
             case XCB_BUTTON_INDEX_4:
-                /* TODO: axis up */
+                {
+                    axis_event.time = bp->time;
+                    axis_event.axis = WL_POINTER_AXIS_VERTICAL_SCROLL;
+                    axis_event.value = 1.f;     /* FIXME */
+
+                    type = PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS;
+                    event = &axis_event;
+                }
                 break;
             case XCB_BUTTON_INDEX_5:
-                /* TODO: axis down */
+                {
+                    axis_event.time = bp->time;
+                    axis_event.axis = WL_POINTER_AXIS_VERTICAL_SCROLL;
+                    axis_event.value = -1.f;    /* FIXME */
+
+                    type = PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS;
+                    event = &axis_event;
+                }
                 break;
             default:
-                PEPPER_TRACE("wheel or something pressed\n");
+                PEPPER_ERROR("Unknown button index %d\n", bp->detail);
                 break;
             }
 
-            event.time   = bp->time;
-            event.button = bp->detail;
-            event.state  = WL_POINTER_BUTTON_STATE_PRESSED; /* FIXME */
-
-            pepper_object_emit_event((pepper_object_t *)seat->pointer,
-                                     PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
+            if (event)
+                pepper_object_emit_event((pepper_object_t *)seat->pointer, type, event);
         }
         break;
     case XCB_BUTTON_RELEASE:
@@ -82,19 +121,25 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
 
             switch (br->detail)
             {
-            case XCB_BUTTON_INDEX_1:/* FIXME: LEFT */
-                PEPPER_TRACE("left released\n");
+            case XCB_BUTTON_INDEX_1:
+                event.button = BTN_LEFT;
                 break;
-            case XCB_BUTTON_INDEX_3:/* FIXME: RIGHT */
-                PEPPER_TRACE("right released\n");
+            case XCB_BUTTON_INDEX_2:
+                event.button = BTN_MIDDLE;
+                break;
+            case XCB_BUTTON_INDEX_3:
+                event.button = BTN_RIGHT;
+                break;
+            case XCB_BUTTON_INDEX_4:    /* ignore axis event in button_release state */
+                break;
+            case XCB_BUTTON_INDEX_5:
                 break;
             default:
-                PEPPER_TRACE("wheel or something pressed\n");
+                PEPPER_ERROR("Unknown button index %d\n", br->detail);
                 break;
             }
 
             event.time   = br->time;
-            event.button = br->detail;
             event.state  = WL_POINTER_BUTTON_STATE_RELEASED; /* FIXME */
 
             pepper_object_emit_event((pepper_object_t *)seat->pointer,
