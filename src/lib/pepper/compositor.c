@@ -151,8 +151,42 @@ pepper_compositor_get_output_list(pepper_compositor_t *compositor)
 }
 
 PEPPER_API pepper_view_t *
-pepper_compositor_pick_view(pepper_compositor_t *compositor, int32_t x, int32_t y)
+pepper_compositor_pick_view(pepper_compositor_t *compositor,
+                            double x, double y, double *vx, double *vy)
 {
-    /* TODO */
+    pepper_view_t  *view;
+    int             ix = (int)x;
+    int             iy = (int)y;
+
+    pepper_list_for_each(view, &compositor->view_list, compositor_link)
+    {
+        double  lx, ly;
+        int     ilx, ily;
+
+        pepper_view_update(view);
+
+        if (!pixman_region32_contains_point(&view->bounding_region, ix, iy, NULL))
+            continue;
+
+        pepper_view_get_local_coordinate(view, x, y, &lx, &ly);
+
+        ilx = (int)lx;
+        ily = (int)ly;
+
+        if (ilx < 0 || ily < 0 || ilx >= view->w || ily >= view->h)
+            continue;
+
+        if (!pixman_region32_contains_point(&view->surface->input_region, ilx, ily, NULL))
+            continue;
+
+        if (vx)
+            *vx = lx;
+
+        if (vy)
+            *vy = ly;
+
+        return view;
+    }
+
     return NULL;
 }

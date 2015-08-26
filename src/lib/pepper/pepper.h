@@ -267,7 +267,8 @@ PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output);
 
 PEPPER_API pepper_view_t *
-pepper_compositor_pick_view(pepper_compositor_t *compositor, int32_t x, int32_t y);
+pepper_compositor_pick_view(pepper_compositor_t *compositor,
+                            double x, double y, double *vx, double *vy);
 
 /* Output. */
 PEPPER_API void

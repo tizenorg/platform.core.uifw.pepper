@@ -220,7 +220,7 @@ shell_pointer_default_grab_motion(shell_pointer_grab_t  *grab,
     pepper_view_t       *view;
     pepper_view_t       *pointer_focus_view;
 
-    view                = pepper_compositor_pick_view(shseat->shell->compositor, x, y);
+    view                = pepper_compositor_pick_view(shseat->shell->compositor, x, y, NULL, NULL);
     pointer_focus_view  = pepper_pointer_get_focus_view(pointer);
 
     if (view != pointer_focus_view )
@@ -261,7 +261,7 @@ shell_pointer_default_grab_button(shell_pointer_grab_t  *grab,
 
     pepper_pointer_get_position(pointer, &x, &y);
 
-    view = pepper_compositor_pick_view(shseat->shell->compositor, x, y);
+    view = pepper_compositor_pick_view(shseat->shell->compositor, x, y, NULL, NULL);
 
     if (view)
     {
@@ -304,7 +304,7 @@ shell_pointer_default_grab_axis(shell_pointer_grab_t    *grab,
 
     pepper_pointer_get_position(pointer, &x, &y);
 
-    view = pepper_compositor_pick_view(shseat->shell->compositor, x, y);
+    view = pepper_compositor_pick_view(shseat->shell->compositor, x, y, NULL, NULL);
 
     if (view)
         pepper_pointer_send_axis(pointer, view, time, axis, amount);
