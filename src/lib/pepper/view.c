@@ -188,7 +188,7 @@ view_update_geometry(pepper_view_t *view)
     {
         pixman_region32_copy(&view->opaque_region, &view->surface->opaque_region);
         pixman_region32_translate(&view->opaque_region,
-                                  view->global_transform.m[3], view->global_transform.m[7]);
+                                  view->global_transform.m[12], view->global_transform.m[13]);
     }
 
     view->output_overlap = 0;

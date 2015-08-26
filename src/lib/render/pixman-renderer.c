@@ -253,8 +253,8 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
         pixman_image_set_clip_region32(target->image, &repaint);
 
         /* TODO: consider transform such as rotation */
-        x = node->transform.m[3];
-        y = node->transform.m[7];
+        x = node->transform.m[12];
+        y = node->transform.m[13];
         pepper_view_get_size(node->view, &w, &h);
 
         pixman_image_composite32(PIXMAN_OP_SRC, ps->image, NULL, target->image,
