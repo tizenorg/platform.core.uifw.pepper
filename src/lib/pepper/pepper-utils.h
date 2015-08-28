@@ -407,9 +407,18 @@ pepper_mat4_init_translate(pepper_mat4_t *matrix, double x, double y, double z)
 static inline void
 pepper_mat4_translate(pepper_mat4_t *matrix, double x, double y, double z)
 {
-    matrix->m[12] = matrix->m[0] * x + matrix->m[4] * y + matrix->m[ 8] * z;
-    matrix->m[13] = matrix->m[1] * x + matrix->m[5] * y + matrix->m[ 6] * z;
-    matrix->m[14] = matrix->m[2] * x + matrix->m[6] * y + matrix->m[10] * z;
+    matrix->m[ 0] += matrix->m[ 3] * x;
+    matrix->m[ 1] += matrix->m[ 3] * y;
+    matrix->m[ 2] += matrix->m[ 3] * z;
+    matrix->m[ 4] += matrix->m[ 7] * x;
+    matrix->m[ 5] += matrix->m[ 7] * y;
+    matrix->m[ 6] += matrix->m[ 7] * z;
+    matrix->m[ 8] += matrix->m[11] * x;
+    matrix->m[ 9] += matrix->m[11] * y;
+    matrix->m[10] += matrix->m[11] * z;
+    matrix->m[12] += matrix->m[15] * x;
+    matrix->m[13] += matrix->m[15] * y;
+    matrix->m[14] += matrix->m[15] * z;
 
     matrix->flags |= PEPPER_MATRIX_TRANSLATE;
 }
@@ -430,16 +439,20 @@ static inline void
 pepper_mat4_scale(pepper_mat4_t *matrix, double x, double y, double z)
 {
     matrix->m[ 0] *= x;
-    matrix->m[ 4] *= y;
-    matrix->m[ 8] *= z;
+    matrix->m[ 1] *= y;
+    matrix->m[ 2] *= z;
 
-    matrix->m[ 1] *= x;
+    matrix->m[ 4] *= x;
     matrix->m[ 5] *= y;
-    matrix->m[ 9] *= z;
+    matrix->m[ 6] *= z;
 
-    matrix->m[ 2] *= x;
-    matrix->m[ 6] *= y;
+    matrix->m[ 8] *= x;
+    matrix->m[ 9] *= y;
     matrix->m[10] *= z;
+
+    matrix->m[12] *= x;
+    matrix->m[13] *= y;
+    matrix->m[14] *= z;
 
     matrix->flags |= PEPPER_MATRIX_SCALE;
 }
@@ -464,8 +477,6 @@ pepper_mat4_init_rotate(pepper_mat4_t *matrix, double x, double y, double z, dou
         return;
     }
 
-    matrix->flags |= PEPPER_MATRIX_ROTATE;
-
     c = cos(angle);
     s = sin(angle);
 
@@ -474,8 +485,8 @@ pepper_mat4_init_rotate(pepper_mat4_t *matrix, double x, double y, double z, dou
         pepper_mat4_init_identity(matrix);
 
         matrix->m[ 0] =  c;
+        matrix->m[ 1] =  s;
         matrix->m[ 4] = -s;
-        matrix->m[ 1] = -s;
         matrix->m[ 5] =  c;
     }
     else if (y == 0.0f && z == 0.0f)
@@ -483,18 +494,18 @@ pepper_mat4_init_rotate(pepper_mat4_t *matrix, double x, double y, double z, dou
         pepper_mat4_init_identity(matrix);
 
         matrix->m[ 5] =  c;
+        matrix->m[ 6] =  s;
         matrix->m[ 9] = -s;
-        matrix->m[ 6] = -s;
         matrix->m[10] =  c;
     }
     else if (x == 0.0f && z == 0.0f)
     {
         pepper_mat4_init_identity(matrix);
 
-        matrix->m[ 8] =  c;
-        matrix->m[ 0] = -s;
-        matrix->m[10] = -s;
-        matrix->m[ 2] =  c;
+        matrix->m[ 0] =  c;
+        matrix->m[ 2] = -s;
+        matrix->m[ 8] =  s;
+        matrix->m[10] =  c;
     }
     else
     {
@@ -532,6 +543,8 @@ pepper_mat4_init_rotate(pepper_mat4_t *matrix, double x, double y, double z, dou
         matrix->m[11] = 0.0f;
         matrix->m[15] = 1.0f;
     }
+
+    matrix->flags |= PEPPER_MATRIX_ROTATE;
 }
 
 static inline void
@@ -540,7 +553,7 @@ pepper_mat4_rotate(pepper_mat4_t *matrix, double x, double y, double z, double a
     pepper_mat4_t rotate;
 
     pepper_mat4_init_rotate(&rotate, x, y, z, angle);
-    pepper_mat4_multiply(matrix, matrix, &rotate);
+    pepper_mat4_multiply(matrix, &rotate, matrix);
 }
 
 static inline void
