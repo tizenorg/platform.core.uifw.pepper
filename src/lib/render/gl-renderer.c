@@ -1,5 +1,6 @@
 #include "pepper-gl-renderer.h"
 #include "pepper-render-internal.h"
+#include <pepper-output-backend.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>
@@ -10,6 +11,7 @@
 #include <stdio.h>
 
 typedef struct gl_renderer      gl_renderer_t;
+typedef struct gl_shader        gl_shader_t;
 typedef struct gl_surface_state gl_surface_state_t;
 typedef struct gl_render_target gl_render_target_t;
 
@@ -28,6 +30,141 @@ typedef EGLSurface  (*PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)(EGLDisplay      
 #define EGL_PLATFORM_GBM_KHR        0x31d7
 #define EGL_PLATFORM_WAYLAND_KHR    0x31d8
 
+#define NUM_MAX_PLANES  3
+
+static const char vertex_shader[] =
+    "uniform mat4   trans;\n"
+    "attribute vec2 position;\n"
+    "attribute vec2 texcoord;\n"
+    "varying vec2   v_texcoord;\n"
+    "void main()\n"
+    "{\n"
+    "   gl_Position = trans * vec4(position, 0.0, 1.0);\n"
+    "   v_texcoord = texcoord;\n"
+    "}\n";
+
+static const char fragment_shader_rgba[] =
+    "precision mediump  float;\n"
+    "varying vec2       v_texcoord;\n"
+    "uniform sampler2D  tex;\n"
+    "uniform float      alpha;\n"
+    "void main()\n"
+    "{\n"
+    "   gl_FragColor = alpha * texture2D(tex, v_texcoord);\n"
+    "}\n";
+
+static const char fragment_shader_rgbx[] =
+    "precision mediump float;\n"
+    "varying vec2       v_texcoord;\n"
+    "uniform sampler2D  tex;\n"
+    "uniform float      alpha;\n"
+    "void main()\n"
+    "{\n"
+    "   gl_FragColor.rgb = alpha * texture2D(tex, v_texcoord).rgb;\n"
+    "   gl_FragColor.a = alpha;\n"
+    "}\n";
+
+static const char fragment_shader_y_uv[] =
+    "precision mediump float;\n"
+    "uniform sampler2D tex;\n"
+    "uniform sampler2D tex1;\n"
+    "varying vec2 v_texcoord;\n"
+    "uniform float alpha;\n"
+    "void main()\n"
+    "{\n"
+    "   float y = 1.16438356 * (texture2D(tex, v_texcoord).x - 0.0625);\n"
+    "   float u = texture2D(tex1, v_texcoord).r - 0.5;\n"
+    "   float v = texture2D(tex1, v_texcoord).g - 0.5;\n"
+    "   y *= alpha;\n"
+    "   u *= alpha;\n"
+    "   v *= alpha;\n"
+    "   gl_FragColor.r = y + 1.59602678 * v;\n"
+    "   gl_FragColor.g = y - 0.39176229 * u - 0.81296764 * v;\n"
+    "   gl_FragColor.b = y + 2.01723214 * u;\n"
+    "   gl_FragColor.a = alpha;\n"
+    "}\n";
+
+static const char fragment_shader_y_xuxv[] =
+    "precision mediump float;\n"
+    "uniform sampler2D tex;\n"
+    "uniform sampler2D tex1;\n"
+    "varying vec2 v_texcoord;\n"
+    "uniform float alpha;\n"
+    "void main()\n"
+    "{\n"
+    "   float y = 1.16438356 * (texture2D(tex, v_texcoord).x - 0.0625);\n"
+    "   float u = texture2D(tex1, v_texcoord).g - 0.5;\n"
+    "   float v = texture2D(tex1, v_texcoord).a - 0.5;\n"
+    "   y *= alpha;\n"
+    "   u *= alpha;\n"
+    "   v *= alpha;\n"
+    "   gl_FragColor.r = y + 1.59602678 * v;\n"
+    "   gl_FragColor.g = y - 0.39176229 * u - 0.81296764 * v;\n"
+    "   gl_FragColor.b = y + 2.01723214 * u;\n"
+    "   gl_FragColor.a = alpha;\n"
+    "}\n";
+
+static const char fragment_shader_y_u_v[] =
+    "precision mediump float;\n"
+    "uniform sampler2D tex;\n"
+    "uniform sampler2D tex1;\n"
+    "uniform sampler2D tex2;\n"
+    "varying vec2 v_texcoord;\n"
+    "uniform float alpha;\n"
+    "void main()"
+    "{\n"
+    "   float y = 1.16438356 * (texture2D(tex, v_texcoord).x - 0.0625);\n"
+    "   float u = texture2D(tex1, v_texcoord).x - 0.5;\n"
+    "   float v = texture2D(tex2, v_texcoord).x - 0.5;\n"
+    "   y *= alpha;\n"
+    "   u *= alpha;\n"
+    "   v *= alpha;\n"
+    "   gl_FragColor.r = y + 1.59602678 * v;\n"
+    "   gl_FragColor.g = y - 0.39176229 * u - 0.81296764 * v;\n"
+    "   gl_FragColor.b = y + 2.01723214 * u;\n"
+    "   gl_FragColor.a = alpha;\n"
+    "}\n";
+
+static const char *vertex_shaders[] =
+{
+    vertex_shader,
+    vertex_shader,
+    vertex_shader,
+    vertex_shader,
+    vertex_shader,
+};
+
+static const char *fragment_shaders[] =
+{
+    fragment_shader_rgba,
+    fragment_shader_rgbx,
+    fragment_shader_y_uv,
+    fragment_shader_y_xuxv,
+    fragment_shader_y_u_v,
+};
+
+enum shader_sampler
+{
+    GL_SHADER_SAMPLER_RGBA,
+    GL_SHADER_SAMPLER_RGBX,
+    GL_SHADER_SAMPLER_Y_UV,
+    GL_SHADER_SAMPLER_Y_XUXV,
+    GL_SHADER_SAMPLER_Y_U_V,
+    GL_SHADER_SAMPLER_NONE,
+};
+
+struct gl_shader
+{
+    GLuint      program;
+    GLuint      vertex_shader;
+    GLuint      fragment_shader;
+    GLint       texture_uniform[3];
+    GLint       alpha_uniform;
+    GLint       trans_uniform;
+    const char *vertex_shader_source;
+    const char *fragment_shader_source;
+};
+
 enum buffer_type
 {
     BUFFER_TYPE_NONE,
@@ -37,12 +174,17 @@ enum buffer_type
 
 struct gl_render_target
 {
-    pepper_render_target_t  base;
+    pepper_render_target_t      base;
 
-    EGLSurface              surface;
-    EGLConfig               config;
+    EGLSurface                  surface;
+    EGLConfig                   config;
 
-    void                   *native_window;
+    void                       *native_window;
+
+    int32_t                     width;
+    int32_t                     height;
+
+    pepper_mat4_t               proj_mat;
 };
 
 struct gl_renderer
@@ -53,6 +195,8 @@ struct gl_renderer
 
     EGLDisplay              display;
     EGLContext              context;
+
+    gl_shader_t             shaders[GL_SHADER_SAMPLER_NONE];
 
     /* EGL_EXT_platform. */
     PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC create_platform_window_surface;
@@ -71,23 +215,13 @@ struct gl_renderer
 
     pepper_bool_t   has_buffer_age;
 
-
     /* GL extensions. */
     PFNGLEGLIMAGETARGETTEXTURE2DOESPROC image_target_texture_2d;
 
     pepper_bool_t   has_read_format_bgra;
     pepper_bool_t   has_unpack_subimage;
-};
 
-#define NUM_MAX_PLANES  3
-
-enum shader_sampler
-{
-    GL_SHADER_SAMPLER_RGBA,
-    GL_SHADER_SAMPLER_RGBX,
-    GL_SHADER_SAMPLER_Y_UV,
-    GL_SHADER_SAMPLER_Y_XUXV,
-    GL_SHADER_SAMPLER_Y_U_V,
+    gl_shader_t        *current_shader;
 };
 
 struct gl_surface_state
@@ -119,6 +253,93 @@ struct gl_surface_state
     pepper_event_listener_t *buffer_destroy_listener;
     pepper_event_listener_t *surface_destroy_listener;
 };
+
+static pepper_bool_t
+init_gl_shader(gl_renderer_t *gr, gl_shader_t *shader, const char *vs, const char *fs)
+{
+    GLint status;
+    char msg[512];
+
+    shader->vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(shader->vertex_shader, 1, &vs, NULL);
+    glCompileShader(shader->vertex_shader);
+    glGetShaderiv(shader->vertex_shader, GL_COMPILE_STATUS, &status);
+    if (!status)
+    {
+        glGetShaderInfoLog(shader->vertex_shader, sizeof(msg), NULL, msg);
+        PEPPER_ERROR("Failed to compile vertex shader: %s\n", msg);
+        return PEPPER_FALSE;
+    }
+
+    shader->fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(shader->fragment_shader, 1, &fs, NULL);
+    glCompileShader(shader->fragment_shader);
+    glGetShaderiv(shader->fragment_shader, GL_COMPILE_STATUS, &status);
+    if (!status)
+    {
+        glGetShaderInfoLog(shader->fragment_shader, sizeof(msg), NULL, msg);
+        PEPPER_ERROR("Failed to compile fragment shader: %s\n", msg);
+        return PEPPER_FALSE;
+    }
+
+    shader->program = glCreateProgram();
+    glAttachShader(shader->program, shader->vertex_shader);
+    glAttachShader(shader->program, shader->fragment_shader);
+
+    glBindAttribLocation(shader->program, 0, "position");
+    glBindAttribLocation(shader->program, 1, "texcoord");
+
+    glLinkProgram(shader->program);
+    glGetProgramiv(shader->program, GL_LINK_STATUS, &status);
+    if (!status)
+    {
+        glGetProgramInfoLog(shader->program, sizeof(msg), NULL, msg);
+        PEPPER_ERROR("Failed to link program: %s\n", msg);
+        return PEPPER_FALSE;
+    }
+
+    shader->texture_uniform[0] = glGetUniformLocation(shader->program, "tex");
+    shader->texture_uniform[1] = glGetUniformLocation(shader->program, "tex1");
+    shader->texture_uniform[2] = glGetUniformLocation(shader->program, "tex2");
+    shader->alpha_uniform = glGetUniformLocation(shader->program, "alpha");
+    shader->trans_uniform = glGetUniformLocation(shader->program, "trans");
+    shader->vertex_shader_source = vs;
+    shader->fragment_shader_source = fs;
+
+    return PEPPER_TRUE;
+}
+
+static void
+fini_gl_shaders(gl_renderer_t *gr)
+{
+    int i;
+
+    for (i = 0; i < GL_SHADER_SAMPLER_NONE; i++)
+    {
+        gl_shader_t *shader = &gr->shaders[i];
+        glDeleteShader(shader->vertex_shader);
+        glDeleteShader(shader->fragment_shader);
+        glDeleteProgram(shader->program);
+        memset(shader, 0, sizeof(gl_shader_t));
+    }
+}
+
+static pepper_bool_t
+init_gl_shaders(gl_renderer_t *gr)
+{
+    int i;
+
+    for (i = 0; i < GL_SHADER_SAMPLER_NONE; i++)
+    {
+        if (!init_gl_shader(gr, &gr->shaders[i], vertex_shaders[i], fragment_shaders[i]))
+        {
+            fini_gl_shaders(gr);
+            return PEPPER_FALSE;
+        }
+    }
+
+    return PEPPER_TRUE;
+}
 
 static pepper_bool_t
 gl_renderer_use(gl_renderer_t *gr)
@@ -525,6 +746,159 @@ gl_renderer_read_pixels(pepper_renderer_t *renderer,
 }
 
 static void
+gl_shader_use(gl_renderer_t *gr, gl_shader_t *shader)
+{
+    if (shader != gr->current_shader)
+    {
+        glUseProgram(shader->program);
+        gr->current_shader = shader;
+    }
+}
+
+static void
+repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
+             pepper_render_item_t *node, pixman_region32_t *damage)
+{
+    gl_renderer_t      *gr = (gl_renderer_t *)renderer;
+    gl_render_target_t *gt = (gl_render_target_t *)renderer->target;
+
+    pepper_surface_t   *surface = pepper_view_get_surface(node->view);
+    gl_surface_state_t *state = get_surface_state(renderer, surface);
+
+    gl_shader_t        *shader;
+    pixman_region32_t   repaint, repaint_opaque;
+
+    pixman_region32_init(&repaint);
+    pixman_region32_intersect(&repaint, &node->visible_region, damage);
+
+    if (pixman_region32_not_empty(&repaint))
+    {
+        double              x, y;
+        int                 i, w, h;
+        int                 nrects;
+        pixman_box32_t     *rects;
+        GLfloat             vertex_array[16];
+        float               trans[16];
+
+        pixman_region32_init(&repaint_opaque);
+        pixman_region32_intersect(&repaint_opaque, &repaint,
+                                  pepper_surface_get_opaque_region(surface));
+        pixman_region32_subtract(&repaint, &repaint, &repaint_opaque);
+
+        if (node->transform.flags <= PEPPER_MATRIX_TRANSLATE)
+        {
+            double tx, ty, tz;
+
+            tx = node->transform.m[12];
+            ty = node->transform.m[13];
+            tz = node->transform.m[14];
+
+            for (i = 0; i < 16; i++)
+                trans[i] = (float)gt->proj_mat.m[i];
+
+            trans[12] += trans[0] * tx + trans[4] * ty + trans[8] * tz;
+            trans[13] += trans[1] * tx + trans[5] * ty + trans[9] * tz;
+            trans[14] += trans[2] * tx + trans[6] * ty + trans[10] * tz;
+            trans[15] += trans[3] * tx + trans[7] * ty + trans[11] * tz;
+        }
+        else
+        {
+            pepper_mat4_t tmp;
+            pepper_mat4_multiply(&tmp, &gt->proj_mat, &node->transform);
+            for (i = 0; i < 16; i++)
+                trans[i] = (float)tmp.m[i];
+        }
+
+        for (i = 0; i < state->num_planes; i++)
+        {
+            glActiveTexture(GL_TEXTURE0 + i);
+            glBindTexture(GL_TEXTURE_2D, state->textures[i]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* FIXME */);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST /* FIXME */);
+        }
+
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_SCISSOR_TEST);
+
+        pepper_view_get_position(node->view, &x, &y);
+        pepper_view_get_size(node->view, &w, &h);
+
+        vertex_array[ 0] = 0;
+        vertex_array[ 1] = 0;
+        vertex_array[ 4] = w;
+        vertex_array[ 5] = 0;
+        vertex_array[ 8] = w;
+        vertex_array[ 9] = h;
+        vertex_array[12] = 0;
+        vertex_array[13] = h;
+
+        vertex_array[ 2] = 0;
+        vertex_array[ 3] = 0;
+        vertex_array[ 6] = 1.0f;
+        vertex_array[ 7] = 0;
+        vertex_array[10] = 1.0f;
+        vertex_array[11] = 1.0f;
+        vertex_array[14] = 0;
+        vertex_array[15] = 1.0f;
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[2]);
+        glEnableVertexAttribArray(1);
+
+        if (pixman_region32_not_empty(&repaint_opaque))
+        {
+            if (state->sampler == GL_SHADER_SAMPLER_RGBA)
+                shader = &gr->shaders[GL_SHADER_SAMPLER_RGBX];
+            else
+                shader = &gr->shaders[state->sampler];
+
+            gl_shader_use(gr, shader);
+
+            glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
+            for (i = 0; i < state->num_planes; i++)
+                glUniform1i(shader->texture_uniform[i], i);
+            glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
+
+            rects = pixman_region32_rectangles(&repaint_opaque, &nrects);
+            for (i = 0; i < nrects; i++)
+            {
+                glScissor(rects[i].x1, gt->height - rects[i].y2,
+                          rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
+                glDrawArrays(GL_TRIANGLE_FAN, 4 * i, 4);
+            }
+        }
+
+        if (pixman_region32_not_empty(&repaint))
+        {
+            shader = &gr->shaders[state->sampler];
+
+            gl_shader_use(gr, shader);
+
+            glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
+            for (i = 0; i < state->num_planes; i++)
+                glUniform1i(shader->texture_uniform[i], i);
+            glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
+
+            glEnable(GL_BLEND);
+            rects = pixman_region32_rectangles(&repaint, &nrects);
+            for (i = 0; i < nrects; i++)
+            {
+                glScissor(rects[i].x1, gt->height - rects[i].y2,
+                          rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
+                glDrawArrays(GL_TRIANGLE_FAN, 4 * i, 4);
+            }
+            glDisable(GL_BLEND);
+        }
+
+        glDisable(GL_SCISSOR_TEST);
+    }
+
+    pixman_region32_fini(&repaint);
+
+}
+
+static void
 gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
                            const pepper_list_t *list, pixman_region32_t *damage)
 {
@@ -533,8 +907,14 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
     if (!gl_renderer_use(gr))
         return;
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
+    if (pixman_region32_not_empty(damage))
+    {
+        pepper_list_t *l;
+
+        pepper_list_for_each_list_reverse(l, list)
+            repaint_view(renderer, output, (pepper_render_item_t *)l->item, damage);
+    }
+
     eglSwapBuffers(gr->display, ((gl_render_target_t *)renderer->target)->surface);
 
     /* TODO: eglSwapBuffersWithDamage. */
@@ -785,7 +1165,8 @@ gl_render_target_destroy(pepper_render_target_t *target)
 
 PEPPER_API pepper_render_target_t *
 pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_window,
-                                 pepper_format_t format, const void *visual_id)
+                                 pepper_format_t format, const void *visual_id,
+                                 int32_t width, int32_t height)
 {
     gl_renderer_t      *gr = (gl_renderer_t *)renderer;
     gl_render_target_t *target;
@@ -917,6 +1298,9 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
 
         if (!setup_gl_extensions(gr))
             goto error;
+
+        if (!init_gl_shaders(gr))
+            goto error;
     }
     else
     {
@@ -927,11 +1311,17 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
     target->surface         = surface;
     target->config          = config;
     target->native_window   = native_window;
+    target->width           = width;
+    target->height          = height;
 
     if (gr->context == EGL_NO_CONTEXT)
         gr->context = context;
 
     target->base.destroy = gl_render_target_destroy;
+
+    pepper_mat4_init_translate(&target->proj_mat, (double)width / -2, (double)height / -2, 0);
+    pepper_mat4_scale(&target->proj_mat, (double)2 / width, (double)(-2) / height, 1);
+
     return &target->base;
 
 error:

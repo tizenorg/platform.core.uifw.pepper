@@ -90,7 +90,8 @@ gl_renderer_init(x11_output_t *output)
     output->gl_target = pepper_gl_renderer_create_target(output->connection->gl_renderer,
                                                          (void *)(intptr_t)output->window,
                                                          PEPPER_FORMAT_ARGB8888,
-                                                         &output->connection->screen->root_visual);
+                                                         &output->connection->screen->root_visual,
+                                                         output->w, output->h);
 
     if (!output->target)
     {

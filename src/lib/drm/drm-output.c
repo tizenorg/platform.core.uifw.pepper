@@ -405,7 +405,7 @@ init_gl_renderer(drm_output_t *output)
     output->render_target = pepper_gl_renderer_create_target(drm->gl_renderer,
                                                              output->gbm_surface,
                                                              PEPPER_FORMAT_XRGB8888,
-                                                             &native_visual_id);
+                                                             &native_visual_id, w, h);
     PEPPER_CHECK(output->render_target, goto error, "pepper_gl_renderer_create_target() failed.\n");
     output->render_type = DRM_RENDER_TYPE_GL;
 

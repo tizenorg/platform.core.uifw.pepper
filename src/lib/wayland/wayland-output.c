@@ -270,7 +270,8 @@ init_gl_renderer(wayland_output_t *output)
 
     output->gl_render_target = pepper_gl_renderer_create_target(output->conn->renderer,
                                                                 output->egl.window,
-                                                                PEPPER_FORMAT_ARGB8888, NULL);
+                                                                PEPPER_FORMAT_ARGB8888, NULL,
+                                                                output->w, output->h);
 
     if (!output->gl_render_target)
     {
