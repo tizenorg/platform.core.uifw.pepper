@@ -394,13 +394,13 @@ pepper_surface_get_buffer_scale(pepper_surface_t *surface);
 PEPPER_API int32_t
 pepper_surface_get_buffer_transform(pepper_surface_t *surface);
 
-PEPPER_API const pixman_region32_t *
+PEPPER_API pixman_region32_t *
 pepper_surface_get_damage_region(pepper_surface_t *surface);
 
-PEPPER_API const pixman_region32_t *
+PEPPER_API pixman_region32_t *
 pepper_surface_get_opaque_region(pepper_surface_t *surface);
 
-PEPPER_API const pixman_region32_t *
+PEPPER_API pixman_region32_t *
 pepper_surface_get_input_region(pepper_surface_t *surface);
 
 /* Buffer. */

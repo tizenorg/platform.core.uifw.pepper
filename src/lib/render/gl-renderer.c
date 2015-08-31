@@ -458,7 +458,37 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
     if (state->buffer_type != BUFFER_TYPE_SHM)
         return PEPPER_TRUE;
 
-    /* TODO: Texture upload. */
+    /* Texture upload. */
+    if (state->shm.need_full_upload)
+    {
+        glBindTexture(GL_TEXTURE_2D, state->textures[0]);
+        wl_shm_buffer_begin_access(state->shm.buffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, state->shm.format,
+                     state->buffer_width, state->buffer_height, 0,
+                     state->shm.format, state->shm.pixel_format,
+                     wl_shm_buffer_get_data(state->shm.buffer));
+        wl_shm_buffer_end_access(state->shm.buffer);
+    }
+    else
+    {
+        int                 i, nrects;
+        pixman_box32_t     *rects;
+        pixman_region32_t  *damage;
+
+        damage = pepper_surface_get_damage_region(surface);
+        rects = pixman_region32_rectangles(damage, &nrects);    /* FIXME: compile warning */
+
+        glBindTexture(GL_TEXTURE_2D, state->textures[0]);
+        wl_shm_buffer_begin_access(state->shm.buffer);
+        for (i = 0; i < nrects; i++)
+        {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, rects[i].x1, rects[i].x2,
+                            rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1,
+                            state->shm.format, state->shm.pixel_format,
+                            wl_shm_buffer_get_data(state->shm.buffer));
+        }
+        wl_shm_buffer_end_access(state->shm.buffer);
+    }
 
     return PEPPER_TRUE;
 }

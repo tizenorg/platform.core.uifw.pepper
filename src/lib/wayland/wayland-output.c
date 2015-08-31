@@ -200,6 +200,12 @@ wayland_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h
     pepper_renderer_attach_surface(((wayland_output_t *)o)->renderer, surface, w, h);
 }
 
+static void
+wayland_output_flush_surface(void *o, pepper_surface_t *surface)
+{
+    pepper_renderer_flush_surface_damage(((wayland_output_t *)o)->renderer, surface);
+}
+
 static const pepper_output_backend_t wayland_output_backend =
 {
     wayland_output_destroy,
@@ -215,6 +221,7 @@ static const pepper_output_backend_t wayland_output_backend =
     wayland_output_assign_planes,
     wayland_output_repaint,
     wayland_output_attach_surface,
+    wayland_output_flush_surface,
 };
 
 static void

@@ -469,19 +469,19 @@ pepper_surface_get_buffer_transform(pepper_surface_t *surface)
     return surface->buffer.transform;
 }
 
-PEPPER_API const pixman_region32_t *
+PEPPER_API pixman_region32_t *
 pepper_surface_get_damage_region(pepper_surface_t *surface)
 {
     return &surface->damage_region;
 }
 
-PEPPER_API const pixman_region32_t *
+PEPPER_API pixman_region32_t *
 pepper_surface_get_opaque_region(pepper_surface_t *surface)
 {
     return &surface->opaque_region;
 }
 
-PEPPER_API const pixman_region32_t *
+PEPPER_API pixman_region32_t *
 pepper_surface_get_input_region(pepper_surface_t *surface)
 {
     return &surface->input_region;
@@ -490,7 +490,8 @@ pepper_surface_get_input_region(pepper_surface_t *surface)
 void
 pepper_surface_flush_damage(pepper_surface_t *surface)
 {
-    pepper_view_t *view;
+    pepper_view_t      *view;
+    pepper_output_t    *output;
 
     if (!pixman_region32_not_empty(&surface->damage_region))
         return;
@@ -498,5 +499,6 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
     pepper_list_for_each(view, &surface->view_list, surface_link)
         pepper_view_surface_damage(view);
 
-    /* TODO: Call backend.urface_flush(). */
+    pepper_list_for_each(output, &surface->compositor->output_list, link)
+        output->backend->flush_surface(output->data, surface);
 }
