@@ -76,20 +76,21 @@ drm_connector_destroy(drm_connector_t *conn);
 
 struct drm_buffer
 {
-    pepper_drm_t           *drm;
-    drm_buffer_type_t       type;
-    uint32_t                id;
-    uint32_t                handle;
+    pepper_drm_t            *drm;
+    drm_buffer_type_t        type;
+    uint32_t                 id;
+    uint32_t                 handle;
 
-    uint32_t                w, h;
-    uint32_t                stride;
-    uint32_t                size;
+    uint32_t                 w, h;
+    uint32_t                 stride;
+    uint32_t                 size;
 
-    pepper_buffer_t        *client_buffer;
-    struct gbm_surface     *surface;
-    struct gbm_bo          *bo;
-    void                   *map;
-    pepper_render_target_t *pixman_render_target;
+    pepper_buffer_t         *client_buffer;
+    pepper_event_listener_t *client_buffer_destroy_listener;
+    struct gbm_surface      *surface;
+    struct gbm_bo           *bo;
+    void                    *map;
+    pepper_render_target_t  *pixman_render_target;
 };
 
 drm_buffer_t *

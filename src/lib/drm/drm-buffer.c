@@ -132,6 +132,14 @@ drm_buffer_create_gbm(pepper_drm_t *drm, struct gbm_surface *surface, struct gbm
     return buffer;
 }
 
+static void
+handle_client_buffer_destroy(pepper_event_listener_t *listener, pepper_object_t *object,
+                             uint32_t id, void *info, void *data)
+{
+    drm_buffer_t *buffer = data;
+    buffer->client_buffer = NULL;
+}
+
 drm_buffer_t *
 drm_buffer_create_pepper(pepper_drm_t *drm, pepper_buffer_t *pb)
 {
@@ -160,6 +168,9 @@ drm_buffer_create_pepper(pepper_drm_t *drm, pepper_buffer_t *pb)
     buffer->client_buffer = pb;
     buffer->bo = bo;
     pepper_buffer_reference(pb);
+    buffer->client_buffer_destroy_listener =
+        pepper_object_add_event_listener((pepper_object_t *)pb, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                         handle_client_buffer_destroy, buffer);
 
     return buffer;
 }
@@ -195,7 +206,12 @@ drm_buffer_destroy(drm_buffer_t *buffer)
     }
     else if (buffer->type == DRM_BUFFER_TYPE_CLIENT)
     {
-        pepper_buffer_unreference(buffer->client_buffer);
+        if (buffer->client_buffer)
+        {
+            pepper_buffer_unreference(buffer->client_buffer);
+            pepper_event_listener_remove(buffer->client_buffer_destroy_listener);
+        }
+
         gbm_bo_destroy(buffer->bo);
     }
 
