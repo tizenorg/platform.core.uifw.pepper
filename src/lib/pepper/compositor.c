@@ -107,6 +107,7 @@ pepper_compositor_create(const char *socket_name)
         goto error;
     }
 
+    compositor->clock_id = CLOCK_MONOTONIC;
     return compositor;
 
 error:
@@ -189,4 +190,34 @@ pepper_compositor_pick_view(pepper_compositor_t *compositor,
     }
 
     return NULL;
+}
+
+PEPPER_API pepper_bool_t
+pepper_compositor_set_clock_id(pepper_compositor_t *compositor, clockid_t id)
+{
+    struct timespec ts;
+
+    if (compositor->clock_used)
+    {
+        if (compositor->clock_id == id)
+            return PEPPER_TRUE;
+    }
+
+    if (clock_gettime(id, &ts) < 0)
+        return PEPPER_FALSE;
+
+    compositor->clock_id = id;
+    compositor->clock_used = PEPPER_TRUE;
+
+    return PEPPER_TRUE;
+}
+
+PEPPER_API pepper_bool_t
+pepper_compositor_get_time(pepper_compositor_t *compositor, struct timespec *ts)
+{
+    if (clock_gettime(compositor->clock_id, ts) < 0)
+        return PEPPER_FALSE;
+
+    compositor->clock_used = PEPPER_TRUE;
+    return PEPPER_TRUE;
 }

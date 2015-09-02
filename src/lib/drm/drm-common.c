@@ -99,6 +99,8 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
     int                     ret;
     struct wl_event_loop   *loop;
     drm_magic_t             magic;
+    uint64_t                cap;
+    clockid_t               clock_id;
 
     drm = calloc(1, sizeof(pepper_drm_t));
     PEPPER_CHECK(drm, goto error, "calloc() failed.\n");
@@ -167,6 +169,17 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
     drm_init_connectors(drm);
     drm_init_planes(drm);
     udev_device_unref(udev_device);
+
+    /* Try to set clock. */
+    ret = drmGetCap(drm->fd, DRM_CAP_TIMESTAMP_MONOTONIC, &cap);
+
+    if (ret == 0 && cap == 1)
+        clock_id = CLOCK_MONOTONIC;
+    else
+        clock_id = CLOCK_REALTIME;
+
+    if (!pepper_compositor_set_clock_id(compositor, clock_id))
+        goto error;
 
     return drm;
 

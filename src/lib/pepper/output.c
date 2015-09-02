@@ -150,7 +150,9 @@ output_repaint(pepper_output_t *output)
     pepper_list_for_each(view, &output->view_list, link)
     {
         /* TODO: Output time stamp and presentation feedback. */
-        pepper_surface_send_frame_callback_done(view->surface, 0);
+        pepper_surface_send_frame_callback_done(view->surface,
+                                                output->frame.time.tv_sec * 1000 +
+                                                output->frame.time.tv_nsec / 1000000);
     }
 }
 
@@ -192,6 +194,11 @@ PEPPER_API void
 pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
 {
     output->frame.pending = PEPPER_FALSE;
+
+    if (ts)
+        output->frame.time = *ts;
+    else
+        pepper_compositor_get_time(output->compositor, &output->frame.time);
 
     /* TODO: Better repaint scheduling by putting a delay before repaint. */
     if (output->frame.scheduled)

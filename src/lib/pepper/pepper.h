@@ -270,6 +270,12 @@ PEPPER_API pepper_view_t *
 pepper_compositor_pick_view(pepper_compositor_t *compositor,
                             double x, double y, double *vx, double *vy);
 
+PEPPER_API pepper_bool_t
+pepper_compositor_set_clock_id(pepper_compositor_t *compositor, clockid_t id);
+
+PEPPER_API pepper_bool_t
+pepper_compositor_get_time(pepper_compositor_t *compositor, struct timespec *ts);
+
 /* Output. */
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output);

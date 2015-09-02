@@ -62,6 +62,9 @@ struct pepper_compositor
 
     uint32_t            output_id_allocator;
     pepper_bool_t       update_scheduled;
+
+    clockid_t           clock_id;
+    pepper_bool_t       clock_used;
 };
 
 void
@@ -91,6 +94,7 @@ struct pepper_output
     struct {
         pepper_bool_t           scheduled;
         pepper_bool_t           pending;
+        struct timespec         time;
     } frame;
 
     pepper_list_t               plane_list;
