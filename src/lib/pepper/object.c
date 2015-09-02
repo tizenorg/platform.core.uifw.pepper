@@ -48,8 +48,13 @@ pepper_object_init(pepper_object_t *object, pepper_object_type_t type)
 void
 pepper_object_fini(pepper_object_t *object)
 {
+    pepper_event_listener_t *listener, *tmp;
+
     pepper_object_emit_event(object, PEPPER_EVENT_OBJECT_DESTROY, NULL);
     pepper_map_fini(&object->user_data_map);
+
+    pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
+        pepper_event_listener_remove(listener);
 }
 
 PEPPER_API pepper_object_type_t
