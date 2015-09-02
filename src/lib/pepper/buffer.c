@@ -4,10 +4,6 @@ static void
 buffer_resource_destroy_handler(struct wl_listener *listener, void *data)
 {
     pepper_buffer_t *buffer = pepper_container_of(listener, buffer, resource_destroy_listener);
-
-    /* Ensure no reference to this buffer. */
-    PEPPER_ASSERT(buffer->ref_count == 0);
-
     pepper_object_fini(&buffer->base);
     pepper_free(buffer);
 }

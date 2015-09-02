@@ -145,10 +145,11 @@ struct pepper_surface
     pepper_list_t           link;
 
     struct {
-        pepper_buffer_t    *buffer;
-        int32_t             x, y;
-        int32_t             transform;
-        int32_t             scale;
+        pepper_buffer_t         *buffer;
+        pepper_event_listener_t *destroy_listener;
+        int32_t                  x, y;
+        int32_t                  transform;
+        int32_t                  scale;
     } buffer;
 
     /* Surface size in surface local coordinate space.

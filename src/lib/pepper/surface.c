@@ -9,6 +9,14 @@ surface_state_handle_buffer_destroy(pepper_event_listener_t *listener,
 }
 
 static void
+surface_handle_buffer_destroy(pepper_event_listener_t *listener,
+                              pepper_object_t *object, uint32_t id, void *info, void *data)
+{
+    pepper_surface_t *surface = data;
+    surface->buffer.buffer = NULL;
+}
+
+static void
 pepper_surface_state_init(pepper_surface_state_t *state)
 {
     state->buffer = NULL;
@@ -35,6 +43,9 @@ pepper_surface_state_fini(pepper_surface_state_t *state)
 
     wl_resource_for_each_safe(callback, next, &state->frame_callback_list)
         wl_resource_destroy(callback);
+
+    if (state->buffer)
+        pepper_event_listener_remove(state->buffer_destroy_listener);
 }
 
 static void
@@ -277,7 +288,10 @@ pepper_surface_destroy(pepper_surface_t *surface)
     pepper_object_fini(&surface->base);
 
     if (surface->buffer.buffer)
+    {
         pepper_buffer_unreference(surface->buffer.buffer);
+        pepper_event_listener_remove(surface->buffer.destroy_listener);
+    }
 
     pixman_region32_fini(&surface->damage_region);
     pixman_region32_fini(&surface->opaque_region);
@@ -346,14 +360,21 @@ pepper_surface_commit(pepper_surface_t *surface)
     /* surface.attach(). */
     if (surface->pending.newly_attached)
     {
+        if (surface->buffer.buffer)
+        {
+            pepper_buffer_unreference(surface->buffer.buffer);
+            pepper_event_listener_remove(surface->buffer.destroy_listener);
+        }
+
         if (surface->pending.buffer)
         {
             pepper_event_listener_remove(surface->pending.buffer_destroy_listener);
             pepper_buffer_reference(surface->pending.buffer);
+            surface->buffer.destroy_listener =
+                pepper_object_add_event_listener(&surface->pending.buffer->base,
+                                                 PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                                 surface_handle_buffer_destroy, surface);
         }
-
-        if (surface->buffer.buffer)
-            pepper_buffer_unreference(surface->buffer.buffer);
 
         surface->buffer.buffer   = surface->pending.buffer;
         surface->buffer.x       += surface->pending.x;
