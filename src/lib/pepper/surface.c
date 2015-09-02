@@ -242,7 +242,6 @@ pepper_surface_create(pepper_compositor_t *compositor,
     {
         PEPPER_ERROR("wl_resource_create failed\n");
         wl_resource_post_no_memory(resource);
-        pepper_free(surface->user_data_map);
         pepper_free(surface);
         return NULL;
     }
@@ -262,6 +261,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     wl_list_init(&surface->frame_callback_list);
     pepper_list_init(&surface->view_list);
+    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_SURFACE_ADD, surface);
 
     return surface;
 }
@@ -271,7 +271,10 @@ pepper_surface_destroy(pepper_surface_t *surface)
 {
     struct wl_resource *callback, *next;
 
+    pepper_object_emit_event(&surface->compositor->base,
+                             PEPPER_EVENT_COMPOSITOR_SURFACE_REMOVE, surface);
     pepper_surface_state_fini(&surface->pending);
+    pepper_object_fini(&surface->base);
 
     if (surface->buffer.buffer)
         pepper_buffer_unreference(surface->buffer.buffer);
@@ -288,10 +291,6 @@ pepper_surface_destroy(pepper_surface_t *surface)
     if (surface->role)
         pepper_string_free(surface->role);
 
-    if (surface->user_data_map)
-        pepper_map_destroy(surface->user_data_map);
-
-    pepper_object_fini(&surface->base);
     pepper_free(surface);
 }
 

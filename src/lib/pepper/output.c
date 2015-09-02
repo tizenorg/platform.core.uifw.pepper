@@ -288,7 +288,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     pepper_list_insert(&compositor->output_list, &output->link);
 
     pepper_list_init(&output->plane_list);
-    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD, NULL);
+    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD, output);
 
     return output;
 }
@@ -302,16 +302,14 @@ pepper_output_get_compositor(pepper_output_t *output)
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output)
 {
-    output->compositor->output_id_allocator &= ~(1 << output->id);
-    pepper_list_remove(&output->link);
-
-    output->backend->destroy(output->data);
-
-    wl_global_destroy(output->global);
-
-    pepper_object_fini(&output->base);
     pepper_object_emit_event(&output->compositor->base,
                              PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE, output);
+    pepper_object_fini(&output->base);
+
+    output->compositor->output_id_allocator &= ~(1 << output->id);
+    pepper_list_remove(&output->link);
+    output->backend->destroy(output->data);
+    wl_global_destroy(output->global);
 
     free(output->name);
     pepper_free(output);

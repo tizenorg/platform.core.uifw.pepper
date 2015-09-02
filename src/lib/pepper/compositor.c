@@ -132,9 +132,9 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
 {
     /* TODO: Data device manager fini. */
 
+    pepper_object_fini(&compositor->base);
     wl_global_destroy(compositor->global);
     wl_display_destroy(compositor->display);
-    pepper_object_fini(&compositor->base);
     pepper_free(compositor);
 }
 

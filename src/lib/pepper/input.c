@@ -323,8 +323,8 @@ seat_update_pointer_cap(pepper_seat_t *seat)
     else if (!(seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer.active)
     {
         seat->pointer.active = PEPPER_FALSE;
-        pepper_object_fini(&seat->pointer.base);
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_REMOVE, &seat->pointer);
+        pepper_object_fini(&seat->pointer.base);
     }
 }
 
@@ -341,8 +341,8 @@ seat_update_keyboard_cap(pepper_seat_t *seat)
     else if (!(seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard.active)
     {
         seat->keyboard.active = PEPPER_FALSE;
-        pepper_object_fini(&seat->keyboard.base);
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE, &seat->keyboard);
+        pepper_object_fini(&seat->keyboard.base);
     }
 }
 
@@ -359,8 +359,8 @@ seat_update_touch_cap(pepper_seat_t *seat)
     else if (!(seat->caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch.active)
     {
         seat->touch.active = PEPPER_FALSE;
-        pepper_object_fini(&seat->touch.base);
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_REMOVE, &seat->touch);
+        pepper_object_fini(&seat->touch.base);
     }
 }
 

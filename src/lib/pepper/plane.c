@@ -90,6 +90,8 @@ pepper_plane_destroy(pepper_plane_t *plane)
 {
     pepper_plane_entry_t *entry;
 
+    pepper_object_fini(&plane->base);
+
     pepper_list_for_each(entry, &plane->entry_list, link)
         pepper_view_assign_plane(entry->base.view, plane->output, NULL);
 
@@ -97,7 +99,6 @@ pepper_plane_destroy(pepper_plane_t *plane)
     pixman_region32_fini(&plane->damage_region);
     pixman_region32_fini(&plane->clip_region);
 
-    pepper_object_fini(&plane->base);
     pepper_free(plane);
 }
 

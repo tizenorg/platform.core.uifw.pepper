@@ -329,6 +329,7 @@ pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surfa
     view->surface_destroy_listener =
         pepper_object_add_event_listener(&surface->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
                                          view_handle_surface_destroy, view);
+    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_VIEW_ADD, view);
 
     return view;
 }
@@ -338,6 +339,9 @@ pepper_view_destroy(pepper_view_t *view)
 {
     int             i;
     pepper_view_t  *child, *tmp;
+
+    pepper_object_emit_event(&view->compositor->base, PEPPER_EVENT_COMPOSITOR_VIEW_REMOVE, view);
+    pepper_object_fini(&view->base);
 
     for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
         plane_entry_set_plane(&view->plane_entries[i], NULL);
@@ -359,7 +363,6 @@ pepper_view_destroy(pepper_view_t *view)
     pixman_region32_fini(&view->opaque_region);
     pixman_region32_fini(&view->bounding_region);
 
-    pepper_object_fini(&view->base);
     pepper_free(view);
 }
 

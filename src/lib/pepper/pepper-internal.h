@@ -161,7 +161,6 @@ struct pepper_surface
     pepper_surface_state_t  pending;
 
     char                   *role;
-    pepper_map_t           *user_data_map;
     pepper_list_t           view_list;
 };
 
