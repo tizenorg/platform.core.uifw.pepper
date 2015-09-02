@@ -211,10 +211,10 @@ error:
 PEPPER_API void
 pepper_drm_destroy(pepper_drm_t *drm)
 {
-    drm_connector_t *conn;
-    drm_plane_t     *plane;
+    drm_connector_t *conn, *next_conn;
+    drm_plane_t     *plane, *next_plane;
 
-    pepper_list_for_each(conn, &drm->connector_list, link)
+    pepper_list_for_each_safe(conn, next_conn, &drm->connector_list, link)
     {
         if (conn->output)
             drm_output_destroy(conn->output);
@@ -222,14 +222,14 @@ pepper_drm_destroy(pepper_drm_t *drm)
         drm_connector_destroy(conn);
     }
 
-    pepper_list_for_each(plane, &drm->plane_list, link)
+    pepper_list_for_each_safe(plane, next_plane, &drm->plane_list, link)
         drm_plane_destroy(plane);
 
-/*    if (drm->pixman_renderer)
+    if (drm->pixman_renderer)
         pepper_renderer_destroy(drm->pixman_renderer);
 
     if (drm->gl_renderer)
-        pepper_renderer_destroy(drm->gl_renderer);*/
+        pepper_renderer_destroy(drm->gl_renderer);
 
     if (drm->resources)
         drmModeFreeResources(drm->resources);

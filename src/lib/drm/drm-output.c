@@ -347,6 +347,8 @@ init_pixman_renderer(drm_output_t *output)
     }
 
     pixman_region32_init(&output->previous_damage);
+    output->render_type = DRM_RENDER_TYPE_PIXMAN;
+
     return;
 
 error:
@@ -398,6 +400,8 @@ init_gl_renderer(drm_output_t *output)
                                                              PEPPER_FORMAT_XRGB8888,
                                                              &native_visual_id);
     PEPPER_CHECK(output->render_target, goto error, "pepper_gl_renderer_create_target() failed.\n");
+    output->render_type = DRM_RENDER_TYPE_GL;
+
     return;
 
 error:

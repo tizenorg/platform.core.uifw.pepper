@@ -99,11 +99,13 @@ init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo)
 
     ret = drmModeAddFB2(drm->fd, buffer->w, buffer->h, gbm_bo_get_format(bo),
                         handles, strides, offsets, &buffer->id , 0);
-    PEPPER_CHECK(ret, return PEPPER_FALSE, "drmModeAddFB2() failed.\n");
 
-    ret = drmModeAddFB(drm->fd, buffer->w, buffer->h, 24, 32,
-                       buffer->stride, buffer->handle, &buffer->id);
-    PEPPER_CHECK(ret, return PEPPER_FALSE, "drmModeAddFB() failed.\n");
+    if (ret != 0)
+    {
+        ret = drmModeAddFB(drm->fd, buffer->w, buffer->h, 24, 32,
+                           buffer->stride, buffer->handle, &buffer->id);
+        PEPPER_CHECK(ret, return PEPPER_FALSE, "drmModeAddFB() failed.\n");
+    }
 
     return PEPPER_TRUE;
 }
