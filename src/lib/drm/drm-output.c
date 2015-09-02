@@ -463,6 +463,8 @@ drm_output_create(drm_connector_t *conn)
     }
 
     drm->used_crtcs |= (1 << output->crtc_index);
+    conn->output = output;
+
     return output;
 
 error:
