@@ -265,6 +265,15 @@ pepper_log(const char* domain, int level, const char *format, ...);
         pepper_log("DEBUG", 0, fmt, ##__VA_ARGS__);                                     \
     } while (0)
 
+#define PEPPER_CHECK(exp, action, fmt, ...)                                             \
+    do {                                                                                \
+        if (!(exp))                                                                     \
+        {                                                                               \
+            PEPPER_ERROR(fmt, ##__VA_ARGS__);                                           \
+            action;                                                                     \
+        }                                                                               \
+    } while (0)
+
 PEPPER_API void
 pepper_assert(pepper_bool_t exp);
 
