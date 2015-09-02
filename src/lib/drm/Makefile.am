@@ -10,4 +10,7 @@ libpepper_drm_la_LIBADD = $(PEPPER_DRM_LIBS)
 
 libpepper_drm_la_SOURCES =  drm-internal.h  \
                             drm-common.c    \
-                            drm-output.c
+                            drm-output.c    \
+                            drm-connector.c \
+                            drm-plane.c     \
+                            drm-buffer.c

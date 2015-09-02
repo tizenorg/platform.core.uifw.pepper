@@ -75,7 +75,7 @@ main(int argc, char **argv)
     if (!input)
         goto cleanup;
 
-    drm = pepper_drm_create(compositor, udev, ""/*device*/, "pixman"/*renderer*/);
+    drm = pepper_drm_create(compositor, udev, NULL);
     if (!drm)
         goto cleanup;
 
