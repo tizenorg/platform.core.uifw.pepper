@@ -445,7 +445,6 @@ pepper_libinput_create(pepper_compositor_t *compositor, struct udev *udev)
         PEPPER_ERROR("Failed to initialize libinput in %s\n", __FUNCTION__);
         goto error;
     }
-    libinput_ref(input->libinput);
 
     if (libinput_udev_assign_seat(input->libinput, "seat0"/* FIXME */) != 0)
     {
