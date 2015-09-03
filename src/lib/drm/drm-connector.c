@@ -49,8 +49,6 @@ drm_init_connectors(pepper_drm_t *drm)
 {
     int i;
 
-    pepper_list_init(&drm->connector_list);
-
     for (i = 0; i < drm->resources->count_connectors; i++)
     {
         drm_connector_t *conn = calloc(1, sizeof(drm_connector_t));

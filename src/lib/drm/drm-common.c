@@ -107,6 +107,8 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
 
     drm->compositor = compositor;
     drm->fd = -1;
+    pepper_list_init(&drm->plane_list);
+    pepper_list_init(&drm->connector_list);
 
     /* Find primary GPU udev device. Usually card0. */
     udev_device = find_primary_gpu(udev);
@@ -165,7 +167,6 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
     drm->resources = drmModeGetResources(drm->fd);
     PEPPER_CHECK(drm->resources, goto error, "drmModeGetResources() failed.\n");
 
-    pepper_list_init(&drm->plane_list);
     drm_init_connectors(drm);
     drm_init_planes(drm);
     udev_device_unref(udev_device);
@@ -185,22 +186,7 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
 
 error:
     if (drm)
-    {
-        if (drm->resources)
-            drmModeFreeResources(drm->resources);
-
-        if (drm->udev_event_source)
-            wl_event_source_remove(drm->udev_event_source);
-
-        if (drm->drm_event_source)
-            wl_event_source_remove(drm->drm_event_source);
-
-        if (drm->udev_monitor)
-            udev_monitor_unref(drm->udev_monitor);
-
-        if (drm->fd != -1)
-            close(drm->fd);
-    }
+        pepper_drm_destroy(drm);
 
     if (udev_device)
         udev_device_unref(udev_device);
@@ -228,6 +214,18 @@ pepper_drm_destroy(pepper_drm_t *drm)
 
     if (drm->resources)
         drmModeFreeResources(drm->resources);
+
+    if (drm->udev_event_source)
+        wl_event_source_remove(drm->udev_event_source);
+
+    if (drm->drm_event_source)
+        wl_event_source_remove(drm->drm_event_source);
+
+    if (drm->udev_monitor)
+        udev_monitor_unref(drm->udev_monitor);
+
+    if (drm->fd != -1)
+        close(drm->fd);
 
     free(drm);
 }
