@@ -77,6 +77,7 @@ pepper_compositor_create(const char *socket_name)
     pepper_list_init(&compositor->region_list);
     pepper_list_init(&compositor->seat_list);
     pepper_list_init(&compositor->output_list);
+    pepper_list_init(&compositor->input_device_list);
 
     compositor->socket_name = strdup(socket_name);
     PEPPER_CHECK(compositor->socket_name, goto error, "strdup() failed.\n");
@@ -162,6 +163,12 @@ PEPPER_API const pepper_list_t *
 pepper_compositor_get_seat_list(pepper_compositor_t *compositor)
 {
     return &compositor->seat_list;
+}
+
+PEPPER_API const pepper_list_t *
+pepper_compositor_get_input_device_list(pepper_compositor_t *compositor)
+{
+    return &compositor->input_device_list;
 }
 
 PEPPER_API pepper_view_t *

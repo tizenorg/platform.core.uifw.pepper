@@ -528,7 +528,9 @@ pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
     device->caps = caps;
     device->backend = backend;
     device->data = data;
+    device->link.item = device;
 
+    pepper_list_insert(&compositor->input_device_list, &device->link);
     pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
                              device);
     return device;
@@ -539,6 +541,7 @@ pepper_input_device_destroy(pepper_input_device_t *device)
 {
     pepper_object_emit_event(&device->compositor->base,
                              PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE, device);
+    pepper_list_remove(&device->link);
     pepper_object_fini(&device->base);
     free(device);
 }

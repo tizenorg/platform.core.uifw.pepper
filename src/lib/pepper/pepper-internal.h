@@ -58,6 +58,7 @@ struct pepper_compositor
     pepper_list_t       seat_list;
     pepper_list_t       output_list;
     pepper_list_t       view_list;
+    pepper_list_t       input_device_list;
 
     uint32_t            output_id_allocator;
     pepper_bool_t       update_scheduled;
@@ -253,6 +254,7 @@ struct pepper_input_device
 {
     pepper_object_t                         base;
     pepper_compositor_t                    *compositor;
+    pepper_list_t                           link;
 
     uint32_t                                caps;
 

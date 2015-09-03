@@ -272,6 +272,9 @@ pepper_compositor_get_view_list(pepper_compositor_t *compositor);
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_seat_list(pepper_compositor_t *compositor);
 
+PEPPER_API const pepper_list_t *
+pepper_compositor_get_input_device_list(pepper_compositor_t *compositor);
+
 PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output);
 
