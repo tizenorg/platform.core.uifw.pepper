@@ -85,6 +85,38 @@ shell_seat_pointer_end_grab(shell_seat_t *shseat)
     shseat->pointer_grab.interface = shseat->default_pointer_grab.interface;
 }
 
+void
+shell_seat_keyboard_start_grab(shell_seat_t *shseat,
+                               shell_keyboard_grab_interface_t *grab, void *userdata)
+{
+    shseat->keyboard_grab.shseat     = shseat;
+    shseat->keyboard_grab.interface  = grab;
+    shseat->keyboard_grab.userdata   = userdata;
+    shseat->keyboard_grab.keyboard   = pepper_seat_get_keyboard(shseat->seat);
+}
+
+void
+shell_seat_keyboard_end_grab(shell_seat_t *shseat)
+{
+    shseat->keyboard_grab.interface = shseat->default_keyboard_grab.interface;
+}
+
+void
+shell_seat_touch_start_grab(shell_seat_t *shseat,
+                            shell_touch_grab_interface_t *grab, void *userdata)
+{
+    shseat->touch_grab.shseat     = shseat;
+    shseat->touch_grab.interface  = grab;
+    shseat->touch_grab.userdata   = userdata;
+    shseat->touch_grab.touch      = pepper_seat_get_touch(shseat->seat);
+}
+
+void
+shell_seat_touch_end_grab(shell_seat_t *shseat)
+{
+    shseat->touch_grab.interface = shseat->default_touch_grab.interface;
+}
+
 static void
 shell_pointer_move_grab_motion(shell_pointer_grab_t *grab,
                                uint32_t              time,
@@ -320,6 +352,85 @@ shell_pointer_grab_interface_t shell_pointer_default_grab =
 };
 
 static void
+shell_keyboard_default_grab_key(shell_keyboard_grab_t   *grab,
+                                uint32_t                 time,
+                                uint32_t                 key,
+                                uint32_t                 state,
+                                void                    *data)
+{
+    /* TODO */
+}
+
+static void
+shell_keyboard_default_grab_modifiers(shell_keyboard_grab_t *grab,
+                                      uint32_t               time,
+                                      uint32_t               key,
+                                      uint32_t               state,
+                                      void                  *data)
+{
+    /* TODO */
+}
+
+
+shell_keyboard_grab_interface_t shell_keyboard_default_grab =
+{
+    shell_keyboard_default_grab_key,
+    shell_keyboard_default_grab_modifiers,
+};
+
+static void
+shell_touch_default_grab_down(shell_touch_grab_t    *grab,
+                              uint32_t               time,
+                              uint32_t               id,
+                              double                 x,
+                              double                 y,
+                              void                  *data)
+{
+    /* TODO */
+}
+
+static void
+shell_touch_default_grab_up(shell_touch_grab_t  *grab,
+                            uint32_t             time,
+                            uint32_t             id,
+                            void                *data)
+{
+    /* TODO */
+}
+
+static void
+shell_touch_default_grab_motion(shell_touch_grab_t  *grab,
+                                uint32_t             time,
+                                uint32_t             id,
+                                double               x,
+                                double               y,
+                                void                *data)
+{
+    /* TODO */
+}
+
+static void
+shell_touch_default_grab_frame(shell_touch_grab_t *grab, void *data)
+{
+    /* TODO */
+}
+
+static void
+shell_touch_default_grab_cancel(shell_touch_grab_t *grab, void *data)
+{
+    /* TODO */
+}
+
+shell_touch_grab_interface_t shell_touch_default_grab =
+{
+    shell_touch_default_grab_down,
+    shell_touch_default_grab_up,
+    shell_touch_default_grab_motion,
+    shell_touch_default_grab_frame,
+    shell_touch_default_grab_cancel,
+};
+
+static void
 shell_seat_set_default_grab(shell_seat_t *shseat)
 {
     shseat->default_pointer_grab.interface = &shell_pointer_default_grab;
@@ -328,7 +439,17 @@ shell_seat_set_default_grab(shell_seat_t *shseat)
 
     shell_seat_pointer_start_grab(shseat, &shell_pointer_default_grab, NULL);
 
-    /* TODO: keyboard, touch */
+    shseat->default_keyboard_grab.interface = &shell_keyboard_default_grab;
+    shseat->default_keyboard_grab.shseat    = shseat;
+    shseat->default_keyboard_grab.userdata  = NULL;
+
+    shell_seat_keyboard_start_grab(shseat, &shell_keyboard_default_grab, NULL);
+
+    shseat->default_touch_grab.interface = &shell_touch_default_grab;
+    shseat->default_touch_grab.shseat    = shseat;
+    shseat->default_touch_grab.userdata  = NULL;
+
+    shell_seat_touch_start_grab(shseat, &shell_touch_default_grab, NULL);
 }
 
 static void
@@ -428,9 +549,37 @@ keyboard_event_handler(pepper_event_listener_t    *listener,
                        void                       *info,
                        void                       *data)
 {
+    shell_seat_t *shseat = data;
+
     switch (id)
     {
-        /* TODO */
+    case PEPPER_EVENT_KEYBOARD_KEY:
+        {
+            pepper_keyboard_key_event_t *event = info;
+
+            if (shseat->keyboard_grab.interface && shseat->keyboard_grab.interface->key)
+            {
+                shseat->keyboard_grab.interface->key(&shseat->keyboard_grab,
+                                                     event->time,
+                                                     event->key,
+                                                     event->state,
+                                                     shseat->keyboard_grab.userdata);
+            }
+        }
+        break;
+    case PEPPER_EVENT_KEYBOARD_MODIFIERS:
+        {
+            pepper_keyboard_key_event_t *event = info;
+
+            if (shseat->keyboard_grab.interface && shseat->keyboard_grab.interface->modifiers)
+            {
+                shseat->keyboard_grab.interface->modifiers(&shseat->keyboard_grab,
+                                                           event->time,
+                                                           event->key,
+                                                           event->state,
+                                                           shseat->keyboard_grab.userdata);
+            }
+        }
         break;
     default:
         PEPPER_ERROR("unknown event %d\n", id);
@@ -444,9 +593,70 @@ touch_event_handler(pepper_event_listener_t    *listener,
                     void                       *info,
                     void                       *data)
 {
+    shell_seat_t *shseat = data;
+
     switch (id)
     {
-        /* TODO */
+    case PEPPER_EVENT_TOUCH_DOWN:
+        {
+            pepper_touch_down_event_t   *event = info;
+
+            if (shseat->touch_grab.interface && shseat->touch_grab.interface->down)
+            {
+                shseat->touch_grab.interface->down(&shseat->touch_grab,
+                                                   event->time,
+                                                   event->id,
+                                                   event->x,
+                                                   event->y,
+                                                   shseat->touch_grab.userdata);
+            }
+        }
+        break;
+    case PEPPER_EVENT_TOUCH_UP:
+        {
+            pepper_touch_up_event_t   *event = info;
+
+            if (shseat->touch_grab.interface && shseat->touch_grab.interface->up)
+            {
+                shseat->touch_grab.interface->up(&shseat->touch_grab,
+                                                 event->time,
+                                                 event->id,
+                                                 shseat->touch_grab.userdata);
+            }
+        }
+        break;
+    case PEPPER_EVENT_TOUCH_MOTION:
+        {
+            pepper_touch_motion_event_t   *event = info;
+
+            if (shseat->touch_grab.interface && shseat->touch_grab.interface->motion)
+            {
+                shseat->touch_grab.interface->motion(&shseat->touch_grab,
+                                                     event->time,
+                                                     event->id,
+                                                     event->x,
+                                                     event->y,
+                                                     shseat->touch_grab.userdata);
+            }
+        }
+        break;
+    case PEPPER_EVENT_TOUCH_FRAME:
+        {
+            if (shseat->touch_grab.interface && shseat->touch_grab.interface->frame)
+            {
+                shseat->touch_grab.interface->frame(&shseat->touch_grab,
+                                                     shseat->touch_grab.userdata);
+            }
+        }
+        break;
+    case PEPPER_EVENT_TOUCH_CANCEL:
+        {
+            if (shseat->touch_grab.interface && shseat->touch_grab.interface->cancel)
+            {
+                shseat->touch_grab.interface->cancel(&shseat->touch_grab,
+                                                     shseat->touch_grab.userdata);
+            }
+        }
         break;
     default:
         PEPPER_ERROR("unknown event %d\n", id);
@@ -494,6 +704,8 @@ seat_logical_device_add_callback(pepper_event_listener_t    *listener,
             shseat->keyboard_modifiers_listener =
                 pepper_object_add_event_listener(keyboard, PEPPER_EVENT_KEYBOARD_MODIFIERS,
                                                  0, keyboard_event_handler, shseat);
+
+            shseat->keyboard_grab.keyboard = (pepper_keyboard_t *)keyboard;
         }
         break;
     case PEPPER_EVENT_SEAT_TOUCH_ADD:
@@ -519,6 +731,8 @@ seat_logical_device_add_callback(pepper_event_listener_t    *listener,
             shseat->touch_cancel_listener =
                 pepper_object_add_event_listener(touch, PEPPER_EVENT_TOUCH_CANCEL,
                                                  0, touch_event_handler, shseat);
+
+            shseat->touch_grab.touch = (pepper_touch_t *)touch;
         }
         break;
     default :
