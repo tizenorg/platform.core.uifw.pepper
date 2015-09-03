@@ -62,24 +62,30 @@ pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name)
 {
-    int ret;
-    pepper_compositor_t *compositor =
-        (pepper_compositor_t *)pepper_object_alloc(PEPPER_OBJECT_COMPOSITOR,
-                                                   sizeof(pepper_compositor_t));
+    int                  ret;
+    pepper_compositor_t *compositor;
 
+    if (!socket_name)
+        socket_name = "wayland-0";
+
+    compositor = (pepper_compositor_t *)pepper_object_alloc(PEPPER_OBJECT_COMPOSITOR,
+                                                            sizeof(pepper_compositor_t));
     PEPPER_CHECK(compositor, goto error, "pepper_object_alloc() failed.\n");
+
+    pepper_list_init(&compositor->surface_list);
+    pepper_list_init(&compositor->view_list);
+    pepper_list_init(&compositor->region_list);
+    pepper_list_init(&compositor->seat_list);
+    pepper_list_init(&compositor->output_list);
+
+    compositor->socket_name = strdup(socket_name);
+    PEPPER_CHECK(compositor->socket_name, goto error, "strdup() failed.\n");
 
     compositor->display = wl_display_create();
     PEPPER_CHECK(compositor->display, goto error, "wl_display_create() failed.\n");
 
     ret = wl_display_add_socket(compositor->display, socket_name);
     PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
-
-    pepper_list_init(&compositor->surface_list);
-    pepper_list_init(&compositor->seat_list);
-    pepper_list_init(&compositor->output_list);
-    pepper_list_init(&compositor->view_list);
-    pepper_list_init(&compositor->region_list);
 
     ret = wl_display_init_shm(compositor->display);
     PEPPER_CHECK(ret == 0, goto error, "wl_display_init_shm() failed.\n");
@@ -96,18 +102,7 @@ pepper_compositor_create(const char *socket_name)
 
 error:
     if (compositor)
-    {
-        /* TODO: Data device manager fini. */
-
-        if (compositor->global)
-            wl_global_destroy(compositor->global);
-
-        if (compositor->display)
-            wl_display_destroy(compositor->display);
-
-        pepper_object_fini(&compositor->base);
-        free(compositor);
-    }
+        pepper_compositor_destroy(compositor);
 
     return NULL;
 }
@@ -115,11 +110,27 @@ error:
 PEPPER_API void
 pepper_compositor_destroy(pepper_compositor_t *compositor)
 {
+    pepper_surface_t        *surface, *next_surface;
+    pepper_region_t         *region, *next_region;
+
     /* TODO: Data device manager fini. */
 
+    pepper_list_for_each_safe(surface, next_surface, &compositor->surface_list, link)
+        pepper_surface_destroy(surface);
+
+    pepper_list_for_each_safe(region, next_region, &compositor->region_list, link)
+        pepper_region_destroy(region);
+
+    if (compositor->socket_name)
+        free(compositor->socket_name);
+
+    if (compositor->global)
+        wl_global_destroy(compositor->global);
+
+    if (compositor->display)
+        wl_display_destroy(compositor->display);
+
     pepper_object_fini(&compositor->base);
-    wl_global_destroy(compositor->global);
-    wl_display_destroy(compositor->display);
     free(compositor);
 }
 
