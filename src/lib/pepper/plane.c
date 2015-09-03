@@ -99,7 +99,7 @@ pepper_plane_destroy(pepper_plane_t *plane)
     pixman_region32_fini(&plane->damage_region);
     pixman_region32_fini(&plane->clip_region);
 
-    pepper_free(plane);
+    free(plane);
 }
 
 void

@@ -27,7 +27,7 @@ user_data_key_compare(const void *key0, int key0_length, const void *key1, int k
 pepper_object_t *
 pepper_object_alloc(pepper_object_type_t type, size_t size)
 {
-    pepper_object_t *object = pepper_calloc(1, size);
+    pepper_object_t *object = calloc(1, size);
     if (!object)
         return NULL;
 
@@ -103,7 +103,7 @@ pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int prior
     if (!callback)
         return NULL;
 
-    listener = pepper_calloc(1, sizeof(pepper_event_listener_t));
+    listener = calloc(1, sizeof(pepper_event_listener_t));
     if (!listener)
         return NULL;
 
@@ -121,7 +121,7 @@ PEPPER_API void
 pepper_event_listener_remove(pepper_event_listener_t *listener)
 {
     pepper_list_remove(&listener->link);
-    pepper_free(listener);
+    free(listener);
 }
 
 PEPPER_API void

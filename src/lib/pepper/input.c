@@ -450,7 +450,7 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
             return;
     }
 
-    entry = pepper_calloc(1, sizeof(pepper_input_device_entry_t));
+    entry = calloc(1, sizeof(pepper_input_device_entry_t));
     if (!entry)
         return;
 
@@ -475,7 +475,7 @@ pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *devi
         {
             pepper_list_remove(&entry->link);
             pepper_event_listener_remove(entry->listener);
-            pepper_free(entry);
+            free(entry);
             seat_update_caps(seat);
             return;
         }
@@ -513,7 +513,7 @@ pepper_input_device_destroy(pepper_input_device_t *device)
                              PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE,
                              device);
     pepper_object_fini(&device->base);
-    pepper_free(device);
+    free(device);
 }
 
 PEPPER_API const char *

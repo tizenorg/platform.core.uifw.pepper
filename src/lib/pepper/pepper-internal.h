@@ -1,7 +1,6 @@
 #ifndef PEPPER_INTERNAL_H
 #define PEPPER_INTERNAL_H
 
-#include "common.h"
 #include "pepper.h"
 #include <wayland-util.h>
 #include <pixman.h>

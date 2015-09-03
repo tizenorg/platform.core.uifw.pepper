@@ -10,8 +10,6 @@ libpepper_la_LIBADD = $(PEPPER_LIBS) -lm
 
 libpepper_la_SOURCES = pepper.h                 \
                        pepper-internal.h        \
-                       common.h                 \
-                       common.c                 \
                        object.c                 \
                        compositor.c             \
                        output.c                 \

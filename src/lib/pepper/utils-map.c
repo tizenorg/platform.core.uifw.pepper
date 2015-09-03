@@ -1,5 +1,5 @@
 #include "pepper-utils.h"
-#include "common.h"
+#include "pepper-utils.h"
 
 struct pepper_map_entry
 {
@@ -62,7 +62,7 @@ pepper_map_create(int                       bucket_bits,
     pepper_map_t   *map;
     int             bucket_size = 1 << bucket_bits;
 
-    map = pepper_calloc(1, sizeof(pepper_map_t) + bucket_size * sizeof(pepper_map_entry_t *));
+    map = calloc(1, sizeof(pepper_map_t) + bucket_size * sizeof(pepper_map_entry_t *));
     if (!map)
         return NULL;
 
@@ -74,8 +74,8 @@ PEPPER_API void
 pepper_map_destroy(pepper_map_t *map)
 {
     pepper_map_fini(map);
-    pepper_free(map->buckets);
-    pepper_free(map);
+    free(map->buckets);
+    free(map);
 }
 
 PEPPER_API void
@@ -97,7 +97,7 @@ pepper_map_clear(pepper_map_t *map)
             if (curr->free_func)
                 curr->free_func(curr->data);
 
-            pepper_free(curr);
+            free(curr);
             curr = next;
         }
     }
@@ -169,7 +169,7 @@ pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_
                 else
                     *bucket = curr->next;
 
-                pepper_free(curr);
+                free(curr);
             }
 
             return;
@@ -186,7 +186,7 @@ pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_
     }
 
     /* Allocate a new entry. */
-    curr = pepper_malloc(sizeof(pepper_map_entry_t));
+    curr = malloc(sizeof(pepper_map_entry_t));
     PEPPER_ASSERT(curr != NULL);
 
     curr->key = key;

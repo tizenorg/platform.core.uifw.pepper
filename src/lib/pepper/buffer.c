@@ -5,7 +5,7 @@ buffer_resource_destroy_handler(struct wl_listener *listener, void *data)
 {
     pepper_buffer_t *buffer = pepper_container_of(listener, buffer, resource_destroy_listener);
     pepper_object_fini(&buffer->base);
-    pepper_free(buffer);
+    free(buffer);
 }
 
 pepper_buffer_t *

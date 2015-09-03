@@ -129,6 +129,5 @@ x11_output_cursor_destroy(void *o, void *c)
     cursor = (x11_cursor_t *)c;
 
     xcb_free_cursor(conn, cursor->xcb_cursor);
-    /* XXX: pepper_free(cursor->data); ??? */
     free(cursor);
 }

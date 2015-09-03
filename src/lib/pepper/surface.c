@@ -253,7 +253,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
     {
         PEPPER_ERROR("wl_resource_create failed\n");
         wl_resource_post_no_memory(resource);
-        pepper_free(surface);
+        free(surface);
         return NULL;
     }
 
@@ -303,9 +303,9 @@ pepper_surface_destroy(pepper_surface_t *surface)
         wl_resource_destroy(callback);
 
     if (surface->role)
-        pepper_string_free(surface->role);
+        free(surface->role);
 
-    pepper_free(surface);
+    free(surface);
 }
 
 static void
@@ -434,7 +434,7 @@ pepper_surface_set_role(pepper_surface_t *surface, const char *role)
     if (surface->role)
         return PEPPER_FALSE;
 
-    surface->role = pepper_string_copy(role);
+    surface->role = strdup(role);
     if (!surface->role)
         return PEPPER_FALSE;
 

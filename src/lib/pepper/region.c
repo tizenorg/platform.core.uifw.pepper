@@ -47,7 +47,7 @@ pepper_region_create(pepper_compositor_t   *compositor,
                      struct wl_resource    *resource,
                      uint32_t               id)
 {
-    pepper_region_t *region = pepper_calloc(1, sizeof(pepper_region_t));
+    pepper_region_t *region = calloc(1, sizeof(pepper_region_t));
     if (!region)
     {
         PEPPER_ERROR("Surface memory allocation failed\n");
@@ -61,9 +61,9 @@ pepper_region_create(pepper_compositor_t   *compositor,
     if (!region->resource)
     {
         PEPPER_ERROR("wl_resource_create failed\n");
-        pepper_free(region);
+        free(region);
         wl_resource_post_no_memory(resource);
-        pepper_free(region);
+        free(region);
         return NULL;
     }
 
@@ -79,7 +79,7 @@ pepper_region_destroy(pepper_region_t *region)
 {
     pixman_region32_fini(&region->pixman_region);
     pepper_list_remove(&region->link);
-    pepper_free(region);
+    free(region);
 }
 
 static inline void

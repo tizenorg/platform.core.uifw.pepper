@@ -264,7 +264,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 
     if (!output->global)
     {
-        pepper_free(output);
+        free(output);
         return NULL;
     }
 
@@ -319,7 +319,7 @@ pepper_output_destroy(pepper_output_t *output)
     wl_global_destroy(output->global);
 
     free(output->name);
-    pepper_free(output);
+    free(output);
 }
 
 PEPPER_API void

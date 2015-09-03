@@ -53,7 +53,7 @@ static void destroy_data_offer(struct wl_resource *resource)
     if (offer->source)
         wl_list_remove(&offer->source_destroy_listener.link);
 
-    pepper_free(offer);
+    free(offer);
 }
 
 static void
@@ -71,7 +71,7 @@ pepper_data_source_send_offer(pepper_data_source_t *source, struct wl_resource *
     pepper_data_offer_t *offer;
     char **p;
 
-    offer = pepper_calloc(1, sizeof(pepper_data_offer_t));
+    offer = calloc(1, sizeof(pepper_data_offer_t));
     if (!offer)
     {
         wl_resource_post_no_memory(resource);
@@ -82,7 +82,7 @@ pepper_data_source_send_offer(pepper_data_source_t *source, struct wl_resource *
                                          &wl_data_offer_interface, 1, 0);
     if (!offer->resource)
     {
-        pepper_free(offer);
+        free(offer);
         wl_resource_post_no_memory(resource);
         return NULL;
     }
@@ -160,7 +160,7 @@ data_source_offer(struct wl_client   *client,
     p = wl_array_add(&source->mime_types, sizeof(char*));
     if (p)
     {
-        *p = pepper_string_copy(type);
+        *p = strdup(type);
     }
     if (!p || !*p)
         wl_resource_post_no_memory(resource);
@@ -187,11 +187,11 @@ destroy_data_source(struct wl_resource *resource)
     wl_signal_emit(&source->destroy_signal, source);
 
     wl_array_for_each(p, &source->mime_types)
-        pepper_string_free(*p);
+        free(*p);
 
     wl_array_release(&source->mime_types);
 
-    pepper_free(source);
+    free(source);
 }
 
 static void
@@ -201,7 +201,7 @@ create_data_source(struct wl_client   *client,
 {
     pepper_data_source_t    *source;
 
-    source = pepper_calloc(1, sizeof(pepper_data_source_t));
+    source = calloc(1, sizeof(pepper_data_source_t));
     if (!source)
     {
         wl_resource_post_no_memory(resource);
@@ -226,7 +226,7 @@ destroy_data_device(struct wl_resource *resource)
     /* remove item from seat->data_device_list */
     /* wl_list_remove(wl_resource_get_link(device->resource)); */
 
-    pepper_free(device);
+    free(device);
 }
 
 /*
@@ -249,7 +249,7 @@ get_data_device(struct wl_client    *client,
     pepper_data_device_t    *data_device;
     pepper_seat_t           *seat;
 
-    data_device = pepper_calloc(1, sizeof(pepper_data_device_t));
+    data_device = calloc(1, sizeof(pepper_data_device_t));
     if (!data_device)
     {
         wl_resource_post_no_memory(manager_resource);
@@ -262,7 +262,7 @@ get_data_device(struct wl_client    *client,
                                                id);
     if (!data_device->resource)
     {
-        pepper_free(data_device);
+        free(data_device);
         wl_resource_post_no_memory(manager_resource);
         return;
     }

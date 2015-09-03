@@ -363,7 +363,7 @@ pepper_view_destroy(pepper_view_t *view)
     pixman_region32_fini(&view->opaque_region);
     pixman_region32_fini(&view->bounding_region);
 
-    pepper_free(view);
+    free(view);
 }
 
 PEPPER_API pepper_compositor_t *
