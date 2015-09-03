@@ -112,4 +112,5 @@ drm_connector_destroy(drm_connector_t *conn)
         drmModeFreeConnector(conn->connector);
 
     pepper_list_remove(&conn->link);
+    free(conn);
 }

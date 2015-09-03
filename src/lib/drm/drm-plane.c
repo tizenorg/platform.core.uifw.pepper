@@ -23,6 +23,8 @@ drm_init_planes(pepper_drm_t *drm)
 
         pepper_list_insert(drm->plane_list.prev, &plane->link);
     }
+
+    drmModeFreePlaneResources(res);
 }
 
 void
@@ -32,4 +34,5 @@ drm_plane_destroy(drm_plane_t *plane)
         drmModeFreePlane(plane->plane);
 
     pepper_list_remove(&plane->link);
+    free(plane);
 }

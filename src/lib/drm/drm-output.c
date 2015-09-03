@@ -491,6 +491,11 @@ drm_output_destroy(void *o)
     drm_output_t *output = o;
     drm_plane_t  *plane;
 
+    if (output->render_type == DRM_RENDER_TYPE_PIXMAN)
+        fini_pixman_renderer(output);
+    else if (output->render_type == DRM_RENDER_TYPE_GL)
+        fini_gl_renderer(output);
+
     if (output->saved_crtc)
     {
         drmModeSetCrtc(output->conn->drm->fd,
