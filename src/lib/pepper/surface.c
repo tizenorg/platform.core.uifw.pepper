@@ -238,24 +238,12 @@ pepper_surface_create(pepper_compositor_t *compositor,
 {
     pepper_surface_t *surface = (pepper_surface_t *)pepper_object_alloc(PEPPER_OBJECT_SURFACE,
                                                                         sizeof(pepper_surface_t));
-    if (!surface)
-    {
-        PEPPER_ERROR("Surface memory allocation failed\n");
-        wl_resource_post_no_memory(resource);
-        return NULL;
-    }
+    PEPPER_CHECK(surface, goto error, "pepper_object_alloc() failed.\n");
 
     surface->compositor = compositor;
     surface->resource = wl_resource_create(client, &wl_surface_interface,
                                            wl_resource_get_version(resource), id);
-
-    if (!surface->resource)
-    {
-        PEPPER_ERROR("wl_resource_create failed\n");
-        wl_resource_post_no_memory(resource);
-        free(surface);
-        return NULL;
-    }
+    PEPPER_CHECK(surface->resource, goto error, "wl_resource_create() failed\n");
 
     wl_resource_set_implementation(surface->resource, &surface_implementation, surface,
                                    surface_resource_destroy_handler);
@@ -275,6 +263,12 @@ pepper_surface_create(pepper_compositor_t *compositor,
     pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_SURFACE_ADD, surface);
 
     return surface;
+
+error:
+    if (surface)
+        free(surface);
+
+    return NULL;
 }
 
 void

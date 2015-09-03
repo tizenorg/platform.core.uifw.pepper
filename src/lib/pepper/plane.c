@@ -63,12 +63,10 @@ pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above)
 {
     pepper_plane_t *plane;
 
-    if (above && above->output != output)
-        return NULL;
+    PEPPER_CHECK(!above || above->output == output, return NULL, "Output mismatch.\n");
 
     plane = (pepper_plane_t *)pepper_object_alloc(PEPPER_OBJECT_PLANE, sizeof(pepper_plane_t));
-    if (!plane)
-        return NULL;
+    PEPPER_CHECK(plane, return NULL, "pepper_object_alloc() failed.\n");
 
     plane->output = output;
     plane->link.item = plane;

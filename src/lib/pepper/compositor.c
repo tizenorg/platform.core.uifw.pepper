@@ -7,7 +7,9 @@ compositor_create_surface(struct wl_client   *client,
                           uint32_t            id)
 {
     pepper_compositor_t *compositor = wl_resource_get_user_data(resource);
-    pepper_surface_create(compositor, client, resource, id);
+
+    if (!pepper_surface_create(compositor, client, resource, id))
+        wl_resource_post_no_memory(resource);
 }
 
 static void
@@ -16,7 +18,9 @@ compositor_create_region(struct wl_client   *client,
                          uint32_t            id)
 {
     pepper_compositor_t *compositor = wl_resource_get_user_data(resource);
-    pepper_region_create(compositor, client, resource, id);
+
+    if (!pepper_region_create(compositor, client, resource, id))
+        wl_resource_post_no_memory(resource);
 }
 
 static const struct wl_compositor_interface compositor_interface =
@@ -58,28 +62,18 @@ pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name)
 {
+    int ret;
     pepper_compositor_t *compositor =
         (pepper_compositor_t *)pepper_object_alloc(PEPPER_OBJECT_COMPOSITOR,
                                                    sizeof(pepper_compositor_t));
 
-    if (!compositor)
-    {
-        PEPPER_ERROR("pepper_object_alloc() failed.\n");
-        goto error;
-    }
+    PEPPER_CHECK(compositor, goto error, "pepper_object_alloc() failed.\n");
 
     compositor->display = wl_display_create();
-    if (!compositor->display)
-    {
-        PEPPER_ERROR("wl_display_create() failed.\n");
-        goto error;
-    }
+    PEPPER_CHECK(compositor->display, goto error, "wl_display_create() failed.\n");
 
-    if (wl_display_add_socket(compositor->display, socket_name) != 0)
-    {
-        PEPPER_ERROR("wl_display_add_socket(%p, %s) failed.\n", compositor->display, socket_name);
-        goto error;
-    }
+    ret = wl_display_add_socket(compositor->display, socket_name);
+    PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
 
     pepper_list_init(&compositor->surface_list);
     pepper_list_init(&compositor->seat_list);
@@ -87,25 +81,15 @@ pepper_compositor_create(const char *socket_name)
     pepper_list_init(&compositor->view_list);
     pepper_list_init(&compositor->region_list);
 
-    if (wl_display_init_shm(compositor->display) != 0)
-    {
-        PEPPER_ERROR("wl_display_init_shm() failed.\n");
-        goto error;
-    }
+    ret = wl_display_init_shm(compositor->display);
+    PEPPER_CHECK(ret == 0, goto error, "wl_display_init_shm() failed.\n");
 
     compositor->global = wl_global_create(compositor->display, &wl_compositor_interface,
                                           3, compositor, compositor_bind);
-    if (!compositor->global)
-    {
-        PEPPER_ERROR("wl_global_create() failed.\n");
-        goto error;
-    }
+    PEPPER_CHECK(compositor->global, goto error, "wl_global_create() failed.\n");
 
-    if (!pepper_data_device_manager_init(compositor->display))
-    {
-        PEPPER_ERROR("pepper_data_device_manager_init() failed.\n");
-        goto error;
-    }
+    ret = pepper_data_device_manager_init(compositor->display);
+    PEPPER_CHECK(ret == PEPPER_TRUE, goto error, "pepper_data_device_manager_init() failed.\n");
 
     compositor->clock_id = CLOCK_MONOTONIC;
     return compositor;

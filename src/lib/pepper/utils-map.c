@@ -63,8 +63,7 @@ pepper_map_create(int                       bucket_bits,
     int             bucket_size = 1 << bucket_bits;
 
     map = calloc(1, sizeof(pepper_map_t) + bucket_size * sizeof(pepper_map_entry_t *));
-    if (!map)
-        return NULL;
+    PEPPER_CHECK(map, return NULL, "calloc() failed.\n");
 
     pepper_map_init(map, bucket_bits, hash_func, key_length_func, key_compare_func, map + 1);
     return map;
@@ -187,7 +186,7 @@ pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_
 
     /* Allocate a new entry. */
     curr = malloc(sizeof(pepper_map_entry_t));
-    PEPPER_ASSERT(curr != NULL);
+    PEPPER_CHECK(curr, return, "malloc() failed.\n");
 
     curr->key = key;
     curr->data = data;

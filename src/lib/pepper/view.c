@@ -180,12 +180,7 @@ plane_entry_handle_plane_destroy(pepper_event_listener_t *listener,
 void
 pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_plane_t *plane)
 {
-    if (plane && plane->output != output)
-    {
-        PEPPER_ERROR("Output mismatch.\n");
-        return;
-    }
-
+    PEPPER_CHECK(!plane || plane->output == output, return, "Plane output mismatch.\n");
     plane_entry_set_plane(&view->plane_entries[output->id], plane);
 }
 
@@ -310,11 +305,7 @@ pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surfa
 {
     pepper_view_t *view = (pepper_view_t *)pepper_object_alloc(PEPPER_OBJECT_VIEW,
                                                                sizeof(pepper_view_t));
-    if (!view)
-    {
-        PEPPER_ERROR("Failed to allocate a pepper object.\n");
-        return NULL;
-    }
+    PEPPER_CHECK(view, return NULL, "pepper_object_alloc() failed.\n");
 
     view_init(view, compositor);
 

@@ -72,7 +72,6 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     pepper_output_t         *output = (pepper_output_t *)data;
 
     resource = wl_resource_create(client, &wl_output_interface, 2, id);
-
     if (resource == NULL)
     {
         wl_client_post_no_memory(client);
@@ -225,34 +224,21 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     pepper_output_t    *output;
     uint32_t            id;
 
-    if (!name)
-    {
-        PEPPER_ERROR("Output name must be given.\n");
-        return NULL;
-    }
+    PEPPER_CHECK(name, return NULL, "Output name must be given.\n");
 
     pepper_list_for_each(output, &compositor->output_list, link)
     {
-        if (strcmp(output->name, name) == 0)
-        {
-            PEPPER_ERROR("Output with name = %s already exist.\n", name);
-            return NULL;
-        }
+        PEPPER_CHECK(strcmp(output->name, name) != 0, return NULL,
+                     "Output with name = %s already exist.\n", name);
     }
 
     id = ffs(~compositor->output_id_allocator);
-
-    if (id == 0)
-    {
-        PEPPER_ERROR("No available output ids.\n");
-        return NULL;
-    }
+    PEPPER_CHECK(id != 0, return NULL, "No available output ids.\n");
 
     id = id - 1;
 
     output = (pepper_output_t *)pepper_object_alloc(PEPPER_OBJECT_OUTPUT, sizeof(pepper_output_t));
-    if (!output)
-        return NULL;
+    PEPPER_CHECK(output, return NULL, "pepper_object_alloc() failed.\n");
 
     output->compositor = compositor;
     output->link.item = output;
@@ -261,7 +247,6 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     /* Create global object for this output. */
     output->global = wl_global_create(compositor->display, &wl_output_interface, 2, output,
                                       output_bind);
-
     if (!output->global)
     {
         free(output);

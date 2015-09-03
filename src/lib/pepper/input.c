@@ -44,8 +44,7 @@ seat_get_pointer(struct wl_client *client, struct wl_resource *resource, uint32_
     if (!seat->pointer.active)
         return;
 
-    r = wl_resource_create(client, &wl_pointer_interface,
-                           wl_resource_get_version(resource), id);
+    r = wl_resource_create(client, &wl_pointer_interface, wl_resource_get_version(resource), id);
     if (!r)
     {
         wl_client_post_no_memory(client);
@@ -79,8 +78,7 @@ seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32
     if (!seat->keyboard.active)
         return;
 
-    r = wl_resource_create(client, &wl_keyboard_interface,
-                           wl_resource_get_version(resource), id);
+    r = wl_resource_create(client, &wl_keyboard_interface, wl_resource_get_version(resource), id);
     if (!r)
     {
         wl_client_post_no_memory(client);
@@ -141,6 +139,12 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
     struct wl_resource  *resource;
 
     resource = wl_resource_create(client, &wl_seat_interface, version/*FIXME*/, id);
+    if (!resource)
+    {
+        wl_client_post_no_memory(client);
+        return;
+    }
+
     wl_list_insert(&seat->resource_list, wl_resource_get_link(resource));
     wl_resource_set_implementation(resource, &seat_interface, data, unbind_resource);
 
@@ -151,38 +155,73 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 }
 
 PEPPER_API pepper_seat_t *
-pepper_compositor_add_seat(pepper_compositor_t *compositor,
-                           const char *seat_name,
-                           void *data)
+pepper_compositor_add_seat(pepper_compositor_t *compositor, const char *seat_name)
 {
     pepper_seat_t  *seat;
 
+    PEPPER_CHECK(seat_name, return NULL, "seat name must be given.\n");
+
     seat = (pepper_seat_t *)pepper_object_alloc(PEPPER_OBJECT_SEAT, sizeof(pepper_seat_t));
-    if (!seat)
-    {
-        PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-        return NULL;
-    }
-
-    seat->compositor = compositor;
-    seat->data = data;
-
-    wl_list_init(&seat->resource_list);
+    PEPPER_CHECK(seat, return NULL, "Failed to allocate memory in %s\n", __FUNCTION__);
 
     pepper_list_init(&seat->link);
-    pepper_list_insert(&compositor->seat_list, &seat->link);
-
-    if (seat_name)
-        seat->name = strdup(seat_name);
-
-    seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat, bind_seat);
+    wl_list_init(&seat->resource_list);
     pepper_list_init(&seat->input_device_list);
 
-    pepper_object_emit_event(&seat->compositor->base,
-                             PEPPER_EVENT_COMPOSITOR_SEAT_ADD,
-                             seat);
+    seat->name = strdup(seat_name);
+    PEPPER_CHECK(seat->name, goto error, "strdup() failed.\n");
+
+    seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4, seat, bind_seat);
+    PEPPER_CHECK(seat->global, goto error, "wl_global_create() failed.\n");
+
+    seat->compositor = compositor;
+
+    pepper_list_insert(&compositor->seat_list, &seat->link);
+    pepper_object_emit_event(&seat->compositor->base, PEPPER_EVENT_COMPOSITOR_SEAT_ADD, seat);
 
     return seat;
+
+error:
+    if (seat)
+        pepper_seat_destroy(seat);
+
+    return NULL;
+}
+
+PEPPER_API void
+pepper_seat_destroy(pepper_seat_t *seat)
+{
+    struct wl_resource *resource, *tmp;
+
+    if (seat->name)
+        free(seat->name);
+
+    if (seat->pointer.active)
+    {
+        wl_resource_for_each_safe(resource, tmp, &seat->pointer.resource_list)
+            wl_resource_destroy(resource);
+        pepper_object_fini(&seat->pointer.base);
+    }
+
+    if (seat->keyboard.active)
+    {
+        wl_resource_for_each_safe(resource, tmp, &seat->keyboard.resource_list)
+            wl_resource_destroy(resource);
+        pepper_object_fini(&seat->keyboard.base);
+    }
+
+    if (seat->touch.active)
+    {
+        wl_resource_for_each_safe(resource, tmp, &seat->touch.resource_list)
+            wl_resource_destroy(resource);
+        pepper_object_fini(&seat->touch.base);
+    }
+
+    if (seat->global)
+        wl_global_destroy(seat->global);
+
+    wl_resource_for_each_safe(resource, tmp, &seat->resource_list)
+        wl_resource_destroy(resource);
 }
 
 PEPPER_API pepper_pointer_t *
@@ -403,14 +442,7 @@ seat_handle_device_event(pepper_event_listener_t *listener, pepper_object_t *obj
         /* TODO: */
         break;
     case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE:
-        {
-            pepper_pointer_t *pointer = pepper_seat_get_pointer(entry->seat);
-
-            pepper_object_emit_event(&pointer->base,
-                                     PEPPER_EVENT_POINTER_MOTION,
-                                     info);
-
-        }
+        pepper_object_emit_event(&entry->seat->pointer.base, PEPPER_EVENT_POINTER_MOTION, info);
         break;
     case PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON:
         /* TODO: */
@@ -451,8 +483,7 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
     }
 
     entry = calloc(1, sizeof(pepper_input_device_entry_t));
-    if (!entry)
-        return;
+    PEPPER_CHECK(entry, return, "calloc() failed.\n");
 
     entry->seat = seat;
     entry->device = device;
@@ -490,11 +521,7 @@ pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
 
     device = (pepper_input_device_t *)pepper_object_alloc(PEPPER_OBJECT_INPUT_DEVICE,
                                                             sizeof(pepper_input_device_t));
-    if (!device)
-    {
-        PEPPER_ERROR("Failed to allocate memory\n");
-        return NULL;
-    }
+    PEPPER_CHECK(device, return NULL, "pepper_object_alloc() failed.\n");
 
     device->compositor = compositor;
     device->caps = caps;
@@ -510,8 +537,7 @@ PEPPER_API void
 pepper_input_device_destroy(pepper_input_device_t *device)
 {
     pepper_object_emit_event(&device->compositor->base,
-                             PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE,
-                             device);
+                             PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE, device);
     pepper_object_fini(&device->base);
     free(device);
 }

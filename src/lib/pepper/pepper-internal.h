@@ -234,23 +234,19 @@ struct pepper_seat
 {
     pepper_object_t             base;
     pepper_compositor_t        *compositor;
+    pepper_list_t               link;
+    char                       *name;
+    struct wl_global           *global;
+    struct wl_list              resource_list;
 
-    pepper_list_t               input_device_list;
+    enum wl_seat_capability     caps;
+    uint32_t                    modifier;
+
     pepper_pointer_t            pointer;
     pepper_keyboard_t           keyboard;
     pepper_touch_t              touch;
 
-    struct wl_global           *global;
-    struct wl_list              resource_list;
-    pepper_list_t               link;
-
-    enum wl_seat_capability     caps;
-    char                       *name;
-
-    uint32_t                    modifier;
-
-    /* Backend-specific variables. */
-    void                       *data;
+    pepper_list_t               input_device_list;
 };
 
 struct pepper_input_device

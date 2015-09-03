@@ -28,9 +28,7 @@ pepper_object_t *
 pepper_object_alloc(pepper_object_type_t type, size_t size)
 {
     pepper_object_t *object = calloc(1, size);
-    if (!object)
-        return NULL;
-
+    PEPPER_CHECK(object, return NULL, "calloc() failed.\n");
     pepper_object_init(object, type);
     return object;
 }
@@ -100,12 +98,10 @@ pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int prior
 {
     pepper_event_listener_t *listener;
 
-    if (!callback)
-        return NULL;
+    PEPPER_CHECK(callback, return NULL, "callback must be given.\n");
 
     listener = calloc(1, sizeof(pepper_event_listener_t));
-    if (!listener)
-        return NULL;
+    PEPPER_CHECK(listener, return NULL, "calloc() failed.\n");
 
     listener->object    = object;
     listener->id        = id;

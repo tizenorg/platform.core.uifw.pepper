@@ -10,9 +10,7 @@ data_offer_accept(struct wl_client      *client,
     pepper_data_offer_t *offer = wl_resource_get_user_data(resource);
 
     if (offer->source)
-    {
         wl_data_source_send_target(offer->source->resource, mime_type);
-    }
 }
 
 static void
@@ -24,11 +22,7 @@ data_offer_receive(struct wl_client     *client,
     pepper_data_offer_t *offer = wl_resource_get_user_data(resource);
 
     if (offer->source)
-    {
-        wl_data_source_send_send(offer->source->resource,
-                                 mime_type,
-                                 fd);
-    }
+        wl_data_source_send_send(offer->source->resource, mime_type, fd);
 
     close(fd);
 }
@@ -125,11 +119,8 @@ data_device_set_selection(struct wl_client   *client,
                           struct wl_resource *source_resource,
                           uint32_t            serial)
 {
-    /* TODO */
     pepper_data_source_t *source = wl_resource_get_user_data(source_resource);
-
     PEPPER_ERROR("TODO:\n");
-
     pepper_data_source_send_offer(source, resource);
 
 }
@@ -137,7 +128,6 @@ data_device_set_selection(struct wl_client   *client,
 static void
 data_device_release(struct wl_client *client, struct wl_resource *resource)
 {
-    /* TODO */
     PEPPER_ERROR("TODO:\n");
     wl_resource_destroy(resource);
 }
@@ -158,10 +148,10 @@ data_source_offer(struct wl_client   *client,
     char **p;
 
     p = wl_array_add(&source->mime_types, sizeof(char*));
+
     if (p)
-    {
         *p = strdup(type);
-    }
+
     if (!p || !*p)
         wl_resource_post_no_memory(resource);
 }
@@ -295,18 +285,14 @@ data_device_manager_bind(struct wl_client   *client,
 {
     struct wl_resource *resource;
 
-    resource = wl_resource_create(client,
-                                  &wl_data_device_manager_interface,
-                                  version,
-                                  id);
+    resource = wl_resource_create(client, &wl_data_device_manager_interface, version, id);
     if (!resource)
     {
         wl_client_post_no_memory(client);
         return;
     }
 
-    wl_resource_set_implementation(resource, &manager_interface,
-                                   NULL, NULL);
+    wl_resource_set_implementation(resource, &manager_interface, NULL, NULL);
 }
 
 pepper_bool_t
@@ -314,7 +300,9 @@ pepper_data_device_manager_init(struct wl_display *display)
 {
     if( wl_global_create(display, &wl_data_device_manager_interface,
                          2, NULL, data_device_manager_bind) == NULL )
+    {
         return PEPPER_FALSE;
+    }
 
     return PEPPER_TRUE;
 }

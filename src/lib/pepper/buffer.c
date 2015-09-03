@@ -20,8 +20,7 @@ pepper_buffer_from_resource(struct wl_resource *resource)
         return pepper_container_of(listener, buffer, resource_destroy_listener);
 
     buffer = (pepper_buffer_t *)pepper_object_alloc(PEPPER_OBJECT_BUFFER, sizeof(pepper_buffer_t));
-    if (!buffer)
-        return NULL;
+    PEPPER_CHECK(buffer, return NULL, "pepper_object_alloc() failed.\n");
 
     buffer->resource = resource;
     buffer->resource_destroy_listener.notify = buffer_resource_destroy_handler;
@@ -34,7 +33,6 @@ PEPPER_API void
 pepper_buffer_reference(pepper_buffer_t *buffer)
 {
     PEPPER_ASSERT(buffer->ref_count >= 0);
-
     buffer->ref_count++;
 }
 

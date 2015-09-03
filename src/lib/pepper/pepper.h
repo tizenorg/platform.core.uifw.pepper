@@ -306,9 +306,7 @@ pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name)
 
 /* Input. */
 PEPPER_API pepper_seat_t *
-pepper_compositor_add_seat(pepper_compositor_t *compositor,
-                           const char *seat_name,
-                           void *data);
+pepper_compositor_add_seat(pepper_compositor_t *compositor, const char *seat_name);
 
 PEPPER_API void
 pepper_seat_destroy(pepper_seat_t *seat);

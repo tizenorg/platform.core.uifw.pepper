@@ -482,7 +482,7 @@ input_device_add_callback(pepper_event_listener_t    *listener,
         }
     }
 
-    seat = pepper_compositor_add_seat(shell->compositor, target_seat_name, NULL);
+    seat = pepper_compositor_add_seat(shell->compositor, target_seat_name);
     pepper_seat_add_input_device(seat, device);
 }
 
