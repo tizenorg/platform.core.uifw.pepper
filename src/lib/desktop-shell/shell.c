@@ -220,6 +220,8 @@ shell_pointer_default_grab_motion(shell_pointer_grab_t  *grab,
     pepper_view_t       *view;
     pepper_view_t       *pointer_focus_view;
 
+    pepper_pointer_set_position(pointer, x, y);
+
     view                = pepper_compositor_pick_view(shseat->shell->compositor, x, y, NULL, NULL);
     pointer_focus_view  = pepper_pointer_get_focus_view(pointer);
 
@@ -388,7 +390,32 @@ pointer_event_handler(pepper_event_listener_t    *listener,
             }
         }
         break;
-        /* TODO */
+    case PEPPER_EVENT_POINTER_BUTTON:
+        {
+            pepper_pointer_button_event_t *event = info;
+            if (shseat->pointer_grab.interface && shseat->pointer_grab.interface->button)
+            {
+                shseat->pointer_grab.interface->button(&shseat->pointer_grab,
+                                                       event->time,
+                                                       event->button,
+                                                       event->state,
+                                                       shseat->pointer_grab.userdata);
+            }
+        }
+        break;
+    case PEPPER_EVENT_POINTER_AXIS:
+        {
+            pepper_pointer_axis_event_t *event = info;
+            if (shseat->pointer_grab.interface && shseat->pointer_grab.interface->axis)
+            {
+                shseat->pointer_grab.interface->axis(&shseat->pointer_grab,
+                                                     event->time,
+                                                     event->axis,
+                                                     event->value,
+                                                     shseat->pointer_grab.userdata);
+            }
+        }
+        break;
     default:
         PEPPER_ERROR("unknown event %d\n", id);
     }
