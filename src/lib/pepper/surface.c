@@ -248,6 +248,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
     wl_resource_set_implementation(surface->resource, &surface_implementation, surface,
                                    surface_resource_destroy_handler);
 
+    surface->link.item = surface;
     pepper_list_insert(&compositor->surface_list, &surface->link);
     pepper_surface_state_init(&surface->pending);
 

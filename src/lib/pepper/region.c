@@ -57,6 +57,7 @@ pepper_region_create(pepper_compositor_t   *compositor,
     wl_resource_set_implementation(region->resource, &region_implementation,
                                    region, region_resource_destroy_handler);
 
+    region->link.item = region;
     pepper_list_insert(&compositor->region_list, &region->link);
     pixman_region32_init(&region->pixman_region);
 

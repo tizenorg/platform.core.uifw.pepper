@@ -176,6 +176,7 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor, const char *seat_nam
 
     seat->compositor = compositor;
 
+    seat->link.item = seat;
     pepper_list_insert(&compositor->seat_list, &seat->link);
     pepper_object_emit_event(&seat->compositor->base, PEPPER_EVENT_COMPOSITOR_SEAT_ADD, seat);
 
