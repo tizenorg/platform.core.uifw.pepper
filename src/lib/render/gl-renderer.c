@@ -527,23 +527,23 @@ surface_state_attach_shm(gl_surface_state_t *state, pepper_buffer_t *buffer)
         pitch != state->shm.pitch || format != state->shm.format ||
         pixel_format != state->shm.pixel_format)
     {
-        state->buffer_type      = BUFFER_TYPE_SHM;
-        state->buffer_width     = w;
-        state->buffer_height    = h;
-
-        /* SHM buffer's origin is upper-left. */
-        state->y_inverted       = 1;
-
-        state->shm.buffer       = shm_buffer;
-        state->shm.format       = format;
-        state->shm.pixel_format = pixel_format;
-        state->shm.pitch        = pitch;
-
         /* Don't use glTexSubImage2D() for shm buffers in this case. */
         state->shm.need_full_upload = PEPPER_TRUE;
-
-        surface_state_ensure_textures(state, 1);
     }
+
+    state->buffer_type      = BUFFER_TYPE_SHM;
+    state->buffer_width     = w;
+    state->buffer_height    = h;
+
+    /* SHM buffer's origin is upper-left. */
+    state->y_inverted       = 1;
+
+    state->shm.buffer       = shm_buffer;
+    state->shm.format       = format;
+    state->shm.pixel_format = pixel_format;
+    state->shm.pitch        = pitch;
+
+    surface_state_ensure_textures(state, 1);
 
     state->sampler = sampler;
 
@@ -674,21 +674,39 @@ done:
 static pepper_bool_t
 gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *surface)
 {
+    gl_renderer_t      *gr = (gl_renderer_t *)renderer;
     gl_surface_state_t *state = get_surface_state(renderer, surface);
 
     if (state->buffer_type != BUFFER_TYPE_SHM)
         return PEPPER_TRUE;
 
-    /* Texture upload. */
-    if (state->shm.need_full_upload)
+    glBindTexture(GL_TEXTURE_2D, state->textures[0]);
+
+    if (!gr->has_unpack_subimage)
     {
-        glBindTexture(GL_TEXTURE_2D, state->textures[0]);
         wl_shm_buffer_begin_access(state->shm.buffer);
         glTexImage2D(GL_TEXTURE_2D, 0, state->shm.format,
                      state->buffer_width, state->buffer_height, 0,
                      state->shm.format, state->shm.pixel_format,
                      wl_shm_buffer_get_data(state->shm.buffer));
         wl_shm_buffer_end_access(state->shm.buffer);
+        return PEPPER_TRUE;
+    }
+
+    /* Texture upload. */
+    if (state->shm.need_full_upload)
+    {
+        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, state->shm.pitch);
+        glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, 0);
+        glPixelStorei(GL_UNPACK_SKIP_ROWS_EXT, 0);
+
+        wl_shm_buffer_begin_access(state->shm.buffer);
+        glTexImage2D(GL_TEXTURE_2D, 0, state->shm.format,
+                     state->buffer_width, state->buffer_height, 0,
+                     state->shm.format, state->shm.pixel_format,
+                     wl_shm_buffer_get_data(state->shm.buffer));
+        wl_shm_buffer_end_access(state->shm.buffer);
+        state->shm.need_full_upload = PEPPER_FALSE;
     }
     else
     {
@@ -697,13 +715,15 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
         pixman_region32_t  *damage;
 
         damage = pepper_surface_get_damage_region(surface);
-        rects = pixman_region32_rectangles(damage, &nrects);    /* FIXME: compile warning */
+        rects = pixman_region32_rectangles(damage, &nrects);
 
-        glBindTexture(GL_TEXTURE_2D, state->textures[0]);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, state->shm.pitch);
         wl_shm_buffer_begin_access(state->shm.buffer);
         for (i = 0; i < nrects; i++)
         {
-            glTexSubImage2D(GL_TEXTURE_2D, 0, rects[i].x1, rects[i].x2,
+            glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, rects[i].x1);
+            glPixelStorei(GL_UNPACK_SKIP_ROWS_EXT, rects[i].y1);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, rects[i].x1, rects[i].y1,
                             rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1,
                             state->shm.format, state->shm.pixel_format,
                             wl_shm_buffer_get_data(state->shm.buffer));
@@ -892,6 +912,7 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
         }
 
         glDisable(GL_SCISSOR_TEST);
+        pixman_region32_fini(&repaint_opaque);
     }
 
     pixman_region32_fini(&repaint);
