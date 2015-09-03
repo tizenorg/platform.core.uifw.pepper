@@ -110,7 +110,8 @@ view_handle_surface_destroy(pepper_event_listener_t *listener,
 {
     pepper_view_t *view = data;
     PEPPER_ASSERT(view->surface != NULL);
-    pepper_view_destroy(view);
+    view->surface = NULL;
+    pepper_list_remove(&view->surface_link);
 }
 
 static pepper_list_t *
@@ -194,6 +195,11 @@ view_update_geometry(pepper_view_t *view)
         view->w = view->surface->w;
         view->h = view->surface->h;
     }
+    else
+    {
+        view->w = 0;
+        view->h = 0;
+    }
 
     pepper_mat4_init_translate(&view->global_transform, view->x, view->y, 0.0);
     pepper_mat4_multiply(&view->global_transform, &view->transform, &view->global_transform);
@@ -235,7 +241,6 @@ view_update_geometry(pepper_view_t *view)
         if (pixman_region32_contains_rectangle(&view->bounding_region, &box) != PIXMAN_REGION_OUT)
             view->output_overlap |= (1 << output->id);
     }
-
 }
 
 void
