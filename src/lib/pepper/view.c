@@ -195,11 +195,6 @@ view_update_geometry(pepper_view_t *view)
         view->w = view->surface->w;
         view->h = view->surface->h;
     }
-    else
-    {
-        view->w = 0;
-        view->h = 0;
-    }
 
     pepper_mat4_init_translate(&view->global_transform, view->x, view->y, 0.0);
     pepper_mat4_multiply(&view->global_transform, &view->transform, &view->global_transform);
@@ -213,17 +208,27 @@ view_update_geometry(pepper_view_t *view)
     pepper_mat4_inverse(&view->global_transform_inverse, &view->global_transform);
 
     /* Bounding region. */
-    pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
-    pepper_transform_pixman_region(&view->bounding_region, &view->global_transform);
+    if (view->w == 0 || view->h == 0)
+    {
+        pixman_region32_clear(&view->bounding_region);
+    }
+    else
+    {
+        pixman_region32_fini(&view->bounding_region);
+        pixman_region32_init_rect(&view->bounding_region, 0, 0, view->w, view->h);
+        pepper_transform_pixman_region(&view->bounding_region, &view->global_transform);
+    }
 
     /* Opaque region. */
-    pixman_region32_init(&view->opaque_region);
-
     if (view->surface && pepper_mat4_is_translation(&view->global_transform))
     {
         pixman_region32_copy(&view->opaque_region, &view->surface->opaque_region);
         pixman_region32_translate(&view->opaque_region,
                                   view->global_transform.m[12], view->global_transform.m[13]);
+    }
+    else
+    {
+        pixman_region32_clear(&view->opaque_region);
     }
 
     view->output_overlap = 0;
@@ -306,7 +311,7 @@ view_init(pepper_view_t *view, pepper_compositor_t *compositor)
 }
 
 PEPPER_API pepper_view_t *
-pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surface_t *surface)
+pepper_compositor_add_view(pepper_compositor_t *compositor)
 {
     pepper_view_t *view = (pepper_view_t *)pepper_object_alloc(PEPPER_OBJECT_VIEW,
                                                                sizeof(pepper_view_t));
@@ -316,18 +321,39 @@ pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surfa
 
     view->x = 0.0;
     view->y = 0.0;
-    view->w = surface->w;
-    view->h = surface->h;
+    view->w = 0;
+    view->h = 0;
+
+    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_VIEW_ADD, view);
+    return view;
+}
+
+PEPPER_API pepper_bool_t
+pepper_view_set_surface(pepper_view_t *view, pepper_surface_t *surface)
+{
+    if (view->surface == surface)
+        return PEPPER_TRUE;
+
+    if (view->surface)
+    {
+        pepper_event_listener_remove(view->surface_destroy_listener);
+        pepper_list_remove(&view->surface_link);
+    }
 
     view->surface = surface;
-    pepper_list_insert(&surface->view_list, &view->surface_link);
 
-    view->surface_destroy_listener =
-        pepper_object_add_event_listener(&surface->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
-                                         view_handle_surface_destroy, view);
-    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_VIEW_ADD, view);
+    if (view->surface)
+    {
+        pepper_list_insert(&surface->view_list, &view->surface_link);
+        view->surface_destroy_listener =
+            pepper_object_add_event_listener(&surface->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                             view_handle_surface_destroy, view);
 
-    return view;
+        /* TODO: Emit view event for the surface change. */
+    }
+
+    view_mark_dirty(view, PEPPER_VIEW_VISIBILITY_DIRTY | PEPPER_VIEW_GEOMETRY_DIRTY);
+    return PEPPER_TRUE;
 }
 
 PEPPER_API void

@@ -425,7 +425,10 @@ pepper_buffer_get_resource(pepper_buffer_t *buffer);
 
 /* View. */
 PEPPER_API pepper_view_t *
-pepper_compositor_add_surface_view(pepper_compositor_t *compositor, pepper_surface_t *surface);
+pepper_compositor_add_view(pepper_compositor_t *compositor);
+
+PEPPER_API pepper_bool_t
+pepper_view_set_surface(pepper_view_t *view, pepper_surface_t *surface);
 
 PEPPER_API void
 pepper_view_destroy(pepper_view_t *view);

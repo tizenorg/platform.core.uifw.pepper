@@ -193,10 +193,16 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
     shsurf->client       = client;
     shsurf->surface      = surface;
 
-    shsurf->view    = pepper_compositor_add_surface_view(shell_client->shell->compositor, surface);
+    shsurf->view    = pepper_compositor_add_view(shell_client->shell->compositor);
     if (!shsurf->view)
     {
         PEPPER_ERROR("pepper_compositor_add_view failed\n");
+        goto error;
+    }
+
+    if (!pepper_view_set_surface(shsurf->view, surface))
+    {
+        PEPPER_ERROR("pepper_view_set_surface() failed.\n");
         goto error;
     }
 
@@ -764,8 +770,8 @@ shell_surface_map_fullscreen(shell_surface_t *shsurf)
          */
 
         shsurf->fullscreen.background_surface = surface;
-        shsurf->fullscreen.background_view =
-            pepper_compositor_add_surface_view(shsurf->shell->compositor, surface);
+        shsurf->fullscreen.background_view = pepper_compositor_add_view(shsurf->shell->compositor);
+        pepper_view_set_surface(shsurf->fullscreen.background_view, surface);
     }
 
     /* Place background black view */
