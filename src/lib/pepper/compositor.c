@@ -146,6 +146,24 @@ pepper_compositor_get_output_list(pepper_compositor_t *compositor)
     return &compositor->output_list;
 }
 
+PEPPER_API const pepper_list_t *
+pepper_compositor_get_surface_list(pepper_compositor_t *compositor)
+{
+    return &compositor->surface_list;
+}
+
+PEPPER_API const pepper_list_t *
+pepper_compositor_get_view_list(pepper_compositor_t *compositor)
+{
+    return &compositor->view_list;
+}
+
+PEPPER_API const pepper_list_t *
+pepper_compositor_get_seat_list(pepper_compositor_t *compositor)
+{
+    return &compositor->seat_list;
+}
+
 PEPPER_API pepper_view_t *
 pepper_compositor_pick_view(pepper_compositor_t *compositor,
                             double x, double y, double *vx, double *vy)
