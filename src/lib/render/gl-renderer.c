@@ -359,6 +359,9 @@ gl_renderer_destroy(pepper_renderer_t *renderer)
 
     fini_gl_shaders(gr);
 
+    if (gr->display != EGL_NO_DISPLAY)
+        eglMakeCurrent(gr->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
     if (gr->context != EGL_NO_CONTEXT)
         eglDestroyContext(gr->display, gr->context);
 
