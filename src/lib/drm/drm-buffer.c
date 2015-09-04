@@ -193,6 +193,9 @@ drm_buffer_destroy(drm_buffer_t *buffer)
     {
         struct drm_mode_destroy_dumb destroy_arg;
 
+        if (buffer->pixman_render_target)
+            pepper_render_target_destroy(buffer->pixman_render_target);
+
         munmap(buffer->map, buffer->size);
 
         memset(&destroy_arg, 0x00, sizeof(destroy_arg));
