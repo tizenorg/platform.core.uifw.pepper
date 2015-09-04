@@ -212,6 +212,9 @@ pepper_drm_destroy(pepper_drm_t *drm)
     if (drm->gl_renderer)
         pepper_renderer_destroy(drm->gl_renderer);
 
+    if (drm->gbm_device)
+        gbm_device_destroy(drm->gbm_device);
+
     if (drm->resources)
         drmModeFreeResources(drm->resources);
 
