@@ -315,6 +315,7 @@ surface_update_size(pepper_surface_t *surface)
         {
         case WL_OUTPUT_TRANSFORM_NORMAL:
         case WL_OUTPUT_TRANSFORM_180:
+        case WL_OUTPUT_TRANSFORM_FLIPPED:
         case WL_OUTPUT_TRANSFORM_FLIPPED_180:
             surface->w = surface->buffer.buffer->w;
             surface->h = surface->buffer.buffer->h;
