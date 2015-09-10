@@ -121,7 +121,7 @@ struct drm_output
     drmModeModeInfo        *mode;
 
     pepper_bool_t           page_flip_pending;
-    int                     vblank_pending;
+    int                     vblank_pending_count;
 
     pepper_plane_t         *cursor_plane;
     pepper_plane_t         *primary_plane;

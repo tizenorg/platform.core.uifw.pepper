@@ -249,7 +249,7 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
         ret = drmWaitVBlank(output->drm->fd, &vbl);
         PEPPER_CHECK(ret == 0, continue, "drmWaitVBlank() failed.\n");
 
-        output->vblank_pending++;
+        output->vblank_pending_count++;
     }
 }
 
@@ -532,7 +532,7 @@ drm_handle_vblank(int fd, unsigned int frame, unsigned int sec, unsigned int use
     drm_plane_t        *plane = data;
     struct timespec     ts;
 
-    plane->output->vblank_pending--;
+    plane->output->vblank_pending_count--;
 
     if (plane->front)
         drm_buffer_release(plane->front);
@@ -540,7 +540,7 @@ drm_handle_vblank(int fd, unsigned int frame, unsigned int sec, unsigned int use
     plane->front = plane->back;
     plane->back = NULL;
 
-    if (plane->output->vblank_pending == 0 && !plane->output->page_flip_pending)
+    if (plane->output->vblank_pending_count == 0 && !plane->output->page_flip_pending)
     {
         ts.tv_sec = sec;
         ts.tv_nsec = usec * 1000;
@@ -562,7 +562,7 @@ drm_handle_page_flip(int fd, unsigned int frame, unsigned int sec, unsigned int 
     output->front = output->back;
     output->back = NULL;
 
-    if (output->vblank_pending == 0)
+    if (output->vblank_pending_count == 0)
     {
         ts.tv_sec = sec;
         ts.tv_nsec = usec * 1000;
