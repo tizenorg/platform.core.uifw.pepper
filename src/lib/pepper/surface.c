@@ -394,8 +394,7 @@ pepper_surface_commit(pepper_surface_t *surface)
     wl_list_init(&surface->pending.frame_callback_list);
 
     /* surface.damage(). */
-    pixman_region32_copy(&surface->damage_region,
-                         &surface->damage_region, &surface->pending.damage_region);
+    pixman_region32_copy(&surface->damage_region, &surface->pending.damage_region);
     pixman_region32_clear(&surface->pending.damage_region);
 
     /* surface.set_opaque_region(), surface.set_input_region(). */
