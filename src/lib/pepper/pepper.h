@@ -496,6 +496,9 @@ pepper_view_is_mapped(pepper_view_t *view);
 PEPPER_API pepper_bool_t
 pepper_view_is_visible(pepper_view_t *view);
 
+PEPPER_API pepper_bool_t
+pepper_view_is_opaque(pepper_view_t *view);
+
 #ifdef __cplusplus
 }
 #endif

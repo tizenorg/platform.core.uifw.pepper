@@ -553,3 +553,31 @@ pepper_view_is_visible(pepper_view_t *view)
 {
     return view->visible;
 }
+
+PEPPER_API pepper_bool_t
+pepper_view_is_opaque(pepper_view_t *view)
+{
+    pepper_surface_t       *surface = view->surface;
+    struct wl_shm_buffer   *shm_buffer = wl_shm_buffer_get(surface->buffer.buffer->resource);
+    pixman_box32_t          extent;
+
+    if (shm_buffer)
+    {
+        uint32_t shm_format = wl_shm_buffer_get_format(shm_buffer);
+
+        if (shm_format == WL_SHM_FORMAT_XRGB8888 || shm_format == WL_SHM_FORMAT_RGB565)
+            return PEPPER_TRUE;
+    }
+
+    /* TODO: format check for wl_drm or wl_tbm?? */
+
+    extent.x1 = 0;
+    extent.y1 = 0;
+    extent.x2 = view->surface->w;
+    extent.y2 = view->surface->h;
+
+    if (pixman_region32_contains_rectangle(&surface->opaque_region, &extent) == PIXMAN_REGION_IN)
+        return PEPPER_TRUE;
+
+    return PEPPER_FALSE;
+}
