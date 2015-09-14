@@ -261,7 +261,7 @@ drm_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 }
 
 static void
-drm_output_flush_surface(void *o, pepper_surface_t *surface)
+drm_output_flush_surface_damage(void *o, pepper_surface_t *surface)
 {
     pepper_renderer_flush_surface_damage(((drm_output_t *)o)->renderer, surface);
 }
@@ -281,7 +281,7 @@ struct pepper_output_backend drm_output_backend =
     drm_output_assign_planes,
     drm_output_repaint,
     drm_output_attach_surface,
-    drm_output_flush_surface,
+    drm_output_flush_surface_damage,
 };
 
 static int

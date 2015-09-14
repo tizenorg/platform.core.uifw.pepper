@@ -203,7 +203,7 @@ fbdev_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 }
 
 static void
-fbdev_output_flush_surface(void *o, pepper_surface_t *surface)
+fbdev_output_flush_surface_damage(void *o, pepper_surface_t *surface)
 {
     pepper_renderer_flush_surface_damage(((fbdev_output_t *)o)->renderer, surface);
 }
@@ -223,7 +223,7 @@ struct pepper_output_backend fbdev_output_backend =
     fbdev_output_assign_planes,
     fbdev_output_repaint,
     fbdev_output_attach_surface,
-    fbdev_output_flush_surface,
+    fbdev_output_flush_surface_damage,
 };
 
 static pepper_bool_t

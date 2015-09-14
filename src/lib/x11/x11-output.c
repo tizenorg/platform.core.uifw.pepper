@@ -499,7 +499,7 @@ x11_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 }
 
 static void
-x11_output_flush_surface(void *o, pepper_surface_t *surface)
+x11_output_flush_surface_damage(void *o, pepper_surface_t *surface)
 {
     pepper_renderer_flush_surface_damage(((x11_output_t *)o)->renderer, surface);
 }
@@ -520,7 +520,7 @@ static const pepper_output_backend_t x11_output_backend =
     x11_output_assign_planes,
     x11_output_repaint,
     x11_output_attach_surface,
-    x11_output_flush_surface,
+    x11_output_flush_surface_damage,
 };
 
 PEPPER_API pepper_output_t *

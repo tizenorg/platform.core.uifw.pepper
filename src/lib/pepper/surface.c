@@ -507,7 +507,7 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
         pepper_view_surface_damage(view);
 
     pepper_list_for_each(output, &surface->compositor->output_list, link)
-        output->backend->flush_surface(output->data, surface);
+        output->backend->flush_surface_damage(output->data, surface);
 
     pixman_region32_clear(&surface->damage_region);
 }
