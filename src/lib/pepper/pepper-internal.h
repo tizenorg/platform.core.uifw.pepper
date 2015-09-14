@@ -291,7 +291,6 @@ struct pepper_plane_entry
     pepper_render_item_t        base;
 
     pepper_plane_t             *plane;
-    pepper_event_listener_t    *plane_destroy_listener;
     pepper_bool_t               need_damage;
 
     pepper_list_t               link;
@@ -299,9 +298,10 @@ struct pepper_plane_entry
 
 enum
 {
-    PEPPER_VIEW_VISIBILITY_DIRTY    = 0x00000001,
-    PEPPER_VIEW_GEOMETRY_DIRTY      = 0x00000002,
+    PEPPER_VIEW_GEOMETRY_DIRTY      = 0x00000001,
+    PEPPER_VIEW_ACTIVE_DIRTY        = 0x00000002,
     PEPPER_VIEW_Z_ORDER_DIRTY       = 0x00000004,
+    PEPPER_VIEW_CONTENT_DIRTY       = 0x00000008,
 };
 
 struct pepper_view
@@ -328,14 +328,14 @@ struct pepper_view
     pixman_region32_t           opaque_region;
 
     /* Visibility. */
-    pepper_bool_t               visible;
+    pepper_bool_t               active;
     pepper_bool_t               prev_visible;
     pepper_bool_t               mapped;
 
     /* Content. */
     pepper_surface_t           *surface;
     pepper_list_t               surface_link;
-    pepper_event_listener_t    *surface_destroy_listener;
+
 
     /* Output info. */
     uint32_t                    output_overlap;
@@ -344,6 +344,9 @@ struct pepper_view
     /* Temporary resource. */
     pepper_list_t               link;
 };
+
+void
+pepper_view_mark_dirty(pepper_view_t *view, uint32_t flag);
 
 void
 pepper_view_update(pepper_view_t *view);

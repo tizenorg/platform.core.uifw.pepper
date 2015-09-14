@@ -52,6 +52,9 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
             pepper_plane_add_damage_region(plane, &entry->base.visible_region);
             entry->need_damage = PEPPER_FALSE;
         }
+
+        if (view->surface)
+            pepper_surface_flush_damage(view->surface);
     }
 
     pixman_region32_translate(clip, -x, -y);

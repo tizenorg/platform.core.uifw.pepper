@@ -275,12 +275,16 @@ error:
 void
 pepper_surface_destroy(pepper_surface_t *surface)
 {
-    struct wl_resource *callback, *next;
+    struct wl_resource *callback, *nc;
+    pepper_view_t      *view, *nv;
 
     pepper_object_emit_event(&surface->compositor->base,
                              PEPPER_EVENT_COMPOSITOR_SURFACE_REMOVE, surface);
     pepper_surface_state_fini(&surface->pending);
     pepper_object_fini(&surface->base);
+
+    pepper_list_for_each_safe(view, nv, &surface->view_list, surface_link)
+        pepper_view_set_surface(view, NULL);
 
     if (surface->buffer.buffer)
     {
@@ -294,7 +298,7 @@ pepper_surface_destroy(pepper_surface_t *surface)
 
     pepper_list_remove(&surface->link);
 
-    wl_resource_for_each_safe(callback, next, &surface->frame_callback_list)
+    wl_resource_for_each_safe(callback, nc, &surface->frame_callback_list)
         wl_resource_destroy(callback);
 
     if (surface->role)
@@ -353,6 +357,8 @@ attach_surface_to_outputs(pepper_surface_t *surface)
 void
 pepper_surface_commit(pepper_surface_t *surface)
 {
+    pepper_view_t *view;
+
     /* surface.attach(). */
     if (surface->pending.newly_attached)
     {
@@ -401,7 +407,13 @@ pepper_surface_commit(pepper_surface_t *surface)
     pixman_region32_copy(&surface->opaque_region, &surface->pending.opaque_region);
     pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
 
-    pepper_surface_flush_damage(surface);
+    pepper_list_for_each(view, &surface->view_list, surface_link)
+    {
+        /* TODO: Option for enabling/disabling auto resize */
+        pepper_view_resize(view, surface->w, surface->h);
+        pepper_view_mark_dirty(view, PEPPER_VIEW_CONTENT_DIRTY);
+    }
+
     pepper_object_emit_event(&surface->base, PEPPER_EVENT_SURFACE_COMMIT, NULL);
 }
 

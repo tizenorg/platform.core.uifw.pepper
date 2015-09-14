@@ -125,7 +125,7 @@ output_repaint(pepper_output_t *output)
     /* Build a list of views in sorted z-order that are visible on the given output. */
     pepper_list_for_each(view, &output->compositor->view_list, compositor_link)
     {
-        if (!view->visible || !(view->output_overlap & (1 << output->id)) || !view->surface)
+        if (!view->active || !(view->output_overlap & (1 << output->id)) || !view->surface)
         {
             /* Detach from the previously assigned plane. */
             pepper_view_assign_plane(view, output, NULL);

@@ -184,8 +184,6 @@ pepper_compositor_pick_view(pepper_compositor_t *compositor,
         double  lx, ly;
         int     ilx, ily;
 
-        pepper_view_update(view);
-
         if (!pixman_region32_contains_point(&view->bounding_region, ix, iy, NULL))
             continue;
 
