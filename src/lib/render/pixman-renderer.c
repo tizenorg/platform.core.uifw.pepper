@@ -141,6 +141,9 @@ surface_state_attach_shm(pixman_surface_state_t *state, pepper_buffer_t *buffer)
     if (!image)
         return PEPPER_FALSE;
 
+    if (state->image)
+        pixman_image_unref(state->image);
+
     state->buffer_width = w;
     state->buffer_height = h;
     state->image = image;
