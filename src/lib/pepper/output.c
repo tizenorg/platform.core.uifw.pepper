@@ -97,16 +97,11 @@ output_accumulate_damage(pepper_output_t *output)
 {
     pepper_plane_t     *plane;
     pixman_region32_t   clip;
-    pixman_region32_t   plane_clip;
 
     pixman_region32_init(&clip);
 
     pepper_list_for_each_reverse(plane, &output->plane_list, link)
-    {
-        pepper_plane_accumulate_damage(plane, &plane_clip);
-        pixman_region32_copy(&plane->clip_region, &clip);
-        pixman_region32_union(&clip, &clip, &plane_clip);
-    }
+        pepper_plane_accumulate_damage(plane, &clip);
 
     pixman_region32_fini(&clip);
 }

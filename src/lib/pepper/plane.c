@@ -33,19 +33,21 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
     int                     w = plane->output->geometry.w;
     int                     h = plane->output->geometry.h;
     pepper_plane_entry_t   *entry;
+    pixman_region32_t       plane_clip;
 
-    pixman_region32_init(clip);
+    pixman_region32_init(&plane_clip);
 
     pepper_list_for_each_reverse(entry, &plane->entry_list, link)
     {
-        pepper_view_t          *view = (pepper_view_t *)entry->base.view;
+        pepper_view_t *view = (pepper_view_t *)entry->base.view;
 
-        pixman_region32_subtract(&entry->base.visible_region, &view->bounding_region, clip);
+        pixman_region32_subtract(&entry->base.visible_region, &view->bounding_region, &plane_clip);
         pixman_region32_translate(&entry->base.visible_region, -x, -y);
         pixman_region32_intersect_rect(&entry->base.visible_region,
                                        &entry->base.visible_region, 0, 0, w, h);
 
-        pixman_region32_union(clip, clip, &view->opaque_region);
+        /* Accumulate opaque region of this plane on plane_clip. */
+        pixman_region32_union(&plane_clip, &plane_clip, &view->opaque_region);
 
         if (entry->need_damage)
         {
@@ -57,8 +59,16 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
             pepper_surface_flush_damage(view->surface);
     }
 
-    pixman_region32_translate(clip, -x, -y);
-    pixman_region32_intersect_rect(clip, clip, 0, 0, w, h);
+    /* Transform plane_clip to output local coordinate space. */
+    pixman_region32_translate(&plane_clip, -x, -y);
+    pixman_region32_intersect_rect(&plane_clip, &plane_clip, 0, 0, w, h);
+
+    /* Copy accumulated clip region obsecured by opaque regions of views in front of this plane. */
+    pixman_region32_copy(&plane->clip_region, clip);
+
+    /* Accumulate clip region for the below plane. */
+    pixman_region32_union(clip, clip, &plane_clip);
+    pixman_region32_fini(&plane_clip);
 }
 
 PEPPER_API pepper_plane_t *
