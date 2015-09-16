@@ -96,13 +96,13 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
         {
             xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
 
-            event.id   = PEPPER_EVENT_POINTER_MOTION;
+            event.id   = PEPPER_EVENT_POINTER_MOTION_ABSOLUTE;
             event.time = motion->time;
             event.x    = motion->event_x;
             event.y    = motion->event_y;
 
             pepper_object_emit_event((pepper_object_t *)seat->pointer,
-                                     PEPPER_EVENT_POINTER_MOTION, &event);
+                                     PEPPER_EVENT_POINTER_MOTION_ABSOLUTE, &event);
         }
         break;
     default :

@@ -193,13 +193,12 @@ pointer_motion(struct libinput_device *libinput_device,
     li_device_t            *device = libinput_device_get_user_data(libinput_device);
     pepper_input_event_t    event;
 
-    event.id = PEPPER_EVENT_POINTER_MOTION_RELATIVE;
+    event.id = PEPPER_EVENT_POINTER_MOTION;
     event.time = libinput_event_pointer_get_time(pointer_event);
     event.x = libinput_event_pointer_get_dx(pointer_event);
     event.y = libinput_event_pointer_get_dy(pointer_event);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_POINTER_MOTION_RELATIVE, &event);
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_POINTER_MOTION, &event);
 }
 
 static void
@@ -214,7 +213,8 @@ pointer_motion_absolute(struct libinput_device *libinput_device,
     event.x = libinput_event_pointer_get_absolute_x_transformed(pointer_event, 1);
     event.y = libinput_event_pointer_get_absolute_y_transformed(pointer_event, 1);
 
-    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_POINTER_MOTION, &event);
+    pepper_object_emit_event((pepper_object_t *)device->base,
+                             PEPPER_EVENT_POINTER_MOTION_ABSOLUTE, &event);
 }
 
 static void
