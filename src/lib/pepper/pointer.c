@@ -65,45 +65,75 @@ pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y)
 PEPPER_API void
 pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
 {
-    /* TODO: */
+    pepper_pointer_send_leave(pointer);
+    pepper_input_set_focus(&pointer->input, focus);
+
+    /* TODO: Calculate surface local coordinate. */
+    pepper_pointer_send_enter(pointer, 0.0, 0.0);
 }
 
 PEPPER_API pepper_view_t *
 pepper_pointer_get_focus(pepper_pointer_t *pointer)
 {
-    /* TODO: */
-    return NULL;
+    return pointer->input.focus;
 }
 
 PEPPER_API void
-pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *target_view)
+pepper_pointer_send_leave(pepper_pointer_t *pointer)
 {
-    /* TODO: */
+    if (!wl_list_empty(&pointer->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(pointer->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &pointer->input.focus_resource_list)
+            wl_pointer_send_leave(resource, serial, pointer->input.focus->surface->resource);
+    }
 }
 
 PEPPER_API void
-pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *target_view)
+pepper_pointer_send_enter(pepper_pointer_t *pointer, double x, double y)
 {
-    /* TODO: */
+    if (!wl_list_empty(&pointer->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(pointer->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &pointer->input.focus_resource_list)
+        {
+            wl_pointer_send_enter(resource, serial, pointer->input.focus->surface->resource,
+                                  wl_fixed_from_double(x), wl_fixed_from_double(y));
+        }
+    }
 }
 
 PEPPER_API void
-pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *target_view,
-                           uint32_t time, int32_t x, int32_t y)
+pepper_pointer_send_motion(pepper_pointer_t *pointer, uint32_t time, double x, double y)
 {
-    /* TODO: */
+    struct wl_resource *resource;
+
+    wl_resource_for_each(resource, &pointer->input.focus_resource_list)
+        wl_pointer_send_motion(resource, time, wl_fixed_from_double(x), wl_fixed_from_double(y));
 }
 
 PEPPER_API void
-pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *target_view,
-                           uint32_t time, uint32_t button, uint32_t state)
+pepper_pointer_send_button(pepper_pointer_t *pointer, uint32_t time, uint32_t button, uint32_t state)
 {
-    /* TODO: */
+    if (!wl_list_empty(&pointer->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(pointer->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &pointer->input.focus_resource_list)
+            wl_pointer_send_button(resource, serial, time, button, state);
+    }
 }
 
 PEPPER_API void
-pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *target_view,
-                         uint32_t time, uint32_t axis, uint32_t amount)
+pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis, double value)
 {
-    /* TODO: */
+    struct wl_resource *resource;
+
+    wl_resource_for_each(resource, &pointer->input.focus_resource_list)
+        wl_pointer_send_axis(resource, time, axis, wl_fixed_from_double(value));
 }

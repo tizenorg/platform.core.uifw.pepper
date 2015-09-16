@@ -43,14 +43,69 @@ pepper_touch_bind_resource(struct wl_client *client, struct wl_resource *resourc
 }
 
 PEPPER_API void
-pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *view)
+pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus)
 {
-    /* TODO: */
+    pepper_input_set_focus(&touch->input, focus);
 }
 
 PEPPER_API pepper_view_t *
 pepper_touch_get_focus(pepper_touch_t *touch)
 {
-    /* TODO: */
-    return NULL;
+    return touch->input.focus;
+}
+
+PEPPER_API void
+pepper_touch_send_down(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y)
+{
+    if (!wl_list_empty(&touch->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(touch->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &touch->input.focus_resource_list)
+        {
+            wl_touch_send_down(resource, serial, time, touch->input.focus->surface->resource,
+                               id, wl_fixed_from_double(x), wl_fixed_from_double(y));
+        }
+    }
+}
+
+PEPPER_API void
+pepper_touch_send_up(pepper_touch_t *touch, uint32_t time, uint32_t id)
+{
+    if (!wl_list_empty(&touch->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(touch->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &touch->input.focus_resource_list)
+            wl_touch_send_up(resource, serial, time, id);
+    }
+}
+
+PEPPER_API void
+pepper_touch_send_motion(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y)
+{
+    struct wl_resource *resource;
+
+    wl_resource_for_each(resource, &touch->input.focus_resource_list)
+        wl_touch_send_motion(resource, time, id, wl_fixed_from_double(x), wl_fixed_from_double(y));
+}
+
+PEPPER_API void
+pepper_touch_send_frame(pepper_touch_t *touch)
+{
+    struct wl_resource *resource;
+
+    wl_resource_for_each(resource, &touch->input.focus_resource_list)
+        wl_touch_send_frame(resource);
+}
+
+PEPPER_API void
+pepper_touch_send_cancel(pepper_touch_t *touch)
+{
+    struct wl_resource *resource;
+
+    wl_resource_for_each(resource, &touch->input.focus_resource_list)
+        wl_touch_send_cancel(resource);
 }

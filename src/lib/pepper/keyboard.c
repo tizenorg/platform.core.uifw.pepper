@@ -43,26 +43,72 @@ pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *reso
 }
 
 PEPPER_API void
-pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *view)
+pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus)
 {
-    /* TODO: */
+    pepper_keyboard_send_leave(keyboard);
+    pepper_input_set_focus(&keyboard->input, focus);
+    pepper_keyboard_send_enter(keyboard);
 }
 
 PEPPER_API pepper_view_t *
 pepper_keyboard_get_focus(pepper_keyboard_t *keyboard)
 {
-    /* TODO: */
-    return NULL;
+    return keyboard->input.focus;
 }
 
 PEPPER_API void
-pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *target_view)
+pepper_keyboard_send_leave(pepper_keyboard_t *keyboard)
 {
-    /* TODO: */
+    if (!wl_list_empty(&keyboard->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
+            wl_keyboard_send_leave(resource, serial, keyboard->input.focus->surface->resource);
+    }
 }
 
 PEPPER_API void
-pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *target_view)
+pepper_keyboard_send_enter(pepper_keyboard_t *keyboard)
 {
-    /* TODO: */
+    if (!wl_list_empty(&keyboard->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
+        {
+            /* TODO: Send currently pressed keys. */
+            wl_keyboard_send_enter(resource, serial, keyboard->input.focus->surface->resource,
+                                   NULL);
+        }
+    }
+}
+
+PEPPER_API void
+pepper_keyboard_send_key(pepper_keyboard_t *keyboard, uint32_t time, uint32_t key, uint32_t state)
+{
+    if (!wl_list_empty(&keyboard->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
+            wl_keyboard_send_key(resource, serial, time, key, state);
+    }
+}
+
+PEPPER_API void
+pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, uint32_t latched,
+                               uint32_t locked, uint32_t group)
+{
+    if (!wl_list_empty(&keyboard->input.focus_resource_list))
+    {
+        struct wl_resource *resource;
+        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+
+        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
+            wl_keyboard_send_modifiers(resource, serial, depressed, latched, locked, group);
+    }
 }
