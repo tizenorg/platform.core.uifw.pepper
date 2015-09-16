@@ -16,6 +16,7 @@ typedef struct pepper_plane_entry   pepper_plane_entry_t;
 typedef struct pepper_data_source   pepper_data_source_t;
 typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
+typedef struct pepper_input         pepper_input_t;
 
 struct pepper_object
 {
@@ -207,29 +208,73 @@ void
 pepper_transform_pixman_region(pixman_region32_t *region, const pepper_mat4_t *matrix);
 
 /* Input */
+struct pepper_input
+{
+    pepper_seat_t      *seat;
+    struct wl_list      resource_list;
+    pepper_view_t      *focus;
+    struct wl_listener  focus_destroy_listener;
+    struct wl_list      focus_resource_list;
+};
+
+void
+pepper_input_init(pepper_input_t *input, pepper_seat_t *seat);
+
+void
+pepper_input_fini(pepper_input_t *input);
+
+void
+pepper_input_bind_resource(pepper_input_t *input,
+                           struct wl_client *client, int version, uint32_t id,
+                           const struct wl_interface *interface, const void *impl, void *data);
+
+void
+pepper_input_set_focus(pepper_input_t *input, pepper_view_t *view);
+
 struct pepper_pointer
 {
     pepper_object_t             base;
-    pepper_seat_t              *seat;
-    pepper_bool_t               active;
-    struct wl_list              resource_list;
+    pepper_input_t              input;
 };
+
+pepper_pointer_t *
+pepper_pointer_create(pepper_seat_t *seat);
+
+void
+pepper_pointer_destroy(pepper_pointer_t *pointer);
+
+void
+pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id);
 
 struct pepper_keyboard
 {
     pepper_object_t             base;
-    pepper_seat_t              *seat;
-    pepper_bool_t               active;
-    struct wl_list              resource_list;
+    pepper_input_t              input;
 };
+
+pepper_keyboard_t *
+pepper_keyboard_create(pepper_seat_t *seat);
+
+void
+pepper_keyboard_destroy(pepper_keyboard_t *keyboard);
+
+void
+pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id);
 
 struct pepper_touch
 {
     pepper_object_t             base;
-    pepper_seat_t              *seat;
-    pepper_bool_t               active;
-    struct wl_list              resource_list;
+    pepper_input_t              input;
 };
+
+pepper_touch_t *
+pepper_touch_create(pepper_seat_t *seat);
+
+void
+pepper_touch_destroy(pepper_touch_t *touch);
+
+void
+pepper_touch_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id);
 
 struct pepper_seat
 {
@@ -243,9 +288,9 @@ struct pepper_seat
     enum wl_seat_capability     caps;
     uint32_t                    modifier;
 
-    pepper_pointer_t            pointer;
-    pepper_keyboard_t           keyboard;
-    pepper_touch_t              touch;
+    pepper_pointer_t           *pointer;
+    pepper_keyboard_t          *keyboard;
+    pepper_touch_t             *touch;
 
     pepper_list_t               input_device_list;
 };

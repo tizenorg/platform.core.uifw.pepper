@@ -254,7 +254,7 @@ pepper_output_get_name(pepper_output_t *output);
 PEPPER_API pepper_output_t *
 pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name);
 
-/* Input. */
+/* Seat & Input Device. */
 PEPPER_API pepper_seat_t *
 pepper_compositor_add_seat(pepper_compositor_t *compositor, const char *seat_name);
 
@@ -279,17 +279,21 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 PEPPER_API void
 pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *device);
 
+PEPPER_API const char *
+pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
+
+/* Pointer. */
 PEPPER_API void
 pepper_pointer_set_position(pepper_pointer_t *pointer, int32_t x, int32_t y);
 
 PEPPER_API void
 pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y);
 
-PEPPER_API pepper_view_t *
-pepper_pointer_get_focus_view(pepper_pointer_t *pointer);
-
 PEPPER_API void
-pepper_pointer_set_focus_view(pepper_pointer_t *pointer, pepper_view_t *view);
+pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus);
+
+PEPPER_API pepper_view_t *
+pepper_pointer_get_focus(pepper_pointer_t *pointer);
 
 PEPPER_API void
 pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *target_view);
@@ -308,11 +312,12 @@ PEPPER_API void
 pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *target_view,
                          uint32_t time, uint32_t axis, uint32_t amount);
 
-PEPPER_API pepper_view_t *
-pepper_keyboard_get_focus_view(pepper_keyboard_t *keyboard);
-
+/* Keyboard. */
 PEPPER_API void
-pepper_keyboard_set_focus_view(pepper_keyboard_t *keyboard, pepper_view_t *view);
+pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus);
+
+PEPPER_API pepper_view_t *
+pepper_keyboard_get_focus(pepper_keyboard_t *keyboard);
 
 PEPPER_API void
 pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *target_view);
@@ -320,8 +325,12 @@ pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *target_vi
 PEPPER_API void
 pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *target_view);
 
-PEPPER_API const char *
-pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
+/* Touch. */
+PEPPER_API void
+pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus);
+
+PEPPER_API pepper_view_t *
+pepper_touch_get_focus(pepper_touch_t *touch);
 
 /* Surface. */
 PEPPER_API const char *

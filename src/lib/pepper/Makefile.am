@@ -14,6 +14,9 @@ libpepper_la_SOURCES = pepper.h                 \
                        compositor.c             \
                        output.c                 \
                        input.c                  \
+                       pointer.c                \
+                       keyboard.c               \
+                       touch.c                  \
                        surface.c                \
                        region.c                 \
                        buffer.c                 \

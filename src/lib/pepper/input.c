@@ -16,120 +16,78 @@ unbind_resource(struct wl_resource *resource)
     wl_list_remove(wl_resource_get_link(resource));
 }
 
-static void
-pointer_set_cursor(struct wl_client *client, struct wl_resource *resource, uint32_t serial,
-                   struct wl_resource *surface_resource, int32_t x, int32_t y)
+void
+pepper_input_init(pepper_input_t *input, pepper_seat_t *seat)
 {
-    /* TODO */
+    input->seat = seat;
+    input->focus = NULL;
+
+    wl_list_init(&input->resource_list);
+    wl_list_init(&input->focus_resource_list);
 }
 
-static void
-pointer_release(struct wl_client *client, struct wl_resource *resource)
+void
+pepper_input_fini(pepper_input_t *input)
 {
-    wl_resource_destroy(resource);
+    wl_list_remove(&input->focus_destroy_listener.link);
 }
 
-static const struct wl_pointer_interface pointer_interface =
+void
+pepper_input_bind_resource(pepper_input_t *input,
+                           struct wl_client *client, int version, uint32_t id,
+                           const struct wl_interface *interface, const void *impl, void *data)
 {
-    pointer_set_cursor,
-    pointer_release,
-};
+    struct wl_resource *resource = wl_resource_create(client, interface, version, id);
 
-static void
-seat_get_pointer(struct wl_client *client, struct wl_resource *resource, uint32_t id)
-{
-    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    struct wl_resource *r;
-
-    if (!seat->pointer.active)
-        return;
-
-    r = wl_resource_create(client, &wl_pointer_interface, wl_resource_get_version(resource), id);
-    if (!r)
+    if (!resource)
     {
         wl_client_post_no_memory(client);
         return;
     }
 
-    wl_list_insert(&seat->pointer.resource_list, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &pointer_interface, &seat->pointer, unbind_resource);
-
-    /* TODO */
-
+    wl_list_insert(&input->resource_list, wl_resource_get_link(resource));
+    wl_resource_set_implementation(resource, impl, data, unbind_resource);
 }
 
-static void
-keyboard_release(struct wl_client *client, struct wl_resource *resource)
+void
+pepper_input_set_focus(pepper_input_t *input, pepper_view_t *focus)
 {
-    wl_resource_destroy(resource);
-}
-
-static const struct wl_keyboard_interface keyboard_interface =
-{
-    keyboard_release,
-};
-
-static void
-seat_get_keyboard(struct wl_client *client, struct wl_resource *resource, uint32_t id)
-{
-    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    struct wl_resource *r;
-
-    if (!seat->keyboard.active)
+    if (input->focus == focus)
         return;
 
-    r = wl_resource_create(client, &wl_keyboard_interface, wl_resource_get_version(resource), id);
-    if (!r)
+    PEPPER_ASSERT(!focus || focus->surface != NULL);
+
+    if (input->focus)
     {
-        wl_client_post_no_memory(client);
-        return;
+        wl_list_insert_list(&input->resource_list, &input->focus_resource_list);
+        wl_list_init(&input->focus_resource_list);
+        wl_list_remove(&input->focus_destroy_listener.link);
     }
 
-    wl_list_insert(&seat->keyboard.resource_list, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &keyboard_interface, &seat->keyboard, unbind_resource);
+    input->focus = focus;
 
-    /* TODO */
-
-}
-
-static void
-touch_release(struct wl_client *client, struct wl_resource *resource)
-{
-    wl_resource_destroy(resource);
-}
-
-static const struct wl_touch_interface touch_interface =
-{
-    touch_release,
-};
-
-static void
-seat_get_touch(struct wl_client *client, struct wl_resource *resource, uint32_t id)
-{
-    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    struct wl_resource *r;
-
-    if (!seat->touch.active)
-        return;
-
-    r = wl_resource_create(client, &wl_touch_interface, wl_resource_get_version(resource), id);
-    if (!r)
+    if (focus)
     {
-        wl_client_post_no_memory(client);
-        return;
+        struct wl_resource *resource, *tmp;
+        struct wl_client   *client = wl_resource_get_client(focus->surface->resource);
+
+        wl_resource_for_each_safe(resource, tmp, &input->resource_list)
+        {
+            if (wl_resource_get_client(resource) == client)
+            {
+                wl_list_remove(wl_resource_get_link(resource));
+                wl_list_insert(&input->focus_resource_list, wl_resource_get_link(resource));
+            }
+        }
+
+        wl_resource_add_destroy_listener(focus->surface->resource, &input->focus_destroy_listener);
     }
-
-    wl_list_insert(&seat->touch.resource_list, wl_resource_get_link(r));
-    wl_resource_set_implementation(r, &touch_interface, &seat->touch, unbind_resource);
-
-    /* TODO */
-
 }
 
 static const struct wl_seat_interface seat_interface = {
-    seat_get_pointer,
-    seat_get_keyboard,
-    seat_get_touch,
+    pepper_pointer_bind_resource,
+    pepper_keyboard_bind_resource,
+    pepper_touch_bind_resource,
 };
 
 static void
@@ -197,26 +155,14 @@ pepper_seat_destroy(pepper_seat_t *seat)
     if (seat->name)
         free(seat->name);
 
-    if (seat->pointer.active)
-    {
-        wl_resource_for_each_safe(resource, tmp, &seat->pointer.resource_list)
-            wl_resource_destroy(resource);
-        pepper_object_fini(&seat->pointer.base);
-    }
+    if (seat->pointer)
+        pepper_pointer_destroy(seat->pointer);
 
-    if (seat->keyboard.active)
-    {
-        wl_resource_for_each_safe(resource, tmp, &seat->keyboard.resource_list)
-            wl_resource_destroy(resource);
-        pepper_object_fini(&seat->keyboard.base);
-    }
+    if (seat->keyboard)
+        pepper_keyboard_destroy(seat->keyboard);
 
-    if (seat->touch.active)
-    {
-        wl_resource_for_each_safe(resource, tmp, &seat->touch.resource_list)
-            wl_resource_destroy(resource);
-        pepper_object_fini(&seat->touch.base);
-    }
+    if (seat->touch)
+        pepper_touch_destroy(seat->touch);
 
     if (seat->global)
         wl_global_destroy(seat->global);
@@ -228,28 +174,19 @@ pepper_seat_destroy(pepper_seat_t *seat)
 PEPPER_API pepper_pointer_t *
 pepper_seat_get_pointer(pepper_seat_t *seat)
 {
-    if (seat->pointer.active)
-        return &seat->pointer;
-
-    return NULL;
+    return seat->pointer;
 }
 
 PEPPER_API pepper_keyboard_t *
 pepper_seat_get_keyboard(pepper_seat_t *seat)
 {
-    if (seat->keyboard.active)
-        return &seat->keyboard;
-
-    return NULL;
+    return seat->keyboard;
 }
 
 PEPPER_API pepper_touch_t *
 pepper_seat_get_touch(pepper_seat_t *seat)
 {
-    if (seat->touch.active)
-        return &seat->touch;
-
-    return NULL;
+    return seat->touch;
 }
 
 PEPPER_API const char *
@@ -258,149 +195,48 @@ pepper_seat_get_name(pepper_seat_t *seat)
     return seat->name;
 }
 
-PEPPER_API void
-pepper_pointer_set_position(pepper_pointer_t *pointer, int32_t x, int32_t y)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y)
-{
-    /* TODO */
-}
-
-PEPPER_API pepper_view_t *
-pepper_pointer_get_focus_view(pepper_pointer_t *pointer)
-{
-    /* TODO */
-    return NULL;
-}
-
-PEPPER_API void
-pepper_pointer_set_focus_view(pepper_pointer_t *pointer, pepper_view_t *view)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *target_view)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *target_view)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_pointer_send_motion(pepper_pointer_t     *pointer,
-                           pepper_view_t        *target_view,
-                           uint32_t              time,
-                           int32_t               x,
-                           int32_t               y)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_pointer_send_button(pepper_pointer_t     *pointer,
-                           pepper_view_t        *target_view,
-                           uint32_t              time,
-                           uint32_t              button,
-                           uint32_t              state)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_pointer_send_axis(pepper_pointer_t   *pointer,
-                         pepper_view_t      *target_view,
-                         uint32_t            time,
-                         uint32_t            axis,
-                         uint32_t            amount)
-{
-    /* TODO */
-}
-
-PEPPER_API pepper_view_t *
-pepper_keyboard_get_focus_view(pepper_keyboard_t *keyboard)
-{
-    /* TODO */
-    return NULL;
-}
-
-PEPPER_API void
-pepper_keyboard_set_focus_view(pepper_keyboard_t *keyboard, pepper_view_t *view)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *target_view)
-{
-    /* TODO */
-}
-
-PEPPER_API void
-pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *target_view)
-{
-    /* TODO */
-}
-
 static void
 seat_update_pointer_cap(pepper_seat_t *seat)
 {
-    if ((seat->caps & WL_SEAT_CAPABILITY_POINTER) && !seat->pointer.active)
+    if ((seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer)
     {
-        seat->pointer.active = PEPPER_TRUE;
-        pepper_object_init(&seat->pointer.base, PEPPER_OBJECT_POINTER);
-        wl_list_init(&seat->pointer.resource_list);
+        seat->pointer = pepper_pointer_create(seat);
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_ADD, &seat->pointer);
     }
-    else if (!(seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer.active)
+    else if (!(seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer)
     {
-        seat->pointer.active = PEPPER_FALSE;
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_REMOVE, &seat->pointer);
-        pepper_object_fini(&seat->pointer.base);
+        pepper_pointer_destroy(seat->pointer);
     }
 }
 
 static void
 seat_update_keyboard_cap(pepper_seat_t *seat)
 {
-    if ((seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && !seat->keyboard.active)
+    if ((seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && !seat->keyboard)
     {
-        seat->keyboard.active = PEPPER_TRUE;
-        pepper_object_init(&seat->keyboard.base, PEPPER_OBJECT_KEYBOARD);
-        wl_list_init(&seat->keyboard.resource_list);
+        seat->keyboard = pepper_keyboard_create(seat);
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_ADD, &seat->keyboard);
     }
-    else if (!(seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard.active)
+    else if (!(seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard)
     {
-        seat->keyboard.active = PEPPER_FALSE;
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE, &seat->keyboard);
-        pepper_object_fini(&seat->keyboard.base);
+        pepper_keyboard_destroy(seat->keyboard);
     }
 }
 
 static void
 seat_update_touch_cap(pepper_seat_t *seat)
 {
-    if ((seat->caps & WL_SEAT_CAPABILITY_TOUCH) && !seat->touch.active)
+    if ((seat->caps & WL_SEAT_CAPABILITY_TOUCH) && !seat->touch)
     {
-        seat->touch.active = PEPPER_TRUE;
-        pepper_object_init(&seat->touch.base, PEPPER_OBJECT_TOUCH);
-        wl_list_init(&seat->touch.resource_list);
+        seat->touch = pepper_touch_create(seat);
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_ADD, &seat->touch);
     }
-    else if (!(seat->caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch.active)
+    else if (!(seat->caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch)
     {
-        seat->touch.active = PEPPER_FALSE;
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_REMOVE, &seat->touch);
-        pepper_object_fini(&seat->touch.base);
+        pepper_touch_destroy(seat->touch);
     }
 }
 
