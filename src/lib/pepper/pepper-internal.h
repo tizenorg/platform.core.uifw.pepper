@@ -239,6 +239,9 @@ struct pepper_pointer
 
     const pepper_pointer_grab_t    *grab;
     void                           *data;
+
+    double                          x, y;
+    double                          vx, vy;
 };
 
 pepper_pointer_t *

@@ -19,6 +19,75 @@ static const struct wl_pointer_interface pointer_impl =
     pointer_release,
 };
 
+static void
+default_pointer_grab_focus(pepper_pointer_t *pointer, void *data)
+{
+    pepper_view_t *view = pepper_compositor_pick_view(pointer->input.seat->compositor,
+                                                      pointer->x, pointer->y,
+                                                      &pointer->vx, &pointer->vy);
+    pepper_pointer_set_focus(pointer, view);
+}
+
+static void
+default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
+{
+    pepper_pointer_set_position(pointer, x, y);
+    pepper_pointer_send_motion(pointer, time, pointer->vx, pointer->vy);
+}
+
+static void
+default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
+                            uint32_t time, uint32_t button, uint32_t state)
+{
+    pepper_pointer_send_button(pointer, time, button, state);
+}
+
+static void
+default_pointer_grab_axis(pepper_pointer_t *pointer, void *data,
+                          uint32_t time, uint32_t axis, double value)
+{
+    pepper_pointer_send_axis(pointer, time, axis, value);
+}
+
+static void
+default_pointer_grab_cancel(pepper_pointer_t *pointer, void *data)
+{
+    /* Nothing to do.*/
+}
+
+static const pepper_pointer_grab_t default_pointer_grab =
+{
+    default_pointer_grab_focus,
+    default_pointer_grab_motion,
+    default_pointer_grab_button,
+    default_pointer_grab_axis,
+    default_pointer_grab_cancel,
+};
+
+static void
+pointer_handle_event(pepper_object_t *object, uint32_t id, void *info)
+{
+    pepper_pointer_t       *pointer = (pepper_pointer_t *)object;
+    pepper_input_event_t   *event = info;
+
+    switch (id)
+    {
+    case PEPPER_EVENT_POINTER_MOTION_ABSOLUTE:
+        pointer->grab->motion(pointer, pointer->data, event->time, event->x, event->y);
+        break;
+    case PEPPER_EVENT_POINTER_MOTION:
+        pointer->grab->motion(pointer, pointer->data, event->time,
+                              pointer->x + event->x, pointer->y + event->y);
+        break;
+    case PEPPER_EVENT_POINTER_BUTTON:
+        pointer->grab->button(pointer, pointer->data, event->time, event->button, event->state);
+        break;
+    case PEPPER_EVENT_POINTER_AXIS:
+        pointer->grab->axis(pointer, pointer->data, event->time, event->axis, event->value);
+        break;
+    }
+}
+
 pepper_pointer_t *
 pepper_pointer_create(pepper_seat_t *seat)
 {
@@ -28,6 +97,9 @@ pepper_pointer_create(pepper_seat_t *seat)
     PEPPER_CHECK(pointer, return NULL, "pepper_object_alloc() failed.\n");
 
     pepper_input_init(&pointer->input, seat);
+    pointer->grab = &default_pointer_grab;
+    pointer->base.handle_event = pointer_handle_event;
+
     return pointer;
 }
 
@@ -56,23 +128,32 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
 PEPPER_API void
 pepper_pointer_set_position(pepper_pointer_t *pointer, double x, double y)
 {
-    /* TODO: */
+    pointer->x = x;
+    pointer->y = y;
+
+    if (pointer->grab)
+        pointer->grab->focus(pointer, pointer->data);
 }
 
 PEPPER_API void
 pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y)
 {
-    /* TODO: */
+    if (x)
+        *x = pointer->x;
+
+    if (y)
+        *y = pointer->y;
 }
 
 PEPPER_API void
 pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
 {
+    if (pointer->input.focus == focus)
+        return;
+
     pepper_pointer_send_leave(pointer);
     pepper_input_set_focus(&pointer->input, focus);
-
-    /* TODO: Calculate surface local coordinate. */
-    pepper_pointer_send_enter(pointer, 0.0, 0.0);
+    pepper_pointer_send_enter(pointer, pointer->vx, pointer->vy);
 }
 
 PEPPER_API pepper_view_t *
@@ -154,7 +235,6 @@ pepper_pointer_start_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t
 PEPPER_API void
 pepper_pointer_end_grab(pepper_pointer_t *pointer)
 {
-    /* TODO: switch back to default grab. */
-    pointer->grab = NULL;
+    pointer->grab = &default_pointer_grab;
     pointer->grab->focus(pointer, NULL);
 }
