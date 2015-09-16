@@ -29,7 +29,8 @@ pepper_input_init(pepper_input_t *input, pepper_seat_t *seat)
 void
 pepper_input_fini(pepper_input_t *input)
 {
-    wl_list_remove(&input->focus_destroy_listener.link);
+    if (input->focus)
+        wl_list_remove(&input->focus_destroy_listener.link);
 }
 
 void
@@ -198,7 +199,7 @@ pepper_seat_get_name(pepper_seat_t *seat)
 static void
 seat_update_pointer_cap(pepper_seat_t *seat)
 {
-    if ((seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer)
+    if ((seat->caps & WL_SEAT_CAPABILITY_POINTER) && !seat->pointer)
     {
         seat->pointer = pepper_pointer_create(seat);
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_ADD, &seat->pointer);
@@ -207,6 +208,7 @@ seat_update_pointer_cap(pepper_seat_t *seat)
     {
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_REMOVE, &seat->pointer);
         pepper_pointer_destroy(seat->pointer);
+        seat->pointer = NULL;
     }
 }
 
@@ -222,6 +224,7 @@ seat_update_keyboard_cap(pepper_seat_t *seat)
     {
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE, &seat->keyboard);
         pepper_keyboard_destroy(seat->keyboard);
+        seat->keyboard = NULL;
     }
 }
 
@@ -237,6 +240,7 @@ seat_update_touch_cap(pepper_seat_t *seat)
     {
         pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_REMOVE, &seat->touch);
         pepper_touch_destroy(seat->touch);
+        seat->touch = NULL;
     }
 }
 
