@@ -23,6 +23,7 @@ struct pepper_object
     pepper_object_type_t    type;
     pepper_map_t            user_data_map;
     pepper_map_entry_t     *buckets[1 << PEPPER_OBJECT_BUCKET_BITS];
+    void                    (*handle_event)(pepper_object_t *object, uint32_t id, void *info);
     pepper_list_t           event_listener_list;
 };
 

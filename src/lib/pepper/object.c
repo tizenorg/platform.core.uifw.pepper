@@ -136,6 +136,9 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
 {
     pepper_event_listener_t *listener, *tmp;
 
+    if (object->handle_event)
+        object->handle_event(object, id, info);
+
     pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
     {
         if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
