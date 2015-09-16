@@ -190,130 +190,121 @@ static void
 pointer_motion(struct libinput_device *libinput_device,
                struct libinput_event_pointer *pointer_event)
 {
-    li_device_t                    *device;
-    pepper_pointer_motion_event_t   event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
+    event.id = PEPPER_EVENT_POINTER_MOTION_RELATIVE;
     event.time = libinput_event_pointer_get_time(pointer_event);
     event.x = libinput_event_pointer_get_dx(pointer_event);
     event.y = libinput_event_pointer_get_dy(pointer_event);
 
     pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION, &event);
+                             PEPPER_EVENT_POINTER_MOTION_RELATIVE, &event);
 }
 
 static void
 pointer_motion_absolute(struct libinput_device *libinput_device,
                         struct libinput_event_pointer *pointer_event)
 {
-    li_device_t                    *device;
-    pepper_pointer_motion_event_t   event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
+    event.id = PEPPER_EVENT_POINTER_MOTION;
     event.time = libinput_event_pointer_get_time(pointer_event);
     event.x = libinput_event_pointer_get_absolute_x_transformed(pointer_event, 1);
     event.y = libinput_event_pointer_get_absolute_y_transformed(pointer_event, 1);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE, &event);
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_POINTER_MOTION, &event);
 }
 
 static void
 pointer_button(struct libinput_device *libinput_device,
                struct libinput_event_pointer *pointer_event)
 {
-    li_device_t                    *device;
-    pepper_pointer_button_event_t   event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
+    event.id = PEPPER_EVENT_POINTER_BUTTON;
     event.time = libinput_event_pointer_get_time(pointer_event);
     event.button = libinput_event_pointer_get_button(pointer_event);
     event.state = libinput_event_pointer_get_button_state(pointer_event);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_POINTER_BUTTON, &event);
 }
 
 static void
 pointer_axis(struct libinput_device *libinput_device,
              struct libinput_event_pointer *pointer_event)
 {
-    int                             axis = -1;
-    li_device_t                    *device;
-    pepper_pointer_axis_event_t     event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
-    if (libinput_event_pointer_has_axis(pointer_event,
-                                        LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL) != 0)
-        axis = LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL; /* FIXME */
-    else if (libinput_event_pointer_has_axis(pointer_event,
-                                             LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL) != 0)
-        axis = LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL; /* FIXME */
-
-    if (axis < 0)
-        return;
-
+    event.id = PEPPER_EVENT_POINTER_AXIS;
     event.time = libinput_event_pointer_get_time(pointer_event);
-    event.axis = axis;
-    event.value = libinput_event_pointer_get_axis_value(pointer_event, axis);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS, &event);
+    if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL))
+    {
+        event.axis = PEPPER_POINTER_AXIS_VERTICAL;
+        event.value = libinput_event_pointer_get_axis_value(pointer_event,
+                                                            LIBINPUT_POINTER_AXIS_SCROLL_VERTICAL);
+        pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_POINTER_AXIS, &event);
+    }
+    else if (libinput_event_pointer_has_axis(pointer_event, LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL))
+    {
+        event.axis = PEPPER_POINTER_AXIS_HORIZONTAL;
+        event.value = libinput_event_pointer_get_axis_value(pointer_event,
+                                                            LIBINPUT_POINTER_AXIS_SCROLL_HORIZONTAL);
+        pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_POINTER_AXIS, &event);
+    }
 }
 
 static void
 keyboard_key(struct libinput_device *libinput_device,
              struct libinput_event_keyboard *keyboard_event)
 {
-    li_device_t                    *device;
-    pepper_keyboard_key_event_t     event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
+    event.id = PEPPER_EVENT_KEYBOARD_KEY;
     event.time = libinput_event_keyboard_get_time(keyboard_event);
     event.key = libinput_event_keyboard_get_key(keyboard_event);
-    event.state = libinput_event_keyboard_get_key_state(keyboard_event);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
+    if (libinput_event_keyboard_get_key_state(keyboard_event) == LIBINPUT_KEY_STATE_RELEASED)
+        event.state = PEPPER_KEY_STATE_RELEASED;
+    else
+        event.state = PEPPER_KEY_STATE_PRESSED;
+
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_KEYBOARD_KEY, &event);
 }
 
 static void
 touch_down(struct libinput_device *libinput_device,
            struct libinput_event_touch *touch_event)
 {
-    li_device_t                *device;
-    pepper_touch_down_event_t   event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
+    event.id = PEPPER_EVENT_TOUCH_DOWN;
     event.time = libinput_event_touch_get_time(touch_event);
-    event.id = libinput_event_touch_get_seat_slot(touch_event);
-    event.x = libinput_event_touch_get_x_transformed(touch_event, 1/* FIXME */);
-    event.y = libinput_event_touch_get_y_transformed(touch_event, 1/* FIXME */);
+    event.slot = libinput_event_touch_get_seat_slot(touch_event);
+    event.x = libinput_event_touch_get_x_transformed(touch_event, 1);
+    event.y = libinput_event_touch_get_y_transformed(touch_event, 1);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_TOUCH_DOWN, &event);
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_TOUCH_DOWN, &event);
 }
 
 static void
 touch_up(struct libinput_device *libinput_device,
          struct libinput_event_touch *touch_event)
 {
-    li_device_t                *device;
-    pepper_touch_up_event_t     event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
+    event.id = PEPPER_EVENT_TOUCH_UP;
     event.time = libinput_event_touch_get_time(touch_event);
-    event.id = libinput_event_touch_get_seat_slot(touch_event);
+    event.slot = libinput_event_touch_get_seat_slot(touch_event);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_TOUCH_UP, &event);
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_TOUCH_UP, &event);
 }
 
 static void
@@ -321,28 +312,24 @@ touch_motion(struct libinput_device *libinput_device,
              struct libinput_event_touch *touch_event)
 {
 
-    li_device_t                    *device;
-    pepper_touch_motion_event_t     event;
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_input_event_t    event;
 
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-
+    event.id = PEPPER_EVENT_TOUCH_MOTION;
     event.time = libinput_event_touch_get_time(touch_event);
-    event.id = libinput_event_touch_get_seat_slot(touch_event);
-    event.x = libinput_event_touch_get_x_transformed(touch_event, 1/* FIXME */);
-    event.y = libinput_event_touch_get_y_transformed(touch_event, 1/* FIXME */);
+    event.slot = libinput_event_touch_get_seat_slot(touch_event);
+    event.x = libinput_event_touch_get_x_transformed(touch_event, 1);
+    event.y = libinput_event_touch_get_y_transformed(touch_event, 1);
 
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_TOUCH_MOTION, &event);
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_TOUCH_MOTION, &event);
 }
 
 static void
 touch_frame(struct libinput_device *libinput_device,
             struct libinput_event_touch *touch_event)
 {
-    li_device_t    *device;
-    device = (li_device_t *)libinput_device_get_user_data(libinput_device);
-    pepper_object_emit_event((pepper_object_t *)device->base,
-                             PEPPER_EVENT_INPUT_DEVICE_TOUCH_FRAME, NULL);
+    li_device_t            *device = libinput_device_get_user_data(libinput_device);
+    pepper_object_emit_event((pepper_object_t *)device->base, PEPPER_EVENT_TOUCH_FRAME, NULL);
 }
 
 static void
@@ -354,19 +341,16 @@ dispatch_event(struct libinput_event *event)
     switch (libinput_event_get_type(event))
     {
     case LIBINPUT_EVENT_DEVICE_ADDED:
-        device_added((pepper_libinput_t *)libinput_get_user_data(libinput),
-                     libinput_device);
+        device_added((pepper_libinput_t *)libinput_get_user_data(libinput), libinput_device);
         break;
     case LIBINPUT_EVENT_DEVICE_REMOVED:
-        device_removed((pepper_libinput_t *)libinput_get_user_data(libinput),
-                       libinput_device);
+        device_removed((pepper_libinput_t *)libinput_get_user_data(libinput), libinput_device);
         break;
     case LIBINPUT_EVENT_POINTER_MOTION:
         pointer_motion(libinput_device, libinput_event_get_pointer_event(event));
         break;
     case LIBINPUT_EVENT_POINTER_MOTION_ABSOLUTE:
-        pointer_motion_absolute(libinput_device,
-                                libinput_event_get_pointer_event(event));
+        pointer_motion_absolute(libinput_device, libinput_event_get_pointer_event(event));
         break;
     case LIBINPUT_EVENT_POINTER_BUTTON:
         pointer_button(libinput_device, libinput_event_get_pointer_event(event));

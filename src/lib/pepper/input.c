@@ -439,34 +439,31 @@ seat_handle_device_event(pepper_event_listener_t *listener, pepper_object_t *obj
     case PEPPER_EVENT_OBJECT_DESTROY:
         pepper_seat_remove_input_device(entry->seat, entry->device);
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION:
+    case PEPPER_EVENT_POINTER_MOTION:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE:
-        pepper_object_emit_event(&entry->seat->pointer.base, PEPPER_EVENT_POINTER_MOTION, info);
-        break;
-    case PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON:
+    case PEPPER_EVENT_POINTER_BUTTON:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS:
+    case PEPPER_EVENT_POINTER_AXIS:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY:
+    case PEPPER_EVENT_KEYBOARD_KEY:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_DOWN:
+    case PEPPER_EVENT_TOUCH_DOWN:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_UP:
+    case PEPPER_EVENT_TOUCH_UP:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_MOTION:
+    case PEPPER_EVENT_TOUCH_MOTION:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_FRAME:
+    case PEPPER_EVENT_TOUCH_FRAME:
         /* TODO: */
         break;
-    case PEPPER_EVENT_INPUT_DEVICE_TOUCH_CANCEL:
+    case PEPPER_EVENT_TOUCH_CANCEL:
         /* TODO: */
         break;
     }
