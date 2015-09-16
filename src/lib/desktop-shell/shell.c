@@ -240,14 +240,8 @@ shell_pointer_grab_interface_t shell_pointer_resize_grab =
 };
 
 static void
-input_device_add_callback(pepper_event_listener_t    *listener,
-                          pepper_object_t            *object,
-                          uint32_t                    id,
-                          void                       *info,
-                          void                       *data)
+shell_add_input_device(desktop_shell_t *shell, pepper_input_device_t *device)
 {
-    desktop_shell_t         *shell = (desktop_shell_t *)data;
-    pepper_input_device_t   *device = info;
     shell_seat_t            *shseat;
     pepper_seat_t           *seat;
     const char              *target_seat_name;
@@ -274,14 +268,8 @@ input_device_add_callback(pepper_event_listener_t    *listener,
 }
 
 static void
-seat_add_callback(pepper_event_listener_t    *listener,
-                  pepper_object_t            *object,
-                  uint32_t                    id,
-                  void                       *info,
-                  void                       *data)
+shell_add_seat(desktop_shell_t *shell, pepper_seat_t *seat)
 {
-    desktop_shell_t         *shell = data;
-    pepper_seat_t           *seat  = info;
     shell_seat_t            *shseat;
 
     pepper_list_for_each(shseat, &shell->shseat_list, link)
@@ -305,14 +293,8 @@ seat_add_callback(pepper_event_listener_t    *listener,
 }
 
 static void
-seat_remove_callback(pepper_event_listener_t    *listener,
-                     pepper_object_t            *object,
-                     uint32_t                    id,
-                     void                       *info,
-                     void                       *data)
+shell_remove_seat(desktop_shell_t *shell, pepper_seat_t *seat)
 {
-    desktop_shell_t         *shell = data;
-    pepper_seat_t           *seat  = info;
     shell_seat_t            *shseat;
 
     pepper_list_for_each(shseat, &shell->shseat_list, link)
@@ -324,6 +306,36 @@ seat_remove_callback(pepper_event_listener_t    *listener,
             return ;
         }
     }
+}
+
+static void
+input_device_add_callback(pepper_event_listener_t    *listener,
+                          pepper_object_t            *object,
+                          uint32_t                    id,
+                          void                       *info,
+                          void                       *data)
+{
+    shell_add_input_device(data, info);
+}
+
+static void
+seat_add_callback(pepper_event_listener_t    *listener,
+                  pepper_object_t            *object,
+                  uint32_t                    id,
+                  void                       *info,
+                  void                       *data)
+{
+    shell_add_seat(data, info);
+}
+
+static void
+seat_remove_callback(pepper_event_listener_t    *listener,
+                     pepper_object_t            *object,
+                     uint32_t                    id,
+                     void                       *info,
+                     void                       *data)
+{
+    shell_remove_seat(data, info);
 }
 
 static void
@@ -343,6 +355,17 @@ init_listeners(desktop_shell_t *shell)
     shell->seat_remove_listener =
         pepper_object_add_event_listener(compositor, PEPPER_EVENT_COMPOSITOR_SEAT_REMOVE,
                                          0, seat_remove_callback, shell);
+}
+
+static void
+init_input(desktop_shell_t *shell)
+{
+    pepper_list_t *l;
+    const pepper_list_t *input_device_list =
+        pepper_compositor_get_input_device_list(shell->compositor);
+
+    pepper_list_for_each_list(l, input_device_list)
+        shell_add_input_device(shell, l->item);
 }
 
 PEPPER_API pepper_bool_t
@@ -379,6 +402,7 @@ pepper_desktop_shell_init(pepper_compositor_t *compositor)
     }
 
     init_listeners(shell);
+    init_input(shell);
 
     return PEPPER_TRUE;
 }
