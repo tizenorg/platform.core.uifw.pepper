@@ -26,6 +26,9 @@ pepper_touch_create(pepper_seat_t *seat)
 void
 pepper_touch_destroy(pepper_touch_t *touch)
 {
+    if (touch->grab)
+        touch->grab->cancel(touch);
+
     pepper_input_fini(&touch->input);
     free(touch);
 }
@@ -108,4 +111,18 @@ pepper_touch_send_cancel(pepper_touch_t *touch)
 
     wl_resource_for_each(resource, &touch->input.focus_resource_list)
         wl_touch_send_cancel(resource);
+}
+
+PEPPER_API void
+pepper_touch_start_grab(pepper_touch_t *touch, pepper_touch_grab_t *grab, void *data)
+{
+    touch->grab = grab;
+    touch->data = data;
+}
+
+PEPPER_API void
+pepper_touch_end_grab(pepper_touch_t *touch)
+{
+    /* TODO: switch back to default grab. */
+    touch->grab = NULL;
 }

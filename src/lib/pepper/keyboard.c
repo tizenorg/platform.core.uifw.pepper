@@ -26,6 +26,9 @@ pepper_keyboard_create(pepper_seat_t *seat)
 void
 pepper_keyboard_destroy(pepper_keyboard_t *keyboard)
 {
+    if (keyboard->grab)
+        keyboard->grab->cancel(keyboard, keyboard->data);
+
     pepper_input_fini(&keyboard->input);
     free(keyboard);
 }
@@ -111,4 +114,18 @@ pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, 
         wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
             wl_keyboard_send_modifiers(resource, serial, depressed, latched, locked, group);
     }
+}
+
+PEPPER_API void
+pepper_keyboard_start_grab(pepper_keyboard_t *keyboard, pepper_keyboard_grab_t *grab, void *data)
+{
+    keyboard->grab = grab;
+    keyboard->data = data;
+}
+
+PEPPER_API void
+pepper_keyboard_end_grab(pepper_keyboard_t *keyboard)
+{
+    /* TODO: switch back to default grab. */
+    keyboard->grab = NULL;
 }

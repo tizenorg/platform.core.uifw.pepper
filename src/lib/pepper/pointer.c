@@ -34,6 +34,9 @@ pepper_pointer_create(pepper_seat_t *seat)
 void
 pepper_pointer_destroy(pepper_pointer_t *pointer)
 {
+    if (pointer->grab)
+        pointer->grab->cancel(pointer, pointer->data);
+
     pepper_input_fini(&pointer->input);
     free(pointer);
 }
@@ -136,4 +139,22 @@ pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis
 
     wl_resource_for_each(resource, &pointer->input.focus_resource_list)
         wl_pointer_send_axis(resource, time, axis, wl_fixed_from_double(value));
+}
+
+PEPPER_API void
+pepper_pointer_start_grab(pepper_pointer_t *pointer, pepper_pointer_grab_t *grab, void *data)
+{
+    pointer->grab = grab;
+    pointer->data = data;
+
+    if (grab)
+        grab->focus(pointer, pointer->data);
+}
+
+PEPPER_API void
+pepper_pointer_end_grab(pepper_pointer_t *pointer)
+{
+    /* TODO: switch back to default grab. */
+    pointer->grab = NULL;
+    pointer->grab->focus(pointer, NULL);
 }

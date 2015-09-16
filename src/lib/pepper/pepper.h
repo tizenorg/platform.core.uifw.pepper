@@ -35,6 +35,10 @@ typedef void (*pepper_event_callback_t)(pepper_event_listener_t *listener, peppe
 
 typedef struct pepper_input_event       pepper_input_event_t;
 
+typedef struct pepper_pointer_grab      pepper_pointer_grab_t;
+typedef struct pepper_keyboard_grab     pepper_keyboard_grab_t;
+typedef struct pepper_touch_grab        pepper_touch_grab_t;
+
 struct pepper_output_geometry
 {
     int32_t     x;
@@ -283,6 +287,16 @@ PEPPER_API const char *
 pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
 
 /* Pointer. */
+struct pepper_pointer_grab
+{
+    void (*focus)(pepper_pointer_t *pointer, void *data);
+    void (*motion)(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y);
+    void (*button)(pepper_pointer_t *pointer, void *data, uint32_t time, uint32_t button,
+                   uint32_t state);
+    void (*axis)(pepper_pointer_t *pointer, void *data, uint32_t time, uint32_t axis, double value);
+    void (*cancel)(pepper_pointer_t *pointer, void *data);
+};
+
 PEPPER_API void
 pepper_pointer_set_position(pepper_pointer_t *pointer, int32_t x, int32_t y);
 
@@ -310,7 +324,19 @@ pepper_pointer_send_button(pepper_pointer_t *pointer, uint32_t time, uint32_t bu
 PEPPER_API void
 pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis, double value);
 
+PEPPER_API void
+pepper_pointer_start_grab(pepper_pointer_t *pointer, pepper_pointer_grab_t *grab, void *data);
+
+PEPPER_API void
+pepper_pointer_end_grab(pepper_pointer_t *pointer);
+
 /* Keyboard. */
+struct pepper_keyboard_grab
+{
+    void (*key)(pepper_keyboard_t *keyboard, void *data, uint32_t time, uint32_t key, uint32_t state);
+    void (*cancel)(pepper_keyboard_t *keyboard, void *data);
+};
+
 PEPPER_API void
 pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus);
 
@@ -330,7 +356,22 @@ PEPPER_API void
 pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, uint32_t latched,
                                uint32_t locked, uint32_t group);
 
+PEPPER_API void
+pepper_keyboard_start_grab(pepper_keyboard_t *keyboard, pepper_keyboard_grab_t *grab, void *data);
+
+PEPPER_API void
+pepper_keyboard_end_grab(pepper_keyboard_t *keyboard);
+
 /* Touch. */
+struct pepper_touch_grab
+{
+    void    (*down)(pepper_touch_t *touch, uint32_t time, int32_t id, double x, double y);
+    void    (*up)(pepper_touch_t *touch, uint32_t time, uint32_t id);
+    void    (*motion)(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y);
+    void    (*frame)(pepper_touch_t *touch);
+    void    (*cancel)(pepper_touch_t *touch);
+};
+
 PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus);
 
@@ -351,6 +392,12 @@ pepper_touch_send_frame(pepper_touch_t *touch);
 
 PEPPER_API void
 pepper_touch_send_cancel(pepper_touch_t *touch);
+
+PEPPER_API void
+pepper_touch_start_grab(pepper_touch_t *touch, pepper_touch_grab_t *grab, void *data);
+
+PEPPER_API void
+pepper_touch_end_grab(pepper_touch_t *touch);
 
 /* Surface. */
 PEPPER_API const char *
