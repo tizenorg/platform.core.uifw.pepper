@@ -325,7 +325,7 @@ PEPPER_API void
 pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis, double value);
 
 PEPPER_API void
-pepper_pointer_start_grab(pepper_pointer_t *pointer, pepper_pointer_grab_t *grab, void *data);
+pepper_pointer_start_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t *grab, void *data);
 
 PEPPER_API void
 pepper_pointer_end_grab(pepper_pointer_t *pointer);
@@ -357,7 +357,8 @@ pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, 
                                uint32_t locked, uint32_t group);
 
 PEPPER_API void
-pepper_keyboard_start_grab(pepper_keyboard_t *keyboard, pepper_keyboard_grab_t *grab, void *data);
+pepper_keyboard_start_grab(pepper_keyboard_t *keyboard,
+                           const pepper_keyboard_grab_t *grab, void *data);
 
 PEPPER_API void
 pepper_keyboard_end_grab(pepper_keyboard_t *keyboard);
@@ -394,7 +395,7 @@ PEPPER_API void
 pepper_touch_send_cancel(pepper_touch_t *touch);
 
 PEPPER_API void
-pepper_touch_start_grab(pepper_touch_t *touch, pepper_touch_grab_t *grab, void *data);
+pepper_touch_start_grab(pepper_touch_t *touch, const pepper_touch_grab_t *grab, void *data);
 
 PEPPER_API void
 pepper_touch_end_grab(pepper_touch_t *touch);

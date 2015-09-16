@@ -117,7 +117,8 @@ pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, 
 }
 
 PEPPER_API void
-pepper_keyboard_start_grab(pepper_keyboard_t *keyboard, pepper_keyboard_grab_t *grab, void *data)
+pepper_keyboard_start_grab(pepper_keyboard_t *keyboard,
+                           const pepper_keyboard_grab_t *grab, void *data)
 {
     keyboard->grab = grab;
     keyboard->data = data;

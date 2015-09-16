@@ -142,7 +142,7 @@ pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis
 }
 
 PEPPER_API void
-pepper_pointer_start_grab(pepper_pointer_t *pointer, pepper_pointer_grab_t *grab, void *data)
+pepper_pointer_start_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t *grab, void *data)
 {
     pointer->grab = grab;
     pointer->data = data;

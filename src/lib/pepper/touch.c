@@ -114,7 +114,7 @@ pepper_touch_send_cancel(pepper_touch_t *touch)
 }
 
 PEPPER_API void
-pepper_touch_start_grab(pepper_touch_t *touch, pepper_touch_grab_t *grab, void *data)
+pepper_touch_start_grab(pepper_touch_t *touch, const pepper_touch_grab_t *grab, void *data)
 {
     touch->grab = grab;
     touch->data = data;

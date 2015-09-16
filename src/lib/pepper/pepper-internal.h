@@ -234,11 +234,11 @@ pepper_input_set_focus(pepper_input_t *input, pepper_view_t *view);
 
 struct pepper_pointer
 {
-    pepper_object_t         base;
-    pepper_input_t          input;
+    pepper_object_t                 base;
+    pepper_input_t                  input;
 
-    pepper_pointer_grab_t  *grab;
-    void                   *data;
+    const pepper_pointer_grab_t    *grab;
+    void                           *data;
 };
 
 pepper_pointer_t *
@@ -252,11 +252,11 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
 
 struct pepper_keyboard
 {
-    pepper_object_t         base;
-    pepper_input_t          input;
+    pepper_object_t                 base;
+    pepper_input_t                  input;
 
-    pepper_keyboard_grab_t *grab;
-    void                   *data;
+    const pepper_keyboard_grab_t   *grab;
+    void                           *data;
 };
 
 pepper_keyboard_t *
@@ -270,11 +270,11 @@ pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *reso
 
 struct pepper_touch
 {
-    pepper_object_t         base;
-    pepper_input_t          input;
+    pepper_object_t                 base;
+    pepper_input_t                  input;
 
-    pepper_touch_grab_t    *grab;
-    void                   *data;
+    const pepper_touch_grab_t      *grab;
+    void                           *data;
 };
 
 pepper_touch_t *
