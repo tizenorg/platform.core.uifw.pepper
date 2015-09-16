@@ -182,17 +182,17 @@ struct shell_surface
 
     struct
     {
-        int32_t px, py;         /* Initial pointer position */
-        int32_t vx, vy;         /* Initial view position */
+        double          px, py;         /* Initial pointer position */
+        double          vx, vy;         /* Initial view position */
     } move;
 
     struct
     {
-        int32_t       px, py;     /* pointer x, y */
-        int32_t       vx, vy;     /* view    x, y */
-        int32_t       vw, vh;     /* view    w, h */
-        uint32_t      edges;
-        pepper_bool_t resizing;
+        double          px, py;     /* pointer x, y */
+        double          vx, vy;     /* view    x, y */
+        int32_t         vw, vh;     /* view    w, h */
+        uint32_t        edges;
+        pepper_bool_t   resizing;
     } resize;
 
     /* Data structures per surface type */
@@ -201,9 +201,9 @@ struct shell_surface
 
     struct
     {
-        int32_t              x, y;
-        uint32_t             flags;
-        pepper_seat_t       *seat;
+        int32_t         x, y;
+        uint32_t        flags;
+        pepper_seat_t  *seat;
     } popup;
 
     struct

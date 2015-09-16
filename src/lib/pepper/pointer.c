@@ -54,13 +54,13 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
 }
 
 PEPPER_API void
-pepper_pointer_set_position(pepper_pointer_t *pointer, int32_t x, int32_t y)
+pepper_pointer_set_position(pepper_pointer_t *pointer, double x, double y)
 {
     /* TODO: */
 }
 
 PEPPER_API void
-pepper_pointer_get_position(pepper_pointer_t *pointer, int32_t *x, int32_t *y)
+pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y)
 {
     /* TODO: */
 }
