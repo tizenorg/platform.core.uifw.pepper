@@ -27,7 +27,7 @@ pepper_surface_state_init(pepper_surface_state_t *state)
 
     pixman_region32_init(&state->damage_region);
     pixman_region32_init(&state->opaque_region);
-    pixman_region32_init(&state->input_region);
+    pixman_region32_init_rect(&state->input_region, INT32_MIN, INT32_MIN, UINT32_MAX, UINT32_MAX);
 
     wl_list_init(&state->frame_callback_list);
 }
@@ -172,7 +172,8 @@ surface_set_input_region(struct wl_client   *client,
     }
     else
     {
-        pixman_region32_clear(&surface->pending.input_region);
+        pixman_region32_init_rect(&surface->pending.input_region,
+                                  INT32_MIN, INT32_MIN, UINT32_MAX, UINT32_MAX);
     }
 }
 
@@ -257,7 +258,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     pixman_region32_init(&surface->damage_region);
     pixman_region32_init(&surface->opaque_region);
-    pixman_region32_init(&surface->input_region);
+    pixman_region32_init_rect(&surface->input_region, INT32_MIN, INT32_MIN, UINT32_MAX, UINT32_MAX);
 
     wl_list_init(&surface->frame_callback_list);
     pepper_list_init(&surface->view_list);
