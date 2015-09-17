@@ -39,3 +39,4 @@ simple-shm
 fbdev-backend
 
 .vim.custom
+gbs.conf
