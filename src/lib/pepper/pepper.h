@@ -366,11 +366,12 @@ pepper_keyboard_end_grab(pepper_keyboard_t *keyboard);
 /* Touch. */
 struct pepper_touch_grab
 {
-    void    (*down)(pepper_touch_t *touch, uint32_t time, int32_t id, double x, double y);
-    void    (*up)(pepper_touch_t *touch, uint32_t time, uint32_t id);
-    void    (*motion)(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y);
-    void    (*frame)(pepper_touch_t *touch);
-    void    (*cancel)(pepper_touch_t *touch);
+    void    (*down)(pepper_touch_t *touch, void *data, uint32_t time, int32_t id, double x, double y);
+    void    (*up)(pepper_touch_t *touch, void *data, uint32_t time, uint32_t id);
+    void    (*motion)(pepper_touch_t *touch, void *data,
+                      uint32_t time, uint32_t id, double x, double y);
+    void    (*frame)(pepper_touch_t *touch, void *data);
+    void    (*cancel)(pepper_touch_t *touch, void *data);
 };
 
 PEPPER_API void

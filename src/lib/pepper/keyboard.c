@@ -11,6 +11,15 @@ static const struct wl_keyboard_interface keyboard_impl =
     keyboard_release,
 };
 
+static void
+keyboard_handle_focus_destroy(pepper_object_t *object, void *data)
+{
+    pepper_keyboard_t *keyboard = (pepper_keyboard_t *)object;
+
+    if (keyboard->grab)
+        keyboard->grab->cancel(keyboard, keyboard->data);
+}
+
 pepper_keyboard_t *
 pepper_keyboard_create(pepper_seat_t *seat)
 {
@@ -19,7 +28,7 @@ pepper_keyboard_create(pepper_seat_t *seat)
 
     PEPPER_CHECK(keyboard, return NULL, "pepper_object_alloc() failed.\n");
 
-    pepper_input_init(&keyboard->input, seat);
+    pepper_input_init(&keyboard->input, seat, &keyboard->base, keyboard_handle_focus_destroy);
     return keyboard;
 }
 

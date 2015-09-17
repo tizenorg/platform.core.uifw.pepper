@@ -11,6 +11,15 @@ static const struct wl_touch_interface touch_impl =
     touch_release,
 };
 
+static void
+touch_handle_focus_destroy(pepper_object_t *object, void *data)
+{
+    pepper_touch_t *touch = (pepper_touch_t *)object;
+
+    if (touch->grab)
+        touch->grab->cancel(touch, touch->data);
+}
+
 pepper_touch_t *
 pepper_touch_create(pepper_seat_t *seat)
 {
@@ -19,7 +28,7 @@ pepper_touch_create(pepper_seat_t *seat)
 
     PEPPER_CHECK(touch, return NULL, "pepper_object_alloc() failed.\n");
 
-    pepper_input_init(&touch->input, seat);
+    pepper_input_init(&touch->input, seat, &touch->base, touch_handle_focus_destroy);
     return touch;
 }
 
@@ -27,7 +36,7 @@ void
 pepper_touch_destroy(pepper_touch_t *touch)
 {
     if (touch->grab)
-        touch->grab->cancel(touch);
+        touch->grab->cancel(touch, touch->data);
 
     pepper_input_fini(&touch->input);
     free(touch);

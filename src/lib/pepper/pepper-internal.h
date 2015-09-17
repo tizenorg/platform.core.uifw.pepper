@@ -18,6 +18,8 @@ typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
 typedef struct pepper_input         pepper_input_t;
 
+typedef void (*pepper_callback_t)(pepper_object_t *object, void *data);
+
 struct pepper_object
 {
     pepper_object_type_t    type;
@@ -212,14 +214,18 @@ pepper_transform_pixman_region(pixman_region32_t *region, const pepper_mat4_t *m
 struct pepper_input
 {
     pepper_seat_t      *seat;
+    pepper_object_t    *object;
+
     struct wl_list      resource_list;
     pepper_view_t      *focus;
     struct wl_listener  focus_destroy_listener;
     struct wl_list      focus_resource_list;
+    pepper_callback_t   focus_destroy_callback;
 };
 
 void
-pepper_input_init(pepper_input_t *input, pepper_seat_t *seat);
+pepper_input_init(pepper_input_t *input, pepper_seat_t *seat, pepper_object_t *object,
+                  pepper_callback_t focus_destroy_callback);
 
 void
 pepper_input_fini(pepper_input_t *input);

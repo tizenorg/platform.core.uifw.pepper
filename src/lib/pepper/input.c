@@ -16,14 +16,29 @@ unbind_resource(struct wl_resource *resource)
     wl_list_remove(wl_resource_get_link(resource));
 }
 
+static void
+input_handle_focus_destroy(struct wl_listener *listener, void *data)
+{
+    pepper_input_t *input = pepper_container_of(listener, input, focus_destroy_listener);
+    pepper_input_set_focus(input, NULL);
+
+    if (input->focus_destroy_callback)
+        input->focus_destroy_callback(input->object, NULL);
+}
+
 void
-pepper_input_init(pepper_input_t *input, pepper_seat_t *seat)
+pepper_input_init(pepper_input_t *input, pepper_seat_t *seat,
+                  pepper_object_t *object, pepper_callback_t focus_destroy_callback)
 {
     input->seat = seat;
+    input->object = object;
     input->focus = NULL;
 
     wl_list_init(&input->resource_list);
     wl_list_init(&input->focus_resource_list);
+
+    input->focus_destroy_listener.notify = input_handle_focus_destroy;
+    input->focus_destroy_callback = focus_destroy_callback;
 }
 
 void

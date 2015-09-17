@@ -88,6 +88,15 @@ pointer_handle_event(pepper_object_t *object, uint32_t id, void *info)
     }
 }
 
+static void
+pointer_handle_focus_destroy(pepper_object_t *object, void *data)
+{
+    pepper_pointer_t *pointer = (pepper_pointer_t *)object;
+
+    if (pointer->grab)
+        pointer->grab->cancel(pointer, pointer->data);
+}
+
 pepper_pointer_t *
 pepper_pointer_create(pepper_seat_t *seat)
 {
@@ -96,7 +105,7 @@ pepper_pointer_create(pepper_seat_t *seat)
 
     PEPPER_CHECK(pointer, return NULL, "pepper_object_alloc() failed.\n");
 
-    pepper_input_init(&pointer->input, seat);
+    pepper_input_init(&pointer->input, seat, &pointer->base, pointer_handle_focus_destroy);
     pointer->grab = &default_pointer_grab;
     pointer->base.handle_event = pointer_handle_event;
 
@@ -151,9 +160,19 @@ pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
     if (pointer->input.focus == focus)
         return;
 
-    pepper_pointer_send_leave(pointer);
+    if (pointer->input.focus)
+    {
+        pepper_pointer_send_leave(pointer);
+        pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_ENTER, pointer->input.focus);
+    }
+
     pepper_input_set_focus(&pointer->input, focus);
-    pepper_pointer_send_enter(pointer, pointer->vx, pointer->vy);
+
+    if (pointer->input.focus)
+    {
+        pepper_pointer_send_enter(pointer, pointer->vx, pointer->vy);
+        pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_LEAVE, pointer->input.focus);
+    }
 }
 
 PEPPER_API pepper_view_t *
