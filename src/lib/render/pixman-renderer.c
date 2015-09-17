@@ -15,6 +15,7 @@ struct pixman_render_target
 struct pixman_renderer
 {
     pepper_renderer_t   base;
+    pixman_image_t     *background;
 };
 
 struct pixman_surface_state
@@ -33,6 +34,11 @@ struct pixman_surface_state
 static void
 pixman_renderer_destroy(pepper_renderer_t *renderer)
 {
+    pixman_renderer_t *pr = (pixman_renderer_t *)renderer;
+
+    if (pr->background)
+        pixman_image_unref(pr->background);
+
     free(renderer);
 }
 
@@ -271,13 +277,29 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
 }
 
 static void
+clear_background(pixman_renderer_t *renderer, pixman_region32_t *damage)
+{
+    pixman_render_target_t *target = (pixman_render_target_t *)renderer->base.target;
+
+    pixman_image_set_clip_region32(target->image, damage);
+    pixman_image_composite32(PIXMAN_OP_SRC, renderer->background, NULL, target->image,
+                             0, 0, 0, 0, 0, 0,
+                             pixman_image_get_width(target->image),
+                             pixman_image_get_height(target->image));
+}
+
+static void
 pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
                                const pepper_list_t *render_list,
                                pixman_region32_t *damage)
 {
     if (pixman_region32_not_empty(damage))
     {
-        pepper_list_t *l;
+        pepper_list_t       *l;
+        pixman_renderer_t   *pr = (pixman_renderer_t *)renderer;
+
+        if (pr->background)
+            clear_background((pixman_renderer_t *)renderer, damage);
 
         pepper_list_for_each_list_reverse(l, render_list)
             repaint_view(renderer, (pepper_render_item_t *)l->item, damage);
@@ -287,13 +309,22 @@ pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *out
 PEPPER_API pepper_renderer_t *
 pepper_pixman_renderer_create(pepper_compositor_t *compositor)
 {
-    pixman_renderer_t    *renderer;
+    pixman_renderer_t  *renderer;
+    const char         *env;
 
     renderer = calloc(1, sizeof(pixman_renderer_t));
     if (!renderer)
         return NULL;
 
     renderer->base.compositor = compositor;
+
+    env = getenv("PEPPER_RENDER_CLEAR_BACKGROUND");
+
+    if (env && atoi(env) == 1)
+    {
+        pixman_color_t bg_color = { 0x0000, 0x0000, 0x0000, 0xffff };
+        renderer->background = pixman_image_create_solid_fill(&bg_color);
+    }
 
     /* Backend functions. */
     renderer->base.destroy              = pixman_renderer_destroy;
