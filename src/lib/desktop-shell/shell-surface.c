@@ -1,9 +1,6 @@
 #include "desktop-shell-internal.h"
 #include "xdg-shell-server-protocol.h"
-
-
-extern shell_pointer_grab_interface_t shell_pointer_move_grab;
-extern shell_pointer_grab_interface_t shell_pointer_resize_grab;
+#include <linux/input.h>
 
 void
 remove_ping_timer(shell_client_t *shell_client)
@@ -826,37 +823,152 @@ shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
     shsurf->mapped    = PEPPER_FALSE;
 }
 
+static void
+pointer_move_grab_focus(pepper_pointer_t *pointer, void *data)
+{
+    pepper_pointer_set_focus(pointer, NULL);
+}
+
+static void
+pointer_move_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
+{
+    shell_surface_t *shsurf = data;
+    pepper_pointer_set_position(pointer, x, y);
+    pepper_view_set_position(shsurf->view, shsurf->move.dx + x, shsurf->move.dy + y);
+}
+
+static void
+pointer_move_grab_button(pepper_pointer_t *pointer, void *data,
+                         uint32_t time, uint32_t button, uint32_t state)
+{
+    if (button == BTN_LEFT && state == PEPPER_BUTTON_STATE_RELEASED)
+        pepper_pointer_end_grab(pointer);
+}
+
+static void
+pointer_move_grab_axis(pepper_pointer_t *pointer, void *data,
+                       uint32_t time, uint32_t axis, double value)
+{
+    /* TODO */
+}
+
+static void
+pointer_move_grab_cancel(pepper_pointer_t *pointer, void *data)
+{
+    /* TODO */
+}
+
+static pepper_pointer_grab_t pointer_move_grab =
+{
+    pointer_move_grab_focus,
+    pointer_move_grab_motion,
+    pointer_move_grab_button,
+    pointer_move_grab_axis,
+    pointer_move_grab_cancel,
+};
+
 void
 shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial)
 {
-    shell_seat_t *shseat = pepper_object_get_user_data((pepper_object_t *)seat, shsurf->shell);
+    pepper_pointer_t   *pointer = pepper_seat_get_pointer(seat);
+    double              vx, vy;
+    double              px, py;
 
-    double x, y;
+    /* TODO: Touch driven move?? */
+    if (!pointer)
+        return;
 
-    pepper_view_get_position(shsurf->view, &x, &y);
-    shsurf->move.vx = (int)x;
-    shsurf->move.vy = (int)y;
+    /* TODO: Should consider view transform. */
+    pepper_view_get_position(shsurf->view, &vx, &vy);
+    pepper_pointer_get_position(pointer, &px, &py);
 
-    pepper_pointer_get_position(shseat->pointer_grab.pointer, &shsurf->move.px, &shsurf->move.py);
+    shsurf->move.dx = vx - px;
+    shsurf->move.dy = vy - py;
 
-    shell_seat_pointer_start_grab(shseat, &shell_pointer_move_grab, shsurf);
+    pepper_pointer_start_grab(pointer, &pointer_move_grab, shsurf);
 }
+
+static void
+pointer_resize_grab_focus(pepper_pointer_t *pointer, void *data)
+{
+    pepper_pointer_set_focus(pointer, NULL);
+}
+
+static void
+pointer_resize_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
+{
+    shell_surface_t    *shsurf = data;
+    uint32_t            width = 0, height = 0;
+    int32_t             dx = 0, dy = 0;
+
+    pepper_pointer_set_position(pointer, x, y);
+
+    if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_LEFT)
+    {
+        dx = shsurf->resize.px - x;
+    }
+    else if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_RIGHT)
+    {
+        dx = x - shsurf->resize.px;
+    }
+
+    if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_TOP)
+    {
+        dy = shsurf->resize.py - y;
+    }
+    else if(shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_BOTTOM)
+    {
+        dy = y - shsurf->resize.py;
+    }
+
+    width  = shsurf->resize.vw + dx;
+    height = shsurf->resize.vh + dy;
+
+    shsurf->send_configure(shsurf, width, height);
+}
+
+static void
+pointer_resize_grab_button(pepper_pointer_t *pointer, void *data,
+                           uint32_t time, uint32_t button, uint32_t state)
+{
+    if (button == BTN_LEFT && state == PEPPER_BUTTON_STATE_RELEASED)
+    {
+        pepper_pointer_end_grab(pointer);
+        ((shell_surface_t *)data)->resize.resizing = PEPPER_FALSE;
+    }
+}
+
+static void
+pointer_resize_grab_axis(pepper_pointer_t *pointer, void *data,
+                         uint32_t time, uint32_t axis, double value)
+{
+    /* TODO */
+}
+
+static void
+pointer_resize_grab_cancel(pepper_pointer_t *pointer, void *data)
+{
+    /* TODO */
+}
+
+static pepper_pointer_grab_t pointer_resize_grab =
+{
+    pointer_resize_grab_focus,
+    pointer_resize_grab_motion,
+    pointer_resize_grab_button,
+    pointer_resize_grab_axis,
+    pointer_resize_grab_cancel,
+};
 
 void
 shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial, uint32_t edges)
 {
-    double x, y;
-    shell_seat_t *shseat = pepper_object_get_user_data((pepper_object_t *)seat, shsurf->shell);
+    pepper_pointer_t   *pointer = pepper_seat_get_pointer(seat);
 
-    pepper_view_get_position(shsurf->view, &x, &y);
-    pepper_pointer_get_position(shseat->pointer_grab.pointer,
-                                &shsurf->resize.px,
-                                &shsurf->resize.py);
-
-    shsurf->resize.vx = (int)x;
-    shsurf->resize.vy = (int)y;
-
+    pepper_view_get_position(shsurf->view, &shsurf->resize.vx, &shsurf->resize.vy);
     pepper_view_get_size(shsurf->view, &shsurf->resize.vw, &shsurf->resize.vh);
+
+    pepper_pointer_get_position(pointer, &shsurf->resize.px, &shsurf->resize.py);
 
     shsurf->resize.edges = edges;
     shsurf->resize.resizing = PEPPER_TRUE;
@@ -867,5 +979,5 @@ shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t seri
         shsurf->send_configure(shsurf, 0, 0);
     }
 
-    shell_seat_pointer_start_grab(shseat, &shell_pointer_resize_grab, shsurf);
+    pepper_pointer_start_grab(pointer, &pointer_resize_grab, shsurf);
 }

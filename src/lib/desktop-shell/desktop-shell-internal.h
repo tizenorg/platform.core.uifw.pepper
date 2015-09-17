@@ -10,86 +10,11 @@ typedef struct shell_client     shell_client_t;
 typedef struct shell_surface    shell_surface_t;
 typedef struct shell_seat       shell_seat_t;
 
-typedef struct shell_pointer_grab              shell_pointer_grab_t;
-typedef struct shell_pointer_grab_interface    shell_pointer_grab_interface_t;
-
-typedef struct shell_keyboard_grab              shell_keyboard_grab_t;
-typedef struct shell_keyboard_grab_interface    shell_keyboard_grab_interface_t;
-
-typedef struct shell_touch_grab              shell_touch_grab_t;
-typedef struct shell_touch_grab_interface    shell_touch_grab_interface_t;
-
-struct shell_pointer_grab
-{
-    shell_seat_t                        *shseat;
-    pepper_pointer_t                    *pointer;
-    shell_pointer_grab_interface_t      *interface;
-    void                                *userdata;
-};
-
-struct shell_pointer_grab_interface
-{
-    void (*motion)(shell_pointer_grab_t *grab,
-                   uint32_t time, int32_t x, int32_t y, void *data);
-    void (*button)(shell_pointer_grab_t *grab,
-                   uint32_t time, uint32_t button, uint32_t state, void *data);
-    void (*axis)(shell_pointer_grab_t *grab,
-                 uint32_t time, enum wl_pointer_axis axis, wl_fixed_t amount, void *data);
-};
-
-struct shell_keyboard_grab
-{
-    shell_seat_t                        *shseat;
-    pepper_keyboard_t                   *keyboard;
-    shell_keyboard_grab_interface_t     *interface;
-    void                                *userdata;
-};
-
-struct shell_keyboard_grab_interface
-{
-    void (*key)(shell_keyboard_grab_t *grab,
-                   uint32_t time, uint32_t key, uint32_t state, void *data);
-    void (*modifiers)(shell_keyboard_grab_t *grab,
-                   uint32_t time, uint32_t key, uint32_t state, void *data);
-};
-
-
-struct shell_touch_grab
-{
-    shell_seat_t                        *shseat;
-    pepper_touch_t                      *touch;
-    shell_touch_grab_interface_t        *interface;
-    void                                *userdata;
-};
-
-struct shell_touch_grab_interface
-{
-    void (*down)(shell_touch_grab_t *grab,
-                 uint32_t time, uint32_t id, double x, double y, void *data);
-    void (*up)(shell_touch_grab_t *grab,
-               uint32_t time, uint32_t id, void *data);
-    void (*motion)(shell_touch_grab_t *grab,
-                   uint32_t time, uint32_t id, double x, double y, void *data);
-    void (*frame)(shell_touch_grab_t *grab, void *data);
-    void (*cancel)(shell_touch_grab_t *grab, void *data);
-};
-
-
 struct shell_seat
 {
     desktop_shell_t             *shell;
     pepper_seat_t               *seat;
     pepper_list_t                link;
-
-    /* grab */
-    shell_pointer_grab_t         pointer_grab;
-    shell_pointer_grab_t         default_pointer_grab;
-
-    shell_keyboard_grab_t        keyboard_grab;
-    shell_keyboard_grab_t        default_keyboard_grab;
-
-    shell_touch_grab_t           touch_grab;
-    shell_touch_grab_t           default_touch_grab;
 
     /* Seat's logical device add/remove */
     pepper_event_listener_t     *pointer_add_listener;
@@ -100,20 +25,6 @@ struct shell_seat
 
     pepper_event_listener_t     *touch_add_listener;
     pepper_event_listener_t     *touch_remove_listener;
-
-    /* Input event listeners */
-    pepper_event_listener_t     *pointer_motion_listener;
-    pepper_event_listener_t     *pointer_button_listener;
-    pepper_event_listener_t     *pointer_axis_listener;
-
-    pepper_event_listener_t     *keyboard_key_listener;
-    pepper_event_listener_t     *keyboard_modifiers_listener;
-
-    pepper_event_listener_t     *touch_down_listener;
-    pepper_event_listener_t     *touch_up_listener;
-    pepper_event_listener_t     *touch_motion_listener;
-    pepper_event_listener_t     *touch_frame_listener;
-    pepper_event_listener_t     *touch_cancel_listener;
 };
 
 struct desktop_shell
@@ -182,8 +93,7 @@ struct shell_surface
 
     struct
     {
-        double          px, py;         /* Initial pointer position */
-        double          vx, vy;         /* Initial view position */
+        double          dx, dy;     /* difference between pointer position and view position */
     } move;
 
     struct
@@ -340,24 +250,6 @@ init_xdg_shell(desktop_shell_t *shell);
 
 void
 fini_xdg_shell(desktop_shell_t *shell);
-
-void
-shell_seat_pointer_start_grab(shell_seat_t *shseat, shell_pointer_grab_interface_t *grab, void *userdata);
-
-void
-shell_seat_pointer_end_grab(shell_seat_t *shseat);
-
-void
-shell_seat_keyboard_start_grab(shell_seat_t *shseat, shell_keyboard_grab_interface_t *grab, void *userdata);
-
-void
-shell_seat_keyboard_end_grab(shell_seat_t *shseat);
-
-void
-shell_seat_touch_start_grab(shell_seat_t *shseat, shell_touch_grab_interface_t *grab, void *userdata);
-
-void
-shell_seat_touch_end_grab(shell_seat_t *shseat);
 
 void
 shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial);
