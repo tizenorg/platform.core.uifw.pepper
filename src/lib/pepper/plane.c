@@ -15,7 +15,7 @@ pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list)
 
         if (entry->plane == plane)
         {
-            pepper_list_insert(&plane->entry_list, &entry->link);
+            pepper_list_insert(plane->entry_list.prev, &entry->link);
 
             /* Calculate view transform on output local coordinate space. */
             pepper_mat4_init_translate(&entry->base.transform, -output_x, -output_y, 0.0);
@@ -37,7 +37,7 @@ pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
 
     pixman_region32_init(&plane_clip);
 
-    pepper_list_for_each_reverse(entry, &plane->entry_list, link)
+    pepper_list_for_each(entry, &plane->entry_list, link)
     {
         pepper_view_t *view = (pepper_view_t *)entry->base.view;
 

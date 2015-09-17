@@ -260,7 +260,7 @@ view_init(pepper_view_t *view, pepper_compositor_t *compositor)
     view->surface_link.item = view;
 
     view->compositor = compositor;
-    pepper_list_insert(compositor->view_list.prev, &view->compositor_link);
+    pepper_list_insert(&compositor->view_list, &view->compositor_link);
 
     pepper_list_init(&view->children_list);
 

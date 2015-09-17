@@ -127,7 +127,7 @@ output_repaint(pepper_output_t *output)
             continue;
         }
 
-        pepper_list_insert(&output->view_list, &view->link);
+        pepper_list_insert(output->view_list.prev, &view->link);
     }
 
     output->backend->assign_planes(output->data, &output->view_list);
