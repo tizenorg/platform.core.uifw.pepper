@@ -260,7 +260,7 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
         y = node->transform.m[13];
         pepper_view_get_size(node->view, &w, &h);
 
-        pixman_image_composite32(PIXMAN_OP_SRC, ps->image, NULL, target->image,
+        pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
                                  0, 0, /* src_x, src_y */
                                  0, 0, /* mask_x, mask_y */
                                  x, y, /* dest_x, dest_y */
