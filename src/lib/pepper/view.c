@@ -88,7 +88,7 @@ pepper_view_get_global_coordinate(pepper_view_t *view,
 static pepper_list_t *
 view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
 {
-    if (pos->next != &view->compositor_link)
+    if ((pos != &view->compositor_link) && (pos->next != &view->compositor_link))
     {
         pepper_list_remove(&view->compositor_link);
         pepper_list_insert(pos, &view->compositor_link);
@@ -379,7 +379,7 @@ pepper_view_get_parent(pepper_view_t *view)
 PEPPER_API pepper_bool_t
 pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below, pepper_bool_t subtree)
 {
-    view_insert(view, &below->compositor_link, subtree);
+    view_insert(view, below->compositor_link.prev, subtree);
     pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
     return PEPPER_TRUE;
 }
@@ -387,7 +387,7 @@ pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below, pepper_bool_t
 PEPPER_API pepper_bool_t
 pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above, pepper_bool_t subtree)
 {
-    view_insert(view, above->compositor_link.prev, subtree);
+    view_insert(view, &above->compositor_link, subtree);
     pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
     return PEPPER_TRUE;
 }
@@ -395,14 +395,14 @@ pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above, pepper_bool_t
 PEPPER_API void
 pepper_view_stack_top(pepper_view_t *view, pepper_bool_t subtree)
 {
-    view_insert(view, view->compositor->view_list.prev, subtree);
+    view_insert(view, &view->compositor->view_list, subtree);
     pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
 }
 
 PEPPER_API void
 pepper_view_stack_bottom(pepper_view_t *view, pepper_bool_t subtree)
 {
-    view_insert(view, &view->compositor->view_list, subtree);
+    view_insert(view, view->compositor->view_list.prev, subtree);
     pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
 }
 
