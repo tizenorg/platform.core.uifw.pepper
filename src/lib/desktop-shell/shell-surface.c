@@ -690,8 +690,8 @@ shell_surface_center_on_output_by_scale(shell_surface_t                 *shsurf,
 {
     float x, y;
 
-    x = output->x + (output->w - surface_geom->width  * scale) / 2 - surface_geom->x;
-    y = output->y + (output->h - surface_geom->height * scale) / 2 - surface_geom->y;
+    x = output->x + (output->w - surface_geom->width  * scale) / 2;
+    y = output->y + (output->h - surface_geom->height * scale) / 2;
 
     shell_surface_set_position(shsurf, x, y);
 }
