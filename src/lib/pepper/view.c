@@ -93,6 +93,7 @@ view_insert(pepper_view_t *view, pepper_list_t *pos, pepper_bool_t subtree)
         pepper_list_remove(&view->compositor_link);
         pepper_list_insert(pos, &view->compositor_link);
         pepper_object_emit_event(&view->base, PEPPER_EVENT_VIEW_STACK_CHANGE, NULL);
+        pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
     }
 
     pos = &view->compositor_link;
@@ -380,7 +381,6 @@ PEPPER_API pepper_bool_t
 pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below, pepper_bool_t subtree)
 {
     view_insert(view, below->compositor_link.prev, subtree);
-    pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
     return PEPPER_TRUE;
 }
 
@@ -388,7 +388,6 @@ PEPPER_API pepper_bool_t
 pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above, pepper_bool_t subtree)
 {
     view_insert(view, &above->compositor_link, subtree);
-    pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
     return PEPPER_TRUE;
 }
 
@@ -396,14 +395,12 @@ PEPPER_API void
 pepper_view_stack_top(pepper_view_t *view, pepper_bool_t subtree)
 {
     view_insert(view, &view->compositor->view_list, subtree);
-    pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
 }
 
 PEPPER_API void
 pepper_view_stack_bottom(pepper_view_t *view, pepper_bool_t subtree)
 {
     view_insert(view, view->compositor->view_list.prev, subtree);
-    pepper_view_mark_dirty(view, PEPPER_VIEW_Z_ORDER_DIRTY);
 }
 
 PEPPER_API pepper_view_t *
