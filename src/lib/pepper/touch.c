@@ -47,7 +47,7 @@ pepper_touch_bind_resource(struct wl_client *client, struct wl_resource *resourc
 {
     pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
 
-    if (seat->touch)
+    if (!seat->touch)
         return;
 
     pepper_input_bind_resource(&seat->touch->input, client, wl_resource_get_version(resource),

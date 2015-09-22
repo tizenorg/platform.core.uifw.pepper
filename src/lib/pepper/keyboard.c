@@ -47,7 +47,7 @@ pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *reso
 {
     pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
 
-    if (seat->keyboard)
+    if (!seat->keyboard)
         return;
 
     pepper_input_bind_resource(&seat->keyboard->input, client, wl_resource_get_version(resource),
