@@ -78,6 +78,9 @@ pepper_input_set_focus(pepper_input_t *input, pepper_view_t *focus)
         wl_list_insert_list(&input->resource_list, &input->focus_resource_list);
         wl_list_init(&input->focus_resource_list);
         wl_list_remove(&input->focus_destroy_listener.link);
+
+        pepper_object_emit_event(input->object, PEPPER_EVENT_FOCUS_LEAVE, input->focus);
+        pepper_object_emit_event(&input->focus->base, PEPPER_EVENT_FOCUS_LEAVE, input->object);
     }
 
     input->focus = focus;
@@ -97,6 +100,9 @@ pepper_input_set_focus(pepper_input_t *input, pepper_view_t *focus)
         }
 
         wl_resource_add_destroy_listener(focus->surface->resource, &input->focus_destroy_listener);
+
+        pepper_object_emit_event(input->object, PEPPER_EVENT_FOCUS_ENTER, focus);
+        pepper_object_emit_event(&focus->base, PEPPER_EVENT_FOCUS_ENTER, input->object);
     }
 }
 

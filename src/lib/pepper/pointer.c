@@ -39,6 +39,16 @@ static void
 default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
                             uint32_t time, uint32_t button, uint32_t state)
 {
+    if (pointer->input.seat->keyboard && button == BTN_LEFT && state == PEPPER_BUTTON_STATE_PRESSED)
+    {
+        pepper_view_t *focus = pointer->input.focus;
+
+        pepper_keyboard_set_focus(pointer->input.seat->keyboard, focus);
+
+        if (focus)
+            pepper_view_stack_top(focus, PEPPER_FALSE);
+    }
+
     pepper_pointer_send_button(pointer, time, button, state);
 }
 
@@ -161,18 +171,12 @@ pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
         return;
 
     if (pointer->input.focus)
-    {
         pepper_pointer_send_leave(pointer);
-        pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_ENTER, pointer->input.focus);
-    }
 
     pepper_input_set_focus(&pointer->input, focus);
 
     if (pointer->input.focus)
-    {
         pepper_pointer_send_enter(pointer, pointer->vx, pointer->vy);
-        pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_LEAVE, pointer->input.focus);
-    }
 }
 
 PEPPER_API pepper_view_t *
