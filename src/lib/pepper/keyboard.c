@@ -12,6 +12,36 @@ static const struct wl_keyboard_interface keyboard_impl =
 };
 
 static void
+keyboard_handle_event(pepper_object_t *object, uint32_t id, void *info)
+{
+    pepper_keyboard_t      *keyboard = (pepper_keyboard_t *)object;
+    pepper_input_event_t   *event = info;
+    uint32_t               *keys = keyboard->keys.data;
+    unsigned int            num_keys = keyboard->keys.size / sizeof(uint32_t);
+    unsigned int            i;
+
+    if (id != PEPPER_EVENT_KEYBOARD_KEY)
+        return;
+
+    /* Update the array of pressed keys. */
+    for (i = 0; i < num_keys; i++)
+    {
+        if (keys[i] == event->key)
+        {
+            keys[i] = keys[--num_keys];
+            break;
+        }
+    }
+
+    keyboard->keys.size = num_keys * sizeof(uint32_t);
+
+    if (event->state == PEPPER_KEY_STATE_PRESSED)
+        *(uint32_t *)wl_array_add(&keyboard->keys, sizeof(uint32_t)) = event->key;
+
+    keyboard->grab->key(keyboard, keyboard->data, event->time, event->key, event->state);
+}
+
+static void
 keyboard_handle_focus_destroy(pepper_object_t *object, void *data)
 {
     pepper_keyboard_t *keyboard = (pepper_keyboard_t *)object;
@@ -29,6 +59,9 @@ pepper_keyboard_create(pepper_seat_t *seat)
     PEPPER_CHECK(keyboard, return NULL, "pepper_object_alloc() failed.\n");
 
     pepper_input_init(&keyboard->input, seat, &keyboard->base, keyboard_handle_focus_destroy);
+    keyboard->base.handle_event = keyboard_handle_event;
+
+    wl_array_init(&keyboard->keys);
     return keyboard;
 }
 
@@ -39,6 +72,7 @@ pepper_keyboard_destroy(pepper_keyboard_t *keyboard)
         keyboard->grab->cancel(keyboard, keyboard->data);
 
     pepper_input_fini(&keyboard->input);
+    wl_array_release(&keyboard->keys);
     free(keyboard);
 }
 
@@ -91,9 +125,8 @@ pepper_keyboard_send_enter(pepper_keyboard_t *keyboard)
 
         wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
         {
-            /* TODO: Send currently pressed keys. */
             wl_keyboard_send_enter(resource, serial, keyboard->input.focus->surface->resource,
-                                   NULL);
+                                   &keyboard->keys);
         }
     }
 }

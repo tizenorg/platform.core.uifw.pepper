@@ -266,6 +266,8 @@ struct pepper_keyboard
 
     const pepper_keyboard_grab_t   *grab;
     void                           *data;
+
+    struct wl_array                 keys;
 };
 
 pepper_keyboard_t *
