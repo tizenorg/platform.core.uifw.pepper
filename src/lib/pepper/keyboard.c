@@ -12,6 +12,26 @@ static const struct wl_keyboard_interface keyboard_impl =
 };
 
 static void
+default_keyboard_grab_key(pepper_keyboard_t *keyboard, void *data,
+                          uint32_t time, uint32_t key, uint32_t state)
+{
+    pepper_keyboard_send_key(keyboard, time, key, state);
+}
+
+
+static void
+default_keyboard_grab_cancel(pepper_keyboard_t *keyboard, void *data)
+{
+    /* Nothing to do. */
+}
+
+static const pepper_keyboard_grab_t default_keyboard_grab =
+{
+    default_keyboard_grab_key,
+    default_keyboard_grab_cancel,
+};
+
+static void
 keyboard_handle_event(pepper_object_t *object, uint32_t id, void *info)
 {
     pepper_keyboard_t      *keyboard = (pepper_keyboard_t *)object;
@@ -59,6 +79,7 @@ pepper_keyboard_create(pepper_seat_t *seat)
     PEPPER_CHECK(keyboard, return NULL, "pepper_object_alloc() failed.\n");
 
     pepper_input_init(&keyboard->input, seat, &keyboard->base, keyboard_handle_focus_destroy);
+    keyboard->grab = &default_keyboard_grab;
     keyboard->base.handle_event = keyboard_handle_event;
 
     wl_array_init(&keyboard->keys);
@@ -169,6 +190,5 @@ pepper_keyboard_start_grab(pepper_keyboard_t *keyboard,
 PEPPER_API void
 pepper_keyboard_end_grab(pepper_keyboard_t *keyboard)
 {
-    /* TODO: switch back to default grab. */
-    keyboard->grab = NULL;
+    keyboard->grab = &default_keyboard_grab;
 }
