@@ -15,9 +15,7 @@
 static inline pepper_bool_t
 x11_get_next_event(xcb_connection_t *xcb_conn, xcb_generic_event_t **event, uint32_t mask)
 {
-    if (mask & WL_EVENT_READABLE)
-        *event = xcb_poll_for_event(xcb_conn);
-
+    *event = xcb_poll_for_event(xcb_conn);
     return *event != NULL;
 }
 
