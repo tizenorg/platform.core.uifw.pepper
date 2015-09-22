@@ -1,6 +1,39 @@
 #include "pepper-internal.h"
 
 static void
+surface_update_size(pepper_surface_t *surface)
+{
+    if (surface->buffer.buffer)
+    {
+        switch (surface->buffer.transform)
+        {
+        case WL_OUTPUT_TRANSFORM_NORMAL:
+        case WL_OUTPUT_TRANSFORM_180:
+        case WL_OUTPUT_TRANSFORM_FLIPPED:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_180:
+            surface->w = surface->buffer.buffer->w;
+            surface->h = surface->buffer.buffer->h;
+            break;
+        case WL_OUTPUT_TRANSFORM_90:
+        case WL_OUTPUT_TRANSFORM_270:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+            surface->w = surface->buffer.buffer->h;
+            surface->h = surface->buffer.buffer->w;
+            break;
+        }
+
+        surface->w /= surface->buffer.scale;
+        surface->h /= surface->buffer.scale;
+    }
+    else
+    {
+        surface->w = 0;
+        surface->h = 0;
+    }
+}
+
+static void
 surface_state_handle_buffer_destroy(pepper_event_listener_t *listener,
                                     pepper_object_t *object, uint32_t id, void *info, void *data)
 {
@@ -14,6 +47,7 @@ surface_handle_buffer_destroy(pepper_event_listener_t *listener,
 {
     pepper_surface_t *surface = data;
     surface->buffer.buffer = NULL;
+    surface_update_size(surface);
 }
 
 static void
@@ -306,37 +340,6 @@ pepper_surface_destroy(pepper_surface_t *surface)
         free(surface->role);
 
     free(surface);
-}
-
-static void
-surface_update_size(pepper_surface_t *surface)
-{
-    surface->w = 0;
-    surface->h = 0;
-
-    if (surface->buffer.buffer)
-    {
-        switch (surface->buffer.transform)
-        {
-        case WL_OUTPUT_TRANSFORM_NORMAL:
-        case WL_OUTPUT_TRANSFORM_180:
-        case WL_OUTPUT_TRANSFORM_FLIPPED:
-        case WL_OUTPUT_TRANSFORM_FLIPPED_180:
-            surface->w = surface->buffer.buffer->w;
-            surface->h = surface->buffer.buffer->h;
-            break;
-        case WL_OUTPUT_TRANSFORM_90:
-        case WL_OUTPUT_TRANSFORM_270:
-        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
-        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
-            surface->w = surface->buffer.buffer->h;
-            surface->h = surface->buffer.buffer->w;
-            break;
-        }
-
-        surface->w /= surface->buffer.scale;
-        surface->h /= surface->buffer.scale;
-    }
 }
 
 static void
