@@ -116,8 +116,41 @@ assign_cursor_plane(drm_output_t *output, pepper_view_t *view)
 static pepper_plane_t *
 assign_fb_plane(drm_output_t *output, pepper_view_t *view)
 {
-    /* TODO: */
-    return NULL;
+    double              x, y;
+    int32_t             w, h, transform;
+    pepper_surface_t   *surface;
+    pepper_buffer_t    *buffer;
+
+    const pepper_output_geometry_t *geometry;
+
+    if (output->back)
+        return NULL;
+
+    if (!output->drm->gbm_device)
+        return NULL;
+
+    geometry = pepper_output_get_geometry(output->base);
+    pepper_view_get_position(view, &x, &y);
+    if ((geometry->x != (int)x) || (geometry->y != (int)y))
+        return NULL;
+
+    pepper_view_get_size(view, &w, &h);
+    if ((geometry->w != w) || (geometry->h != h))
+        return NULL;
+
+    surface = pepper_view_get_surface(view);
+    transform = pepper_surface_get_buffer_transform(surface);
+    if (geometry->transform != transform)
+        return NULL;
+
+    buffer = pepper_surface_get_buffer(surface);
+    if (!buffer)
+        return NULL;
+
+    output->back = drm_buffer_create_pepper(output->drm, buffer);
+    PEPPER_CHECK(output->back, return NULL, "failed to create drm_buffer\n");
+
+    return output->fb_plane;
 }
 
 static pepper_plane_t *

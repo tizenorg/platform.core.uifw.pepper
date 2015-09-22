@@ -81,7 +81,7 @@ error:
 }
 
 static inline pepper_bool_t
-init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo)
+init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo, uint32_t format)
 {
     int         ret;
     uint32_t    handles[4], strides[4], offsets[4];
@@ -97,7 +97,8 @@ init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo)
     strides[0] = buffer->stride;
     offsets[0] = 0;
 
-    ret = drmModeAddFB2(drm->fd, buffer->w, buffer->h, gbm_bo_get_format(bo),
+    ret = drmModeAddFB2(drm->fd, buffer->w, buffer->h,
+                        format ? format : gbm_bo_get_format(bo),
                         handles, strides, offsets, &buffer->id , 0);
 
     if (ret != 0)
@@ -118,7 +119,7 @@ drm_buffer_create_gbm(pepper_drm_t *drm, struct gbm_surface *surface, struct gbm
     buffer = calloc(1, sizeof(drm_buffer_t));
     PEPPER_CHECK(buffer, return NULL, "calloc() failed.\n");
 
-    if (!init_buffer_gbm(buffer, drm, bo))
+    if (!init_buffer_gbm(buffer, drm, bo, 0))
     {
         free(buffer);
         return NULL;
@@ -157,7 +158,7 @@ drm_buffer_create_pepper(pepper_drm_t *drm, pepper_buffer_t *pb)
         return NULL;
     }
 
-    if (!init_buffer_gbm(buffer, drm, bo))
+    if (!init_buffer_gbm(buffer, drm, bo, GBM_FORMAT_XRGB8888 /* FIXME */))
     {
         gbm_bo_destroy(bo);
         free(buffer);

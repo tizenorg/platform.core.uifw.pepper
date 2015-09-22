@@ -361,9 +361,20 @@ shell_surface_set_transient(shell_surface_t     *shsurf,
 static pepper_output_t *
 shell_surface_get_output(shell_surface_t *shsurf)
 {
-    pepper_output_t *output = NULL;
+    pepper_output_t        *output;
+    const pepper_list_t    *list;
+    pepper_list_t          *l;
 
-    /* TODO: Find the output on which the surface has the biggest surface area */
+    /* FIXME: Find the output on which the surface has the biggest surface area */
+    list = pepper_compositor_get_output_list(shsurf->shell->compositor);
+    pepper_list_for_each_list(l, list)
+    {
+        if (l->item)
+        {
+            output = (pepper_output_t *)l->item;
+            break;
+        }
+    }
 
     return output;
 }
