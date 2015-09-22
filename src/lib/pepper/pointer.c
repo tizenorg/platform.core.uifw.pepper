@@ -135,13 +135,26 @@ pepper_pointer_destroy(pepper_pointer_t *pointer)
 void
 pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    pepper_pointer_t   *pointer = seat->pointer;
+    struct wl_resource *res;
 
-    if (!seat->pointer)
+    if (!pointer)
         return;
 
-    pepper_input_bind_resource(&seat->pointer->input, client, wl_resource_get_version(resource),
-                               id, &wl_pointer_interface, &pointer_impl, seat->pointer);
+    res = pepper_input_bind_resource(&pointer->input, client, wl_resource_get_version(resource),
+                                     id, &wl_pointer_interface, &pointer_impl, pointer);
+    PEPPER_CHECK(res, return, "pepper_input_bind_resource() failed.\n");
+
+    if (!pointer->input.focus)
+        return;
+
+    if (wl_resource_get_client(pointer->input.focus->surface->resource) == client)
+    {
+        wl_pointer_send_enter(res, pointer->input.focus_serial,
+                              pointer->input.focus->surface->resource,
+                              wl_fixed_from_double(pointer->vx), wl_fixed_from_double(pointer->vy));
+    }
 }
 
 PEPPER_API void

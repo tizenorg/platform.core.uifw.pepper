@@ -48,7 +48,7 @@ pepper_input_fini(pepper_input_t *input)
         wl_list_remove(&input->focus_destroy_listener.link);
 }
 
-void
+struct wl_resource *
 pepper_input_bind_resource(pepper_input_t *input,
                            struct wl_client *client, int version, uint32_t id,
                            const struct wl_interface *interface, const void *impl, void *data)
@@ -58,11 +58,13 @@ pepper_input_bind_resource(pepper_input_t *input,
     if (!resource)
     {
         wl_client_post_no_memory(client);
-        return;
+        return NULL;
     }
 
     wl_list_insert(&input->resource_list, wl_resource_get_link(resource));
     wl_resource_set_implementation(resource, impl, data, unbind_resource);
+
+    return resource;
 }
 
 void
@@ -100,6 +102,7 @@ pepper_input_set_focus(pepper_input_t *input, pepper_view_t *focus)
         }
 
         wl_resource_add_destroy_listener(focus->surface->resource, &input->focus_destroy_listener);
+        input->focus_serial = wl_display_next_serial(input->seat->compositor->display);
 
         pepper_object_emit_event(input->object, PEPPER_EVENT_FOCUS_ENTER, focus);
         pepper_object_emit_event(&focus->base, PEPPER_EVENT_FOCUS_ENTER, input->object);

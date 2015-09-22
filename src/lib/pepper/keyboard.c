@@ -100,13 +100,25 @@ pepper_keyboard_destroy(pepper_keyboard_t *keyboard)
 void
 pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    pepper_keyboard_t  *keyboard = seat->keyboard;
+    struct wl_resource *res;
 
-    if (!seat->keyboard)
+    if (!keyboard)
         return;
 
-    pepper_input_bind_resource(&seat->keyboard->input, client, wl_resource_get_version(resource),
-                               id, &wl_keyboard_interface, &keyboard_impl, seat->keyboard);
+    res = pepper_input_bind_resource(&keyboard->input, client, wl_resource_get_version(resource),
+                                     id, &wl_keyboard_interface, &keyboard_impl, keyboard);
+    PEPPER_CHECK(res, return, "pepper_input_bind_resource() failed.\n");
+
+    if (!keyboard->input.focus)
+        return;
+
+    if (wl_resource_get_client(keyboard->input.focus->surface->resource) == client)
+    {
+        wl_keyboard_send_enter(res, keyboard->input.focus_serial,
+                              keyboard->input.focus->surface->resource, &keyboard->keys);
+    }
 }
 
 PEPPER_API void

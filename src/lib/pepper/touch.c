@@ -45,13 +45,16 @@ pepper_touch_destroy(pepper_touch_t *touch)
 void
 pepper_touch_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
-    pepper_seat_t *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
+    pepper_touch_t     *touch = seat->touch;
+    struct wl_resource *res;
 
-    if (!seat->touch)
+    if (!touch)
         return;
 
-    pepper_input_bind_resource(&seat->touch->input, client, wl_resource_get_version(resource),
-                               id, &wl_touch_interface, &touch_impl, seat->touch);
+    res = pepper_input_bind_resource(&touch->input, client, wl_resource_get_version(resource),
+                                     id, &wl_touch_interface, &touch_impl, touch);
+    PEPPER_CHECK(res, return, "pepper_input_bind_resource() failed.\n");
 }
 
 PEPPER_API void
