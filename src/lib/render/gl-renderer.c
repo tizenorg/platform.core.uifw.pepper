@@ -222,6 +222,8 @@ struct gl_renderer
     pepper_bool_t   has_unpack_subimage;
 
     gl_shader_t        *current_shader;
+
+    pepper_bool_t       clear_background;
 };
 
 struct gl_surface_state
@@ -911,6 +913,23 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
     {
         pepper_list_t *l;
 
+        if (gr->clear_background)
+        {
+            int                 i, nrects;
+            pixman_box32_t     *rects;
+
+            glClearColor(1.0, 0.0, 0.0, 1.0);
+
+            rects = pixman_region32_rectangles(damage, &nrects);
+
+            for (i = 0; i < nrects; i++)
+            {
+                glScissor(rects[i].x1, geom->h - rects[i].y2,
+                          rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
+                glClear(GL_COLOR_BUFFER_BIT);
+            }
+        }
+
         pepper_list_for_each_list_reverse(l, list)
             repaint_view(renderer, output, (pepper_render_item_t *)l->item, damage);
     }
@@ -1109,6 +1128,7 @@ pepper_gl_renderer_create(pepper_compositor_t *compositor, void *native_display,
 {
     gl_renderer_t  *gr;
     EGLint          major, minor;
+    const char     *env;
 
     gr = calloc(1, sizeof(gl_renderer_t));
     if (!gr)
@@ -1140,6 +1160,11 @@ pepper_gl_renderer_create(pepper_compositor_t *compositor, void *native_display,
 
     if (!setup_egl_extensions(gr))
         goto error;
+
+    env = getenv("PEPPER_RENDER_CLEAR_BACKGROUND");
+
+    if (env && atoi(env) == 1)
+        gr->clear_background = PEPPER_TRUE;
 
     return &gr->base;
 
