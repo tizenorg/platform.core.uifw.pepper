@@ -21,25 +21,27 @@ main(int argc, char **argv)
     pepper_x11_connection_t *conn;
     struct wl_event_loop    *loop = NULL;
     struct wl_event_source  *sigint = NULL;
-
     struct wl_display       *display;
+    const char              *socket = NULL;
+    const char              *renderer;
 
-    compositor = pepper_compositor_create("wayland-1");
+    if (argc > 1)
+        socket = argv[1];
+
+    if (argc > 2)
+        renderer = argv[2];
+
+    compositor = pepper_compositor_create(socket);
     PEPPER_ASSERT(compositor);
 
     conn = pepper_x11_connect(compositor, NULL);
     PEPPER_ASSERT(conn);
 
-    output = pepper_x11_output_create(conn, 640, 480, "pixman");
+    output = pepper_x11_output_create(conn, 1024, 768, renderer);
     PEPPER_ASSERT(output);
 
     if (!pepper_x11_input_create(conn))
         PEPPER_ASSERT(0);
-
-    mode.w = 1024;
-    mode.h = 768;
-    mode.refresh = 60000;
-    pepper_output_set_mode(output, &mode);
 
     if (!pepper_desktop_shell_init(compositor))
         PEPPER_ASSERT(0);
