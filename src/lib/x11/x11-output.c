@@ -93,7 +93,7 @@ gl_renderer_init(x11_output_t *output)
                                                          &output->connection->screen->root_visual,
                                                          output->w, output->h);
 
-    if (!output->target)
+    if (!output->gl_target)
     {
         PEPPER_ERROR("Failed to create gl render target.\n");
         return PEPPER_FALSE;

@@ -460,8 +460,11 @@ surface_state_destroy_images(gl_surface_state_t *state)
 
     for (i = 0; i < state->num_planes; i++)
     {
-        state->renderer->destroy_image(state->renderer->display, state->images[i]);
-        state->images[i] = EGL_NO_IMAGE_KHR;
+        if (state->images[i] != EGL_NO_IMAGE_KHR)
+        {
+            state->renderer->destroy_image(state->renderer->display, state->images[i]);
+            state->images[i] = EGL_NO_IMAGE_KHR;
+        }
     }
 }
 
@@ -968,7 +971,6 @@ setup_egl_extensions(gl_renderer_t *gr)
     else
     {
         PEPPER_ERROR("EGL_KHR_image not supported.\n");
-        return PEPPER_FALSE;
     }
 
 #ifdef EGL_EXT_swap_buffers_with_damage
