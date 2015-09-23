@@ -797,147 +797,115 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
     gl_surface_state_t *state = get_surface_state(renderer, surface);
 
     gl_shader_t        *shader;
-    pixman_region32_t   repaint, repaint_opaque;
+    pixman_region32_t   repaint;
+
+    double              x, y;
+    int                 i, w, h;
+    int                 nrects;
+    pixman_box32_t     *rects;
+    GLfloat             vertex_array[16];
+    float               trans[16];
 
     pixman_region32_init(&repaint);
     pixman_region32_intersect(&repaint, &node->visible_region, damage);
 
-    if (pixman_region32_not_empty(&repaint))
+    if (!pixman_region32_not_empty(&repaint))
+        goto done;
+
+    if (node->transform.flags <= PEPPER_MATRIX_TRANSLATE)
     {
-        double              x, y;
-        int                 i, w, h;
-        int                 nrects;
-        pixman_box32_t     *rects;
-        GLfloat             vertex_array[16];
-        float               trans[16];
+        double tx, ty, tz;
 
-        pixman_region32_init(&repaint_opaque);
-        pixman_region32_intersect(&repaint_opaque, &repaint,
-                                  pepper_surface_get_opaque_region(surface));
-        pixman_region32_subtract(&repaint, &repaint, &repaint_opaque);
+        tx = node->transform.m[12];
+        ty = node->transform.m[13];
+        tz = node->transform.m[14];
 
-        if (node->transform.flags <= PEPPER_MATRIX_TRANSLATE)
-        {
-            double tx, ty, tz;
+        for (i = 0; i < 16; i++)
+            trans[i] = (float)gt->proj_mat.m[i];
 
-            tx = node->transform.m[12];
-            ty = node->transform.m[13];
-            tz = node->transform.m[14];
-
-            for (i = 0; i < 16; i++)
-                trans[i] = (float)gt->proj_mat.m[i];
-
-            trans[12] += trans[0] * tx + trans[4] * ty + trans[8] * tz;
-            trans[13] += trans[1] * tx + trans[5] * ty + trans[9] * tz;
-            trans[14] += trans[2] * tx + trans[6] * ty + trans[10] * tz;
-            trans[15] += trans[3] * tx + trans[7] * ty + trans[11] * tz;
-        }
-        else
-        {
-            pepper_mat4_t tmp;
-            pepper_mat4_multiply(&tmp, &gt->proj_mat, &node->transform);
-            for (i = 0; i < 16; i++)
-                trans[i] = (float)tmp.m[i];
-        }
-
-        for (i = 0; i < state->num_planes; i++)
-        {
-            glActiveTexture(GL_TEXTURE0 + i);
-            glBindTexture(GL_TEXTURE_2D, state->textures[i]);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* FIXME */);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST /* FIXME */);
-        }
-
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_SCISSOR_TEST);
-
-        pepper_view_get_position(node->view, &x, &y);
-        pepper_view_get_size(node->view, &w, &h);
-
-        vertex_array[ 0] = 0;
-        vertex_array[ 1] = 0;
-        vertex_array[ 4] = w;
-        vertex_array[ 5] = 0;
-        vertex_array[ 8] = w;
-        vertex_array[ 9] = h;
-        vertex_array[12] = 0;
-        vertex_array[13] = h;
-
-        vertex_array[ 2] = 0;
-        vertex_array[ 3] = 0;
-        vertex_array[ 6] = 1.0f;
-        vertex_array[ 7] = 0;
-        vertex_array[10] = 1.0f;
-        vertex_array[11] = 1.0f;
-        vertex_array[14] = 0;
-        vertex_array[15] = 1.0f;
-
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[2]);
-        glEnableVertexAttribArray(1);
-
-        if (pixman_region32_not_empty(&repaint_opaque))
-        {
-            if (state->sampler == GL_SHADER_SAMPLER_RGBA)
-                shader = &gr->shaders[GL_SHADER_SAMPLER_RGBX];
-            else
-                shader = &gr->shaders[state->sampler];
-
-            gl_shader_use(gr, shader);
-
-            glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
-            for (i = 0; i < state->num_planes; i++)
-                glUniform1i(shader->texture_uniform[i], i);
-            glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
-
-            rects = pixman_region32_rectangles(&repaint_opaque, &nrects);
-            for (i = 0; i < nrects; i++)
-            {
-                glScissor(rects[i].x1, gt->height - rects[i].y2,
-                          rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
-                glDrawArrays(GL_TRIANGLE_FAN, 4 * i, 4);
-            }
-        }
-
-        if (pixman_region32_not_empty(&repaint))
-        {
-            shader = &gr->shaders[state->sampler];
-
-            gl_shader_use(gr, shader);
-
-            glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
-            for (i = 0; i < state->num_planes; i++)
-                glUniform1i(shader->texture_uniform[i], i);
-            glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
-
-            glEnable(GL_BLEND);
-            rects = pixman_region32_rectangles(&repaint, &nrects);
-            for (i = 0; i < nrects; i++)
-            {
-                glScissor(rects[i].x1, gt->height - rects[i].y2,
-                          rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
-                glDrawArrays(GL_TRIANGLE_FAN, 4 * i, 4);
-            }
-            glDisable(GL_BLEND);
-        }
-
-        glDisable(GL_SCISSOR_TEST);
-        pixman_region32_fini(&repaint_opaque);
+        trans[12] += trans[0] * tx + trans[4] * ty + trans[8] * tz;
+        trans[13] += trans[1] * tx + trans[5] * ty + trans[9] * tz;
+        trans[14] += trans[2] * tx + trans[6] * ty + trans[10] * tz;
+        trans[15] += trans[3] * tx + trans[7] * ty + trans[11] * tz;
+    }
+    else
+    {
+        pepper_mat4_t tmp;
+        pepper_mat4_multiply(&tmp, &gt->proj_mat, &node->transform);
+        for (i = 0; i < 16; i++)
+            trans[i] = (float)tmp.m[i];
     }
 
-    pixman_region32_fini(&repaint);
+    for (i = 0; i < state->num_planes; i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, state->textures[i]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* FIXME */);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST /* FIXME */);
+    }
 
+    pepper_view_get_position(node->view, &x, &y);
+    pepper_view_get_size(node->view, &w, &h);
+
+    vertex_array[ 0] = 0;
+    vertex_array[ 1] = 0;
+    vertex_array[ 4] = w;
+    vertex_array[ 5] = 0;
+    vertex_array[ 8] = w;
+    vertex_array[ 9] = h;
+    vertex_array[12] = 0;
+    vertex_array[13] = h;
+
+    vertex_array[ 2] = 0;
+    vertex_array[ 3] = 0;
+    vertex_array[ 6] = 1.0f;
+    vertex_array[ 7] = 0;
+    vertex_array[10] = 1.0f;
+    vertex_array[11] = 1.0f;
+    vertex_array[14] = 0;
+    vertex_array[15] = 1.0f;
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[2]);
+    glEnableVertexAttribArray(1);
+
+    shader = &gr->shaders[state->sampler];
+
+    gl_shader_use(gr, shader);
+
+    glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
+    for (i = 0; i < state->num_planes; i++)
+        glUniform1i(shader->texture_uniform[i], i);
+    glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
+
+    rects = pixman_region32_rectangles(&repaint, &nrects);
+    for (i = 0; i < nrects; i++)
+    {
+        glScissor(rects[i].x1, gt->height - rects[i].y2,
+                  rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
+        glDrawArrays(GL_TRIANGLE_FAN, 4 * i, 4);
+    }
+
+done:
+    pixman_region32_fini(&repaint);
 }
 
 static void
 gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
                            const pepper_list_t *list, pixman_region32_t *damage)
 {
-    gl_renderer_t  *gr = (gl_renderer_t *)renderer;
+    gl_renderer_t                  *gr = (gl_renderer_t *)renderer;
+    const pepper_output_geometry_t *geom = pepper_output_get_geometry(output);
 
     if (!gl_renderer_use(gr))
         return;
+
+    glViewport(0, 0, geom->w, geom->h);
+
+    glEnable(GL_SCISSOR_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     if (pixman_region32_not_empty(damage))
     {
@@ -970,7 +938,7 @@ setup_egl_extensions(gl_renderer_t *gr)
     }
     else
     {
-        PEPPER_ERROR("EGL_KHR_image not supported.\n");
+        PEPPER_ERROR("EGL_KHR_image not supported only wl_shm will be supported.\n");
     }
 
 #ifdef EGL_EXT_swap_buffers_with_damage
