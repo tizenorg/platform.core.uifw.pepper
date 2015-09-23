@@ -33,6 +33,8 @@ output_update_mode(pepper_output_t *output)
         if (mode.flags & WL_OUTPUT_MODE_CURRENT)
         {
             output->current_mode = mode;
+            output->geometry.w = mode.w;
+            output->geometry.h = mode.h;
 
             wl_resource_for_each(resource, &output->resource_list)
             {
