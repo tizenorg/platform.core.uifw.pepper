@@ -886,7 +886,7 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
     {
         glScissor(rects[i].x1, gt->height - rects[i].y2,
                   rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
-        glDrawArrays(GL_TRIANGLE_FAN, 4 * i, 4);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
 done:
