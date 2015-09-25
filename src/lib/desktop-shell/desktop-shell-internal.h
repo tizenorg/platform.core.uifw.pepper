@@ -111,14 +111,14 @@ struct shell_surface
 
     struct
     {
-        int32_t         x, y;
+        double          x, y;
         uint32_t        flags;
         pepper_seat_t  *seat;
     } popup;
 
     struct
     {
-        int32_t              x, y;
+        double               x, y;
         uint32_t             flags;
     } transient;
 
@@ -131,14 +131,13 @@ struct shell_surface
     {
         uint32_t             method;
         uint32_t             framerate;
-        pepper_surface_t    *background_surface;
-        pepper_view_t       *background_view;
         pepper_output_t     *output;
     } fullscreen;
 
     struct
     {
-        int32_t              x, y, w, h;
+        double               x, y;
+        int32_t              w, h;
         uint32_t             framerate;
     } saved;
 
@@ -206,17 +205,17 @@ shell_surface_set_toplevel(shell_surface_t *shsurf);
 
 void
 shell_surface_set_popup(shell_surface_t *shsurf, pepper_seat_t *seat, pepper_surface_t *parent,
-                        int32_t x, int32_t y, uint32_t flags);
+                        double x, double y, uint32_t flags);
 
 void
 shell_surface_set_transient(shell_surface_t *shsurf, pepper_surface_t *parent,
-                            int32_t x, int32_t y, uint32_t flags);
+                            double x, double y, uint32_t flags);
 
 void
 shell_surface_ack_configure(shell_surface_t *shsurf, uint32_t serial);
 
 void
-shell_surface_set_geometry(shell_surface_t *shsurf, int32_t x, int32_t y, int32_t w, int32_t h);
+shell_surface_set_geometry(shell_surface_t *shsurf, double x, double y, int32_t w, int32_t h);
 
 void
 shell_surface_set_maximized(shell_surface_t *shsurf, pepper_output_t *output);

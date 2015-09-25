@@ -13,12 +13,6 @@ remove_ping_timer(shell_client_t *shell_client)
 }
 
 static void
-shsurf_stop_listen_commit_event(shell_surface_t *shsurf)
-{
-    pepper_event_listener_remove(shsurf->surface_commit_listener);
-}
-
-static void
 handle_surface_commit(pepper_event_listener_t *listener,
                       pepper_object_t *surface, uint32_t id, void *info, void *data)
 {
@@ -29,15 +23,6 @@ handle_surface_commit(pepper_event_listener_t *listener,
 }
 
 static void
-shsurf_start_listen_commit_event(shell_surface_t *shsurf)
-{
-    shsurf->surface_commit_listener =
-        pepper_object_add_event_listener((pepper_object_t *)shsurf->surface,
-                                         PEPPER_EVENT_SURFACE_COMMIT, 0,
-                                         handle_surface_commit, shsurf);
-}
-
-static void
 handle_surface_destroy(pepper_event_listener_t *listener,
                        pepper_object_t *surface, uint32_t id, void *info, void *data)
 {
@@ -45,7 +30,7 @@ handle_surface_destroy(pepper_event_listener_t *listener,
     shell_surface_t *child, *tmp;
 
     pepper_event_listener_remove(shsurf->surface_destroy_listener);
-    shsurf_stop_listen_commit_event(shsurf);
+    pepper_event_listener_remove(shsurf->surface_commit_listener);
 
     if (shsurf->resource)
         wl_resource_destroy(shsurf->resource);
@@ -61,14 +46,6 @@ handle_surface_destroy(pepper_event_listener_t *listener,
 
     pepper_list_remove(&shsurf->parent_link);
     pepper_list_remove(&shsurf->link);
-
-    if (shsurf->fullscreen.background_surface)
-    {
-        /* TODO: pepper_surface_destroy(shsurf->fullscreen.background_surface); */;
-    }
-
-    if (shsurf->fullscreen.background_view)
-        pepper_view_destroy(shsurf->fullscreen.background_view);
 
     free(shsurf);
 }
@@ -213,8 +190,11 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
         pepper_object_add_event_listener((pepper_object_t *)surface, PEPPER_EVENT_OBJECT_DESTROY, 0,
                                          handle_surface_destroy, shsurf);
 
+    shsurf->surface_commit_listener =
+        pepper_object_add_event_listener((pepper_object_t *)surface, PEPPER_EVENT_SURFACE_COMMIT, 0,
+                                         handle_surface_commit, shsurf);
+
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
-    shsurf_start_listen_commit_event(shsurf);
     set_shsurf_to_surface(surface, shsurf);
 
     role = pepper_surface_get_role(shsurf->surface);
@@ -225,6 +205,8 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
         shsurf->send_configure = shsurf_xdg_surface_send_configure;
     else if (!strcmp(role, "xdg_popup"))
         shsurf->send_configure = shsurf_xdg_popup_send_configure;
+
+    shsurf->ack_configure = PEPPER_TRUE;
 
     return shsurf;
 
@@ -308,28 +290,27 @@ shell_surface_handle_pong(shell_surface_t *shsurf, uint32_t serial)
     shell_client_handle_pong(shsurf->shell_client, serial);
 }
 
-/* XXX: Temporary code for test, to be deleted */
-static void
-shell_surface_map_toplevel(shell_surface_t *shsurf);
-
 void
 shell_surface_set_toplevel(shell_surface_t *shsurf)
 {
+    if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
+        shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
+        shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
+    {
+        shsurf->send_configure(shsurf, shsurf->saved.w, shsurf->saved.h);
+    }
+
     shell_surface_set_parent(shsurf, NULL);
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TOPLEVEL);
-
-    /* Need to map in later */
-    /* XXX: Temporary code for test, to be deleted */
-    shell_surface_map_toplevel(shsurf);
 }
 
 void
 shell_surface_set_popup(shell_surface_t     *shsurf,
                         pepper_seat_t       *seat,
                         pepper_surface_t    *parent,
-                        int32_t              x,
-                        int32_t              y,
+                        double               x,
+                        double               y,
                         uint32_t             flags)
 {
     shell_surface_set_parent(shsurf, parent);
@@ -345,8 +326,8 @@ shell_surface_set_popup(shell_surface_t     *shsurf,
 void
 shell_surface_set_transient(shell_surface_t     *shsurf,
                             pepper_surface_t    *parent,
-                            int32_t              x,
-                            int32_t              y,
+                            double               x,
+                            double               y,
                             uint32_t             flags)
 {
     shell_surface_set_parent(shsurf, parent);
@@ -485,7 +466,7 @@ shell_surface_ack_configure(shell_surface_t *shsurf, uint32_t serial)
 }
 
 static void
-shell_surface_set_position(shell_surface_t *shsurf, int32_t x, int32_t y)
+shell_surface_set_position(shell_surface_t *shsurf, double x, double y)
 {
     pepper_view_set_position(shsurf->view, x, y);
 }
@@ -529,9 +510,9 @@ shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent)
 }
 
 void
-shell_surface_set_geometry(shell_surface_t *shsurf, int32_t x, int32_t y, int32_t w, int32_t h)
+shell_surface_set_geometry(shell_surface_t *shsurf, double x, double y, int32_t w, int32_t h)
 {
-    pepper_view_set_position(shsurf->view, (double)x, (double)y);
+    pepper_view_set_position(shsurf->view, x, y);
     pepper_view_resize(shsurf->view, w, h);
 }
 
@@ -564,9 +545,29 @@ shell_surface_set_class(shell_surface_t *shsurf, const char* class_)
 }
 
 static void
+shell_get_pointer_position(desktop_shell_t *shell, double *x, double *y)
+{
+    pepper_pointer_t *pointer;
+    shell_seat_t *shseat, *tmp;
+
+    pepper_list_for_each_safe(shseat, tmp, &shell->shseat_list, link)
+    {
+        if (shseat->seat)
+        {
+            pointer = pepper_seat_get_pointer(shseat->seat);
+            if (pointer)
+            {
+                pepper_pointer_get_position(pointer, x, y);
+                return ;
+            }
+        }
+    }
+}
+
+static void
 shell_surface_map_toplevel(shell_surface_t *shsurf)
 {
-    int32_t x = 0, y = 0;
+    double x = 0, y = 0;
 
     /* Restore original geometry */
     if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
@@ -576,23 +577,10 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
         x = shsurf->saved.x;
         y = shsurf->saved.y;
 
-        pepper_view_resize(shsurf->view, shsurf->saved.w, shsurf->saved.h);
-
-        if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN)
-        {
-            /* TODO: pepper_surface_destroy(shsurf->fullscreen.background_surface); */
-            pepper_view_destroy(shsurf->fullscreen.background_view);
-
-            shsurf->fullscreen.background_surface = NULL;
-            shsurf->fullscreen.background_view    = NULL;
-        }
     }
     else
     {
-        /**
-         * TODO: To get view's initial position, need to know output's size, position
-         *       seat->pointer's position, or read from config file
-         */
+        shell_get_pointer_position(shsurf->shell, &x, &y);
     }
 
     shell_surface_set_position(shsurf, x, y);
@@ -699,7 +687,7 @@ shell_surface_center_on_output_by_scale(shell_surface_t                 *shsurf,
                                         pixman_rectangle32_t            *surface_geom,
                                         float                            scale)
 {
-    float x, y;
+    double x, y;
 
     x = output->x + (output->w - surface_geom->width  * scale) / 2;
     y = output->y + (output->h - surface_geom->height * scale) / 2;
@@ -767,25 +755,6 @@ shell_surface_map_fullscreen(shell_surface_t *shsurf)
         PEPPER_ERROR("invalid method type = 0x%x\n", shsurf->fullscreen.method);
         break;
     }
-
-    /* TODO: Create background black view */
-    {
-        pepper_surface_t *surface = NULL;
-
-        /**
-         * surface->x = output_geom->w;
-         * surface->y = output_geom->y;
-         */
-
-        shsurf->fullscreen.background_surface = surface;
-        shsurf->fullscreen.background_view = pepper_compositor_add_view(shsurf->shell->compositor);
-        pepper_view_set_surface(shsurf->fullscreen.background_view, surface);
-    }
-
-    /* Place background black view */
-    pepper_view_set_position(shsurf->fullscreen.background_view, output_geom->x, output_geom->y);
-    pepper_view_map(shsurf->fullscreen.background_view);
-    pepper_view_stack_top(shsurf->fullscreen.background_view, PEPPER_TRUE /*FIXME*/ );
 
     /* Place target view */
     shell_surface_center_on_output_by_scale(shsurf, output_geom, &shsurf_geom, scale);
