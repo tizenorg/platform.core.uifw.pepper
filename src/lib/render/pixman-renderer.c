@@ -246,6 +246,20 @@ pixman_renderer_read_pixels(pepper_renderer_t *renderer,
 }
 
 static void
+pixman_transform_from_pepper_mat4(pixman_transform_t *transform, pepper_mat4_t *mat)
+{
+    transform->matrix[0][0] = pixman_double_to_fixed(mat->m[0]);
+    transform->matrix[0][1] = pixman_double_to_fixed(mat->m[4]);
+    transform->matrix[0][2] = pixman_double_to_fixed(mat->m[12]);
+    transform->matrix[1][0] = pixman_double_to_fixed(mat->m[1]);
+    transform->matrix[1][1] = pixman_double_to_fixed(mat->m[5]);
+    transform->matrix[1][2] = pixman_double_to_fixed(mat->m[13]);
+    transform->matrix[2][0] = pixman_double_to_fixed(mat->m[3]);
+    transform->matrix[2][1] = pixman_double_to_fixed(mat->m[7]);
+    transform->matrix[2][2] = pixman_double_to_fixed(mat->m[15]);
+}
+
+static void
 repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_region32_t *damage)
 {
     pixman_render_target_t  *target = (pixman_render_target_t*)renderer->target;
@@ -257,20 +271,32 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
 
     if (pixman_region32_not_empty(&repaint))
     {
-        int x, y, w, h;
+        pixman_transform_t  trans;
+        pixman_filter_t     filter;
 
-        pixman_image_set_clip_region32(target->image, &repaint);
+        if (node->transform.flags <= PEPPER_MATRIX_TRANSLATE)
+        {
+            pixman_transform_init_translate(&trans,
+                                            -pixman_double_to_fixed(node->transform.m[12]),
+                                            -pixman_double_to_fixed(node->transform.m[13]));
+            filter = PIXMAN_FILTER_NEAREST;
+        }
+        else
+        {
+            pepper_mat4_inverse(&node->transform, &node->transform);    /* FIXME */
+            pixman_transform_from_pepper_mat4(&trans, &node->transform);
+            filter = PIXMAN_FILTER_BILINEAR;
+        }
 
-        /* TODO: consider transform such as rotation */
-        x = node->transform.m[12];
-        y = node->transform.m[13];
-        pepper_view_get_size(node->view, &w, &h);
+        pixman_image_set_transform(ps->image, &trans);
+        pixman_image_set_filter(ps->image, filter, NULL, 0);
 
         pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
                                  0, 0, /* src_x, src_y */
                                  0, 0, /* mask_x, mask_y */
-                                 x, y, /* dest_x, dest_y */
-                                 w, h);
+                                 0, 0, /* dest_x, dest_y */
+                                 pixman_image_get_width(target->image),
+                                 pixman_image_get_height(target->image));
     }
 
     pixman_region32_fini(&repaint);
