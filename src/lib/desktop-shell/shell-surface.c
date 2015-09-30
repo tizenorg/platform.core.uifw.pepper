@@ -881,6 +881,13 @@ shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial
     double              vx, vy;
     double              px, py;
 
+    if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
+        shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
+        shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
+    {
+        return ;
+    }
+
     /* TODO: Touch driven move?? */
     if (!pointer)
         return;
@@ -967,6 +974,13 @@ void
 shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial, uint32_t edges)
 {
     pepper_pointer_t   *pointer = pepper_seat_get_pointer(seat);
+
+    if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
+        shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
+        shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
+    {
+        return ;
+    }
 
     pepper_pointer_get_position(pointer, &shsurf->resize.px, &shsurf->resize.py);
 
