@@ -113,6 +113,8 @@ struct shell_surface
         pepper_bool_t   resizing;
     } resize;
 
+    int32_t         last_width, last_height;
+
     /* Data structures per surface type */
     shell_surface_type_t     type;          /* Current surface type */
     shell_surface_type_t     next_type;     /* Requested surface type */

@@ -18,6 +18,9 @@ handle_surface_commit(pepper_event_listener_t *listener,
 {
     shell_surface_t *shsurf = data;
 
+    int     vw, vh;
+    double  sx, sy;
+
     if (shsurf->has_next_geometry)
     {
         shsurf->geometry = shsurf->next_geometry;
@@ -31,6 +34,29 @@ handle_surface_commit(pepper_event_listener_t *listener,
         shsurf->mapped    = PEPPER_TRUE;
         shsurf->type      = shsurf->next_type;
         shsurf->next_type = SHELL_SURFACE_TYPE_NONE;
+    }
+
+    pepper_view_get_size(shsurf->view, &vw, &vh);
+
+    sx = (vw - shsurf->last_width);
+    sy = (vh - shsurf->last_height);
+
+    if (sx || sy)
+    {
+        double vx, vy;
+
+        pepper_view_get_position(shsurf->view, &vx, &vy);
+
+        if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_LEFT)
+            vx = vx - sx;
+
+        if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_TOP)
+            vy = vy - sy;
+
+        pepper_view_set_position(shsurf->view, vx, vy);
+
+        shsurf->last_width = vw;
+        shsurf->last_height = vh;
     }
 }
 
@@ -879,8 +905,7 @@ static void
 pointer_resize_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
 {
     shell_surface_t    *shsurf = data;
-    uint32_t            width = 0, height = 0;
-    int32_t             dx = 0, dy = 0;
+    double              dx = 0.f, dy = 0.f;
 
     pepper_pointer_set_position(pointer, x, y);
 
@@ -902,10 +927,7 @@ pointer_resize_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time,
         dy = y - shsurf->resize.py;
     }
 
-    width  = shsurf->resize.vw + dx;
-    height = shsurf->resize.vh + dy;
-
-    shsurf->send_configure(shsurf, width, height);
+    shsurf->send_configure(shsurf, shsurf->resize.vw + dx, shsurf->resize.vh + dy);
 }
 
 static void
@@ -946,10 +968,12 @@ shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t seri
 {
     pepper_pointer_t   *pointer = pepper_seat_get_pointer(seat);
 
-    pepper_view_get_position(shsurf->view, &shsurf->resize.vx, &shsurf->resize.vy);
-    pepper_view_get_size(shsurf->view, &shsurf->resize.vw, &shsurf->resize.vh);
-
     pepper_pointer_get_position(pointer, &shsurf->resize.px, &shsurf->resize.py);
+
+    pepper_view_get_position(shsurf->view, &shsurf->resize.vx, &shsurf->resize.vy);
+
+    shsurf->resize.vw  = shsurf->geometry.w;
+    shsurf->resize.vh  = shsurf->geometry.h;
 
     shsurf->resize.edges = edges;
     shsurf->resize.resizing = PEPPER_TRUE;
