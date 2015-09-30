@@ -79,14 +79,22 @@ pepper_compositor_create(const char *socket_name)
     pepper_list_init(&compositor->output_list);
     pepper_list_init(&compositor->input_device_list);
 
-    compositor->socket_name = strdup(socket_name);
-    PEPPER_CHECK(compositor->socket_name, goto error, "strdup() failed.\n");
-
     compositor->display = wl_display_create();
     PEPPER_CHECK(compositor->display, goto error, "wl_display_create() failed.\n");
 
-    ret = wl_display_add_socket(compositor->display, socket_name);
-    PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
+    if (socket_name)
+    {
+        ret = wl_display_add_socket(compositor->display, socket_name);
+        PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
+    }
+    else
+    {
+        socket_name = wl_display_add_socket_auto(compositor->display);
+        PEPPER_CHECK(socket_name, goto error, "wl_display_add_socket_auto() failed.\n");
+    }
+
+    compositor->socket_name = strdup(socket_name);
+    PEPPER_CHECK(compositor->socket_name, goto error, "strdup() failed.\n");
 
     ret = wl_display_init_shm(compositor->display);
     PEPPER_CHECK(ret == 0, goto error, "wl_display_init_shm() failed.\n");
