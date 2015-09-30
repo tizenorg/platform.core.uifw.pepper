@@ -18,8 +18,20 @@ handle_surface_commit(pepper_event_listener_t *listener,
 {
     shell_surface_t *shsurf = data;
 
+    if (shsurf->has_next_geometry)
+    {
+        shsurf->geometry = shsurf->next_geometry;
+        shsurf->has_next_geometry = PEPPER_FALSE;
+    }
+
     if (!shsurf->mapped && shsurf->ack_configure && shsurf->shell_surface_map)
+    {
         shsurf->shell_surface_map(shsurf);
+
+        shsurf->mapped    = PEPPER_TRUE;
+        shsurf->type      = shsurf->next_type;
+        shsurf->next_type = SHELL_SURFACE_TYPE_NONE;
+    }
 }
 
 static void
@@ -512,8 +524,12 @@ shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent)
 void
 shell_surface_set_geometry(shell_surface_t *shsurf, double x, double y, int32_t w, int32_t h)
 {
-    pepper_view_set_position(shsurf->view, x, y);
-    pepper_view_resize(shsurf->view, w, h);
+    shsurf->next_geometry.x = x;
+    shsurf->next_geometry.y = y;
+    shsurf->next_geometry.w = w;
+    shsurf->next_geometry.h = h;
+
+    shsurf->has_next_geometry = PEPPER_TRUE;
 }
 
 pepper_bool_t
@@ -587,9 +603,6 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
 
     pepper_view_map(shsurf->view);
 
-    shsurf->mapped    = PEPPER_TRUE;
-    shsurf->type      = SHELL_SURFACE_TYPE_TOPLEVEL;
-    shsurf->next_type = SHELL_SURFACE_TYPE_NONE;
 }
 
 static void
@@ -606,10 +619,6 @@ shell_surface_map_popup(shell_surface_t *shsurf)
     pepper_view_stack_top(shsurf->view, PEPPER_TRUE);
 
     /* TODO: add_popup_grab(), but how? */
-
-    shsurf->mapped    = PEPPER_TRUE;
-    shsurf->type      = SHELL_SURFACE_TYPE_POPUP;
-    shsurf->next_type = SHELL_SURFACE_TYPE_NONE;
 }
 
 static void
@@ -632,10 +641,6 @@ shell_surface_map_transient(shell_surface_t *shsurf)
     }
 
     pepper_view_map(shsurf->view);
-
-    shsurf->mapped    = PEPPER_TRUE;
-    shsurf->type      = SHELL_SURFACE_TYPE_TRANSIENT;
-    shsurf->next_type = SHELL_SURFACE_TYPE_NONE;
 }
 
 static void
@@ -658,10 +663,6 @@ shell_surface_map_minimized(shell_surface_t *shsurf)
 {
     /* TODO */
     pepper_view_unmap(shsurf->view);
-
-    shsurf->mapped    = PEPPER_TRUE;
-    shsurf->type      = SHELL_SURFACE_TYPE_MINIMIZED;
-    shsurf->next_type = SHELL_SURFACE_TYPE_NONE;
 }
 
 static float

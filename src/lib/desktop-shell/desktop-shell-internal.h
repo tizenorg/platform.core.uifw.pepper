@@ -93,6 +93,14 @@ struct shell_surface
 
     struct
     {
+        double x, y;
+        int32_t w,h;
+    } geometry, next_geometry;
+
+    pepper_bool_t            has_next_geometry;
+
+    struct
+    {
         double          dx, dy;     /* difference between pointer position and view position */
     } move;
 
