@@ -149,6 +149,12 @@ pepper_compositor_get_display(pepper_compositor_t *compositor)
     return compositor->display;
 }
 
+PEPPER_API const char *
+pepper_compositor_get_socket_name(pepper_compositor_t *compositor)
+{
+    return compositor->socket_name;
+}
+
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_output_list(pepper_compositor_t *compositor)
 {
