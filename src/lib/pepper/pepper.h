@@ -293,7 +293,6 @@ pepper_input_device_get_property(pepper_input_device_t *device, const char *key)
 /* Pointer. */
 struct pepper_pointer_grab
 {
-    void (*focus)(pepper_pointer_t *pointer, void *data);
     void (*motion)(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y);
     void (*button)(pepper_pointer_t *pointer, void *data, uint32_t time, uint32_t button,
                    uint32_t state);

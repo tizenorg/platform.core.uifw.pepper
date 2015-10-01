@@ -20,18 +20,16 @@ static const struct wl_pointer_interface pointer_impl =
 };
 
 static void
-default_pointer_grab_focus(pepper_pointer_t *pointer, void *data)
-{
-    pepper_view_t *view = pepper_compositor_pick_view(pointer->input.seat->compositor,
-                                                      pointer->x, pointer->y,
-                                                      &pointer->vx, &pointer->vy);
-    pepper_pointer_set_focus(pointer, view);
-}
-
-static void
 default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
 {
+    pepper_view_t *view;
+
     pepper_pointer_set_position(pointer, x, y);
+
+    view = pepper_compositor_pick_view(pointer->input.seat->compositor, pointer->x, pointer->y,
+                                       &pointer->vx, &pointer->vy);
+    pepper_pointer_set_focus(pointer, view);
+
     pepper_pointer_send_motion(pointer, time, pointer->vx, pointer->vy);
 }
 
@@ -67,7 +65,6 @@ default_pointer_grab_cancel(pepper_pointer_t *pointer, void *data)
 
 static const pepper_pointer_grab_t default_pointer_grab =
 {
-    default_pointer_grab_focus,
     default_pointer_grab_motion,
     default_pointer_grab_button,
     default_pointer_grab_axis,
@@ -162,9 +159,6 @@ pepper_pointer_set_position(pepper_pointer_t *pointer, double x, double y)
 {
     pointer->x = x;
     pointer->y = y;
-
-    if (pointer->grab)
-        pointer->grab->focus(pointer, pointer->data);
 }
 
 PEPPER_API void
@@ -263,14 +257,10 @@ pepper_pointer_start_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t
 {
     pointer->grab = grab;
     pointer->data = data;
-
-    if (grab)
-        grab->focus(pointer, pointer->data);
 }
 
 PEPPER_API void
 pepper_pointer_end_grab(pepper_pointer_t *pointer)
 {
     pointer->grab = &default_pointer_grab;
-    pointer->grab->focus(pointer, NULL);
 }

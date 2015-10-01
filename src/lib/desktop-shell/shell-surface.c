@@ -935,12 +935,6 @@ shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
 }
 
 static void
-pointer_move_grab_focus(pepper_pointer_t *pointer, void *data)
-{
-    pepper_pointer_set_focus(pointer, NULL);
-}
-
-static void
 pointer_move_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
 {
     shell_surface_t *shsurf = data;
@@ -971,7 +965,6 @@ pointer_move_grab_cancel(pepper_pointer_t *pointer, void *data)
 
 static pepper_pointer_grab_t pointer_move_grab =
 {
-    pointer_move_grab_focus,
     pointer_move_grab_motion,
     pointer_move_grab_button,
     pointer_move_grab_axis,
@@ -1004,12 +997,6 @@ shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial
     shsurf->move.dy = vy - py;
 
     pepper_pointer_start_grab(pointer, &pointer_move_grab, shsurf);
-}
-
-static void
-pointer_resize_grab_focus(pepper_pointer_t *pointer, void *data)
-{
-    pepper_pointer_set_focus(pointer, NULL);
 }
 
 static void
@@ -1068,7 +1055,6 @@ pointer_resize_grab_cancel(pepper_pointer_t *pointer, void *data)
 
 static pepper_pointer_grab_t pointer_resize_grab =
 {
-    pointer_resize_grab_focus,
     pointer_resize_grab_motion,
     pointer_resize_grab_button,
     pointer_resize_grab_axis,
