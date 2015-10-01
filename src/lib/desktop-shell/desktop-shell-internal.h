@@ -99,6 +99,9 @@ struct shell_surface
 
     pepper_bool_t            has_next_geometry;
 
+    const void              *old_grab;
+    void                    *old_grab_data;
+
     struct
     {
         double          dx, dy;     /* difference between pointer position and view position */

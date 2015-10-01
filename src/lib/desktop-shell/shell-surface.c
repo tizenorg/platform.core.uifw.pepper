@@ -946,7 +946,10 @@ pointer_move_grab_button(pepper_pointer_t *pointer, void *data,
                          uint32_t time, uint32_t button, uint32_t state)
 {
     if (button == BTN_LEFT && state == PEPPER_BUTTON_STATE_RELEASED)
-        pepper_pointer_end_grab(pointer);
+    {
+        shell_surface_t *shsurf = data;
+        pepper_pointer_set_grab(pointer, shsurf->old_grab, shsurf->old_grab_data);
+    }
 }
 
 static void
@@ -995,7 +998,9 @@ shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial
     shsurf->move.dx = vx - px;
     shsurf->move.dy = vy - py;
 
-    pepper_pointer_start_grab(pointer, &pointer_move_grab, shsurf);
+    shsurf->old_grab = pepper_pointer_get_grab(pointer);
+    shsurf->old_grab_data = pepper_pointer_get_grab_data(pointer);
+    pepper_pointer_set_grab(pointer, &pointer_move_grab, shsurf);
 }
 
 static void
@@ -1031,9 +1036,11 @@ pointer_resize_grab_button(pepper_pointer_t *pointer, void *data,
 {
     if (button == BTN_LEFT && state == PEPPER_BUTTON_STATE_RELEASED)
     {
-        pepper_pointer_end_grab(pointer);
-        ((shell_surface_t *)data)->resize.resizing = PEPPER_FALSE;
-        ((shell_surface_t *)data)->resize.edges    = 0;
+        shell_surface_t *shsurf = data;
+
+        pepper_pointer_set_grab(pointer, shsurf->old_grab, shsurf->old_grab_data);
+        shsurf->resize.resizing = PEPPER_FALSE;
+        shsurf->resize.edges    = 0;
     }
 }
 
@@ -1086,5 +1093,7 @@ shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t seri
         shsurf->send_configure(shsurf, 0, 0);
     }
 
-    pepper_pointer_start_grab(pointer, &pointer_resize_grab, shsurf);
+    shsurf->old_grab = pepper_pointer_get_grab(pointer);
+    shsurf->old_grab_data = pepper_pointer_get_grab_data(pointer);
+    pepper_pointer_set_grab(pointer, &pointer_resize_grab, shsurf);
 }

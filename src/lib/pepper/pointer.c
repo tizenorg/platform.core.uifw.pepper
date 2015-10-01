@@ -114,7 +114,8 @@ pointer_set_position(pepper_pointer_t *pointer, uint32_t time, double x, double 
 
     pointer_clamp(pointer);
 
-    pointer->grab->motion(pointer, pointer->data, time, x, y);
+    if (pointer->grab)
+        pointer->grab->motion(pointer, pointer->data, time, x, y);
 
     /* Emit motion event. */
     memset(&event, 0x00, sizeof(pepper_input_event_t));
@@ -131,20 +132,35 @@ pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input
     switch (id)
     {
     case PEPPER_EVENT_POINTER_MOTION_ABSOLUTE:
-        pointer_set_position(pointer, event->time, event->x, event->y);
+        {
+            pointer_set_position(pointer, event->time, event->x, event->y);
+        }
         break;
     case PEPPER_EVENT_POINTER_MOTION:
-        pointer_set_position(pointer, event->time,
-                             pointer->x + event->x * pointer->x_velocity,
-                             pointer->y + event->y * pointer->y_velocity);
+        {
+            pointer_set_position(pointer, event->time,
+                                 pointer->x + event->x * pointer->x_velocity,
+                                 pointer->y + event->y * pointer->y_velocity);
+        }
         break;
     case PEPPER_EVENT_POINTER_BUTTON:
-        pointer->grab->button(pointer, pointer->data, event->time, event->button, event->state);
-        pepper_object_emit_event(&pointer->base, id, event);
+        {
+            if (pointer->grab)
+            {
+                pointer->grab->button(pointer, pointer->data,
+                                      event->time, event->button, event->state);
+            }
+
+            pepper_object_emit_event(&pointer->base, id, event);
+        }
         break;
     case PEPPER_EVENT_POINTER_AXIS:
-        pointer->grab->axis(pointer, pointer->data, event->time, event->axis, event->value);
-        pepper_object_emit_event(&pointer->base, id, event);
+        {
+            if (pointer->grab)
+                pointer->grab->axis(pointer, pointer->data, event->time, event->axis, event->value);
+
+            pepper_object_emit_event(&pointer->base, id, event);
+        }
         break;
     }
 }
@@ -154,7 +170,9 @@ pointer_handle_focus_destroy(struct wl_listener *listener, void *data)
 {
     pepper_pointer_t *pointer = pepper_container_of(listener, pointer, focus_destroy_listener);
     pepper_pointer_set_focus(pointer, NULL);
-    pointer->grab->cancel(pointer, pointer->data);
+
+    if (pointer->grab)
+        pointer->grab->cancel(pointer, pointer->data);
 }
 
 pepper_pointer_t *
@@ -185,7 +203,8 @@ pepper_pointer_create(pepper_seat_t *seat)
 void
 pepper_pointer_destroy(pepper_pointer_t *pointer)
 {
-    pointer->grab->cancel(pointer, pointer->data);
+    if (pointer->grab)
+        pointer->grab->cancel(pointer, pointer->data);
 
     if (pointer->focus)
         wl_list_remove(&pointer->focus_destroy_listener.link);
@@ -257,7 +276,8 @@ pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double
     {
         pepper_input_event_t event;
 
-        pointer->grab->motion(pointer, pointer->data, pointer->time, pointer->x, pointer->y);
+        if (pointer->grab)
+            pointer->grab->motion(pointer, pointer->data, pointer->time, pointer->x, pointer->y);
 
         memset(&event, 0x00, sizeof(pepper_input_event_t));
         event.id = PEPPER_EVENT_POINTER_MOTION;
@@ -419,14 +439,20 @@ pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis
 }
 
 PEPPER_API void
-pepper_pointer_start_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t *grab, void *data)
+pepper_pointer_set_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t *grab, void *data)
 {
     pointer->grab = grab;
     pointer->data = data;
 }
 
-PEPPER_API void
-pepper_pointer_end_grab(pepper_pointer_t *pointer)
+PEPPER_API const pepper_pointer_grab_t *
+pepper_pointer_get_grab(pepper_pointer_t *pointer)
 {
-    pointer->grab = &default_pointer_grab;
+    return pointer->grab;
+}
+
+PEPPER_API void *
+pepper_pointer_get_grab_data(pepper_pointer_t *pointer)
+{
+    return pointer->data;
 }

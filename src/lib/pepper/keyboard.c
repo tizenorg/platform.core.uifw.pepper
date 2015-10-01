@@ -56,7 +56,9 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
     if (event->state == PEPPER_KEY_STATE_PRESSED)
         *(uint32_t *)wl_array_add(&keyboard->keys, sizeof(uint32_t)) = event->key;
 
-    keyboard->grab->key(keyboard, keyboard->data, event->time, event->key, event->state);
+    if (keyboard->grab)
+        keyboard->grab->key(keyboard, keyboard->data, event->time, event->key, event->state);
+
     pepper_object_emit_event(&keyboard->base, id, event);
 }
 
@@ -65,7 +67,9 @@ keyboard_handle_focus_destroy(struct wl_listener *listener, void *data)
 {
     pepper_keyboard_t *keyboard = pepper_container_of(listener, keyboard, focus_destroy_listener);
     pepper_keyboard_set_focus(keyboard, NULL);
-    keyboard->grab->cancel(keyboard, keyboard->data);
+
+    if (keyboard->grab)
+        keyboard->grab->cancel(keyboard, keyboard->data);
 }
 
 pepper_keyboard_t *
@@ -89,7 +93,8 @@ pepper_keyboard_create(pepper_seat_t *seat)
 void
 pepper_keyboard_destroy(pepper_keyboard_t *keyboard)
 {
-    keyboard->grab->cancel(keyboard, keyboard->data);
+    if (keyboard->grab)
+        keyboard->grab->cancel(keyboard, keyboard->data);
 
     if (keyboard->focus)
         wl_list_remove(&keyboard->focus_destroy_listener.link);
@@ -239,15 +244,20 @@ pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, 
 }
 
 PEPPER_API void
-pepper_keyboard_start_grab(pepper_keyboard_t *keyboard,
-                           const pepper_keyboard_grab_t *grab, void *data)
+pepper_keyboard_set_grab(pepper_keyboard_t *keyboard, const pepper_keyboard_grab_t *grab, void *data)
 {
     keyboard->grab = grab;
     keyboard->data = data;
 }
 
-PEPPER_API void
-pepper_keyboard_end_grab(pepper_keyboard_t *keyboard)
+PEPPER_API const pepper_keyboard_grab_t *
+pepper_keyboard_get_grab(pepper_keyboard_t *keyboard)
 {
-    keyboard->grab = &default_keyboard_grab;
+    return keyboard->grab;
+}
+
+PEPPER_API void *
+pepper_keyboard_get_grab_data(pepper_keyboard_t *keyboard)
+{
+    return keyboard->data;
 }

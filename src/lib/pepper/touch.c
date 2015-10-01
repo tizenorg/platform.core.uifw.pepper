@@ -17,19 +17,34 @@ pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id, pepper_input_event
     switch (id)
     {
     case PEPPER_EVENT_TOUCH_DOWN:
-        touch->grab->down(touch, touch->data, event->time, event->id, event->x, event->y);
+        {
+            if (touch->grab)
+                touch->grab->down(touch, touch->data, event->time, event->id, event->x, event->y);
+        }
         break;
     case PEPPER_EVENT_TOUCH_UP:
-        touch->grab->up(touch, touch->data, event->time, event->id);
+        {
+            if (touch->grab)
+                touch->grab->up(touch, touch->data, event->time, event->id);
+        }
         break;
     case PEPPER_EVENT_TOUCH_MOTION:
-        touch->grab->motion(touch, touch->data, event->time, event->id, event->x, event->y);
+        {
+            if (touch->grab)
+                touch->grab->motion(touch, touch->data, event->time, event->id, event->x, event->y);
+        }
         break;
     case PEPPER_EVENT_TOUCH_FRAME:
-        touch->grab->frame(touch, touch->data);
+        {
+            if (touch->grab)
+                touch->grab->frame(touch, touch->data);
+        }
         break;
     case PEPPER_EVENT_TOUCH_CANCEL:
-        touch->grab->cancel(touch, touch->data);
+        {
+            if (touch->grab)
+                touch->grab->cancel(touch, touch->data);
+        }
         break;
     }
 
@@ -144,15 +159,21 @@ pepper_touch_send_cancel(pepper_touch_t *touch)
 }
 
 PEPPER_API void
-pepper_touch_start_grab(pepper_touch_t *touch, const pepper_touch_grab_t *grab, void *data)
+pepper_touch_set_grab(pepper_touch_t *touch, const pepper_touch_grab_t *grab, void *data)
 {
     touch->grab = grab;
     touch->data = data;
 }
 
-PEPPER_API void
-pepper_touch_end_grab(pepper_touch_t *touch)
+PEPPER_API const pepper_touch_grab_t *
+pepper_touch_get_grab(pepper_touch_t *touch)
 {
-    /* TODO: switch back to default grab. */
-    touch->grab = NULL;
+    return touch->grab;
 }
+
+PEPPER_API void *
+pepper_touch_get_grab_data(pepper_touch_t *touch)
+{
+    return touch->data;
+}
+
