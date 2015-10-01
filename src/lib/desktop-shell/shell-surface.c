@@ -632,45 +632,115 @@ shell_surface_set_class(shell_surface_t *shsurf, const char* class_)
     return PEPPER_TRUE;
 }
 
-static void
-shell_get_pointer_position(desktop_shell_t *shell, double *x, double *y)
+static pepper_output_t *
+shell_pointer_get_output(desktop_shell_t *shell, pepper_pointer_t *pointer)
 {
-    pepper_pointer_t *pointer;
-    shell_seat_t *shseat, *tmp;
+    pepper_output_t        *output = NULL;
+    pepper_output_t        *tmp_output;
+    const pepper_list_t    *list;
+    pepper_list_t          *l;
+    double                  px, py;
 
-    pepper_list_for_each_safe(shseat, tmp, &shell->shseat_list, link)
+    pepper_pointer_get_position(pointer, &px, &py);
+
+    list = pepper_compositor_get_output_list(shell->compositor);
+    pepper_list_for_each_list(l, list)
+    {
+        tmp_output = (pepper_output_t *)l->item;
+
+        if (tmp_output)
+        {
+            const pepper_output_geometry_t *geom;
+            pixman_region32_t rect;
+
+            if (!output)
+                output = tmp_output;
+
+            geom = pepper_output_get_geometry(tmp_output);
+
+            pixman_region32_init_rect(&rect, geom->x, geom->y, geom->w, geom->h);
+
+            if (pixman_region32_contains_point(&rect, px, py, NULL))
+            {
+                output = tmp_output;
+                pixman_region32_fini(&rect);
+                break;
+            }
+
+            pixman_region32_fini(&rect);
+        }
+    }
+
+    return output;
+}
+
+static void
+shell_surface_set_initial_position(shell_surface_t *shsurf)
+{
+    pepper_pointer_t    *pointer = NULL;
+    shell_seat_t        *shseat, *tmp;
+    double               vx = 0.f, vy = 0.f;
+
+    pepper_list_for_each_safe(shseat, tmp, &shsurf->shell->shseat_list, link)
     {
         if (shseat->seat)
         {
             pointer = pepper_seat_get_pointer(shseat->seat);
             if (pointer)
-            {
-                pepper_pointer_get_position(pointer, x, y);
-                return ;
-            }
+                break;
         }
     }
+
+    if (pointer)
+    {
+        const pepper_output_geometry_t  *geom;
+        pepper_output_t                 *output;
+
+        int32_t     vw, vh;
+        double      px, py;
+
+        pepper_pointer_get_position(pointer, &px, &py);
+
+        output = shell_pointer_get_output(shsurf->shell, pointer);
+
+        geom = pepper_output_get_geometry(output);
+
+        pepper_view_get_size(shsurf->view, &vw, &vh);
+
+        /* FIXME: consider output's origin is top-left */
+        if ( px <= geom->x )
+            vx = 0.f;
+        else if ( px + vw > geom->x + geom->w)
+            vx = geom->x + geom->w - vw;
+        else
+            vx = px;
+
+        if ( py <= geom->y )
+            vy = 0.f;
+        else if ( py + vh > geom->y + geom->h )
+            vy = geom->y + geom->h - vh;
+        else
+            vy = py;
+    }
+
+    pepper_view_set_position(shsurf->view, vx, vy);
 }
 
 static void
 shell_surface_map_toplevel(shell_surface_t *shsurf)
 {
-    double x = 0, y = 0;
 
     /* Restore original geometry */
     if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
         shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
         shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
     {
-        x = shsurf->saved.x;
-        y = shsurf->saved.y;
+        shell_surface_set_position(shsurf, shsurf->saved.x, shsurf->saved.y);
     }
     else
     {
-        shell_get_pointer_position(shsurf->shell, &x, &y);
+        shell_surface_set_initial_position(shsurf);
     }
-
-    shell_surface_set_position(shsurf, x, y);
 
     pepper_view_map(shsurf->view);
 }
