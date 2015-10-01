@@ -30,6 +30,12 @@ static const struct wl_compositor_interface compositor_interface =
 };
 
 static void
+unbind_resource(struct wl_resource *resource)
+{
+    wl_list_remove(wl_resource_get_link(resource));
+}
+
+static void
 compositor_bind(struct wl_client *client,
                 void             *data,
                 uint32_t          version,
@@ -47,7 +53,8 @@ compositor_bind(struct wl_client *client,
         return;
     }
 
-    wl_resource_set_implementation(resource, &compositor_interface, compositor, NULL);
+    wl_list_insert(&compositor->resource_list, wl_resource_get_link(resource));
+    wl_resource_set_implementation(resource, &compositor_interface, compositor, unbind_resource);
 }
 
 void
@@ -71,6 +78,8 @@ pepper_compositor_create(const char *socket_name)
     compositor = (pepper_compositor_t *)pepper_object_alloc(PEPPER_OBJECT_COMPOSITOR,
                                                             sizeof(pepper_compositor_t));
     PEPPER_CHECK(compositor, goto error, "pepper_object_alloc() failed.\n");
+
+    wl_list_init(&compositor->resource_list);
 
     pepper_list_init(&compositor->surface_list);
     pepper_list_init(&compositor->view_list);
@@ -147,6 +156,12 @@ PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_compositor_t *compositor)
 {
     return compositor->display;
+}
+
+PEPPER_API struct wl_list *
+pepper_compositor_get_resource_list(pepper_compositor_t *compositor)
+{
+    return &compositor->resource_list;
 }
 
 PEPPER_API const char *

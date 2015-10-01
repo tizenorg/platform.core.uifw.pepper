@@ -433,6 +433,12 @@ pepper_surface_send_frame_callback_done(pepper_surface_t *surface, uint32_t time
     }
 }
 
+PEPPER_API struct wl_resource *
+pepper_surface_get_resource(pepper_surface_t *surface)
+{
+    return surface->resource;
+}
+
 PEPPER_API const char *
 pepper_surface_get_role(pepper_surface_t *surface)
 {

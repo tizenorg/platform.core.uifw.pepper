@@ -305,6 +305,12 @@ pepper_output_destroy(pepper_output_t *output)
     free(output);
 }
 
+PEPPER_API struct wl_list *
+pepper_output_get_resource_list(pepper_output_t *output)
+{
+    return &output->resource_list;
+}
+
 PEPPER_API void
 pepper_output_move(pepper_output_t *output, int32_t x, int32_t y)
 {

@@ -103,6 +103,12 @@ pepper_seat_destroy(pepper_seat_t *seat)
         wl_resource_destroy(resource);
 }
 
+PEPPER_API struct wl_list *
+pepper_seat_get_resource_list(pepper_seat_t *seat)
+{
+    return &seat->resource_list;
+}
+
 PEPPER_API pepper_pointer_t *
 pepper_seat_get_pointer(pepper_seat_t *seat)
 {

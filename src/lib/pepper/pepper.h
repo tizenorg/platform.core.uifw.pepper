@@ -203,6 +203,9 @@ pepper_compositor_destroy(pepper_compositor_t *compositor);
 PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_compositor_t *compositor);
 
+PEPPER_API struct wl_list *
+pepper_compositor_get_resource_list(pepper_compositor_t *compositor);
+
 PEPPER_API const char *
 pepper_compositor_get_socket_name(pepper_compositor_t *compositor);
 
@@ -238,6 +241,9 @@ pepper_compositor_get_time(pepper_compositor_t *compositor, struct timespec *ts)
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output);
 
+PEPPER_API struct wl_list *
+pepper_output_get_resource_list(pepper_output_t *output);
+
 PEPPER_API void
 pepper_output_move(pepper_output_t *output, int32_t x, int32_t y);
 
@@ -269,6 +275,9 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor, const char *seat_nam
 PEPPER_API void
 pepper_seat_destroy(pepper_seat_t *seat);
 
+PEPPER_API struct wl_list *
+pepper_seat_get_resource_list(pepper_seat_t *seat);
+
 PEPPER_API const char *
 pepper_seat_get_name(pepper_seat_t *seat);
 
@@ -299,6 +308,9 @@ struct pepper_pointer_grab
     void (*axis)(pepper_pointer_t *pointer, void *data, uint32_t time, uint32_t axis, double value);
     void (*cancel)(pepper_pointer_t *pointer, void *data);
 };
+
+PEPPER_API struct wl_list *
+pepper_pointer_get_resource_list(pepper_pointer_t *pointer);
 
 PEPPER_API pepper_bool_t
 pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1);
@@ -349,6 +361,9 @@ struct pepper_keyboard_grab
     void (*cancel)(pepper_keyboard_t *keyboard, void *data);
 };
 
+PEPPER_API struct wl_list *
+pepper_keyboard_get_resource_list(pepper_keyboard_t *keyboard);
+
 PEPPER_API void
 pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus);
 
@@ -386,6 +401,9 @@ struct pepper_touch_grab
     void    (*cancel)(pepper_touch_t *touch, void *data);
 };
 
+PEPPER_API struct wl_list *
+pepper_touch_get_resource_list(pepper_touch_t *touch);
+
 PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus);
 
@@ -414,6 +432,9 @@ PEPPER_API void
 pepper_touch_end_grab(pepper_touch_t *touch);
 
 /* Surface. */
+PEPPER_API struct wl_resource *
+pepper_surface_get_resource(pepper_surface_t *surface);
+
 PEPPER_API const char *
 pepper_surface_get_role(pepper_surface_t *surface);
 

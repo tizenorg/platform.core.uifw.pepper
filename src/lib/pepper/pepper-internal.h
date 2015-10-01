@@ -56,6 +56,7 @@ struct pepper_compositor
     char               *socket_name;
     struct wl_display  *display;
     struct wl_global   *global;
+    struct wl_list      resource_list;
 
     pepper_list_t       surface_list;
     pepper_list_t       region_list;

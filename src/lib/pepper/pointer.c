@@ -230,6 +230,12 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
     }
 }
 
+PEPPER_API struct wl_list *
+pepper_pointer_get_resource_list(pepper_pointer_t *pointer)
+{
+    return &pointer->resource_list;
+}
+
 PEPPER_API pepper_bool_t
 pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1)
 {
