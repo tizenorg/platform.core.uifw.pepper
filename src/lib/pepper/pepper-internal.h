@@ -211,38 +211,15 @@ void
 pepper_transform_pixman_region(pixman_region32_t *region, const pepper_mat4_t *matrix);
 
 /* Input */
-struct pepper_input
-{
-    pepper_seat_t      *seat;
-    pepper_object_t    *object;
-
-    struct wl_list      resource_list;
-    pepper_view_t      *focus;
-    uint32_t            focus_serial;
-    struct wl_listener  focus_destroy_listener;
-    struct wl_list      focus_resource_list;
-    pepper_callback_t   focus_destroy_callback;
-};
-
-void
-pepper_input_init(pepper_input_t *input, pepper_seat_t *seat, pepper_object_t *object,
-                  pepper_callback_t focus_destroy_callback);
-
-void
-pepper_input_fini(pepper_input_t *input);
-
-struct wl_resource *
-pepper_input_bind_resource(pepper_input_t *input,
-                           struct wl_client *client, int version, uint32_t id,
-                           const struct wl_interface *interface, const void *impl, void *data);
-
-void
-pepper_input_set_focus(pepper_input_t *input, pepper_view_t *view);
-
 struct pepper_pointer
 {
     pepper_object_t                 base;
-    pepper_input_t                  input;
+    pepper_seat_t                  *seat;
+    struct wl_list                  resource_list;
+
+    pepper_view_t                  *focus;
+    struct wl_listener              focus_destroy_listener;
+    uint32_t                        focus_serial;
 
     const pepper_pointer_grab_t    *grab;
     void                           *data;
@@ -275,7 +252,12 @@ pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input
 struct pepper_keyboard
 {
     pepper_object_t                 base;
-    pepper_input_t                  input;
+    pepper_seat_t                  *seat;
+    struct wl_list                  resource_list;
+
+    pepper_view_t                  *focus;
+    struct wl_listener              focus_destroy_listener;
+    uint32_t                        focus_serial;
 
     const pepper_keyboard_grab_t   *grab;
     void                           *data;
@@ -298,7 +280,8 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
 struct pepper_touch
 {
     pepper_object_t                 base;
-    pepper_input_t                  input;
+    pepper_seat_t                  *seat;
+    struct wl_list                  resource_list;
 
     const pepper_touch_grab_t      *grab;
     void                           *data;

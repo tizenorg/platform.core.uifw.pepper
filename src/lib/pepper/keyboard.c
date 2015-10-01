@@ -61,12 +61,11 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
 }
 
 static void
-keyboard_handle_focus_destroy(pepper_object_t *object, void *data)
+keyboard_handle_focus_destroy(struct wl_listener *listener, void *data)
 {
-    pepper_keyboard_t *keyboard = (pepper_keyboard_t *)object;
-
-    if (keyboard->grab)
-        keyboard->grab->cancel(keyboard, keyboard->data);
+    pepper_keyboard_t *keyboard = pepper_container_of(listener, keyboard, focus_destroy_listener);
+    pepper_keyboard_set_focus(keyboard, NULL);
+    keyboard->grab->cancel(keyboard, keyboard->data);
 }
 
 pepper_keyboard_t *
@@ -77,87 +76,123 @@ pepper_keyboard_create(pepper_seat_t *seat)
 
     PEPPER_CHECK(keyboard, return NULL, "pepper_object_alloc() failed.\n");
 
-    pepper_input_init(&keyboard->input, seat, &keyboard->base, keyboard_handle_focus_destroy);
-    keyboard->grab = &default_keyboard_grab;
+    keyboard->seat = seat;
+    wl_list_init(&keyboard->resource_list);
+    keyboard->focus_destroy_listener.notify = keyboard_handle_focus_destroy;
 
+    keyboard->grab = &default_keyboard_grab;
     wl_array_init(&keyboard->keys);
+
     return keyboard;
 }
 
 void
 pepper_keyboard_destroy(pepper_keyboard_t *keyboard)
 {
-    if (keyboard->grab)
-        keyboard->grab->cancel(keyboard, keyboard->data);
+    keyboard->grab->cancel(keyboard, keyboard->data);
 
-    pepper_input_fini(&keyboard->input);
+    if (keyboard->focus)
+        wl_list_remove(&keyboard->focus_destroy_listener.link);
+
     wl_array_release(&keyboard->keys);
     free(keyboard);
+}
+
+static void
+unbind_resource(struct wl_resource *resource)
+{
+    wl_list_remove(wl_resource_get_link(resource));
 }
 
 void
 pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
     pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    pepper_keyboard_t  *keyboard = seat->keyboard;
+    pepper_keyboard_t   *keyboard = seat->keyboard;
     struct wl_resource *res;
 
     if (!keyboard)
         return;
 
-    res = pepper_input_bind_resource(&keyboard->input, client, wl_resource_get_version(resource),
-                                     id, &wl_keyboard_interface, &keyboard_impl, keyboard);
-    PEPPER_CHECK(res, return, "pepper_input_bind_resource() failed.\n");
+    res = wl_resource_create(client, &wl_keyboard_interface, wl_resource_get_version(resource), id);
+    if (!res)
+    {
+        wl_client_post_no_memory(client);
+        return;
+    }
 
-    if (!keyboard->input.focus)
+    wl_list_insert(&keyboard->resource_list, wl_resource_get_link(res));
+    wl_resource_set_implementation(res, &keyboard_impl, keyboard, unbind_resource);
+
+    if (!keyboard->focus)
         return;
 
-    if (wl_resource_get_client(keyboard->input.focus->surface->resource) == client)
+    if (wl_resource_get_client(keyboard->focus->surface->resource) == client)
     {
-        wl_keyboard_send_enter(res, keyboard->input.focus_serial,
-                              keyboard->input.focus->surface->resource, &keyboard->keys);
+        wl_keyboard_send_enter(res, keyboard->focus_serial,
+                              keyboard->focus->surface->resource, &keyboard->keys);
     }
 }
 
 PEPPER_API void
 pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus)
 {
-    pepper_keyboard_send_leave(keyboard);
-    pepper_input_set_focus(&keyboard->input, focus);
-    pepper_keyboard_send_enter(keyboard);
+    if (keyboard->focus == focus)
+        return;
+
+    if (keyboard->focus)
+    {
+        pepper_keyboard_send_leave(keyboard);
+        wl_list_remove(&keyboard->focus_destroy_listener.link);
+        pepper_object_emit_event(&keyboard->base, PEPPER_EVENT_FOCUS_LEAVE, keyboard->focus);
+        pepper_object_emit_event(&keyboard->focus->base, PEPPER_EVENT_FOCUS_LEAVE, keyboard);
+    }
+
+    keyboard->focus = focus;
+
+    if (focus)
+    {
+        pepper_keyboard_send_enter(keyboard);
+        wl_resource_add_destroy_listener(focus->surface->resource, &keyboard->focus_destroy_listener);
+        keyboard->focus_serial = wl_display_next_serial(keyboard->seat->compositor->display);
+        pepper_object_emit_event(&keyboard->base, PEPPER_EVENT_FOCUS_ENTER, focus);
+        pepper_object_emit_event(&focus->base, PEPPER_EVENT_FOCUS_ENTER, keyboard);
+    }
 }
 
 PEPPER_API pepper_view_t *
 pepper_keyboard_get_focus(pepper_keyboard_t *keyboard)
 {
-    return keyboard->input.focus;
+    return keyboard->focus;
 }
 
 PEPPER_API void
 pepper_keyboard_send_leave(pepper_keyboard_t *keyboard)
 {
-    if (!wl_list_empty(&keyboard->input.focus_resource_list))
-    {
-        struct wl_resource *resource;
-        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+    struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
+    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
-        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
-            wl_keyboard_send_leave(resource, serial, keyboard->input.focus->surface->resource);
+    wl_resource_for_each(resource, &keyboard->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
+            wl_keyboard_send_leave(resource, serial, keyboard->focus->surface->resource);
     }
 }
 
 PEPPER_API void
 pepper_keyboard_send_enter(pepper_keyboard_t *keyboard)
 {
-    if (!wl_list_empty(&keyboard->input.focus_resource_list))
-    {
-        struct wl_resource *resource;
-        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+    struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
+    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
-        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
+    wl_resource_for_each(resource, &keyboard->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
         {
-            wl_keyboard_send_enter(resource, serial, keyboard->input.focus->surface->resource,
-                                   &keyboard->keys);
+            wl_keyboard_send_enter(resource, serial,
+                                   keyboard->focus->surface->resource, &keyboard->keys);
         }
     }
 }
@@ -165,12 +200,13 @@ pepper_keyboard_send_enter(pepper_keyboard_t *keyboard)
 PEPPER_API void
 pepper_keyboard_send_key(pepper_keyboard_t *keyboard, uint32_t time, uint32_t key, uint32_t state)
 {
-    if (!wl_list_empty(&keyboard->input.focus_resource_list))
-    {
-        struct wl_resource *resource;
-        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+    struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
+    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
-        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
+    wl_resource_for_each(resource, &keyboard->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
             wl_keyboard_send_key(resource, serial, time, key, state);
     }
 }
@@ -179,12 +215,13 @@ PEPPER_API void
 pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, uint32_t latched,
                                uint32_t locked, uint32_t group)
 {
-    if (!wl_list_empty(&keyboard->input.focus_resource_list))
-    {
-        struct wl_resource *resource;
-        uint32_t serial = wl_display_next_serial(keyboard->input.seat->compositor->display);
+    struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
+    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
-        wl_resource_for_each(resource, &keyboard->input.focus_resource_list)
+    wl_resource_for_each(resource, &keyboard->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
             wl_keyboard_send_modifiers(resource, serial, depressed, latched, locked, group);
     }
 }

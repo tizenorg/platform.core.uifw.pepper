@@ -23,7 +23,7 @@ static const struct wl_pointer_interface pointer_impl =
 static void
 default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
 {
-    pepper_view_t *view = pepper_compositor_pick_view(pointer->input.seat->compositor,
+    pepper_view_t *view = pepper_compositor_pick_view(pointer->seat->compositor,
                                                       pointer->x, pointer->y,
                                                       &pointer->vx, &pointer->vy);
 
@@ -35,11 +35,11 @@ static void
 default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
                             uint32_t time, uint32_t button, uint32_t state)
 {
-    if (pointer->input.seat->keyboard && button == BTN_LEFT && state == PEPPER_BUTTON_STATE_PRESSED)
+    if (pointer->seat->keyboard && button == BTN_LEFT && state == PEPPER_BUTTON_STATE_PRESSED)
     {
-        pepper_view_t *focus = pointer->input.focus;
+        pepper_view_t *focus = pointer->focus;
 
-        pepper_keyboard_set_focus(pointer->input.seat->keyboard, focus);
+        pepper_keyboard_set_focus(pointer->seat->keyboard, focus);
 
         if (focus)
             pepper_view_stack_top(focus, PEPPER_FALSE);
@@ -150,9 +150,10 @@ pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input
 }
 
 static void
-pointer_handle_focus_destroy(pepper_object_t *object, void *data)
+pointer_handle_focus_destroy(struct wl_listener *listener, void *data)
 {
-    pepper_pointer_t *pointer = (pepper_pointer_t *)object;
+    pepper_pointer_t *pointer = pepper_container_of(listener, pointer, focus_destroy_listener);
+    pepper_pointer_set_focus(pointer, NULL);
     pointer->grab->cancel(pointer, pointer->data);
 }
 
@@ -164,7 +165,10 @@ pepper_pointer_create(pepper_seat_t *seat)
 
     PEPPER_CHECK(pointer, return NULL, "pepper_object_alloc() failed.\n");
 
-    pepper_input_init(&pointer->input, seat, &pointer->base, pointer_handle_focus_destroy);
+    pointer->seat = seat;
+    wl_list_init(&pointer->resource_list);
+    pointer->focus_destroy_listener.notify = pointer_handle_focus_destroy;
+
     pointer->grab = &default_pointer_grab;
 
     pointer->clamp.x0 = DBL_MIN;
@@ -182,8 +186,17 @@ void
 pepper_pointer_destroy(pepper_pointer_t *pointer)
 {
     pointer->grab->cancel(pointer, pointer->data);
-    pepper_input_fini(&pointer->input);
+
+    if (pointer->focus)
+        wl_list_remove(&pointer->focus_destroy_listener.link);
+
     free(pointer);
+}
+
+static void
+unbind_resource(struct wl_resource *resource)
+{
+    wl_list_remove(wl_resource_get_link(resource));
 }
 
 void
@@ -196,17 +209,23 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
     if (!pointer)
         return;
 
-    res = pepper_input_bind_resource(&pointer->input, client, wl_resource_get_version(resource),
-                                     id, &wl_pointer_interface, &pointer_impl, pointer);
-    PEPPER_CHECK(res, return, "pepper_input_bind_resource() failed.\n");
+    res = wl_resource_create(client, &wl_pointer_interface, wl_resource_get_version(resource), id);
+    if (!res)
+    {
+        wl_client_post_no_memory(client);
+        return;
+    }
 
-    if (!pointer->input.focus)
+    wl_list_insert(&pointer->resource_list, wl_resource_get_link(res));
+    wl_resource_set_implementation(res, &pointer_impl, pointer, unbind_resource);
+
+    if (!pointer->focus)
         return;
 
-    if (wl_resource_get_client(pointer->input.focus->surface->resource) == client)
+    if (wl_resource_get_client(pointer->focus->surface->resource) == client)
     {
-        wl_pointer_send_enter(res, pointer->input.focus_serial,
-                              pointer->input.focus->surface->resource,
+        wl_pointer_send_enter(res, pointer->focus_serial,
+                              pointer->focus->surface->resource,
                               wl_fixed_from_double(pointer->vx), wl_fixed_from_double(pointer->vy));
     }
 }
@@ -285,50 +304,62 @@ pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y)
 PEPPER_API void
 pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
 {
-    if (pointer->input.focus == focus)
+    if (pointer->focus == focus)
         return;
 
-    if (pointer->input.focus)
+    if (pointer->focus)
+    {
         pepper_pointer_send_leave(pointer);
+        wl_list_remove(&pointer->focus_destroy_listener.link);
+        pepper_object_emit_event(&pointer->base, PEPPER_EVENT_FOCUS_LEAVE, pointer->focus);
+        pepper_object_emit_event(&pointer->focus->base, PEPPER_EVENT_FOCUS_LEAVE, pointer);
+    }
 
-    pepper_input_set_focus(&pointer->input, focus);
+    pointer->focus = focus;
 
-    if (pointer->input.focus)
+    if (focus)
+    {
         pepper_pointer_send_enter(pointer, pointer->vx, pointer->vy);
+        wl_resource_add_destroy_listener(focus->surface->resource, &pointer->focus_destroy_listener);
+        pointer->focus_serial = wl_display_next_serial(pointer->seat->compositor->display);
+        pepper_object_emit_event(&pointer->base, PEPPER_EVENT_FOCUS_ENTER, focus);
+        pepper_object_emit_event(&focus->base, PEPPER_EVENT_FOCUS_ENTER, pointer);
+    }
 }
 
 PEPPER_API pepper_view_t *
 pepper_pointer_get_focus(pepper_pointer_t *pointer)
 {
-    return pointer->input.focus;
+    return pointer->focus;
 }
 
 PEPPER_API void
 pepper_pointer_send_leave(pepper_pointer_t *pointer)
 {
-    if (!wl_list_empty(&pointer->input.focus_resource_list))
-    {
-        struct wl_resource *resource;
-        uint32_t serial = wl_display_next_serial(pointer->input.seat->compositor->display);
+    struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(pointer->focus->surface->resource);
+    uint32_t            serial = wl_display_next_serial(pointer->seat->compositor->display);
 
-        wl_resource_for_each(resource, &pointer->input.focus_resource_list)
-            wl_pointer_send_leave(resource, serial, pointer->input.focus->surface->resource);
+    wl_resource_for_each(resource, &pointer->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
+            wl_pointer_send_leave(resource, serial, pointer->focus->surface->resource);
     }
 }
 
 PEPPER_API void
 pepper_pointer_send_enter(pepper_pointer_t *pointer, double x, double y)
 {
-    if (!wl_list_empty(&pointer->input.focus_resource_list))
-    {
-        struct wl_resource *resource;
-        uint32_t serial = wl_display_next_serial(pointer->input.seat->compositor->display);
+    struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(pointer->focus->surface->resource);
+    uint32_t            serial = wl_display_next_serial(pointer->seat->compositor->display);
+    wl_fixed_t          fx = wl_fixed_from_double(x);
+    wl_fixed_t          fy = wl_fixed_from_double(y);
 
-        wl_resource_for_each(resource, &pointer->input.focus_resource_list)
-        {
-            wl_pointer_send_enter(resource, serial, pointer->input.focus->surface->resource,
-                                  wl_fixed_from_double(x), wl_fixed_from_double(y));
-        }
+    wl_resource_for_each(resource, &pointer->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
+            wl_pointer_send_enter(resource, serial, pointer->focus->surface->resource, fx, fy);
     }
 }
 
@@ -336,20 +367,27 @@ PEPPER_API void
 pepper_pointer_send_motion(pepper_pointer_t *pointer, uint32_t time, double x, double y)
 {
     struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(pointer->focus->surface->resource);
+    wl_fixed_t          fx = wl_fixed_from_double(x);
+    wl_fixed_t          fy = wl_fixed_from_double(y);
 
-    wl_resource_for_each(resource, &pointer->input.focus_resource_list)
-        wl_pointer_send_motion(resource, time, wl_fixed_from_double(x), wl_fixed_from_double(y));
+    wl_resource_for_each(resource, &pointer->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
+            wl_pointer_send_motion(resource, time, fx, fy);
+    }
 }
 
 PEPPER_API void
 pepper_pointer_send_button(pepper_pointer_t *pointer, uint32_t time, uint32_t button, uint32_t state)
 {
-    if (!wl_list_empty(&pointer->input.focus_resource_list))
-    {
-        struct wl_resource *resource;
-        uint32_t serial = wl_display_next_serial(pointer->input.seat->compositor->display);
+    struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(pointer->focus->surface->resource);
+    uint32_t            serial = wl_display_next_serial(pointer->seat->compositor->display);
 
-        wl_resource_for_each(resource, &pointer->input.focus_resource_list)
+    wl_resource_for_each(resource, &pointer->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
             wl_pointer_send_button(resource, serial, time, button, state);
     }
 }
@@ -358,9 +396,14 @@ PEPPER_API void
 pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis, double value)
 {
     struct wl_resource *resource;
+    struct wl_client   *client = wl_resource_get_client(pointer->focus->surface->resource);
+    wl_fixed_t          v = wl_fixed_from_double(value);
 
-    wl_resource_for_each(resource, &pointer->input.focus_resource_list)
-        wl_pointer_send_axis(resource, time, axis, wl_fixed_from_double(value));
+    wl_resource_for_each(resource, &pointer->resource_list)
+    {
+        if (wl_resource_get_client(resource) == client)
+            wl_pointer_send_axis(resource, time, axis, v);
+    }
 }
 
 PEPPER_API void
