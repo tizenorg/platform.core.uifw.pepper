@@ -31,11 +31,9 @@ static const pepper_keyboard_grab_t default_keyboard_grab =
     default_keyboard_grab_cancel,
 };
 
-static void
-keyboard_handle_event(pepper_object_t *object, uint32_t id, void *info)
+void
+pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_input_event_t *event)
 {
-    pepper_keyboard_t      *keyboard = (pepper_keyboard_t *)object;
-    pepper_input_event_t   *event = info;
     uint32_t               *keys = keyboard->keys.data;
     unsigned int            num_keys = keyboard->keys.size / sizeof(uint32_t);
     unsigned int            i;
@@ -59,6 +57,7 @@ keyboard_handle_event(pepper_object_t *object, uint32_t id, void *info)
         *(uint32_t *)wl_array_add(&keyboard->keys, sizeof(uint32_t)) = event->key;
 
     keyboard->grab->key(keyboard, keyboard->data, event->time, event->key, event->state);
+    pepper_object_emit_event(&keyboard->base, id, event);
 }
 
 static void
@@ -80,7 +79,6 @@ pepper_keyboard_create(pepper_seat_t *seat)
 
     pepper_input_init(&keyboard->input, seat, &keyboard->base, keyboard_handle_focus_destroy);
     keyboard->grab = &default_keyboard_grab;
-    keyboard->base.handle_event = keyboard_handle_event;
 
     wl_array_init(&keyboard->keys);
     return keyboard;

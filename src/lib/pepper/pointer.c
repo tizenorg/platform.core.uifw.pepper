@@ -22,14 +22,11 @@ static const struct wl_pointer_interface pointer_impl =
 static void
 default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
 {
-    pepper_view_t *view;
+    pepper_view_t *view = pepper_compositor_pick_view(pointer->input.seat->compositor,
+                                                      pointer->x, pointer->y,
+                                                      &pointer->vx, &pointer->vy);
 
-    pepper_pointer_set_position(pointer, x, y);
-
-    view = pepper_compositor_pick_view(pointer->input.seat->compositor, pointer->x, pointer->y,
-                                       &pointer->vx, &pointer->vy);
     pepper_pointer_set_focus(pointer, view);
-
     pepper_pointer_send_motion(pointer, time, pointer->vx, pointer->vy);
 }
 
@@ -72,25 +69,42 @@ static const pepper_pointer_grab_t default_pointer_grab =
 };
 
 static void
-pointer_handle_event(pepper_object_t *object, uint32_t id, void *info)
+pointer_set_position(pepper_pointer_t *pointer, uint32_t time, double x, double y)
 {
-    pepper_pointer_t       *pointer = (pepper_pointer_t *)object;
-    pepper_input_event_t   *event = info;
+    pepper_input_event_t event;
 
+    pointer->x = x;
+    pointer->y = y;
+
+    pointer->grab->motion(pointer, pointer->data, time, x, y);
+
+    /* Emit motion event. */
+    memset(&event, 0x00, sizeof(pepper_input_event_t));
+    event.id = PEPPER_EVENT_POINTER_MOTION;
+    event.time = time;
+    event.x = x;
+    event.y = y;
+    pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_MOTION, &event);
+}
+
+void
+pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input_event_t *event)
+{
     switch (id)
     {
     case PEPPER_EVENT_POINTER_MOTION_ABSOLUTE:
-        pointer->grab->motion(pointer, pointer->data, event->time, event->x, event->y);
+        pointer_set_position(pointer, event->time, event->x, event->y);
         break;
     case PEPPER_EVENT_POINTER_MOTION:
-        pointer->grab->motion(pointer, pointer->data, event->time,
-                              pointer->x + event->x, pointer->y + event->y);
+        pointer_set_position(pointer, event->time, pointer->x + event->x, pointer->y + event->y);
         break;
     case PEPPER_EVENT_POINTER_BUTTON:
         pointer->grab->button(pointer, pointer->data, event->time, event->button, event->state);
+        pepper_object_emit_event(&pointer->base, id, event);
         break;
     case PEPPER_EVENT_POINTER_AXIS:
         pointer->grab->axis(pointer, pointer->data, event->time, event->axis, event->value);
+        pepper_object_emit_event(&pointer->base, id, event);
         break;
     }
 }
@@ -99,9 +113,7 @@ static void
 pointer_handle_focus_destroy(pepper_object_t *object, void *data)
 {
     pepper_pointer_t *pointer = (pepper_pointer_t *)object;
-
-    if (pointer->grab)
-        pointer->grab->cancel(pointer, pointer->data);
+    pointer->grab->cancel(pointer, pointer->data);
 }
 
 pepper_pointer_t *
@@ -114,7 +126,6 @@ pepper_pointer_create(pepper_seat_t *seat)
 
     pepper_input_init(&pointer->input, seat, &pointer->base, pointer_handle_focus_destroy);
     pointer->grab = &default_pointer_grab;
-    pointer->base.handle_event = pointer_handle_event;
 
     return pointer;
 }
@@ -122,9 +133,7 @@ pepper_pointer_create(pepper_seat_t *seat)
 void
 pepper_pointer_destroy(pepper_pointer_t *pointer)
 {
-    if (pointer->grab)
-        pointer->grab->cancel(pointer, pointer->data);
-
+    pointer->grab->cancel(pointer, pointer->data);
     pepper_input_fini(&pointer->input);
     free(pointer);
 }
@@ -152,13 +161,6 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
                               pointer->input.focus->surface->resource,
                               wl_fixed_from_double(pointer->vx), wl_fixed_from_double(pointer->vy));
     }
-}
-
-PEPPER_API void
-pepper_pointer_set_position(pepper_pointer_t *pointer, double x, double y)
-{
-    pointer->x = x;
-    pointer->y = y;
 }
 
 PEPPER_API void

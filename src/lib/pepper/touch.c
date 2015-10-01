@@ -20,6 +20,31 @@ touch_handle_focus_destroy(pepper_object_t *object, void *data)
         touch->grab->cancel(touch, touch->data);
 }
 
+void
+pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id, pepper_input_event_t *event)
+{
+    switch (id)
+    {
+    case PEPPER_EVENT_TOUCH_DOWN:
+        touch->grab->down(touch, touch->data, event->time, event->id, event->x, event->y);
+        break;
+    case PEPPER_EVENT_TOUCH_UP:
+        touch->grab->up(touch, touch->data, event->time, event->id);
+        break;
+    case PEPPER_EVENT_TOUCH_MOTION:
+        touch->grab->motion(touch, touch->data, event->time, event->id, event->x, event->y);
+        break;
+    case PEPPER_EVENT_TOUCH_FRAME:
+        touch->grab->frame(touch, touch->data);
+        break;
+    case PEPPER_EVENT_TOUCH_CANCEL:
+        touch->grab->cancel(touch, touch->data);
+        break;
+    }
+
+    pepper_object_emit_event(&touch->base, id, event);
+}
+
 pepper_touch_t *
 pepper_touch_create(pepper_seat_t *seat)
 {

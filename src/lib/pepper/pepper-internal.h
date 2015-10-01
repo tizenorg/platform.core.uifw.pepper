@@ -260,6 +260,9 @@ pepper_pointer_destroy(pepper_pointer_t *pointer);
 void
 pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id);
 
+void
+pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input_event_t *event);
+
 struct pepper_keyboard
 {
     pepper_object_t                 base;
@@ -280,6 +283,9 @@ pepper_keyboard_destroy(pepper_keyboard_t *keyboard);
 void
 pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id);
 
+void
+pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_input_event_t *event);
+
 struct pepper_touch
 {
     pepper_object_t                 base;
@@ -297,6 +303,9 @@ pepper_touch_destroy(pepper_touch_t *touch);
 
 void
 pepper_touch_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id);
+
+void
+pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id, pepper_input_event_t *event);
 
 struct pepper_seat
 {

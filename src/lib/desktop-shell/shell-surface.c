@@ -938,7 +938,6 @@ static void
 pointer_move_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
 {
     shell_surface_t *shsurf = data;
-    pepper_pointer_set_position(pointer, x, y);
     pepper_view_set_position(shsurf->view, shsurf->move.dx + x, shsurf->move.dy + y);
 }
 
@@ -1004,8 +1003,6 @@ pointer_resize_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time,
 {
     shell_surface_t    *shsurf = data;
     double              dx = 0.f, dy = 0.f;
-
-    pepper_pointer_set_position(pointer, x, y);
 
     if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_LEFT)
     {

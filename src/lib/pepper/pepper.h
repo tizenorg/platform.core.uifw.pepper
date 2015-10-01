@@ -301,9 +301,6 @@ struct pepper_pointer_grab
 };
 
 PEPPER_API void
-pepper_pointer_set_position(pepper_pointer_t *pointer, double x, double y);
-
-PEPPER_API void
 pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y);
 
 PEPPER_API void
