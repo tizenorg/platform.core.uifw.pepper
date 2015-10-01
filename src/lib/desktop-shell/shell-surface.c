@@ -328,9 +328,40 @@ shell_surface_handle_pong(shell_surface_t *shsurf, uint32_t serial)
     shell_client_handle_pong(shsurf->shell_client, serial);
 }
 
+static void
+switch_output_mode(pepper_output_t *output, pepper_output_mode_t *mode)
+{
+    pepper_output_mode_t best_mode = {.w = (uint32_t)-1,.h = (uint32_t)-1,}, tmp_mode;
+    int i, mode_count;
+
+    /* TODO: Find the output mode to the smallest mode that can fit */
+
+    mode_count = pepper_output_get_mode_count(output);
+
+    for (i=0; i<mode_count; ++i)
+    {
+        pepper_output_get_mode(output, i, &tmp_mode);
+
+        if (tmp_mode.w >= mode->w && tmp_mode.h >= mode->h)
+        {
+            if(best_mode.w > tmp_mode.w && best_mode.h > tmp_mode.h)
+                best_mode = tmp_mode;
+        }
+    }
+
+    if ( (uint32_t)best_mode.w != (uint32_t)-1)
+        pepper_output_set_mode(output, &best_mode);
+}
+
 void
 shell_surface_set_toplevel(shell_surface_t *shsurf)
 {
+    if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN)
+    {
+        if (shsurf->fullscreen.method == WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER)
+            switch_output_mode(shsurf->fullscreen.output, &shsurf->saved.mode);
+    }
+
     if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
         shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
         shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
@@ -417,7 +448,7 @@ void
 shell_surface_set_maximized(shell_surface_t     *shsurf,
                             pepper_output_t     *output)
 {
-    pixman_rectangle32_t area;
+    pixman_rectangle32_t    area;
 
     /* XXX: If the given shell_surface has a parent, what's the corrent behavior? */
     shell_surface_set_parent(shsurf, NULL);
@@ -429,11 +460,9 @@ shell_surface_set_maximized(shell_surface_t     *shsurf,
     shsurf->maximized.output = output;
 
     /* Save current position and size for unset_maximized */
-    shell_surface_get_geometry(shsurf, &area);
-    shsurf->saved.x = area.x;
-    shsurf->saved.y = area.y;
-    shsurf->saved.w = area.width;
-    shsurf->saved.h = area.height;
+    pepper_view_get_position(shsurf->view, &shsurf->saved.x, &shsurf->saved.y);
+    shsurf->saved.w = shsurf->geometry.w;
+    shsurf->saved.h = shsurf->geometry.h;
 
     shell_get_output_workarea(shsurf->shell, output, &area);
 
@@ -457,7 +486,6 @@ shell_surface_set_fullscreen(shell_surface_t    *shsurf,
                              uint32_t            framerate)
 {
     const pepper_output_geometry_t      *geom;
-    pixman_rectangle32_t                 area;
 
     /* XXX: If the given shell_surface has a parent, what's the corrent behavior? */
     shell_surface_set_parent(shsurf, NULL);
@@ -473,11 +501,26 @@ shell_surface_set_fullscreen(shell_surface_t    *shsurf,
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_FULLSCREEN);
 
     /* Save current position and size for unset_fullscreen */
-    shell_surface_get_geometry(shsurf, &area);
-    shsurf->saved.x = area.x;
-    shsurf->saved.y = area.y;
-    shsurf->saved.w = area.width;
-    shsurf->saved.h = area.height;
+    pepper_view_get_position(shsurf->view, &shsurf->saved.x, &shsurf->saved.y);
+    shsurf->saved.w = shsurf->geometry.w;
+    shsurf->saved.h = shsurf->geometry.h;
+
+    /* Find current output mode */
+    {
+        pepper_output_mode_t mode;
+        int i, mode_cnt;
+
+        mode_cnt = pepper_output_get_mode_count(output);
+        for (i=0; i<mode_cnt; ++i)
+        {
+            pepper_output_get_mode(output, i, &mode);
+            if (mode.flags & PEPPER_OUTPUT_MODE_CURRENT)
+            {
+                shsurf->saved.mode = mode;
+                break;
+            }
+        }
+    }
 
     geom = pepper_output_get_geometry(output);
 
@@ -488,6 +531,9 @@ shell_surface_set_fullscreen(shell_surface_t    *shsurf,
 void
 shell_surface_unset_fullscreen(shell_surface_t *shsurf)
 {
+    if (shsurf->fullscreen.method == WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER)
+        switch_output_mode(shsurf->fullscreen.output, &shsurf->saved.mode);
+
     shell_surface_set_toplevel(shsurf);
 }
 
@@ -618,7 +664,6 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
     {
         x = shsurf->saved.x;
         y = shsurf->saved.y;
-
     }
     else
     {
@@ -628,7 +673,6 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
     shell_surface_set_position(shsurf, x, y);
 
     pepper_view_map(shsurf->view);
-
 }
 
 static void
@@ -720,16 +764,6 @@ shell_surface_center_on_output_by_scale(shell_surface_t                 *shsurf,
     y = output->y + (output->h - surface_geom->height * scale) / 2;
 
     shell_surface_set_position(shsurf, x, y);
-}
-
-static void
-switch_output_mode(pepper_output_t *output, pepper_output_mode_t *mode)
-{
-    pepper_output_mode_t *new_mode = NULL;;
-
-    /* TODO: Find the output mode to the smallest mode that can fit */
-
-    pepper_output_set_mode(output, new_mode);
 }
 
 static void
@@ -945,6 +979,7 @@ pointer_resize_grab_button(pepper_pointer_t *pointer, void *data,
     {
         pepper_pointer_end_grab(pointer);
         ((shell_surface_t *)data)->resize.resizing = PEPPER_FALSE;
+        ((shell_surface_t *)data)->resize.edges    = 0;
     }
 }
 

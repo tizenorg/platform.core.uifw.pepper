@@ -148,7 +148,7 @@ struct shell_surface
     {
         double               x, y;
         int32_t              w, h;
-        uint32_t             framerate;
+        pepper_output_mode_t mode;
     } saved;
 
     /* map */
