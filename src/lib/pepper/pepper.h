@@ -224,9 +224,6 @@ pepper_compositor_get_seat_list(pepper_compositor_t *compositor);
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_input_device_list(pepper_compositor_t *compositor);
 
-PEPPER_API pepper_compositor_t *
-pepper_output_get_compositor(pepper_output_t *output);
-
 PEPPER_API pepper_view_t *
 pepper_compositor_pick_view(pepper_compositor_t *compositor,
                             double x, double y, double *vx, double *vy);
@@ -243,6 +240,9 @@ pepper_output_destroy(pepper_output_t *output);
 
 PEPPER_API struct wl_list *
 pepper_output_get_resource_list(pepper_output_t *output);
+
+PEPPER_API pepper_compositor_t *
+pepper_output_get_compositor(pepper_output_t *output);
 
 PEPPER_API void
 pepper_output_move(pepper_output_t *output, int32_t x, int32_t y);
@@ -278,6 +278,9 @@ pepper_seat_destroy(pepper_seat_t *seat);
 PEPPER_API struct wl_list *
 pepper_seat_get_resource_list(pepper_seat_t *seat);
 
+PEPPER_API pepper_compositor_t *
+pepper_seat_get_compositor(pepper_seat_t *seat);
+
 PEPPER_API const char *
 pepper_seat_get_name(pepper_seat_t *seat);
 
@@ -299,6 +302,9 @@ pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *devi
 PEPPER_API const char *
 pepper_input_device_get_property(pepper_input_device_t *device, const char *key);
 
+PEPPER_API pepper_compositor_t *
+pepper_input_device_get_compositor(pepper_input_device_t *device);
+
 /* Pointer. */
 struct pepper_pointer_grab
 {
@@ -311,6 +317,9 @@ struct pepper_pointer_grab
 
 PEPPER_API struct wl_list *
 pepper_pointer_get_resource_list(pepper_pointer_t *pointer);
+
+PEPPER_API pepper_compositor_t *
+pepper_pointer_get_compositor(pepper_pointer_t *pointer);
 
 PEPPER_API pepper_bool_t
 pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1);
@@ -364,6 +373,9 @@ struct pepper_keyboard_grab
 PEPPER_API struct wl_list *
 pepper_keyboard_get_resource_list(pepper_keyboard_t *keyboard);
 
+PEPPER_API pepper_compositor_t *
+pepper_keyboard_get_compositor(pepper_keyboard_t *keyboard);
+
 PEPPER_API void
 pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus);
 
@@ -404,6 +416,9 @@ struct pepper_touch_grab
 PEPPER_API struct wl_list *
 pepper_touch_get_resource_list(pepper_touch_t *touch);
 
+PEPPER_API pepper_compositor_t *
+pepper_touch_get_compositor(pepper_touch_t *touch);
+
 PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus);
 
@@ -434,6 +449,9 @@ pepper_touch_end_grab(pepper_touch_t *touch);
 /* Surface. */
 PEPPER_API struct wl_resource *
 pepper_surface_get_resource(pepper_surface_t *surface);
+
+PEPPER_API pepper_compositor_t *
+pepper_surface_get_compositor(pepper_surface_t *surface);
 
 PEPPER_API const char *
 pepper_surface_get_role(pepper_surface_t *surface);

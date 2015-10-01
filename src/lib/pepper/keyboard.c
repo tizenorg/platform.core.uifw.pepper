@@ -140,6 +140,12 @@ pepper_keyboard_get_resource_list(pepper_keyboard_t *keyboard)
     return &keyboard->resource_list;
 }
 
+PEPPER_API pepper_compositor_t *
+pepper_keyboard_get_compositor(pepper_keyboard_t *keyboard)
+{
+    return keyboard->seat->compositor;
+}
+
 PEPPER_API void
 pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus)
 {

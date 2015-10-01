@@ -109,6 +109,12 @@ pepper_seat_get_resource_list(pepper_seat_t *seat)
     return &seat->resource_list;
 }
 
+PEPPER_API pepper_compositor_t *
+pepper_seat_get_compositor(pepper_seat_t *seat)
+{
+    return seat->compositor;
+}
+
 PEPPER_API pepper_pointer_t *
 pepper_seat_get_pointer(pepper_seat_t *seat)
 {
@@ -308,6 +314,12 @@ pepper_input_device_destroy(pepper_input_device_t *device)
     pepper_list_remove(&device->link);
     pepper_object_fini(&device->base);
     free(device);
+}
+
+PEPPER_API pepper_compositor_t *
+pepper_input_device_get_compositor(pepper_input_device_t *device)
+{
+    return device->compositor;
 }
 
 PEPPER_API const char *

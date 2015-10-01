@@ -439,6 +439,12 @@ pepper_surface_get_resource(pepper_surface_t *surface)
     return surface->resource;
 }
 
+PEPPER_API pepper_compositor_t *
+pepper_surface_get_compositor(pepper_surface_t *surface)
+{
+    return surface->compositor;
+}
+
 PEPPER_API const char *
 pepper_surface_get_role(pepper_surface_t *surface)
 {

@@ -94,6 +94,12 @@ pepper_touch_get_resource_list(pepper_touch_t *touch)
     return &touch->resource_list;
 }
 
+PEPPER_API pepper_compositor_t *
+pepper_touch_get_compositor(pepper_touch_t *touch)
+{
+    return touch->seat->compositor;
+}
+
 PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus)
 {
