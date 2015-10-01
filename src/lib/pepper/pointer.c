@@ -1,4 +1,5 @@
 #include "pepper-internal.h"
+#include <float.h>
 
 static void
 pointer_set_cursor(struct wl_client *client, struct wl_resource *resource, uint32_t serial,
@@ -68,13 +69,50 @@ static const pepper_pointer_grab_t default_pointer_grab =
     default_pointer_grab_cancel,
 };
 
+static pepper_bool_t
+pointer_clamp(pepper_pointer_t *pointer)
+{
+    pepper_bool_t clamped = PEPPER_FALSE;
+
+    if (pointer->x < pointer->clamp.x0)
+    {
+        pointer->x = pointer->clamp.x0;
+        clamped = PEPPER_TRUE;
+    }
+
+    if (pointer->x > pointer->clamp.x1)
+    {
+        pointer->x = pointer->clamp.x1;
+        clamped = PEPPER_TRUE;
+    }
+
+    if (pointer->y < pointer->clamp.y0)
+    {
+        pointer->y = pointer->clamp.y0;
+        clamped = PEPPER_TRUE;
+    }
+
+    if (pointer->y > pointer->clamp.y1)
+    {
+        pointer->y = pointer->clamp.y1;
+        clamped = PEPPER_TRUE;
+    }
+
+    return clamped;
+}
+
 static void
 pointer_set_position(pepper_pointer_t *pointer, uint32_t time, double x, double y)
 {
     pepper_input_event_t event;
 
+    if (x == pointer->x && y == pointer->y)
+        return;
+
     pointer->x = x;
     pointer->y = y;
+
+    pointer_clamp(pointer);
 
     pointer->grab->motion(pointer, pointer->data, time, x, y);
 
@@ -127,6 +165,11 @@ pepper_pointer_create(pepper_seat_t *seat)
     pepper_input_init(&pointer->input, seat, &pointer->base, pointer_handle_focus_destroy);
     pointer->grab = &default_pointer_grab;
 
+    pointer->clamp.x0 = DBL_MIN;
+    pointer->clamp.y0 = DBL_MIN;
+    pointer->clamp.x1 = DBL_MAX;
+    pointer->clamp.y1 = DBL_MAX;
+
     return pointer;
 }
 
@@ -161,6 +204,50 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
                               pointer->input.focus->surface->resource,
                               wl_fixed_from_double(pointer->vx), wl_fixed_from_double(pointer->vy));
     }
+}
+
+PEPPER_API pepper_bool_t
+pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1)
+{
+    if (x1 < x0 || y1 < y0)
+        return PEPPER_FALSE;
+
+    pointer->clamp.x0 = x0;
+    pointer->clamp.y0 = y0;
+    pointer->clamp.x1 = x1;
+    pointer->clamp.y1 = y1;
+
+    if (pointer_clamp(pointer))
+    {
+        pepper_input_event_t event;
+
+        pointer->grab->motion(pointer, pointer->data, pointer->time, pointer->x, pointer->y);
+
+        memset(&event, 0x00, sizeof(pepper_input_event_t));
+        event.id = PEPPER_EVENT_POINTER_MOTION;
+        event.time = pointer->time;
+        event.x = pointer->x;
+        event.y = pointer->y;
+        pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_MOTION, &event);
+    }
+
+    return PEPPER_TRUE;
+}
+
+PEPPER_API void
+pepper_pointer_get_clamp(pepper_pointer_t *pointer, double *x0, double *y0, double *x1, double *y1)
+{
+    if (x0)
+        *x0 = pointer->clamp.x0;
+
+    if (y0)
+        *y0 = pointer->clamp.y0;
+
+    if (x1)
+        *x1 = pointer->clamp.x1;
+
+    if (y1)
+        *y1 = pointer->clamp.y1;
 }
 
 PEPPER_API void

@@ -300,6 +300,12 @@ struct pepper_pointer_grab
     void (*cancel)(pepper_pointer_t *pointer, void *data);
 };
 
+PEPPER_API pepper_bool_t
+pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1);
+
+PEPPER_API void
+pepper_pointer_get_clamp(pepper_pointer_t *pointer, double *x0, double *y0, double *x1, double *y1);
+
 PEPPER_API void
 pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y);
 

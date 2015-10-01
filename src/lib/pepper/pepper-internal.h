@@ -247,8 +247,14 @@ struct pepper_pointer
     const pepper_pointer_grab_t    *grab;
     void                           *data;
 
+    uint32_t                        time;
     double                          x, y;
     double                          vx, vy;
+
+    struct {
+        double                      x0, y0;
+        double                      x1, y1;
+    } clamp;
 };
 
 pepper_pointer_t *
