@@ -187,8 +187,14 @@ PEPPER_API void
 pepper_keyboard_send_leave(pepper_keyboard_t *keyboard)
 {
     struct wl_resource *resource;
-    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
-    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
+    struct wl_client   *client;
+    uint32_t            serial;
+
+    if (!keyboard->focus)
+        return;
+
+    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
     {
@@ -201,8 +207,14 @@ PEPPER_API void
 pepper_keyboard_send_enter(pepper_keyboard_t *keyboard)
 {
     struct wl_resource *resource;
-    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
-    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
+    struct wl_client   *client;
+    uint32_t            serial;
+
+    if (!keyboard->focus)
+        return;
+
+    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
     {
@@ -218,8 +230,14 @@ PEPPER_API void
 pepper_keyboard_send_key(pepper_keyboard_t *keyboard, uint32_t time, uint32_t key, uint32_t state)
 {
     struct wl_resource *resource;
-    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
-    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
+    struct wl_client   *client;
+    uint32_t            serial;
+
+    if (!keyboard->focus)
+        return;
+
+    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
     {
@@ -233,8 +251,14 @@ pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, 
                                uint32_t locked, uint32_t group)
 {
     struct wl_resource *resource;
-    struct wl_client   *client = wl_resource_get_client(keyboard->focus->surface->resource);
-    uint32_t            serial = wl_display_next_serial(keyboard->seat->compositor->display);
+    struct wl_client   *client;
+    uint32_t            serial;
+
+    if (!keyboard->focus)
+        return;
+
+    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
     {
