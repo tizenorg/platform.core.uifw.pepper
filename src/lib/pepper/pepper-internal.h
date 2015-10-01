@@ -423,16 +423,6 @@ pepper_view_update(pepper_view_t *view);
 void
 pepper_view_surface_damage(pepper_view_t *view);
 
-void
-pepper_view_get_local_coordinate(pepper_view_t *view,
-                                 double global_x, double global_y,
-                                 double *local_x, double *local_y);
-
-void
-pepper_view_get_global_coordinate(pepper_view_t *view,
-                                  double local_x, double local_y,
-                                  double *global_x, double *global_y);
-
 struct pepper_plane
 {
     pepper_object_t     base;

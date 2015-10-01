@@ -548,6 +548,12 @@ pepper_view_is_visible(pepper_view_t *view);
 PEPPER_API pepper_bool_t
 pepper_view_is_opaque(pepper_view_t *view);
 
+PEPPER_API void
+pepper_view_get_local_coordinate(pepper_view_t *view, double gx, double gy, double *lx, double *ly);
+
+PEPPER_API void
+pepper_view_get_global_coordinate(pepper_view_t *view, double lx, double ly, double *gx, double *gy);
+
 #ifdef __cplusplus
 }
 #endif
