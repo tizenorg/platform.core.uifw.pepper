@@ -134,7 +134,9 @@ pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input
         pointer_set_position(pointer, event->time, event->x, event->y);
         break;
     case PEPPER_EVENT_POINTER_MOTION:
-        pointer_set_position(pointer, event->time, pointer->x + event->x, pointer->y + event->y);
+        pointer_set_position(pointer, event->time,
+                             pointer->x + event->x * pointer->x_velocity,
+                             pointer->y + event->y * pointer->y_velocity);
         break;
     case PEPPER_EVENT_POINTER_BUTTON:
         pointer->grab->button(pointer, pointer->data, event->time, event->button, event->state);
@@ -169,6 +171,9 @@ pepper_pointer_create(pepper_seat_t *seat)
     pointer->clamp.y0 = DBL_MIN;
     pointer->clamp.x1 = DBL_MAX;
     pointer->clamp.y1 = DBL_MAX;
+
+    pointer->x_velocity = 1.0;
+    pointer->y_velocity = 1.0;
 
     return pointer;
 }
@@ -248,6 +253,23 @@ pepper_pointer_get_clamp(pepper_pointer_t *pointer, double *x0, double *y0, doub
 
     if (y1)
         *y1 = pointer->clamp.y1;
+}
+
+PEPPER_API void
+pepper_pointer_set_velocity(pepper_pointer_t *pointer, double vx, double vy)
+{
+    pointer->x_velocity = vx;
+    pointer->y_velocity = vy;
+}
+
+PEPPER_API void
+pepper_pointer_get_velocity(pepper_pointer_t *pointer, double *vx, double *vy)
+{
+    if (vx)
+        *vx = pointer->x_velocity;
+
+    if (vy)
+        *vy = pointer->y_velocity;
 }
 
 PEPPER_API void

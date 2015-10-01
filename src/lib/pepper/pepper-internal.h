@@ -255,6 +255,9 @@ struct pepper_pointer
         double                      x0, y0;
         double                      x1, y1;
     } clamp;
+
+    double                          x_velocity;
+    double                          y_velocity;
 };
 
 pepper_pointer_t *

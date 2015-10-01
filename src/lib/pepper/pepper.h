@@ -307,6 +307,12 @@ PEPPER_API void
 pepper_pointer_get_clamp(pepper_pointer_t *pointer, double *x0, double *y0, double *x1, double *y1);
 
 PEPPER_API void
+pepper_pointer_set_velocity(pepper_pointer_t *pointer, double vx, double vy);
+
+PEPPER_API void
+pepper_pointer_get_velocity(pepper_pointer_t *pointer, double *vx, double *vy);
+
+PEPPER_API void
 pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y);
 
 PEPPER_API void
