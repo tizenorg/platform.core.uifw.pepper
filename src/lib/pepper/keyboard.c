@@ -11,26 +11,6 @@ static const struct wl_keyboard_interface keyboard_impl =
     keyboard_release,
 };
 
-static void
-default_keyboard_grab_key(pepper_keyboard_t *keyboard, void *data,
-                          uint32_t time, uint32_t key, uint32_t state)
-{
-    pepper_keyboard_send_key(keyboard, time, key, state);
-}
-
-
-static void
-default_keyboard_grab_cancel(pepper_keyboard_t *keyboard, void *data)
-{
-    /* Nothing to do. */
-}
-
-static const pepper_keyboard_grab_t default_keyboard_grab =
-{
-    default_keyboard_grab_key,
-    default_keyboard_grab_cancel,
-};
-
 void
 pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_input_event_t *event)
 {
@@ -84,7 +64,6 @@ pepper_keyboard_create(pepper_seat_t *seat)
     wl_list_init(&keyboard->resource_list);
     keyboard->focus_destroy_listener.notify = keyboard_handle_focus_destroy;
 
-    keyboard->grab = &default_keyboard_grab;
     wl_array_init(&keyboard->keys);
 
     return keyboard;

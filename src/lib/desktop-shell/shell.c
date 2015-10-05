@@ -98,6 +98,122 @@ shell_add_input_device(desktop_shell_t *shell, pepper_input_device_t *device)
 }
 
 static void
+default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
+{
+    double               vx, vy;
+    pepper_compositor_t *compositor = pepper_pointer_get_compositor(pointer);
+    pepper_view_t       *view = pepper_compositor_pick_view(compositor, x, y, &vx, &vy);
+
+    pepper_pointer_set_focus(pointer, view);
+    pepper_pointer_send_motion(pointer, time, vx, vy);
+}
+
+static void
+default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
+                            uint32_t time, uint32_t button, uint32_t state)
+{
+    pepper_seat_t       *seat = pepper_pointer_get_seat(pointer);
+    pepper_keyboard_t   *keyboard = pepper_seat_get_keyboard(seat);
+
+    if (keyboard && button == BTN_LEFT && state == PEPPER_BUTTON_STATE_PRESSED)
+    {
+        pepper_view_t *focus = pepper_pointer_get_focus(pointer);
+
+        pepper_keyboard_set_focus(keyboard, focus);
+
+        if (focus)
+            pepper_view_stack_top(focus, PEPPER_FALSE);
+    }
+
+    pepper_pointer_send_button(pointer, time, button, state);
+}
+
+static void
+default_pointer_grab_axis(pepper_pointer_t *pointer, void *data,
+                          uint32_t time, uint32_t axis, double value)
+{
+    pepper_pointer_send_axis(pointer, time, axis, value);
+}
+
+static void
+default_pointer_grab_cancel(pepper_pointer_t *pointer, void *data)
+{
+    /* Nothing to do.*/
+}
+
+static const pepper_pointer_grab_t default_pointer_grab =
+{
+    default_pointer_grab_motion,
+    default_pointer_grab_button,
+    default_pointer_grab_axis,
+    default_pointer_grab_cancel,
+};
+
+static void
+pointer_add_callback(pepper_event_listener_t *listener, pepper_object_t *object, uint32_t id,
+                     void *info, void *data)
+{
+    pepper_pointer_t *pointer = info;
+    pepper_pointer_set_grab(pointer, &default_pointer_grab, NULL);
+}
+
+static void
+pointer_remove_callback(pepper_event_listener_t *listener, pepper_object_t *object, uint32_t id,
+                        void *info, void *data)
+{
+    /* Nothing to do. */
+}
+
+static void
+default_keyboard_grab_key(pepper_keyboard_t *keyboard, void *data,
+                          uint32_t time, uint32_t key, uint32_t state)
+{
+    pepper_keyboard_send_key(keyboard, time, key, state);
+}
+
+
+static void
+default_keyboard_grab_cancel(pepper_keyboard_t *keyboard, void *data)
+{
+    /* Nothing to do. */
+}
+
+static const pepper_keyboard_grab_t default_keyboard_grab =
+{
+    default_keyboard_grab_key,
+    default_keyboard_grab_cancel,
+};
+
+static void
+keyboard_add_callback(pepper_event_listener_t *listener, pepper_object_t *object, uint32_t id,
+                     void *info, void *data)
+{
+    pepper_keyboard_t *keyboard = info;
+    pepper_keyboard_set_grab(keyboard, &default_keyboard_grab, NULL);
+}
+
+static void
+keyboard_remove_callback(pepper_event_listener_t *listener, pepper_object_t *object, uint32_t id,
+                        void *info, void *data)
+{
+    /* Nothing to do. */
+}
+
+static void
+touch_add_callback(pepper_event_listener_t *listener, pepper_object_t *object, uint32_t id,
+                     void *info, void *data)
+{
+    /* TODO: */
+}
+
+static void
+touch_remove_callback(pepper_event_listener_t *listener, pepper_object_t *object, uint32_t id,
+                        void *info, void *data)
+{
+    /* TODO: */
+}
+
+static void
 shell_add_seat(desktop_shell_t *shell, pepper_seat_t *seat)
 {
     shell_seat_t            *shseat;
@@ -120,6 +236,30 @@ shell_add_seat(desktop_shell_t *shell, pepper_seat_t *seat)
 
     pepper_list_insert(&shell->shseat_list, &shseat->link);
     pepper_object_set_user_data((pepper_object_t *)seat, shell, shseat, NULL);
+
+    shseat->pointer_add_listener =
+        pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_POINTER_ADD,
+                                         0, pointer_add_callback, shseat);
+
+    shseat->pointer_remove_listener =
+        pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_POINTER_REMOVE,
+                                         0, pointer_remove_callback, shseat);
+
+    shseat->keyboard_add_listener =
+        pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_KEYBOARD_ADD,
+                                         0, keyboard_add_callback, shseat);
+
+    shseat->keyboard_remove_listener =
+        pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE,
+                                         0, keyboard_remove_callback, shseat);
+
+    shseat->touch_add_listener =
+        pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_TOUCH_ADD,
+                                         0, touch_add_callback, shseat);
+
+    shseat->touch_remove_listener =
+        pepper_object_add_event_listener((pepper_object_t *)seat, PEPPER_EVENT_SEAT_TOUCH_REMOVE,
+                                         0, touch_remove_callback, shseat);
 }
 
 static void
