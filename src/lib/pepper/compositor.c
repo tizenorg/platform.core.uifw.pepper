@@ -72,9 +72,6 @@ pepper_compositor_create(const char *socket_name)
     int                  ret;
     pepper_compositor_t *compositor;
 
-    if (!socket_name)
-        socket_name = "wayland-0";
-
     compositor = (pepper_compositor_t *)pepper_object_alloc(PEPPER_OBJECT_COMPOSITOR,
                                                             sizeof(pepper_compositor_t));
     PEPPER_CHECK(compositor, goto error, "pepper_object_alloc() failed.\n");
