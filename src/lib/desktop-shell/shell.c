@@ -171,6 +171,12 @@ default_keyboard_grab_key(pepper_keyboard_t *keyboard, void *data,
     pepper_keyboard_send_key(keyboard, time, key, state);
 }
 
+static void
+default_keyboard_grab_modifiers(pepper_keyboard_t *keyboard, void *data, uint32_t mods_depressed,
+                          uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
+{
+    pepper_keyboard_send_modifiers(keyboard, mods_depressed, mods_latched, mods_locked, group);
+}
 
 static void
 default_keyboard_grab_cancel(pepper_keyboard_t *keyboard, void *data)
@@ -181,6 +187,7 @@ default_keyboard_grab_cancel(pepper_keyboard_t *keyboard, void *data)
 static const pepper_keyboard_grab_t default_keyboard_grab =
 {
     default_keyboard_grab_key,
+    default_keyboard_grab_modifiers,
     default_keyboard_grab_cancel,
 };
 

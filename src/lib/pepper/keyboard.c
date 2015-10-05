@@ -41,11 +41,55 @@ clear_keymap(pepper_keyboard_t *keyboard)
 }
 
 static void
+update_modifiers(pepper_keyboard_t *keyboard)
+{
+    uint32_t mods_depressed, mods_latched, mods_locked, group;
+
+    mods_depressed = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_DEPRESSED);
+    mods_latched = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LATCHED);
+    mods_locked = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LOCKED);
+    group = xkb_state_serialize_mods(keyboard->state, XKB_STATE_LAYOUT_EFFECTIVE);
+
+    if ((mods_depressed != keyboard->mods_depressed) || (mods_latched != keyboard->mods_latched) ||
+        (mods_locked != keyboard->mods_locked) || (group != keyboard->group))
+    {
+        keyboard->mods_depressed = mods_depressed;
+        keyboard->mods_latched = mods_latched;
+        keyboard->mods_locked = mods_locked;
+        keyboard->group = group;
+
+        keyboard->grab->modifiers(keyboard, keyboard->data, mods_depressed, mods_latched,
+                                  mods_locked, group);
+    }
+}
+
+static void
+update_key(pepper_keyboard_t *keyboard, uint32_t key, uint32_t state)
+{
+    enum xkb_key_direction  direction;
+
+    if (!keyboard->state)
+        return;
+
+    if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
+        direction = XKB_KEY_DOWN;
+    else
+        direction = XKB_KEY_UP;
+
+    xkb_state_update_key(keyboard->state, key + 8, direction);
+    update_modifiers(keyboard);
+}
+
+static void
 update_keymap(pepper_keyboard_t *keyboard)
 {
     struct wl_resource             *resource;
     char                           *keymap_str = NULL;
     char                           *keymap_map = NULL;
+
+    struct xkb_state               *state;
+    uint32_t                        mods_latched = 0;
+    uint32_t                        mods_locked = 0;
 
     if (keyboard->keymap)
         xkb_keymap_unref(keyboard->keymap);
@@ -70,9 +114,32 @@ update_keymap(pepper_keyboard_t *keyboard)
 
     strcpy(keymap_map, keymap_str);
 
+    state = xkb_state_new(keyboard->keymap);
+    PEPPER_CHECK(state, goto error, "failed to create xkb state\n");
+
+    if (keyboard->state)
+    {
+        mods_latched = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LATCHED);
+        mods_locked = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LOCKED);
+        xkb_state_update_mask(state, 0, mods_latched, mods_locked, 0, 0, 0);
+        xkb_state_unref(keyboard->state);
+    }
+    keyboard->state = state;
+
     wl_resource_for_each(resource, &keyboard->resource_list)
         wl_keyboard_send_keymap(resource, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
                                 keyboard->keymap_fd, keyboard->keymap_len);
+
+    update_modifiers(keyboard);
+
+    if (!mods_latched && !mods_locked)
+        goto done;
+
+    wl_resource_for_each(resource, &keyboard->resource_list)
+        wl_keyboard_send_modifiers(resource,
+                                   wl_display_next_serial(keyboard->seat->compositor->display),
+                                   keyboard->mods_depressed, keyboard->mods_latched,
+                                   keyboard->mods_locked, keyboard->group);
     goto done;
 
 error:
@@ -116,6 +183,8 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
 
     if (keyboard->pending_keymap && (keyboard->keys.size == 0))
         update_keymap(keyboard);
+
+    update_key(keyboard, event->key, event->state);
 
     pepper_object_emit_event(&keyboard->base, id, event);
 }

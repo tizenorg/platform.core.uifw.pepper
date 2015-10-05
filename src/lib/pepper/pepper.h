@@ -373,7 +373,10 @@ pepper_pointer_get_grab_data(pepper_pointer_t *pointer);
 /* Keyboard. */
 struct pepper_keyboard_grab
 {
-    void (*key)(pepper_keyboard_t *keyboard, void *data, uint32_t time, uint32_t key, uint32_t state);
+    void (*key)(pepper_keyboard_t *keyboard, void *data, uint32_t time, uint32_t key,
+                uint32_t state);
+    void (*modifiers)(pepper_keyboard_t *keyboard, void *data, uint32_t mods_depressed,
+                      uint32_t mods_latched, uint32_t mods_locked, uint32_t group);
     void (*cancel)(pepper_keyboard_t *keyboard, void *data);
 };
 
