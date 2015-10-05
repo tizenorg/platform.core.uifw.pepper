@@ -261,6 +261,12 @@ pepper_pointer_get_compositor(pepper_pointer_t *pointer)
     return pointer->seat->compositor;
 }
 
+PEPPER_API pepper_seat_t *
+pepper_pointer_get_seat(pepper_pointer_t *pointer)
+{
+    return pointer->seat;
+}
+
 PEPPER_API pepper_bool_t
 pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1)
 {
