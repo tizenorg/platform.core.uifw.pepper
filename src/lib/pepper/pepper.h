@@ -8,6 +8,7 @@
 
 #include <time.h>
 #include <linux/input.h>
+#include <xkbcommon/xkbcommon.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -412,6 +413,9 @@ pepper_keyboard_get_grab(pepper_keyboard_t *keyboard);
 
 PEPPER_API void *
 pepper_keyboard_get_grab_data(pepper_keyboard_t *keyboard);
+
+PEPPER_API void
+pepper_keyboard_set_keymap(pepper_keyboard_t *keyboard, struct xkb_keymap *keymap);
 
 /* Touch. */
 struct pepper_touch_grab

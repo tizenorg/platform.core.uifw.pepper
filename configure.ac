@@ -29,7 +29,7 @@ fi
 AC_SUBST(GCC_CFLAGS)
 
 # pepper
-PEPPER_REQUIRES="wayland-server pixman-1"
+PEPPER_REQUIRES="wayland-server pixman-1 xkbcommon"
 PKG_CHECK_MODULES(PEPPER, [$PEPPER_REQUIRES])
 
 PEPPER_DIR="-I\$(top_srcdir)/src/lib/pepper"

@@ -1,3 +1,9 @@
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+
 #include "pepper-internal.h"
 
 static void
@@ -11,12 +17,81 @@ static const struct wl_keyboard_interface keyboard_impl =
     keyboard_release,
 };
 
+static void
+clear_keymap(pepper_keyboard_t *keyboard)
+{
+    if (keyboard->keymap)
+    {
+        xkb_keymap_unref(keyboard->keymap);
+        keyboard->keymap = NULL;
+    }
+
+    if (keyboard->keymap_fd >= 0)
+    {
+        close(keyboard->keymap_fd);
+        keyboard->keymap_fd = -1;
+        keyboard->keymap_len = -1;
+    }
+
+    if (keyboard->pending_keymap)
+    {
+        xkb_keymap_unref(keyboard->pending_keymap);
+        keyboard->pending_keymap = NULL;
+    }
+}
+
+static void
+update_keymap(pepper_keyboard_t *keyboard)
+{
+    struct wl_resource             *resource;
+    char                           *keymap_str = NULL;
+    char                           *keymap_map = NULL;
+
+    if (keyboard->keymap)
+        xkb_keymap_unref(keyboard->keymap);
+
+    if (keyboard->keymap_fd)
+        close(keyboard->keymap_fd);
+
+    keyboard->keymap = xkb_keymap_ref(keyboard->pending_keymap);
+    xkb_keymap_unref(keyboard->pending_keymap);
+    keyboard->pending_keymap = NULL;
+
+    keymap_str = xkb_keymap_get_as_string(keyboard->keymap, XKB_KEYMAP_FORMAT_TEXT_V1);
+    PEPPER_CHECK(keymap_str, goto error, "failed to get keymap string\n");
+
+    keyboard->keymap_len = strlen(keymap_str) + 1;
+    keyboard->keymap_fd = pepper_create_anonymous_file(keyboard->keymap_len);
+    PEPPER_CHECK(keyboard->keymap_fd, goto error, "failed to create keymap file\n");
+
+    keymap_map = mmap(NULL, keyboard->keymap_len, PROT_READ | PROT_WRITE, MAP_SHARED,
+                      keyboard->keymap_fd, 0);
+    PEPPER_CHECK(keymap_map, goto error, "failed to mmap for keymap\n");
+
+    strcpy(keymap_map, keymap_str);
+
+    wl_resource_for_each(resource, &keyboard->resource_list)
+        wl_keyboard_send_keymap(resource, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
+                                keyboard->keymap_fd, keyboard->keymap_len);
+    goto done;
+
+error:
+    clear_keymap(keyboard);
+
+done:
+    if (keymap_map)
+        munmap(keymap_map, keyboard->keymap_len);
+
+    if (keymap_str)
+        free(keymap_str);
+}
+
 void
 pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_input_event_t *event)
 {
-    uint32_t               *keys = keyboard->keys.data;
-    unsigned int            num_keys = keyboard->keys.size / sizeof(uint32_t);
-    unsigned int            i;
+    uint32_t       *keys = keyboard->keys.data;
+    unsigned int    num_keys = keyboard->keys.size / sizeof(uint32_t);
+    unsigned int    i;
 
     if (id != PEPPER_EVENT_KEYBOARD_KEY)
         return;
@@ -38,6 +113,9 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
 
     if (keyboard->grab)
         keyboard->grab->key(keyboard, keyboard->data, event->time, event->key, event->state);
+
+    if (keyboard->pending_keymap && (keyboard->keys.size == 0))
+        update_keymap(keyboard);
 
     pepper_object_emit_event(&keyboard->base, id, event);
 }
@@ -72,6 +150,8 @@ pepper_keyboard_create(pepper_seat_t *seat)
 void
 pepper_keyboard_destroy(pepper_keyboard_t *keyboard)
 {
+    clear_keymap(keyboard);
+
     if (keyboard->grab)
         keyboard->grab->cancel(keyboard, keyboard->data);
 
@@ -92,7 +172,7 @@ void
 pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *resource, uint32_t id)
 {
     pepper_seat_t      *seat = (pepper_seat_t *)wl_resource_get_user_data(resource);
-    pepper_keyboard_t   *keyboard = seat->keyboard;
+    pepper_keyboard_t  *keyboard = seat->keyboard;
     struct wl_resource *res;
 
     if (!keyboard)
@@ -107,6 +187,20 @@ pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *reso
 
     wl_list_insert(&keyboard->resource_list, wl_resource_get_link(res));
     wl_resource_set_implementation(res, &keyboard_impl, keyboard, unbind_resource);
+
+    /* TODO: send repeat info */
+
+    if (keyboard->keymap)
+    {
+        wl_keyboard_send_keymap(res, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
+                                keyboard->keymap_fd, keyboard->keymap_len);
+    }
+    else
+    {
+        int fd = open("/dev/null", O_RDONLY);
+        wl_keyboard_send_keymap(res, WL_KEYBOARD_KEYMAP_FORMAT_NO_KEYMAP, fd, 0);
+        close(fd);
+    }
 
     if (!keyboard->focus)
         return;
@@ -269,4 +363,13 @@ PEPPER_API void *
 pepper_keyboard_get_grab_data(pepper_keyboard_t *keyboard)
 {
     return keyboard->data;
+}
+
+PEPPER_API void
+pepper_keyboard_set_keymap(pepper_keyboard_t *keyboard, struct xkb_keymap *keymap)
+{
+    xkb_keymap_unref(keyboard->pending_keymap);
+    keyboard->pending_keymap = xkb_keymap_ref(keymap);
+    if (keyboard->keys.size == 0)
+        update_keymap(keyboard);
 }
