@@ -78,6 +78,9 @@ handle_surface_destroy(pepper_event_listener_t *listener,
     pepper_event_listener_remove(shsurf->surface_destroy_listener);
     pepper_event_listener_remove(shsurf->surface_commit_listener);
 
+    pepper_event_listener_remove(shsurf->focus_enter_listener);
+    pepper_event_listener_remove(shsurf->focus_leave_listener);
+
     if (shsurf->resource)
         wl_resource_destroy(shsurf->resource);
 
@@ -145,7 +148,11 @@ shsurf_xdg_surface_send_configure(shell_surface_t *shsurf, int32_t width, int32_
         *state = XDG_SURFACE_STATE_RESIZING;
     }
 
-    /* TODO: XDG_SURFACE_STATE_ACTIVATED */
+    if (shsurf->has_keyboard_focus)
+    {
+        state  = wl_array_add(&states, sizeof(uint32_t));
+        *state = XDG_SURFACE_STATE_ACTIVATED;
+    }
 
     /* Send configure event */
     display = pepper_compositor_get_display(shsurf->shell->compositor);
@@ -184,6 +191,42 @@ static pepper_bool_t
 shsurf_is_xdg_popup(shell_surface_t *shsurf)
 {
     return (shsurf->send_configure == shsurf_xdg_popup_send_configure);
+}
+
+static void
+shell_surface_focus_enter(shell_surface_t *shsurf)
+{
+    shsurf->has_keyboard_focus = PEPPER_TRUE;
+}
+
+static void
+shell_surface_focus_leave(shell_surface_t *shsurf)
+{
+    shsurf->has_keyboard_focus = PEPPER_FALSE;
+}
+
+static void
+handle_focus(pepper_event_listener_t *listener,
+             pepper_object_t *view, uint32_t id, void *info, void *data)
+{
+    shell_surface_t     *shsurf = data;
+    pepper_object_t     *obj    = info;
+    pepper_object_type_t obj_type = pepper_object_get_type(obj);
+
+    if (obj_type == PEPPER_OBJECT_KEYBOARD)
+    {
+        if (id == PEPPER_EVENT_FOCUS_ENTER)
+        {
+            shell_surface_focus_enter(shsurf);
+        }
+        else
+        {
+            shell_surface_focus_leave(shsurf);
+        }
+
+        /* Send state changed configure */
+        shsurf->send_configure(shsurf, 0, 0);
+    }
 }
 
 shell_surface_t *
@@ -239,6 +282,15 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
     shsurf->surface_commit_listener =
         pepper_object_add_event_listener((pepper_object_t *)surface, PEPPER_EVENT_SURFACE_COMMIT, 0,
                                          handle_surface_commit, shsurf);
+
+    shsurf->focus_enter_listener =
+        pepper_object_add_event_listener((pepper_object_t *)shsurf->view, PEPPER_EVENT_FOCUS_ENTER, 0,
+                                         handle_focus, shsurf);
+
+    shsurf->focus_leave_listener =
+        pepper_object_add_event_listener((pepper_object_t *)shsurf->view, PEPPER_EVENT_FOCUS_LEAVE, 0,
+                                         handle_focus, shsurf);
+
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
     set_shsurf_to_surface(surface, shsurf);

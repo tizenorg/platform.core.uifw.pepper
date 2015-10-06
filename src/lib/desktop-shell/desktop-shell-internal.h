@@ -167,9 +167,15 @@ struct shell_surface
 
     pepper_bool_t           ack_configure;
 
+    /* Focus */
+    pepper_bool_t           has_keyboard_focus;
+
     /* Listeners */
     pepper_event_listener_t *surface_destroy_listener;
     pepper_event_listener_t *surface_commit_listener;
+
+    pepper_event_listener_t *focus_enter_listener;
+    pepper_event_listener_t *focus_leave_listener;
 
     pepper_list_t            link;
 };
