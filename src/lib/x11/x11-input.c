@@ -46,7 +46,7 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
 
             event.id    = PEPPER_EVENT_KEYBOARD_KEY;
             event.time  = kp->time;
-            event.key   = xkb_state_key_get_one_sym(seat->xkb_state, kp->detail);
+            event.key   = kp->detail - 8;
             event.state = PEPPER_KEY_STATE_PRESSED;
 
             pepper_object_emit_event((pepper_object_t *)seat->keyboard,
@@ -59,7 +59,7 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
 
             event.id    = PEPPER_EVENT_KEYBOARD_KEY;
             event.time  = kr->time;
-            event.key   = xkb_state_key_get_one_sym(seat->xkb_state, kr->detail);
+            event.key   = kr->detail - 8;
             event.state = PEPPER_KEY_STATE_RELEASED;
 
             pepper_object_emit_event((pepper_object_t *)seat->keyboard,
@@ -146,15 +146,6 @@ x11_seat_destroy(void *data)
     if (seat->conn)
         seat->conn->seat = NULL;
 
-    if (seat->xkb_state)
-        xkb_state_unref(seat->xkb_state);
-
-    if (seat->keymap)
-        xkb_keymap_unref(seat->keymap);
-
-    if (seat->xkb_ctx)
-        xkb_context_unref(seat->xkb_ctx);
-
     free(seat);
 }
 
@@ -186,42 +177,6 @@ pepper_x11_input_create(pepper_x11_connection_t* conn)
      * need to create dummy window for input with output-size */
 
     seat->id = X11_BACKEND_INPUT_ID;
-
-    /* Init XKB extension */
-    seat->xkb_ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-    if (!seat->xkb_ctx)
-    {
-        PEPPER_ERROR("xkb_context_new failed\n");
-
-        goto failed;
-    }
-
-    seat->device_id = xkb_x11_get_core_keyboard_device_id(conn->xcb_connection);
-    if (seat->device_id == -1)
-    {
-        PEPPER_ERROR("xkb_x11_get_core_keyboard_device_id failed\n");
-
-        goto failed;
-    }
-
-    seat->keymap = xkb_x11_keymap_new_from_device(seat->xkb_ctx,
-                                                  conn->xcb_connection,
-                                                  seat->device_id,
-                                                  XKB_KEYMAP_COMPILE_NO_FLAGS);
-    if (!seat->keymap)
-    {
-        PEPPER_ERROR("xkb_x11_keymap_new_from_device failed\n");
-
-        goto failed;
-    }
-
-    seat->xkb_state = xkb_x11_state_new_from_device(seat->keymap, conn->xcb_connection, seat->device_id);
-    if (!seat->xkb_state)
-    {
-        PEPPER_ERROR("xkb_x11_state_new_from_device failed\n");
-
-        goto failed;
-    }
 
     /* Hard-coded: */
     seat->pointer = pepper_input_device_create(conn->compositor, WL_SEAT_CAPABILITY_POINTER,

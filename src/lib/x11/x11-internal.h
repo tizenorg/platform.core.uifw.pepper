@@ -5,8 +5,6 @@
 
 #include <xcb/xcb.h>
 #include <xcb/shm.h>
-#include <xkbcommon/xkbcommon.h>
-#include <xkbcommon/xkbcommon-x11.h>
 #include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>
 #include <string.h>
@@ -74,11 +72,6 @@ struct x11_seat
     uint32_t                        id;
     uint32_t                        caps;
     char                           *name;
-
-    struct xkb_context             *xkb_ctx;
-    int32_t                         device_id;
-    struct xkb_keymap              *keymap;
-    struct xkb_state               *xkb_state;
 
     pepper_list_t                   link;
 

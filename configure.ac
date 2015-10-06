@@ -135,7 +135,7 @@ AC_ARG_ENABLE(x11,
 AM_CONDITIONAL(ENABLE_X11, test x$enable_x11 = xyes)
 
 if test x$enable_x11 = xyes; then
-    PEPPER_X11_REQUIRES="x11 xcb-shm x11-xcb xkbcommon xkbcommon-x11"
+    PEPPER_X11_REQUIRES="x11 xcb-shm x11-xcb"
     PKG_CHECK_MODULES(PEPPER_X11, [$PEPPER_X11_REQUIRES])
     PEPPER_X11_REQUIRES="$PEPPER_X11_REQUIRES pepper pepper-render"
 
