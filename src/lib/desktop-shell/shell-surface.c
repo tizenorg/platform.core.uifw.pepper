@@ -791,6 +791,9 @@ shell_surface_set_initial_position(shell_surface_t *shsurf)
 static void
 shell_surface_map_toplevel(shell_surface_t *shsurf)
 {
+    shell_seat_t        *shseat, *tmp;
+    pepper_keyboard_t   *keyboard;
+
     if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
         shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
         shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
@@ -800,6 +803,18 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
     else
     {
         shell_surface_set_initial_position(shsurf);
+
+        pepper_list_for_each_safe(shseat, tmp, &shsurf->shell->shseat_list, link)
+        {
+            if (shseat->seat)
+            {
+                keyboard = pepper_seat_get_keyboard(shseat->seat);
+                if (keyboard)
+                {
+                    pepper_keyboard_set_focus(keyboard, shsurf->view);
+                }
+            }
+        }
     }
 
     pepper_view_map(shsurf->view);
