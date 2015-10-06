@@ -90,6 +90,7 @@ update_keymap(pepper_keyboard_t *keyboard)
     struct xkb_state               *state;
     uint32_t                        mods_latched = 0;
     uint32_t                        mods_locked = 0;
+    uint32_t                        format;
 
     if (keyboard->keymap)
         xkb_keymap_unref(keyboard->keymap);
@@ -97,38 +98,46 @@ update_keymap(pepper_keyboard_t *keyboard)
     if (keyboard->keymap_fd)
         close(keyboard->keymap_fd);
 
-    keyboard->keymap = xkb_keymap_ref(keyboard->pending_keymap);
-    xkb_keymap_unref(keyboard->pending_keymap);
-    keyboard->pending_keymap = NULL;
-
-    keymap_str = xkb_keymap_get_as_string(keyboard->keymap, XKB_KEYMAP_FORMAT_TEXT_V1);
-    PEPPER_CHECK(keymap_str, goto error, "failed to get keymap string\n");
-
-    keyboard->keymap_len = strlen(keymap_str) + 1;
-    keyboard->keymap_fd = pepper_create_anonymous_file(keyboard->keymap_len);
-    PEPPER_CHECK(keyboard->keymap_fd, goto error, "failed to create keymap file\n");
-
-    keymap_map = mmap(NULL, keyboard->keymap_len, PROT_READ | PROT_WRITE, MAP_SHARED,
-                      keyboard->keymap_fd, 0);
-    PEPPER_CHECK(keymap_map, goto error, "failed to mmap for keymap\n");
-
-    strcpy(keymap_map, keymap_str);
-
-    state = xkb_state_new(keyboard->keymap);
-    PEPPER_CHECK(state, goto error, "failed to create xkb state\n");
-
-    if (keyboard->state)
+    if (keyboard->pending_keymap)
     {
-        mods_latched = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LATCHED);
-        mods_locked = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LOCKED);
-        xkb_state_update_mask(state, 0, mods_latched, mods_locked, 0, 0, 0);
-        xkb_state_unref(keyboard->state);
+        format = WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1;
+        keyboard->keymap = xkb_keymap_ref(keyboard->pending_keymap);
+        xkb_keymap_unref(keyboard->pending_keymap);
+        keyboard->pending_keymap = NULL;
+
+        keymap_str = xkb_keymap_get_as_string(keyboard->keymap, XKB_KEYMAP_FORMAT_TEXT_V1);
+        PEPPER_CHECK(keymap_str, goto error, "failed to get keymap string\n");
+
+        keyboard->keymap_len = strlen(keymap_str) + 1;
+        keyboard->keymap_fd = pepper_create_anonymous_file(keyboard->keymap_len);
+        PEPPER_CHECK(keyboard->keymap_fd, goto error, "failed to create keymap file\n");
+
+        keymap_map = mmap(NULL, keyboard->keymap_len, PROT_READ | PROT_WRITE, MAP_SHARED,
+                          keyboard->keymap_fd, 0);
+        PEPPER_CHECK(keymap_map, goto error, "failed to mmap for keymap\n");
+
+        strcpy(keymap_map, keymap_str);
+
+        state = xkb_state_new(keyboard->keymap);
+        PEPPER_CHECK(state, goto error, "failed to create xkb state\n");
+
+        if (keyboard->state)
+        {
+            mods_latched = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LATCHED);
+            mods_locked = xkb_state_serialize_mods(keyboard->state, XKB_STATE_MODS_LOCKED);
+            xkb_state_update_mask(state, 0, mods_latched, mods_locked, 0, 0, 0);
+            xkb_state_unref(keyboard->state);
+        }
+
+        keyboard->state = state;
     }
-    keyboard->state = state;
+    else
+    {
+        format = WL_KEYBOARD_KEYMAP_FORMAT_NO_KEYMAP;
+    }
 
     wl_resource_for_each(resource, &keyboard->resource_list)
-        wl_keyboard_send_keymap(resource, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
-                                keyboard->keymap_fd, keyboard->keymap_len);
+        wl_keyboard_send_keymap(resource, format, keyboard->keymap_fd, keyboard->keymap_len);
 
     update_modifiers(keyboard);
 
@@ -438,7 +447,11 @@ PEPPER_API void
 pepper_keyboard_set_keymap(pepper_keyboard_t *keyboard, struct xkb_keymap *keymap)
 {
     xkb_keymap_unref(keyboard->pending_keymap);
-    keyboard->pending_keymap = xkb_keymap_ref(keymap);
+    if (keymap)
+        keyboard->pending_keymap = xkb_keymap_ref(keymap);
+    else
+        keyboard->pending_keymap = NULL;
+
     if (keyboard->keys.size == 0)
         update_keymap(keyboard);
 }
