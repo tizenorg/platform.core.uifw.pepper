@@ -320,7 +320,7 @@ xdg_shell_get_xdg_popup(struct wl_client    *client,
     if (!shsurf)
         wl_client_post_no_memory(client);
 
-    shell_surface_set_popup(shsurf, seat, parent, x, y, 0);
+    shell_surface_set_popup(shsurf, seat, parent, x, y, 0, serial);
 }
 
 static void

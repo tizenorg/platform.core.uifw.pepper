@@ -99,8 +99,8 @@ struct shell_surface
 
     pepper_bool_t            has_next_geometry;
 
-    const void              *old_grab;
-    void                    *old_grab_data;
+    const void              *old_pointer_grab;
+    void                    *old_pointer_grab_data;
 
     struct
     {
@@ -127,6 +127,8 @@ struct shell_surface
         double          x, y;
         uint32_t        flags;
         pepper_seat_t  *seat;
+        uint32_t        serial;
+        pepper_bool_t   button_up;
     } popup;
 
     struct
@@ -218,7 +220,7 @@ shell_surface_set_toplevel(shell_surface_t *shsurf);
 
 void
 shell_surface_set_popup(shell_surface_t *shsurf, pepper_seat_t *seat, pepper_surface_t *parent,
-                        double x, double y, uint32_t flags);
+                        double x, double y, uint32_t flags, uint32_t serial);
 
 void
 shell_surface_set_transient(shell_surface_t *shsurf, pepper_surface_t *parent,

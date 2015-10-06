@@ -61,11 +61,19 @@ handle_surface_commit(pepper_event_listener_t *listener,
 }
 
 static void
+shell_surface_end_popup_grab(shell_surface_t *shsurf);
+
+static void
 handle_surface_destroy(pepper_event_listener_t *listener,
                        pepper_object_t *surface, uint32_t id, void *info, void *data)
 {
     shell_surface_t *shsurf = data;
     shell_surface_t *child, *tmp;
+
+    if (shsurf->type == SHELL_SURFACE_TYPE_POPUP)
+    {
+        shell_surface_end_popup_grab(shsurf);
+    }
 
     pepper_event_listener_remove(shsurf->surface_destroy_listener);
     pepper_event_listener_remove(shsurf->surface_commit_listener);
@@ -380,14 +388,16 @@ shell_surface_set_popup(shell_surface_t     *shsurf,
                         pepper_surface_t    *parent,
                         double               x,
                         double               y,
-                        uint32_t             flags)
+                        uint32_t             flags,
+                        uint32_t             serial)
 {
     shell_surface_set_parent(shsurf, parent);
 
-    shsurf->popup.x     = x;
-    shsurf->popup.y     = y;
-    shsurf->popup.flags = flags;
-    shsurf->popup.seat  = seat;
+    shsurf->popup.x      = x;
+    shsurf->popup.y      = y;
+    shsurf->popup.flags  = flags;
+    shsurf->popup.seat   = seat;
+    shsurf->popup.serial = serial;
 
     shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_POPUP);
 }
@@ -729,8 +739,6 @@ shell_surface_set_initial_position(shell_surface_t *shsurf)
 static void
 shell_surface_map_toplevel(shell_surface_t *shsurf)
 {
-
-    /* Restore original geometry */
     if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
         shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
         shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
@@ -746,6 +754,131 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
 }
 
 static void
+pointer_popup_grab_motion(pepper_pointer_t *pointer, void *data,
+                          uint32_t time, double x, double y)
+{
+    double               vx, vy;
+    pepper_compositor_t *compositor = pepper_pointer_get_compositor(pointer);
+    pepper_view_t       *view = pepper_compositor_pick_view(compositor, x, y, &vx, &vy);
+
+    pepper_pointer_set_focus(pointer, view);
+    pepper_pointer_send_motion(pointer, time, vx, vy);
+}
+
+static struct wl_client *
+pepper_view_get_client(pepper_view_t *view)
+{
+    pepper_surface_t *surface = pepper_view_get_surface(view);
+    if (surface)
+    {
+        struct wl_resource *resource = pepper_surface_get_resource(surface);
+        if (resource)
+            return wl_resource_get_client(resource);
+    }
+
+    return NULL;
+}
+
+static void
+pointer_popup_grab_button(pepper_pointer_t *pointer, void *data,
+                          uint32_t time, uint32_t button, uint32_t state)
+{
+    shell_surface_t     *shsurf = data;
+    struct wl_client    *client = NULL;
+    pepper_view_t       *focus;
+
+    focus = pepper_pointer_get_focus(pointer);
+
+    if (focus)
+        client = pepper_view_get_client(focus);
+
+    /* The popup_done event is sent out when a popup grab is broken, that is, when the user
+     * clicks a surface that doesn't belong to the client owning the popup surface. */
+
+    if (client == shsurf->client)
+    {
+        pepper_pointer_send_button(pointer, time, button, state);
+    }
+    else if (shsurf->popup.button_up)
+    {
+        shell_surface_end_popup_grab(data);
+    }
+
+    if (state == WL_POINTER_BUTTON_STATE_RELEASED)
+        shsurf->popup.button_up = PEPPER_TRUE;
+}
+
+static void
+pointer_popup_grab_axis(pepper_pointer_t *pointer, void *data,
+                        uint32_t time, uint32_t axis, double value)
+{
+    /* TODO */
+}
+
+static void
+pointer_popup_grab_cancel(pepper_pointer_t *pointer, void *data)
+{
+    shell_surface_end_popup_grab(data);
+}
+
+static pepper_pointer_grab_t pointer_popup_grab =
+{
+    pointer_popup_grab_motion,
+    pointer_popup_grab_button,
+    pointer_popup_grab_axis,
+    pointer_popup_grab_cancel,
+};
+
+static void
+shell_surface_send_popup_done(shell_surface_t *shsurf)
+{
+    if (shsurf->resource)
+    {
+        if (shsurf_is_xdg_popup(shsurf))
+            xdg_popup_send_popup_done(shsurf->resource);
+        else if (shsurf_is_wl_shell_surface(shsurf) && shsurf->type == SHELL_SURFACE_TYPE_POPUP )
+            wl_shell_surface_send_popup_done(shsurf->resource);
+    }
+}
+
+static void
+shell_surface_end_popup_grab(shell_surface_t *shsurf)
+{
+    pepper_pointer_t *pointer = pepper_seat_get_pointer(shsurf->popup.seat);
+
+    if(pointer)
+    {
+        const pepper_pointer_grab_t *grab = pepper_pointer_get_grab(pointer);
+        if (grab == &pointer_popup_grab )
+            pepper_pointer_set_grab(pointer,
+                                    shsurf->old_pointer_grab,
+                                    shsurf->old_pointer_grab_data);
+    }
+
+    shell_surface_send_popup_done(shsurf);
+}
+
+static void
+shell_surface_add_popup_grab(shell_surface_t *shsurf)
+{
+    pepper_pointer_t *pointer = pepper_seat_get_pointer(shsurf->popup.seat);
+
+    /* TODO: Find the object that serial belongs to */
+
+    if (pointer)
+    {
+        shsurf->old_pointer_grab      = pepper_pointer_get_grab(pointer);
+        shsurf->old_pointer_grab_data = pepper_pointer_get_grab_data(pointer);
+
+        pepper_pointer_set_grab(pointer, &pointer_popup_grab, shsurf);
+
+        shsurf->popup.button_up = PEPPER_FALSE;
+    }
+
+    /* TODO: touch */
+}
+
+static void
 shell_surface_map_popup(shell_surface_t *shsurf)
 {
     shell_surface_t *parent = get_shsurf_from_surface(shsurf->parent, shsurf->shell);
@@ -758,7 +891,7 @@ shell_surface_map_popup(shell_surface_t *shsurf)
 
     pepper_view_stack_top(shsurf->view, PEPPER_TRUE);
 
-    /* TODO: add_popup_grab(), but how? */
+    shell_surface_add_popup_grab(shsurf);
 }
 
 static void
@@ -948,7 +1081,7 @@ pointer_move_grab_button(pepper_pointer_t *pointer, void *data,
     if (button == BTN_LEFT && state == PEPPER_BUTTON_STATE_RELEASED)
     {
         shell_surface_t *shsurf = data;
-        pepper_pointer_set_grab(pointer, shsurf->old_grab, shsurf->old_grab_data);
+        pepper_pointer_set_grab(pointer, shsurf->old_pointer_grab, shsurf->old_pointer_grab_data);
     }
 }
 
@@ -998,8 +1131,8 @@ shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial
     shsurf->move.dx = vx - px;
     shsurf->move.dy = vy - py;
 
-    shsurf->old_grab = pepper_pointer_get_grab(pointer);
-    shsurf->old_grab_data = pepper_pointer_get_grab_data(pointer);
+    shsurf->old_pointer_grab = pepper_pointer_get_grab(pointer);
+    shsurf->old_pointer_grab_data = pepper_pointer_get_grab_data(pointer);
     pepper_pointer_set_grab(pointer, &pointer_move_grab, shsurf);
 }
 
@@ -1038,7 +1171,7 @@ pointer_resize_grab_button(pepper_pointer_t *pointer, void *data,
     {
         shell_surface_t *shsurf = data;
 
-        pepper_pointer_set_grab(pointer, shsurf->old_grab, shsurf->old_grab_data);
+        pepper_pointer_set_grab(pointer, shsurf->old_pointer_grab, shsurf->old_pointer_grab_data);
         shsurf->resize.resizing = PEPPER_FALSE;
         shsurf->resize.edges    = 0;
     }
@@ -1093,7 +1226,7 @@ shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t seri
         shsurf->send_configure(shsurf, 0, 0);
     }
 
-    shsurf->old_grab = pepper_pointer_get_grab(pointer);
-    shsurf->old_grab_data = pepper_pointer_get_grab_data(pointer);
+    shsurf->old_pointer_grab = pepper_pointer_get_grab(pointer);
+    shsurf->old_pointer_grab_data = pepper_pointer_get_grab_data(pointer);
     pepper_pointer_set_grab(pointer, &pointer_resize_grab, shsurf);
 }

@@ -101,7 +101,7 @@ wl_shell_surface_set_popup(struct wl_client     *client,
     }
     parent = wl_resource_get_user_data(parent_res);
 
-    shell_surface_set_popup(shsurf, seat, parent, x, y, flags);
+    shell_surface_set_popup(shsurf, seat, parent, x, y, flags, serial);
 }
 
 static void
