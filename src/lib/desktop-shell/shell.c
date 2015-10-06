@@ -115,7 +115,7 @@ default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
     pepper_seat_t       *seat = pepper_pointer_get_seat(pointer);
     pepper_keyboard_t   *keyboard = pepper_seat_get_keyboard(seat);
 
-    if (keyboard && button == BTN_LEFT && state == PEPPER_BUTTON_STATE_PRESSED)
+    if (keyboard && state == PEPPER_BUTTON_STATE_PRESSED)
     {
         pepper_view_t *focus = pepper_pointer_get_focus(pointer);
 
