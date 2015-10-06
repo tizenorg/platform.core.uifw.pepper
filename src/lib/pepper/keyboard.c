@@ -212,7 +212,7 @@ pepper_keyboard_t *
 pepper_keyboard_create(pepper_seat_t *seat)
 {
     pepper_keyboard_t *keyboard =
-        (pepper_keyboard_t *)pepper_object_alloc(PEPPER_OBJECT_TOUCH, sizeof(pepper_keyboard_t));
+        (pepper_keyboard_t *)pepper_object_alloc(PEPPER_OBJECT_KEYBOARD, sizeof(pepper_keyboard_t));
 
     PEPPER_CHECK(keyboard, return NULL, "pepper_object_alloc() failed.\n");
 
