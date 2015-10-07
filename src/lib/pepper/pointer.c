@@ -20,55 +20,6 @@ static const struct wl_pointer_interface pointer_impl =
     pointer_release,
 };
 
-static void
-default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y)
-{
-    pepper_view_t *view = pepper_compositor_pick_view(pointer->seat->compositor,
-                                                      pointer->x, pointer->y,
-                                                      &pointer->vx, &pointer->vy);
-
-    pepper_pointer_set_focus(pointer, view);
-    pepper_pointer_send_motion(pointer, time, pointer->vx, pointer->vy);
-}
-
-static void
-default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
-                            uint32_t time, uint32_t button, uint32_t state)
-{
-    if (pointer->seat->keyboard && button == BTN_LEFT && state == PEPPER_BUTTON_STATE_PRESSED)
-    {
-        pepper_view_t *focus = pointer->focus;
-
-        pepper_keyboard_set_focus(pointer->seat->keyboard, focus);
-
-        if (focus)
-            pepper_view_stack_top(focus, PEPPER_FALSE);
-    }
-
-    pepper_pointer_send_button(pointer, time, button, state);
-}
-
-static void
-default_pointer_grab_axis(pepper_pointer_t *pointer, void *data,
-                          uint32_t time, uint32_t axis, double value)
-{
-    pepper_pointer_send_axis(pointer, time, axis, value);
-}
-
-static void
-default_pointer_grab_cancel(pepper_pointer_t *pointer, void *data)
-{
-    /* Nothing to do.*/
-}
-
-static const pepper_pointer_grab_t default_pointer_grab =
-{
-    default_pointer_grab_motion,
-    default_pointer_grab_button,
-    default_pointer_grab_axis,
-    default_pointer_grab_cancel,
-};
-
 static pepper_bool_t
 pointer_clamp(pepper_pointer_t *pointer)
 {
@@ -187,8 +138,6 @@ pepper_pointer_create(pepper_seat_t *seat)
     wl_list_init(&pointer->resource_list);
     pointer->focus_destroy_listener.notify = pointer_handle_focus_destroy;
 
-    pointer->grab = &default_pointer_grab;
-
     pointer->clamp.x0 = DBL_MIN;
     pointer->clamp.y0 = DBL_MIN;
     pointer->clamp.x1 = DBL_MAX;
@@ -259,6 +208,12 @@ PEPPER_API pepper_compositor_t *
 pepper_pointer_get_compositor(pepper_pointer_t *pointer)
 {
     return pointer->seat->compositor;
+}
+
+PEPPER_API pepper_seat_t *
+pepper_pointer_get_seat(pepper_pointer_t *pointer)
+{
+    return pointer->seat;
 }
 
 PEPPER_API pepper_bool_t

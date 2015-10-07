@@ -8,6 +8,7 @@
 
 #include <time.h>
 #include <linux/input.h>
+#include <xkbcommon/xkbcommon.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -321,6 +322,9 @@ pepper_pointer_get_resource_list(pepper_pointer_t *pointer);
 PEPPER_API pepper_compositor_t *
 pepper_pointer_get_compositor(pepper_pointer_t *pointer);
 
+PEPPER_API pepper_seat_t *
+pepper_pointer_get_seat(pepper_pointer_t *pointer);
+
 PEPPER_API pepper_bool_t
 pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1);
 
@@ -369,7 +373,10 @@ pepper_pointer_get_grab_data(pepper_pointer_t *pointer);
 /* Keyboard. */
 struct pepper_keyboard_grab
 {
-    void (*key)(pepper_keyboard_t *keyboard, void *data, uint32_t time, uint32_t key, uint32_t state);
+    void (*key)(pepper_keyboard_t *keyboard, void *data, uint32_t time, uint32_t key,
+                uint32_t state);
+    void (*modifiers)(pepper_keyboard_t *keyboard, void *data, uint32_t mods_depressed,
+                      uint32_t mods_latched, uint32_t mods_locked, uint32_t group);
     void (*cancel)(pepper_keyboard_t *keyboard, void *data);
 };
 
@@ -378,6 +385,9 @@ pepper_keyboard_get_resource_list(pepper_keyboard_t *keyboard);
 
 PEPPER_API pepper_compositor_t *
 pepper_keyboard_get_compositor(pepper_keyboard_t *keyboard);
+
+PEPPER_API pepper_seat_t *
+pepper_keyboard_get_seat(pepper_keyboard_t *keyboard);
 
 PEPPER_API void
 pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus);
@@ -407,6 +417,9 @@ pepper_keyboard_get_grab(pepper_keyboard_t *keyboard);
 PEPPER_API void *
 pepper_keyboard_get_grab_data(pepper_keyboard_t *keyboard);
 
+PEPPER_API void
+pepper_keyboard_set_keymap(pepper_keyboard_t *keyboard, struct xkb_keymap *keymap);
+
 /* Touch. */
 struct pepper_touch_grab
 {
@@ -423,6 +436,9 @@ pepper_touch_get_resource_list(pepper_touch_t *touch);
 
 PEPPER_API pepper_compositor_t *
 pepper_touch_get_compositor(pepper_touch_t *touch);
+
+PEPPER_API pepper_seat_t *
+pepper_touch_get_seat(pepper_touch_t *touch);
 
 PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus);

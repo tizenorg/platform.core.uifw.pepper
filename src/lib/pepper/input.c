@@ -145,11 +145,11 @@ seat_update_pointer_cap(pepper_seat_t *seat)
     if ((seat->caps & WL_SEAT_CAPABILITY_POINTER) && !seat->pointer)
     {
         seat->pointer = pepper_pointer_create(seat);
-        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_ADD, &seat->pointer);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_ADD, seat->pointer);
     }
     else if (!(seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer)
     {
-        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_REMOVE, &seat->pointer);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_REMOVE, seat->pointer);
         pepper_pointer_destroy(seat->pointer);
         seat->pointer = NULL;
     }
@@ -161,11 +161,11 @@ seat_update_keyboard_cap(pepper_seat_t *seat)
     if ((seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && !seat->keyboard)
     {
         seat->keyboard = pepper_keyboard_create(seat);
-        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_ADD, &seat->keyboard);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_ADD, seat->keyboard);
     }
     else if (!(seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard)
     {
-        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE, &seat->keyboard);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE, seat->keyboard);
         pepper_keyboard_destroy(seat->keyboard);
         seat->keyboard = NULL;
     }
@@ -177,11 +177,11 @@ seat_update_touch_cap(pepper_seat_t *seat)
     if ((seat->caps & WL_SEAT_CAPABILITY_TOUCH) && !seat->touch)
     {
         seat->touch = pepper_touch_create(seat);
-        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_ADD, &seat->touch);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_ADD, seat->touch);
     }
     else if (!(seat->caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch)
     {
-        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_REMOVE, &seat->touch);
+        pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_REMOVE, seat->touch);
         pepper_touch_destroy(seat->touch);
         seat->touch = NULL;
     }

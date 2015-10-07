@@ -264,6 +264,17 @@ struct pepper_keyboard
     void                           *data;
 
     struct wl_array                 keys;
+
+    struct xkb_keymap              *keymap;
+    int                             keymap_fd;
+    int                             keymap_len;
+    struct xkb_keymap              *pending_keymap;
+
+    struct xkb_state               *state;
+    uint32_t                        mods_depressed;
+    uint32_t                        mods_latched;
+    uint32_t                        mods_locked;
+    uint32_t                        group;
 };
 
 pepper_keyboard_t *
