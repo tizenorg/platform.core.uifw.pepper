@@ -206,26 +206,43 @@ shell_surface_focus_leave(shell_surface_t *shsurf)
 }
 
 static void
+shell_surface_handle_pointer_focus(shell_surface_t *shsurf, uint32_t id)
+{
+    if (id == PEPPER_EVENT_FOCUS_ENTER)
+        shell_surface_ping(shsurf);
+}
+
+static void
+shell_surface_handle_keyboard_focus(shell_surface_t *shsurf, uint32_t id)
+{
+    if (id == PEPPER_EVENT_FOCUS_ENTER)
+        shell_surface_focus_enter(shsurf);
+    else
+        shell_surface_focus_leave(shsurf);
+
+    /* Send state changed configure */
+    shsurf->send_configure(shsurf, 0, 0);
+}
+
+static void
 handle_focus(pepper_event_listener_t *listener,
              pepper_object_t *view, uint32_t id, void *info, void *data)
 {
-    shell_surface_t     *shsurf = data;
-    pepper_object_t     *obj    = info;
-    pepper_object_type_t obj_type = pepper_object_get_type(obj);
+    pepper_object_type_t  type   = pepper_object_get_type((pepper_object_t *)info);
 
-    if (obj_type == PEPPER_OBJECT_KEYBOARD)
+    switch (type)
     {
-        if (id == PEPPER_EVENT_FOCUS_ENTER)
-        {
-            shell_surface_focus_enter(shsurf);
-        }
-        else
-        {
-            shell_surface_focus_leave(shsurf);
-        }
-
-        /* Send state changed configure */
-        shsurf->send_configure(shsurf, 0, 0);
+    case PEPPER_OBJECT_POINTER:
+        shell_surface_handle_pointer_focus(data, id);
+        break;
+    case PEPPER_OBJECT_KEYBOARD:
+        shell_surface_handle_keyboard_focus(data, id);
+        break;
+    case PEPPER_OBJECT_TOUCH:
+        /* TODO */
+        break;
+    default:
+        break;
     }
 }
 
