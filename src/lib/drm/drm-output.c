@@ -201,8 +201,8 @@ drm_output_render(drm_output_t *output)
         pixman_region32_copy(&output->previous_damage, damage);
         damage = &total_damage;
 
-        output->render_target = output->fb[output->back_fb_index]->pixman_render_target;
         output->back_fb_index ^= 1;
+        output->render_target = output->fb[output->back_fb_index]->pixman_render_target;
     }
 
     pepper_renderer_set_target(output->renderer, output->render_target);
