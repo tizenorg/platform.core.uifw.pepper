@@ -536,6 +536,12 @@ pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent);
 PEPPER_API pepper_view_t *
 pepper_view_get_parent(pepper_view_t *view);
 
+PEPPER_API void
+pepper_view_set_transform_inherit(pepper_view_t *view, pepper_bool_t inherit);
+
+PEPPER_API pepper_bool_t
+pepper_view_get_transform_inherit(pepper_view_t *view);
+
 PEPPER_API pepper_bool_t
 pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below, pepper_bool_t subtree);
 

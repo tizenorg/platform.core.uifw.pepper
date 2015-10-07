@@ -169,7 +169,7 @@ pepper_view_update(pepper_view_t *view)
         pepper_mat4_init_translate(&view->global_transform, view->x, view->y, 0.0);
         pepper_mat4_multiply(&view->global_transform, &view->global_transform, &view->transform);
 
-        if (view->parent)
+        if (view->inherit_transform && view->parent)
         {
             pepper_mat4_multiply(&view->global_transform,
                                  &view->parent->global_transform, &view->global_transform);
@@ -345,6 +345,51 @@ PEPPER_API pepper_view_t *
 pepper_view_get_parent(pepper_view_t *view)
 {
     return view->parent;
+}
+
+PEPPER_API void
+pepper_view_set_transform_inherit(pepper_view_t *view, pepper_bool_t inherit)
+{
+    if (view->inherit_transform == inherit)
+        return;
+
+    if (view->inherit_transform)
+    {
+        /* Inherit flag changed from TRUE to FALSE.
+         * We have to update view position and transform from parent local to global. */
+        view->x = view->global_transform.m[12];
+        view->y = view->global_transform.m[13];
+
+        pepper_mat4_copy(&view->transform, &view->global_transform);
+        pepper_mat4_translate(&view->transform, -view->x, -view->y, 0.0);
+    }
+    else
+    {
+        /* Inherit flag changed from FALSE to TRUE.
+         * We have to update view position and transform from global to parent local. */
+
+        if (view->parent)
+        {
+            /* Get transform matrix on the parent local coordinate space. */
+            pepper_mat4_inverse(&view->transform, &view->parent->global_transform);
+            pepper_mat4_multiply(&view->transform, &view->global_transform, &view->transform);
+
+            /* Set position of the (x, y) translation term of the matrix. */
+            view->x = view->transform.m[12];
+            view->y = view->transform.m[13];
+
+            /* Compensate the view position translation. */
+            pepper_mat4_translate(&view->transform, -view->x, -view->y, 0.0);
+        }
+    }
+
+    view->inherit_transform = inherit;
+}
+
+PEPPER_API pepper_bool_t
+pepper_view_get_transform_inherit(pepper_view_t *view)
+{
+    return view->inherit_transform;
 }
 
 PEPPER_API pepper_bool_t

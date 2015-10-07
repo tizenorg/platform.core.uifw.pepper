@@ -401,6 +401,8 @@ struct pepper_view
     double                      x, y;
     int                         w, h;
     pepper_mat4_t               transform;
+    pepper_bool_t               inherit_transform;
+
     pepper_mat4_t               global_transform;
     pepper_mat4_t               global_transform_inverse;
 
