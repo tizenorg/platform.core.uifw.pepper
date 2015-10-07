@@ -18,7 +18,7 @@ xdg_surface_set_parent(struct wl_client     *client,
 
     if (parent_resource)
     {
-        parent = wl_resource_get_user_data(resource);
+        parent = wl_resource_get_user_data(parent_resource);
         shell_surface_set_parent(shsurf, parent->surface);
     }
     else
