@@ -130,7 +130,7 @@ pepper_pointer_t *
 pepper_pointer_create(pepper_seat_t *seat)
 {
     pepper_pointer_t *pointer =
-        (pepper_pointer_t *)pepper_object_alloc(PEPPER_OBJECT_TOUCH, sizeof(pepper_pointer_t));
+        (pepper_pointer_t *)pepper_object_alloc(PEPPER_OBJECT_POINTER, sizeof(pepper_pointer_t));
 
     PEPPER_CHECK(pointer, return NULL, "pepper_object_alloc() failed.\n");
 
