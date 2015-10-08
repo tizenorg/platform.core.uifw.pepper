@@ -172,6 +172,8 @@ enum buffer_type
     BUFFER_TYPE_EGL,
 };
 
+#define MAX_BUFFER_COUNT    3
+
 struct gl_render_target
 {
     pepper_render_target_t      base;
@@ -185,6 +187,9 @@ struct gl_render_target
     int32_t                     height;
 
     pepper_mat4_t               proj_mat;
+
+    pixman_region32_t           damages[MAX_BUFFER_COUNT];
+    int32_t                     damage_index;
 };
 
 struct gl_renderer
@@ -906,7 +911,12 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
                            const pepper_list_t *list, pixman_region32_t *damage)
 {
     gl_renderer_t                  *gr = (gl_renderer_t *)renderer;
+    gl_render_target_t             *gt = (gl_render_target_t *)renderer->target;
     const pepper_output_geometry_t *geom = pepper_output_get_geometry(output);
+
+    int                             i;
+    EGLint                          buffer_age = 0;
+    pixman_region32_t               total_damage;
 
     if (!gl_renderer_use(gr))
         return;
@@ -917,7 +927,32 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    if (pixman_region32_not_empty(damage))
+    if (gr->has_buffer_age)
+        eglQuerySurface(gr->display, ((gl_render_target_t *)renderer->target)->surface,
+                        EGL_BUFFER_AGE_EXT, &buffer_age);
+
+    if (!buffer_age || buffer_age - 1 > MAX_BUFFER_COUNT)
+    {
+        pixman_region32_init_rect(&total_damage, geom->x, geom->y, geom->w, geom->h);
+    }
+    else
+    {
+        int first = gt->damage_index + MAX_BUFFER_COUNT - (buffer_age - 1);
+
+        pixman_region32_init(&total_damage);
+        pixman_region32_copy(&total_damage, damage);
+
+        for (i = 0; i < buffer_age - 1; i++)
+            pixman_region32_union(&total_damage, &total_damage,
+                                  &gt->damages[(first + i) % MAX_BUFFER_COUNT]);
+
+        pixman_region32_copy(&gt->damages[gt->damage_index], damage);
+
+        gt->damage_index += 1;
+        gt->damage_index %= MAX_BUFFER_COUNT;
+    }
+
+    if (pixman_region32_not_empty(&total_damage))
     {
         pepper_list_t *l;
 
@@ -928,7 +963,7 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
 
             glClearColor(1.0, 0.0, 0.0, 1.0);
 
-            rects = pixman_region32_rectangles(damage, &nrects);
+            rects = pixman_region32_rectangles(&total_damage, &nrects);
 
             for (i = 0; i < nrects; i++)
             {
@@ -939,7 +974,7 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
         }
 
         pepper_list_for_each_list_reverse(l, list)
-            repaint_view(renderer, output, (pepper_render_item_t *)l->item, damage);
+            repaint_view(renderer, output, (pepper_render_item_t *)l->item, &total_damage);
     }
 
     eglSwapBuffers(gr->display, ((gl_render_target_t *)renderer->target)->surface);
@@ -1186,8 +1221,12 @@ error:
 static void
 gl_render_target_destroy(pepper_render_target_t *target)
 {
+    int                 i;
     gl_render_target_t *gt = (gl_render_target_t *)target;
     gl_renderer_t      *gr = (gl_renderer_t *)target->renderer;
+
+    for (i = 0; i < MAX_BUFFER_COUNT; i++)
+        pixman_region32_fini(&gt->damages[i]);
 
     if (gt->surface != EGL_NO_SURFACE)
         eglDestroySurface(gr->display, gt->surface);
@@ -1353,6 +1392,9 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer, void *native_windo
 
     pepper_mat4_init_translate(&target->proj_mat, (double)width / -2, (double)height / -2, 0);
     pepper_mat4_scale(&target->proj_mat, (double)2 / width, (double)(-2) / height, 1);
+
+    for (i = 0; i < MAX_BUFFER_COUNT; i++)
+        pixman_region32_init(&target->damages[i]);
 
     return &target->base;
 
