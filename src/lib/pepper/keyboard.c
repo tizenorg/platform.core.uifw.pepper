@@ -20,6 +20,12 @@ static const struct wl_keyboard_interface keyboard_impl =
 static void
 clear_keymap(pepper_keyboard_t *keyboard)
 {
+    if (keyboard->state)
+    {
+        xkb_state_unref(keyboard->state);
+        keyboard->state = NULL;
+    }
+
     if (keyboard->keymap)
     {
         xkb_keymap_unref(keyboard->keymap);
