@@ -919,7 +919,7 @@ shell_surface_send_popup_done(shell_surface_t *shsurf)
     if (shsurf->resource)
     {
         if (shsurf_is_xdg_popup(shsurf))
-            xdg_popup_send_popup_done(shsurf->resource);
+            xdg_popup_send_popup_done(shsurf->resource, shsurf->popup.serial);
         else if (shsurf_is_wl_shell_surface(shsurf) && shsurf->type == SHELL_SURFACE_TYPE_POPUP )
             wl_shell_surface_send_popup_done(shsurf->resource);
     }
