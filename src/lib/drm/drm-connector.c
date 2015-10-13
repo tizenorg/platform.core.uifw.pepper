@@ -91,7 +91,10 @@ drm_update_connectors(pepper_drm_t *drm)
         {
             /* Disconnected. */
             if (conn->output)
+            {
                 drm_output_destroy(conn->output);
+                conn->output = NULL;
+            }
         }
         else if (!conn->connected && conn->connector->connection == DRM_MODE_CONNECTED)
         {
