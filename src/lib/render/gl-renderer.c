@@ -961,7 +961,7 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
             int                 i, nrects;
             pixman_box32_t     *rects;
 
-            glClearColor(1.0, 0.0, 0.0, 1.0);
+            glClearColor(0.0, 0.0, 0.0, 1.0);
 
             rects = pixman_region32_rectangles(&total_damage, &nrects);
 
