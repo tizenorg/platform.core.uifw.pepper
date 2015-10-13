@@ -526,4 +526,11 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
         output->backend->flush_surface_damage(output->data, surface);
 
     pixman_region32_clear(&surface->damage_region);
+
+    if (surface->buffer.buffer)
+    {
+        pepper_buffer_unreference(surface->buffer.buffer);
+        pepper_event_listener_remove(surface->buffer.destroy_listener);
+        surface->buffer.buffer = NULL;
+    }
 }

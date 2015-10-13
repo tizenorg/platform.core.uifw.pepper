@@ -690,8 +690,11 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
     gl_renderer_t      *gr = (gl_renderer_t *)renderer;
     gl_surface_state_t *state = get_surface_state(renderer, surface);
 
+    if (!state->buffer)
+        goto done;
+
     if (state->buffer_type != BUFFER_TYPE_SHM)
-        return PEPPER_TRUE;
+        goto done;
 
     glBindTexture(GL_TEXTURE_2D, state->textures[0]);
 
@@ -703,7 +706,7 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
                      state->shm.format, state->shm.pixel_format,
                      wl_shm_buffer_get_data(state->shm.buffer));
         wl_shm_buffer_end_access(state->shm.buffer);
-        return PEPPER_TRUE;
+        goto done;
     }
 
     /* Texture upload. */
@@ -743,6 +746,11 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
         }
         wl_shm_buffer_end_access(state->shm.buffer);
     }
+
+done:
+    pepper_buffer_unreference(state->buffer);
+    pepper_event_listener_remove(state->buffer_destroy_listener);
+    state->buffer = NULL;
 
     return PEPPER_TRUE;
 }
