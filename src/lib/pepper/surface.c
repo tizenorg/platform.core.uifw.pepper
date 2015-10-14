@@ -42,6 +42,14 @@ surface_state_handle_buffer_destroy(pepper_event_listener_t *listener,
 }
 
 static void
+surface_handle_buffer_release(pepper_event_listener_t *listener,
+                              pepper_object_t *object, uint32_t id, void *info, void *data)
+{
+    pepper_surface_t *surface = data;
+    surface->buffer.buffer = NULL;
+}
+
+static void
 surface_handle_buffer_destroy(pepper_event_listener_t *listener,
                               pepper_object_t *object, uint32_t id, void *info, void *data)
 {
@@ -369,6 +377,7 @@ pepper_surface_commit(pepper_surface_t *surface)
         if (surface->buffer.buffer)
         {
             pepper_buffer_unreference(surface->buffer.buffer);
+            pepper_event_listener_remove(surface->buffer.release_listener);
             pepper_event_listener_remove(surface->buffer.destroy_listener);
         }
 
@@ -376,6 +385,12 @@ pepper_surface_commit(pepper_surface_t *surface)
         {
             pepper_event_listener_remove(surface->pending.buffer_destroy_listener);
             pepper_buffer_reference(surface->pending.buffer);
+
+            surface->buffer.release_listener =
+                pepper_object_add_event_listener(&surface->pending.buffer->base,
+                                                 PEPPER_EVENT_BUFFER_RELEASE, 0,
+                                                 surface_handle_buffer_release, surface);
+
             surface->buffer.destroy_listener =
                 pepper_object_add_event_listener(&surface->pending.buffer->base,
                                                  PEPPER_EVENT_OBJECT_DESTROY, 0,
@@ -531,6 +546,5 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
     {
         pepper_buffer_unreference(surface->buffer.buffer);
         pepper_event_listener_remove(surface->buffer.destroy_listener);
-        surface->buffer.buffer = NULL;
     }
 }

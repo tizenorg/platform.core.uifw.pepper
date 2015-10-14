@@ -151,6 +151,7 @@ struct pepper_surface
 
     struct {
         pepper_buffer_t         *buffer;
+        pepper_event_listener_t *release_listener;
         pepper_event_listener_t *destroy_listener;
         int32_t                  x, y;
         int32_t                  transform;

@@ -561,9 +561,7 @@ surface_state_attach_shm(gl_surface_state_t *state, pepper_buffer_t *buffer)
     state->shm.pixel_format = pixel_format;
     state->shm.pitch        = pitch;
 
-    surface_state_ensure_textures(state, 1);
-
-    state->sampler = sampler;
+    state->sampler          = sampler;
 
     return PEPPER_TRUE;
 }
@@ -574,67 +572,12 @@ surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
     gl_renderer_t      *gr = state->renderer;
     EGLDisplay          display = gr->display;
     struct wl_resource *resource = pepper_buffer_get_resource(buffer);
-    int                 num_planes;
-    int                 sampler;
-    EGLint              attribs[3];
-    int                 texture_format;
-    int                 i;
-
-    if (!gr->query_buffer(display, resource, EGL_TEXTURE_FORMAT, &texture_format))
-        return PEPPER_FALSE;
-
-    switch (texture_format)
-    {
-    case EGL_TEXTURE_RGB:
-        sampler = GL_SHADER_SAMPLER_RGBX;
-        num_planes = 1;
-        break;
-    case EGL_TEXTURE_RGBA:
-        sampler = GL_SHADER_SAMPLER_RGBA;
-        num_planes = 1;
-        break;
-    case EGL_TEXTURE_Y_UV_WL:
-        sampler = GL_SHADER_SAMPLER_Y_UV;
-        num_planes = 2;
-        break;
-    case EGL_TEXTURE_Y_U_V_WL:
-        sampler = GL_SHADER_SAMPLER_Y_U_V;
-        num_planes = 3;
-        break;
-    case EGL_TEXTURE_Y_XUXV_WL:
-        sampler = GL_SHADER_SAMPLER_Y_XUXV;
-        num_planes = 2;
-        break;
-    default:
-        PEPPER_ERROR("unknown EGL buffer format.\n");
-        return PEPPER_FALSE;
-    }
-
-    if (state->buffer_type != BUFFER_TYPE_EGL || num_planes != state->num_planes)
-        surface_state_ensure_textures(state, num_planes);
-
-    attribs[0] = EGL_WAYLAND_PLANE_WL;
-    attribs[2] = EGL_NONE;
-
-    for (i = 0; i < num_planes; i++)
-    {
-        attribs[1] = i;
-        state->images[i] = gr->create_image(display, NULL, EGL_WAYLAND_BUFFER_WL,
-                                            resource, attribs);
-
-        PEPPER_ASSERT(state->images[i] != EGL_NO_IMAGE_KHR);
-
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, state->textures[i]);
-        gr->image_target_texture_2d(GL_TEXTURE_2D, state->images[i]);
-    }
 
     gr->query_buffer(display, resource, EGL_WIDTH, &state->buffer_width);
     gr->query_buffer(display, resource, EGL_HEIGHT, &state->buffer_height);
     gr->query_buffer(display, resource, EGL_WAYLAND_Y_INVERTED_WL, &state->y_inverted);
 
     state->buffer_type = BUFFER_TYPE_EGL;
-    state->sampler = sampler;
 
     return PEPPER_TRUE;
 }
@@ -696,11 +639,73 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
     gl_surface_state_t *state = get_surface_state(renderer, surface);
 
     if (!state->buffer)
-        goto done;
+        return PEPPER_FALSE;
 
-    if (state->buffer_type != BUFFER_TYPE_SHM)
-        goto done;
+    if (state->buffer_type == BUFFER_TYPE_EGL)
+    {
+        int                 num_planes;
+        int                 sampler;
+        EGLint              attribs[3];
+        int                 texture_format;
+        int                 i;
+        EGLDisplay          display = gr->display;
+        struct wl_resource *resource = pepper_buffer_get_resource(state->buffer);
 
+        if (!gr->query_buffer(display, resource, EGL_TEXTURE_FORMAT, &texture_format))
+            return PEPPER_FALSE;
+
+        switch (texture_format)
+        {
+        case EGL_TEXTURE_RGB:
+            sampler = GL_SHADER_SAMPLER_RGBX;
+            num_planes = 1;
+            break;
+        case EGL_TEXTURE_RGBA:
+            sampler = GL_SHADER_SAMPLER_RGBA;
+            num_planes = 1;
+            break;
+        case EGL_TEXTURE_Y_UV_WL:
+            sampler = GL_SHADER_SAMPLER_Y_UV;
+            num_planes = 2;
+            break;
+        case EGL_TEXTURE_Y_U_V_WL:
+            sampler = GL_SHADER_SAMPLER_Y_U_V;
+            num_planes = 3;
+            break;
+        case EGL_TEXTURE_Y_XUXV_WL:
+            sampler = GL_SHADER_SAMPLER_Y_XUXV;
+            num_planes = 2;
+            break;
+        default:
+            PEPPER_ERROR("unknown EGL buffer format.\n");
+            return PEPPER_FALSE;
+        }
+
+        if (num_planes != state->num_planes)
+            surface_state_ensure_textures(state, num_planes);
+
+        attribs[0] = EGL_WAYLAND_PLANE_WL;
+        attribs[2] = EGL_NONE;
+
+        for (i = 0; i < num_planes; i++)
+        {
+            attribs[1] = i;
+            state->images[i] = gr->create_image(display, NULL, EGL_WAYLAND_BUFFER_WL,
+                                                resource, attribs);
+
+            PEPPER_ASSERT(state->images[i] != EGL_NO_IMAGE_KHR);
+
+            glActiveTexture(GL_TEXTURE0 + i);
+            glBindTexture(GL_TEXTURE_2D, state->textures[i]);
+            gr->image_target_texture_2d(GL_TEXTURE_2D, state->images[i]);
+        }
+
+        state->sampler = sampler;
+        goto done;
+    }
+
+    /* state->buffer_type == BUFFER_TYPE_SHM */
+    surface_state_ensure_textures(state, 1);
     glBindTexture(GL_TEXTURE_2D, state->textures[0]);
 
     if (!gr->has_unpack_subimage)
