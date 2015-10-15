@@ -982,6 +982,8 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
             repaint_view(renderer, output, (pepper_render_item_t *)l->item, &total_damage);
     }
 
+    pixman_region32_fini(&total_damage);
+
     eglSwapBuffers(gr->display, ((gl_render_target_t *)renderer->target)->surface);
 
     /* TODO: eglSwapBuffersWithDamage. */
