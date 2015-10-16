@@ -828,7 +828,12 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
                 keyboard = pepper_seat_get_keyboard(shseat->seat);
                 if (keyboard)
                 {
-                    pepper_keyboard_set_focus(keyboard, shsurf->view);
+                    if (pepper_keyboard_get_focus(keyboard) != shsurf->view)
+                    {
+                        pepper_keyboard_send_leave(keyboard);
+                        pepper_keyboard_set_focus(keyboard, shsurf->view);
+                        pepper_keyboard_send_enter(keyboard);
+                    }
                 }
             }
         }

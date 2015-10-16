@@ -125,7 +125,12 @@ default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
     {
         pepper_view_t *focus = pepper_pointer_get_focus(pointer);
 
-        pepper_keyboard_set_focus(keyboard, focus);
+        if (pepper_keyboard_get_focus(keyboard) != focus)
+        {
+            pepper_keyboard_send_leave(keyboard);
+            pepper_keyboard_set_focus(keyboard, focus);
+            pepper_keyboard_send_enter(keyboard);
+        }
 
         if (focus)
             pepper_view_stack_top(focus, PEPPER_FALSE);
