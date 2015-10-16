@@ -86,7 +86,7 @@ pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id, pepper_input_event
         break;
     case PEPPER_EVENT_TOUCH_MOTION:
         {
-            pepper_touch_point_t *point = get_touch_point(touch, id);
+            pepper_touch_point_t *point = get_touch_point(touch, event->id);
 
             point->x = event->x;
             point->y = event->y;
