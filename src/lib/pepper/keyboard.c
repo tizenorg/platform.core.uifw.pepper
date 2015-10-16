@@ -205,9 +205,10 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
 }
 
 static void
-keyboard_handle_focus_destroy(struct wl_listener *listener, void *data)
+keyboard_handle_focus_destroy(pepper_event_listener_t *listener, pepper_object_t *surface,
+                              uint32_t id, void *info, void *data)
 {
-    pepper_keyboard_t *keyboard = pepper_container_of(listener, keyboard, focus_destroy_listener);
+    pepper_keyboard_t *keyboard = data;
     pepper_keyboard_set_focus(keyboard, NULL);
 
     if (keyboard->grab)
@@ -224,7 +225,6 @@ pepper_keyboard_create(pepper_seat_t *seat)
 
     keyboard->seat = seat;
     wl_list_init(&keyboard->resource_list);
-    keyboard->focus_destroy_listener.notify = keyboard_handle_focus_destroy;
 
     wl_array_init(&keyboard->keys);
 
@@ -240,7 +240,7 @@ pepper_keyboard_destroy(pepper_keyboard_t *keyboard)
         keyboard->grab->cancel(keyboard, keyboard->data);
 
     if (keyboard->focus)
-        wl_list_remove(&keyboard->focus_destroy_listener.link);
+        pepper_event_listener_remove(keyboard->focus_destroy_listener);
 
     wl_array_release(&keyboard->keys);
     free(keyboard);
@@ -322,8 +322,7 @@ pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus)
 
     if (keyboard->focus)
     {
-        pepper_keyboard_send_leave(keyboard);
-        wl_list_remove(&keyboard->focus_destroy_listener.link);
+        pepper_event_listener_remove(keyboard->focus_destroy_listener);
         pepper_object_emit_event(&keyboard->base, PEPPER_EVENT_FOCUS_LEAVE, keyboard->focus);
         pepper_object_emit_event(&keyboard->focus->base, PEPPER_EVENT_FOCUS_LEAVE, keyboard);
     }
@@ -332,9 +331,12 @@ pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus)
 
     if (focus)
     {
-        pepper_keyboard_send_enter(keyboard);
-        wl_resource_add_destroy_listener(focus->surface->resource, &keyboard->focus_destroy_listener);
         keyboard->focus_serial = wl_display_next_serial(keyboard->seat->compositor->display);
+
+        keyboard->focus_destroy_listener =
+            pepper_object_add_event_listener(&focus->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                             keyboard_handle_focus_destroy, keyboard);
+
         pepper_object_emit_event(&keyboard->base, PEPPER_EVENT_FOCUS_ENTER, focus);
         pepper_object_emit_event(&focus->base, PEPPER_EVENT_FOCUS_ENTER, keyboard);
     }

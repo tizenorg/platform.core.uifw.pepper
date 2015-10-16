@@ -259,7 +259,7 @@ struct pepper_keyboard
     struct wl_list                  resource_list;
 
     pepper_view_t                  *focus;
-    struct wl_listener              focus_destroy_listener;
+    pepper_event_listener_t        *focus_destroy_listener;
     uint32_t                        focus_serial;
 
     const pepper_keyboard_grab_t   *grab;
