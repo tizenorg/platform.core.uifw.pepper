@@ -11,6 +11,59 @@ static const struct wl_touch_interface touch_impl =
     touch_release,
 };
 
+static pepper_touch_point_t *
+get_touch_point(pepper_touch_t *touch, uint32_t id)
+{
+    pepper_touch_point_t *point;
+
+    pepper_list_for_each(point, &touch->point_list, link)
+    {
+        if (point->id == id)
+            return point;
+    }
+
+    return NULL;
+}
+
+static void
+touch_point_set_focus(pepper_touch_point_t *point, pepper_view_t *focus);
+
+static void
+touch_point_handle_focus_destroy(pepper_event_listener_t *listener, pepper_object_t *surface,
+                                 uint32_t id, void *info, void *data)
+{
+    pepper_touch_point_t *point = data;
+    touch_point_set_focus(point, NULL);
+}
+
+static void
+touch_point_set_focus(pepper_touch_point_t *point, pepper_view_t *focus)
+{
+    if (point->focus == focus)
+        return;
+
+    if (point->focus)
+    {
+        pepper_event_listener_remove(point->focus_destroy_listener);
+        pepper_object_emit_event(&point->touch->base, PEPPER_EVENT_FOCUS_LEAVE, point->focus);
+        pepper_object_emit_event(&point->focus->base, PEPPER_EVENT_FOCUS_LEAVE, point->focus);
+    }
+
+    point->focus = focus;
+
+    if (focus)
+    {
+        point->focus_serial = wl_display_next_serial(point->touch->seat->compositor->display);
+
+        point->focus_destroy_listener =
+            pepper_object_add_event_listener(&focus->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                            touch_point_handle_focus_destroy, point);
+
+        pepper_object_emit_event(&point->touch->base, PEPPER_EVENT_FOCUS_ENTER, focus);
+        pepper_object_emit_event(&focus->base, PEPPER_EVENT_FOCUS_ENTER, focus);
+    }
+}
+
 void
 pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id, pepper_input_event_t *event)
 {
@@ -30,6 +83,11 @@ pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id, pepper_input_event
         break;
     case PEPPER_EVENT_TOUCH_MOTION:
         {
+            pepper_touch_point_t *point = get_touch_point(touch, id);
+
+            point->x = event->x;
+            point->y = event->y;
+
             if (touch->grab)
                 touch->grab->motion(touch, touch->data, event->time, event->id, event->x, event->y);
         }
@@ -61,6 +119,7 @@ pepper_touch_create(pepper_seat_t *seat)
 
     touch->seat = seat;
     wl_list_init(&touch->resource_list);
+    pepper_list_init(&touch->point_list);
 
     return touch;
 }
@@ -68,6 +127,16 @@ pepper_touch_create(pepper_seat_t *seat)
 void
 pepper_touch_destroy(pepper_touch_t *touch)
 {
+    pepper_touch_point_t *point, *tmp;
+
+    pepper_list_for_each_safe(point, tmp, &touch->point_list, link)
+    {
+        if (point->focus)
+            pepper_event_listener_remove(point->focus_destroy_listener);
+
+        free(point);
+    }
+
     if (touch->grab)
         touch->grab->cancel(touch, touch->data);
 
@@ -122,46 +191,141 @@ pepper_touch_get_seat(pepper_touch_t *touch)
 }
 
 PEPPER_API void
-pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus)
+pepper_touch_add_point(pepper_touch_t *touch, uint32_t id, double x, double y)
 {
-    /* TODO: */
+    pepper_touch_point_t *point = get_touch_point(touch, id);
+    PEPPER_CHECK(point, return, "Touch point %d already exist.\n", id);
+
+    point = calloc(1, sizeof(pepper_touch_point_t));
+    PEPPER_CHECK(point, return, "malloc() failed.\n");
+
+    point->touch = touch;
+    point->id = id;
+    point->x = x;
+    point->y = y;
+
+    pepper_list_insert(touch->point_list.prev, &point->link);
+}
+
+PEPPER_API void
+pepper_touch_remove_point(pepper_touch_t *touch, uint32_t id)
+{
+    pepper_touch_point_t *point = get_touch_point(touch, id);
+    PEPPER_CHECK(point, return, "Touch point %d does not exist.\n", id);
+
+    touch_point_set_focus(point, NULL);
+    pepper_list_remove(&point->link);
+    free(point);
+}
+
+PEPPER_API void
+pepper_touch_point_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus)
+{
+    pepper_touch_point_t *point = get_touch_point(touch, id);
+    PEPPER_CHECK(point, return, "Touch point %d does not exist.\n", id);
+    touch_point_set_focus(point, focus);
 }
 
 PEPPER_API pepper_view_t *
-pepper_touch_get_focus(pepper_touch_t *touch)
+pepper_touch_point_get_focus(pepper_touch_t *touch, uint32_t id)
 {
-    /* TODO: */
-    return NULL;
+    pepper_touch_point_t *point = get_touch_point(touch, id);
+    PEPPER_CHECK(point, return NULL, "Touch point %d does not exist.\n", id);
+
+    return point->focus;
 }
 
-    PEPPER_API void
+PEPPER_API void
+pepper_touch_point_get_position(pepper_touch_t *touch, uint32_t id, double *x, double *y)
+{
+    pepper_touch_point_t *point = get_touch_point(touch, id);
+    PEPPER_CHECK(point, return, "Touch point %d does not exist.\n", id);
+
+    if (x)
+        *x = point->x;
+
+    if (y)
+        *y = point->y;
+}
+
+PEPPER_API void
 pepper_touch_send_down(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y)
 {
-    /* TODO: wl_touch_send_down(resource, serial, time, touch->focus->surface->resource, x, y); */
+    struct wl_resource     *resource;
+    wl_fixed_t              fx = wl_fixed_from_double(x);
+    wl_fixed_t              fy = wl_fixed_from_double(y);
+    pepper_touch_point_t   *point = get_touch_point(touch, id);
+
+    PEPPER_CHECK(!point || !point->focus || !point->focus->surface ||
+                 !point->focus->surface->resource, return, "No targets to send touch down.\n");
+
+    wl_resource_for_each(resource, &touch->resource_list)
+    {
+        struct wl_resource *surface_resource = point->focus->surface->resource;
+
+        if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
+            wl_touch_send_down(resource, point->focus_serial, time, surface_resource, id, fx, fy);
+    }
 }
 
-    PEPPER_API void
+PEPPER_API void
 pepper_touch_send_up(pepper_touch_t *touch, uint32_t time, uint32_t id)
 {
-    /* TODO: wl_touch_send_up(resource, serial, time, id); */
+    struct wl_resource     *resource;
+    uint32_t                serial;
+    pepper_touch_point_t   *point = get_touch_point(touch, id);
+
+    PEPPER_CHECK(!point || !point->focus || !point->focus->surface ||
+                 !point->focus->surface->resource, return, "No targets to send touch down.\n");
+
+    serial = wl_display_next_serial(touch->seat->compositor->display);
+
+    wl_resource_for_each(resource, &touch->resource_list)
+    {
+        struct wl_resource *surface_resource = point->focus->surface->resource;
+
+        if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
+            wl_touch_send_up(resource, serial, time, id);
+    }
 }
 
-    PEPPER_API void
+PEPPER_API void
 pepper_touch_send_motion(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y)
 {
-    /* TODO: wl_touch_send_motion(resource, time, id, x, y); */
+
+    struct wl_resource     *resource;
+    wl_fixed_t              fx = wl_fixed_from_double(x);
+    wl_fixed_t              fy = wl_fixed_from_double(y);
+    pepper_touch_point_t   *point = get_touch_point(touch, id);
+
+    PEPPER_CHECK(!point || !point->focus || !point->focus->surface ||
+                 !point->focus->surface->resource, return, "No targets to send touch down.\n");
+
+    wl_resource_for_each(resource, &touch->resource_list)
+    {
+        struct wl_resource *surface_resource = point->focus->surface->resource;
+
+        if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
+            wl_touch_send_motion(resource, time, id, fx, fy);
+    }
 }
 
-    PEPPER_API void
+PEPPER_API void
 pepper_touch_send_frame(pepper_touch_t *touch)
 {
-    /* TODO: wl_touch_send_frame(resource); */
+    struct wl_resource     *resource;
+
+    wl_resource_for_each(resource, &touch->resource_list)
+        wl_touch_send_frame(resource);
 }
 
-    PEPPER_API void
+PEPPER_API void
 pepper_touch_send_cancel(pepper_touch_t *touch)
 {
-    /* TODO: wl_touch_send_cancel(resource); */
+    struct wl_resource     *resource;
+
+    wl_resource_for_each(resource, &touch->resource_list)
+        wl_touch_send_cancel(resource);
 }
 
 PEPPER_API void
@@ -182,4 +346,3 @@ pepper_touch_get_grab_data(pepper_touch_t *touch)
 {
     return touch->data;
 }
-

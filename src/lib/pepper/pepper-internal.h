@@ -17,6 +17,7 @@ typedef struct pepper_data_source   pepper_data_source_t;
 typedef struct pepper_data_device   pepper_data_device_t;
 typedef struct pepper_data_offer    pepper_data_offer_t;
 typedef struct pepper_input         pepper_input_t;
+typedef struct pepper_touch_point   pepper_touch_point_t;
 
 typedef void (*pepper_callback_t)(pepper_object_t *object, void *data);
 
@@ -290,14 +291,30 @@ pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *reso
 void
 pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_input_event_t *event);
 
+struct pepper_touch_point
+{
+    pepper_touch_t             *touch;
+
+    uint32_t                    id;
+    double                      x, y;
+
+    pepper_view_t              *focus;
+    uint32_t                    focus_serial;
+    pepper_event_listener_t    *focus_destroy_listener;
+
+    pepper_list_t               link;
+};
+
 struct pepper_touch
 {
-    pepper_object_t                 base;
-    pepper_seat_t                  *seat;
-    struct wl_list                  resource_list;
+    pepper_object_t             base;
+    pepper_seat_t              *seat;
+    struct wl_list              resource_list;
 
-    const pepper_touch_grab_t      *grab;
-    void                           *data;
+    pepper_list_t               point_list;
+
+    const pepper_touch_grab_t  *grab;
+    void                       *data;
 };
 
 pepper_touch_t *

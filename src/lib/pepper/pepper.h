@@ -441,10 +441,19 @@ PEPPER_API pepper_seat_t *
 pepper_touch_get_seat(pepper_touch_t *touch);
 
 PEPPER_API void
-pepper_touch_set_focus(pepper_touch_t *touch, pepper_view_t *focus);
+pepper_touch_add_point(pepper_touch_t *touch, uint32_t id, double x, double y);
+
+PEPPER_API void
+pepper_touch_remove_point(pepper_touch_t *touch, uint32_t id);
+
+PEPPER_API void
+pepper_touch_point_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus);
 
 PEPPER_API pepper_view_t *
-pepper_touch_get_focus(pepper_touch_t *touch);
+pepper_touch_point_get_focus(pepper_touch_t *touch, uint32_t id);
+
+PEPPER_API void
+pepper_touch_point_get_position(pepper_touch_t *touch, uint32_t id, double *x, double *y);
 
 PEPPER_API void
 pepper_touch_send_down(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y);
