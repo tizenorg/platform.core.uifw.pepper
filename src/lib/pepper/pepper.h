@@ -427,6 +427,7 @@ struct pepper_touch_grab
     void    (*up)(pepper_touch_t *touch, void *data, uint32_t time, uint32_t id);
     void    (*motion)(pepper_touch_t *touch, void *data,
                       uint32_t time, uint32_t id, double x, double y);
+    void    (*cancel_touch_point)(pepper_touch_t *touch, uint32_t id);
     void    (*frame)(pepper_touch_t *touch, void *data);
     void    (*cancel)(pepper_touch_t *touch, void *data);
 };

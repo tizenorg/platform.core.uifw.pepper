@@ -34,6 +34,9 @@ touch_point_handle_focus_destroy(pepper_event_listener_t *listener, pepper_objec
 {
     pepper_touch_point_t *point = data;
     touch_point_set_focus(point, NULL);
+
+    if (point->touch->grab)
+        point->touch->grab->cancel_touch_point(point->touch, point->id, point->touch->data);
 }
 
 static void
