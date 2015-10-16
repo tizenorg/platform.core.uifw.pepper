@@ -104,7 +104,13 @@ default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time
     pepper_compositor_t *compositor = pepper_pointer_get_compositor(pointer);
     pepper_view_t       *view = pepper_compositor_pick_view(compositor, x, y, &vx, &vy);
 
-    pepper_pointer_set_focus(pointer, view);
+    if (pepper_pointer_get_focus(pointer) != view)
+    {
+        pepper_pointer_send_leave(pointer);
+        pepper_pointer_set_focus(pointer, view);
+        pepper_pointer_send_enter(pointer, vx, vy);
+    }
+
     pepper_pointer_send_motion(pointer, time, vx, vy);
 }
 
