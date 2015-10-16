@@ -117,9 +117,10 @@ pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input
 }
 
 static void
-pointer_handle_focus_destroy(struct wl_listener *listener, void *data)
+pointer_handle_focus_destroy(pepper_event_listener_t *listener, pepper_object_t *surface,
+                             uint32_t id, void *info, void *data)
 {
-    pepper_pointer_t *pointer = pepper_container_of(listener, pointer, focus_destroy_listener);
+    pepper_pointer_t *pointer = data;
     pepper_pointer_set_focus(pointer, NULL);
 
     if (pointer->grab)
@@ -136,7 +137,6 @@ pepper_pointer_create(pepper_seat_t *seat)
 
     pointer->seat = seat;
     wl_list_init(&pointer->resource_list);
-    pointer->focus_destroy_listener.notify = pointer_handle_focus_destroy;
 
     pointer->clamp.x0 = DBL_MIN;
     pointer->clamp.y0 = DBL_MIN;
@@ -156,7 +156,7 @@ pepper_pointer_destroy(pepper_pointer_t *pointer)
         pointer->grab->cancel(pointer, pointer->data);
 
     if (pointer->focus)
-        wl_list_remove(&pointer->focus_destroy_listener.link);
+        pepper_event_listener_remove(pointer->focus_destroy_listener);
 
     free(pointer);
 }
@@ -291,16 +291,12 @@ pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y)
 PEPPER_API void
 pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
 {
-    if (!focus || !focus->surface)
-        focus = NULL;
-
     if (pointer->focus == focus)
         return;
 
     if (pointer->focus)
     {
-        pepper_pointer_send_leave(pointer);
-        wl_list_remove(&pointer->focus_destroy_listener.link);
+        pepper_event_listener_remove(pointer->focus_destroy_listener);
         pepper_object_emit_event(&pointer->base, PEPPER_EVENT_FOCUS_LEAVE, pointer->focus);
         pepper_object_emit_event(&pointer->focus->base, PEPPER_EVENT_FOCUS_LEAVE, pointer);
     }
@@ -309,9 +305,12 @@ pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
 
     if (focus)
     {
-        pepper_pointer_send_enter(pointer, pointer->vx, pointer->vy);
-        wl_resource_add_destroy_listener(focus->surface->resource, &pointer->focus_destroy_listener);
         pointer->focus_serial = wl_display_next_serial(pointer->seat->compositor->display);
+
+        pointer->focus_destroy_listener =
+            pepper_object_add_event_listener(&focus->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                             pointer_handle_focus_destroy, pointer);
+
         pepper_object_emit_event(&pointer->base, PEPPER_EVENT_FOCUS_ENTER, focus);
         pepper_object_emit_event(&focus->base, PEPPER_EVENT_FOCUS_ENTER, pointer);
     }
