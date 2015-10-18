@@ -236,7 +236,6 @@ struct gl_surface_state
     gl_renderer_t      *renderer;
     pepper_surface_t   *surface;
 
-    pepper_buffer_t    *buffer;
     int                 buffer_width, buffer_height;
     int                 buffer_type;
 
@@ -401,14 +400,6 @@ surface_state_release_buffer(gl_surface_state_t *state)
     }
 
     state->num_planes = 0;
-
-    if (state->buffer)
-    {
-        pepper_buffer_unreference(state->buffer);
-        state->buffer = NULL;
-
-        pepper_event_listener_remove(state->buffer_destroy_listener);
-    }
 }
 
 static void
@@ -434,6 +425,8 @@ surface_state_handle_buffer_destroy(pepper_event_listener_t    *listener,
 {
     gl_surface_state_t *state = data;
     surface_state_release_buffer(state);
+    pepper_event_listener_remove(state->buffer_destroy_listener);
+    state->buffer_destroy_listener = NULL;
 }
 
 static gl_surface_state_t *
@@ -594,7 +587,7 @@ gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surfac
         *h = 0;
 
         surface_state_release_buffer(state);
-        return PEPPER_FALSE;
+        goto done;
     }
 
     surface_state_destroy_images(state);
@@ -610,20 +603,18 @@ gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surfac
     return PEPPER_FALSE;
 
 done:
-    pepper_buffer_reference(buffer);
 
-    /* Release previous buffer. */
-    if (state->buffer)
+    if (state->buffer_destroy_listener)
     {
-        pepper_buffer_unreference(state->buffer);
         pepper_event_listener_remove(state->buffer_destroy_listener);
+        state->buffer_destroy_listener = NULL;
     }
 
-    /* Set new buffer. */
-    state->buffer = buffer;
-    state->buffer_destroy_listener =
-        pepper_object_add_event_listener((pepper_object_t *)buffer, PEPPER_EVENT_OBJECT_DESTROY, 0,
-                                         surface_state_handle_buffer_destroy, state);
+    if (buffer)
+        state->buffer_destroy_listener =
+            pepper_object_add_event_listener((pepper_object_t *)buffer,
+                                             PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                             surface_state_handle_buffer_destroy, state);
 
     /* Output buffer size info. */
     *w = state->buffer_width;
@@ -637,8 +628,9 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
 {
     gl_renderer_t      *gr = (gl_renderer_t *)renderer;
     gl_surface_state_t *state = get_surface_state(renderer, surface);
+    pepper_buffer_t    *buffer = pepper_surface_get_buffer(surface);
 
-    if (!state->buffer)
+    if (!buffer)
         return PEPPER_FALSE;
 
     if (state->buffer_type == BUFFER_TYPE_EGL)
@@ -649,7 +641,7 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
         int                 texture_format;
         int                 i;
         EGLDisplay          display = gr->display;
-        struct wl_resource *resource = pepper_buffer_get_resource(state->buffer);
+        struct wl_resource *resource = pepper_buffer_get_resource(buffer);
 
         if (!gr->query_buffer(display, resource, EGL_TEXTURE_FORMAT, &texture_format))
             return PEPPER_FALSE;
@@ -701,7 +693,7 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
         }
 
         state->sampler = sampler;
-        goto done;
+        return PEPPER_TRUE;
     }
 
     /* state->buffer_type == BUFFER_TYPE_SHM */
@@ -716,7 +708,7 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
                      state->shm.format, state->shm.pixel_format,
                      wl_shm_buffer_get_data(state->shm.buffer));
         wl_shm_buffer_end_access(state->shm.buffer);
-        goto done;
+        return PEPPER_TRUE;
     }
 
     /* Texture upload. */
@@ -756,11 +748,6 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
         }
         wl_shm_buffer_end_access(state->shm.buffer);
     }
-
-done:
-    pepper_buffer_unreference(state->buffer);
-    pepper_event_listener_remove(state->buffer_destroy_listener);
-    state->buffer = NULL;
 
     return PEPPER_TRUE;
 }

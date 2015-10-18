@@ -525,6 +525,18 @@ pepper_surface_get_input_region(pepper_surface_t *surface)
     return &surface->input_region;
 }
 
+PEPPER_API pepper_bool_t
+pepper_surface_get_keep_buffer(pepper_surface_t *surface)
+{
+    return surface->buffer.keep_buffer;
+}
+
+PEPPER_API void
+pepper_surface_set_keep_buffer(pepper_surface_t *surface, pepper_bool_t keep_buffer)
+{
+    surface->buffer.keep_buffer = keep_buffer;
+}
+
 void
 pepper_surface_flush_damage(pepper_surface_t *surface)
 {
@@ -542,7 +554,7 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
 
     pixman_region32_clear(&surface->damage_region);
 
-    if (surface->buffer.buffer)
+    if (surface->buffer.buffer && !surface->buffer.keep_buffer)
     {
         pepper_buffer_unreference(surface->buffer.buffer);
         pepper_event_listener_remove(surface->buffer.destroy_listener);
