@@ -236,6 +236,9 @@ shell_surface_set_next_type(shell_surface_t *shsurf, shell_surface_type_t new_ty
 void
 shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent);
 
+void
+shell_surface_stack_top(shell_surface_t *shsurf, pepper_bool_t subtree);
+
 /* */
 shell_surface_t *
 get_shsurf_from_surface(pepper_surface_t *surface, desktop_shell_t *shell);

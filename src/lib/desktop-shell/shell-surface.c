@@ -721,6 +721,27 @@ shell_surface_set_position(shell_surface_t *shsurf, double x, double y)
 
 }
 
+void
+shell_surface_stack_top(shell_surface_t *shsurf, pepper_bool_t subtree)
+{
+    pepper_view_t      *cursor_view;
+    pepper_pointer_t   *pointer;
+    shell_seat_t       *shseat;
+
+    pepper_view_stack_top(shsurf->view, subtree);
+
+    pepper_list_for_each(shseat, &shsurf->shell->shseat_list, link)
+    {
+        pointer = pepper_seat_get_pointer(shseat->seat);
+        if (pointer)
+        {
+            cursor_view = pepper_pointer_get_cursor_view(pointer);
+            if (cursor_view)
+                pepper_view_stack_top(cursor_view, PEPPER_FALSE);
+        }
+    }
+}
+
 shell_surface_t *
 get_shsurf_from_surface(pepper_surface_t *surface, desktop_shell_t *shell)
 {
@@ -1073,7 +1094,7 @@ shell_surface_map_popup(shell_surface_t *shsurf)
 
     pepper_view_map(shsurf->view);
 
-    pepper_view_stack_top(shsurf->view, PEPPER_TRUE);
+    shell_surface_stack_top(shsurf, PEPPER_TRUE);
 
     shell_surface_add_popup_grab(shsurf);
 }
@@ -1112,7 +1133,7 @@ shell_surface_map_maximized(shell_surface_t *shsurf)
     pepper_view_map(shsurf->view);
 
     /* Set top of z-order */
-    pepper_view_stack_top(shsurf->view, PEPPER_TRUE /*FIXME:*/);
+    shell_surface_stack_top(shsurf, PEPPER_TRUE /*FIXME:*/);
 }
 
 static void
@@ -1215,7 +1236,7 @@ shell_surface_map_fullscreen(shell_surface_t *shsurf)
     shell_surface_place_fullscreen_surface(shsurf);
 
     pepper_view_map(shsurf->view);
-    pepper_view_stack_top(shsurf->view, PEPPER_TRUE /*FIXME*/ );
+    shell_surface_stack_top(shsurf, PEPPER_TRUE /*FIXME*/ );
 }
 
 void

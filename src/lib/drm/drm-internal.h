@@ -84,6 +84,10 @@ struct pepper_drm
 #endif
     pepper_renderer_t          *pixman_renderer;
     pepper_renderer_t          *gl_renderer;
+
+    pepper_bool_t               cursor_broken;
+    int32_t                     cursor_width;
+    int32_t                     cursor_height;
 };
 
 struct drm_connector
@@ -158,6 +162,13 @@ struct drm_output
     pepper_bool_t           destroy_pending;
     pepper_bool_t           page_flip_pending;
     int                     vblank_pending_count;
+
+    pepper_view_t          *cursor_view;
+    pepper_buffer_t        *cursor_buffer;
+    struct gbm_bo          *cursor_bo[2];
+    int                     cursor_bo_index;
+    int                     cursor_x, cursor_y;
+    pepper_bool_t           need_set_cursor;
 
     pepper_plane_t         *cursor_plane;
     pepper_plane_t         *primary_plane;

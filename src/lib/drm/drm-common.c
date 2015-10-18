@@ -258,6 +258,12 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
     drm->resources = drmModeGetResources(drm->fd);
     PEPPER_CHECK(drm->resources, goto error, "drmModeGetResources() failed.\n");
 
+    ret = drmGetCap(drm->fd, 0x8 /* DRM_CAP_CURSOR_WIDTH */, &cap);
+    drm->cursor_width = (ret == 0) ? cap : 64;
+
+    ret = drmGetCap(drm->fd, 0x9 /* DRM_CAP_CURSOR_HEIGHT */, &cap);
+    drm->cursor_height = (ret == 0) ? cap : 64;
+
     drm_init_planes(drm);
     drm_init_connectors(drm);
     udev_device_unref(udev_device);

@@ -137,8 +137,41 @@ drm_output_set_mode(void *o, const pepper_output_mode_t *mode)
 static pepper_plane_t *
 assign_cursor_plane(drm_output_t *output, pepper_view_t *view)
 {
-    /* TODO: */
-    return NULL;
+    int32_t             w, h;
+    pepper_surface_t   *surface;
+    pepper_buffer_t    *buffer;
+    struct wl_resource *resource;
+
+    if (output->cursor_view)
+        return NULL;
+
+    if (!output->drm->gbm_device)
+        return NULL;
+
+    if (output->drm->cursor_broken)
+        return NULL;
+
+    pepper_view_get_size(view, &w, &h);
+    if ((output->drm->cursor_width < w) || (output->drm->cursor_height < h))
+        return NULL;
+
+    surface = pepper_view_get_surface(view);
+    buffer = pepper_surface_get_buffer(surface);
+    if (!buffer)
+        return NULL;
+
+    resource = pepper_buffer_get_resource(buffer);
+    if (!resource || !wl_shm_buffer_get(resource))
+        return NULL;
+
+    output->cursor_view = view;
+    if (output->cursor_buffer != buffer)
+    {
+        output->cursor_buffer = buffer;
+        output->need_set_cursor = PEPPER_TRUE;
+    }
+
+    return output->cursor_plane;
 }
 
 static pepper_plane_t *
@@ -453,6 +486,79 @@ drm_output_start_repaint_loop(void *o)
 }
 
 static void
+drm_output_set_cursor(drm_output_t *output)
+{
+    pepper_drm_t       *drm = output->drm;
+    pepper_surface_t   *surface;
+    pepper_buffer_t    *buffer;
+
+    double              x, y;
+
+    if (!output->cursor_view)
+    {
+        drmModeSetCursor(drm->fd, output->crtc_id, 0, 0, 0);
+        return;
+    }
+
+    surface = pepper_view_get_surface(output->cursor_view);
+    buffer = pepper_surface_get_buffer(surface);
+
+    if (buffer && output->need_set_cursor)
+    {
+
+        int32_t                 i, w, h, stride;
+        uint8_t                *data;
+        uint32_t                buf[drm->cursor_width * drm->cursor_height];
+
+        struct gbm_bo          *bo;
+        struct wl_resource     *resource;
+        struct wl_shm_buffer   *shm_buffer;
+
+        resource = pepper_buffer_get_resource(buffer);
+
+        shm_buffer = wl_shm_buffer_get(resource);
+        stride = wl_shm_buffer_get_stride(shm_buffer);
+        data = wl_shm_buffer_get_data(shm_buffer);
+
+        pepper_view_get_size(output->cursor_view, &w, &h);
+
+        memset(buf, 0, sizeof(buf));
+        wl_shm_buffer_begin_access(shm_buffer);
+        for (i = 0; i < h; i++)
+            memcpy(buf + i * drm->cursor_width, data + i * stride, w * sizeof(uint32_t));
+        wl_shm_buffer_end_access(shm_buffer);
+
+        output->cursor_bo_index ^= 1;
+        bo = output->cursor_bo[output->cursor_bo_index];
+        gbm_bo_write(bo, buf, sizeof(buf));
+
+        if (drmModeSetCursor(drm->fd, output->crtc_id, gbm_bo_get_handle(bo).s32,
+                             drm->cursor_width, drm->cursor_height))
+        {
+            PEPPER_TRACE("failed to set cursor\n");
+            drm->cursor_broken = PEPPER_TRUE;
+        }
+
+        output->need_set_cursor = PEPPER_FALSE;
+    }
+
+    pepper_view_get_position(output->cursor_view, &x, &y);
+    if ((output->cursor_x != (int)x) || (output->cursor_y != (int)y))
+    {
+        if (drmModeMoveCursor(drm->fd, output->crtc_id, (int)x, (int)y))
+        {
+            PEPPER_TRACE("failed to move cursor\n");
+            drm->cursor_broken = PEPPER_TRUE;
+        }
+
+        output->cursor_x = (int)x;
+        output->cursor_y = (int)y;
+    }
+
+    output->cursor_view = NULL;
+}
+
+static void
 drm_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     drm_output_t   *output = o;
@@ -479,6 +585,8 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
 
         output->page_flip_pending = PEPPER_TRUE;
     }
+
+    drm_output_set_cursor(output);
 
     pepper_list_for_each(plane, &output->drm->plane_list, link)
     {
@@ -532,15 +640,26 @@ drm_output_flush_surface_damage(void *o, pepper_surface_t *surface, pepper_bool_
 
     pepper_renderer_flush_surface_damage(output->renderer, surface);
 
-    if (output->render_type == DRM_RENDER_TYPE_PIXMAN ||
-        (buffer && !wl_shm_buffer_get(pepper_buffer_get_resource(buffer))))
+    if (output->render_type == DRM_RENDER_TYPE_PIXMAN)
+        goto keep;
+
+    if (buffer)
     {
-        *keep_buffer = PEPPER_TRUE;
+        int w, h;
+
+        if (!wl_shm_buffer_get(pepper_buffer_get_resource(buffer)))
+            goto keep;
+
+        pepper_buffer_get_size(buffer, &w, &h);
+        if ((w <= output->drm->cursor_width) && (h <= output->drm->cursor_height))
+            goto keep;
     }
-    else
-    {
-        *keep_buffer = PEPPER_FALSE;
-    }
+
+    *keep_buffer = PEPPER_FALSE;
+    return;
+
+keep:
+    *keep_buffer = PEPPER_TRUE;
 }
 
 struct pepper_output_backend drm_output_backend =
@@ -776,6 +895,22 @@ drm_output_create(drm_connector_t *conn)
     if (use_overlay_env && strcmp(use_overlay_env, "1") == 0)
         output->use_overlay = PEPPER_TRUE;
 
+    if (drm->gbm_device)
+    {
+        int i;
+
+        for (i = 0; i < 2; i++)
+            output->cursor_bo[i] = gbm_bo_create(drm->gbm_device,
+                                                 drm->cursor_width, drm->cursor_height,
+                                                 GBM_FORMAT_ARGB8888,
+                                                 GBM_BO_USE_CURSOR | GBM_BO_USE_WRITE);
+        if (!output->cursor_bo[0] || !output->cursor_bo[1])
+        {
+            PEPPER_TRACE("failed to create cursor bo\n");
+            drm->cursor_broken = PEPPER_TRUE;
+        }
+    }
+
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
     PEPPER_CHECK(output->primary_plane, goto error, "pepper_output_add_plane() failed.\n");
 
@@ -817,6 +952,7 @@ error:
 void
 drm_output_destroy(void *o)
 {
+    int           i;
     drm_output_t *output = o;
     drm_plane_t  *plane;
 
@@ -824,6 +960,12 @@ drm_output_destroy(void *o)
     {
         output->destroy_pending = PEPPER_TRUE;
         return;
+    }
+
+    for (i = 0; i < 2; i++)
+    {
+        if (output->cursor_bo[i])
+            gbm_bo_destroy(output->cursor_bo[i]);
     }
 
     if (output->render_type == DRM_RENDER_TYPE_PIXMAN)

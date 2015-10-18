@@ -1046,6 +1046,12 @@ pepper_pointer_get_grab(pepper_pointer_t *pointer);
 PEPPER_API void *
 pepper_pointer_get_grab_data(pepper_pointer_t *pointer);
 
+PEPPER_API pepper_view_t *
+pepper_pointer_get_cursor_view(pepper_pointer_t *pointer);
+
+PEPPER_API void
+pepper_pointer_set_hotspot(pepper_pointer_t *pointer, int32_t x, int32_t y);
+
 /* Keyboard. */
 struct pepper_keyboard_grab
 {

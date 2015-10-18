@@ -29,11 +29,52 @@
 #include "pepper-internal.h"
 #include <float.h>
 
+static pepper_view_t *
+get_cursor_view(pepper_pointer_t *pointer)
+{
+    if (pointer->cursor_view)
+        return pointer->cursor_view;
+
+    pointer->cursor_view = pepper_compositor_add_view(pointer->seat->compositor);
+
+    return pointer->cursor_view;
+}
+
 static void
 pointer_set_cursor(struct wl_client *client, struct wl_resource *resource, uint32_t serial,
                    struct wl_resource *surface_resource, int32_t x, int32_t y)
 {
-    /* TODO: */
+    pepper_pointer_t   *pointer = (pepper_pointer_t *)wl_resource_get_user_data(resource);
+    pepper_surface_t   *surface;
+    pepper_view_t      *cursor_view;
+
+    cursor_view = get_cursor_view(pointer);
+    PEPPER_CHECK(cursor_view, return, "failed to get cursor view\n");
+
+    if (!surface_resource)
+    {
+        pepper_view_set_surface(cursor_view, NULL);
+        return;
+    }
+
+    surface = (pepper_surface_t *)wl_resource_get_user_data(surface_resource);
+    if (!surface->role)
+        pepper_surface_set_role(surface, "wl_pointer-cursor");
+    else if (strcmp("wl_pointer-cursor", surface->role))
+        return;
+
+    if (surface != pepper_view_get_surface(cursor_view))
+    {
+        surface->pickable = PEPPER_FALSE;
+        pixman_region32_fini(&surface->input_region);
+        pixman_region32_init(&surface->input_region);
+        pepper_view_set_surface(cursor_view, surface);
+    }
+
+    pointer->hotspot_x = x;
+    pointer->hotspot_y = y;
+    pepper_view_set_position(cursor_view, pointer->x - x, pointer->y - y);
+    pepper_view_map(cursor_view);
 }
 
 static void
@@ -92,6 +133,10 @@ pointer_set_position(pepper_pointer_t *pointer, uint32_t time, double x, double 
     pointer->y = y;
 
     pointer_clamp(pointer);
+
+    if (pointer->cursor_view)
+        pepper_view_set_position(pointer->cursor_view,
+                                 x - pointer->hotspot_x, y - pointer->hotspot_y);
 
     if (pointer->grab)
         pointer->grab->motion(pointer, pointer->data, time, pointer->x, pointer->y);
@@ -651,4 +696,17 @@ PEPPER_API void *
 pepper_pointer_get_grab_data(pepper_pointer_t *pointer)
 {
     return pointer->data;
+}
+
+PEPPER_API pepper_view_t *
+pepper_pointer_get_cursor_view(pepper_pointer_t *pointer)
+{
+    return pointer->cursor_view;
+}
+
+PEPPER_API void
+pepper_pointer_set_hotspot(pepper_pointer_t *pointer, int32_t x, int32_t y)
+{
+    pointer->hotspot_x = x;
+    pointer->hotspot_y = y;
 }

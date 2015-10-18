@@ -163,7 +163,14 @@ default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
         }
 
         if (pointer_focus)
-            pepper_view_stack_top(pointer_focus, PEPPER_FALSE);
+        {
+            shell_seat_t       *shseat = data;
+            desktop_shell_t    *shell = shseat->shell;
+            pepper_surface_t   *surface = pepper_view_get_surface(pointer_focus);
+            shell_surface_t    *shsurf = get_shsurf_from_surface(surface, shell);
+
+            shell_surface_stack_top(shsurf, PEPPER_FALSE);
+        }
     }
 
     pepper_pointer_send_button(pointer, pointer_focus, time, button, state);
@@ -195,7 +202,7 @@ pointer_add_callback(pepper_event_listener_t *listener, pepper_object_t *object,
                      void *info, void *data)
 {
     pepper_pointer_t *pointer = info;
-    pepper_pointer_set_grab(pointer, &default_pointer_grab, NULL);
+    pepper_pointer_set_grab(pointer, &default_pointer_grab, data);
 }
 
 static void

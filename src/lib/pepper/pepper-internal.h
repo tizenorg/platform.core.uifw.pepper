@@ -205,6 +205,7 @@ struct pepper_surface
     pixman_region32_t       damage_region;
     pixman_region32_t       opaque_region;
     pixman_region32_t       input_region;
+    pepper_bool_t           pickable;
 
     struct wl_list          frame_callback_list;
 
@@ -352,6 +353,10 @@ struct pepper_pointer
 
     double                          x_velocity;
     double                          y_velocity;
+
+    pepper_view_t                  *cursor_view;
+    int32_t                         hotspot_x;
+    int32_t                         hotspot_y;
 };
 
 pepper_pointer_t *

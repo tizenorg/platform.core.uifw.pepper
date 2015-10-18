@@ -327,6 +327,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
     pixman_region32_init(&surface->damage_region);
     pixman_region32_init(&surface->opaque_region);
     pixman_region32_init_rect(&surface->input_region, INT32_MIN, INT32_MIN, UINT32_MAX, UINT32_MAX);
+    surface->pickable = PEPPER_TRUE;
 
     wl_list_init(&surface->frame_callback_list);
     pepper_list_init(&surface->view_list);
@@ -453,7 +454,9 @@ pepper_surface_commit_state(pepper_surface_t *surface, pepper_surface_state_t *s
 
     /* surface.set_opaque_region(), surface.set_input_region(). */
     pixman_region32_copy(&surface->opaque_region, &state->opaque_region);
-    pixman_region32_copy(&surface->input_region, &state->input_region);
+
+    if (surface->pickable)
+        pixman_region32_copy(&surface->input_region, &state->input_region);
 
     pepper_list_for_each(view, &surface->view_list, surface_link)
     {
