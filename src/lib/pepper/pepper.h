@@ -14,160 +14,711 @@
 extern "C" {
 #endif
 
+/**
+ * @typedef pepper_object_t
+ *
+ * A #pepper_object_t is a generic object providing common functionalities of
+ * all other pepper objects such as event handling, caching user data and etc.
+ *
+ * Following is the list of pepper objects inheriting #pepper_object_t
+ *  - #pepper_compositor_t
+ *  - #pepper_output_t
+ *  - #pepper_surface_t
+ *  - #pepper_buffer_t
+ *  - #pepper_view_t
+ *  - #pepper_seat_t
+ *  - #pepper_pointer_t
+ *  - #pepper_keyboard_t
+ *  - #pepper_touch_t
+ *  - #pepper_input_device_t
+ *  - #pepper_plane_t (used internally)
+ *
+ * Casting the above objects into #pepper_object_t is safe.
+ */
 typedef struct pepper_object            pepper_object_t;
 
+/**
+ * @typedef pepper_compositor_t
+ *
+ * A #pepper_compositor_t represents an instance of a wayland compositor which
+ * has a wl_display listening on a given socket. All other pepper objects have
+ * their belonging #pepper_compositor_t.
+ */
 typedef struct pepper_compositor        pepper_compositor_t;
+
+/**
+ * @typedef pepper_output_t
+ *
+ * A #pepper_output_t represents a wl_output.
+ */
 typedef struct pepper_output            pepper_output_t;
+
+/**
+ * @typedef pepper_surface_t
+ *
+ * A #pepper_surface_t represents a wl_surface.
+ */
 typedef struct pepper_surface           pepper_surface_t;
+
+/**
+ * @typedef pepper_buffer_t
+ *
+ * A #pepper_buffer_t represents a wl_buffer.
+ */
 typedef struct pepper_buffer            pepper_buffer_t;
+
+/**
+ * @typedef pepper_view_t
+ *
+ * A #pepper_view_t represents a visible rectangular shaped object on the
+ * compositor coordinate space. There're several types of a #pepper_view_t.
+ *
+ * surface view  : A #pepper_view_t having a #pepper_surface_t as its content
+ * grouping view : A #pepper_view_t having no attached content
+ *
+ * Views can be constructed as a tree hierarchy. The global position and
+ * transform of a child view is determined relative to its parent's according
+ * to the inheritance flag.
+ *
+ * A #pepper_compositor_t maintains a list of views in sorted z-order and they
+ * are drawn back to front using painter's algorithm.
+ */
 typedef struct pepper_view              pepper_view_t;
+
+/**
+ * @typedef pepper_seat_t
+ *
+ * A #pepper_seat_t represents a wl_seat.
+ *
+ * #pepper_input_device_t can be added to a #pepper_seat_t so that it can
+ * receive input events from the device and dispatch them to the
+ * #pepper_pointer_t/#pepper_keyboard_t/#pepper_touch_t. Adding or removing
+ * a device might result change in seat's capability.
+ */
 typedef struct pepper_seat              pepper_seat_t;
+
+/**
+ * @typedef pepper_pointer_t
+ *
+ * A #pepper_pointer_t represents a wl_pointer.
+ */
 typedef struct pepper_pointer           pepper_pointer_t;
+
+/**
+ * @typedef pepper_keyboard_t
+ *
+ * A #pepper_keyboard_t represents a wl_keyboard.
+ */
 typedef struct pepper_keyboard          pepper_keyboard_t;
+
+/**
+ * @typedef pepper_touch_t
+ *
+ * A #pepper_touch_t represents a wl_touch.
+ */
 typedef struct pepper_touch             pepper_touch_t;
 
+/**
+ * @typedef pepper_output_geometry_t
+ *
+ * A #pepper_output_geometry_t is a data structure holding geometry information
+ * of an wl_output.
+ */
 typedef struct pepper_output_geometry   pepper_output_geometry_t;
+
+/**
+ * @typedef pepper_output_mode_t
+ *
+ * A #pepper_output_mode_t is a data structure for output mode information.
+ */
 typedef struct pepper_output_mode       pepper_output_mode_t;
 
+/**
+ * @typedef pepper_input_device_t
+ *
+ * A #pepper_input_device_t is a device generating input events and it is
+ * created the input backend. An input device may have several capabilities like
+ * pointer + keyboard and any value passed from #pepper_input_device_t is device
+ * specific such as pointer motion value or touch position.
+ */
 typedef struct pepper_input_device      pepper_input_device_t;
 
+/**
+ * @typedef pepper_event_listener_t
+ *
+ * A #pepper_event_listener_t is a handle to a event listener.
+ */
 typedef struct pepper_event_listener    pepper_event_listener_t;
+
+/**
+ * @typedef pepper_event_callback_t
+ *
+ * Function pointer to be invoked when the desired event is emitted on the
+ * given #pepper_object_t.
+ *
+ * @param listener  listener object.
+ * @param object    object on which the event has been emitted.
+ * @param id        event id (See #pepper_built_in_events).
+ * @param info      information of the event.
+ * @param data      data passed when adding the event listener.
+ */
 typedef void (*pepper_event_callback_t)(pepper_event_listener_t *listener, pepper_object_t *object,
                                         uint32_t id, void *info, void *data);
 
+/**
+ * @typedef pepper_input_event_t
+ *
+ * A #pepper_input_event_t is a data structure for holding information about
+ * various input events (pointer/keyboard/touch).
+ */
 typedef struct pepper_input_event       pepper_input_event_t;
 
+/**
+ * @typedef pepper_pointer_grab_t
+ *
+ * A #pepper_pointer_grab_t is a set of function pointers which are invoked
+ * when the corresponding input events are emitted on the #pepper_pointer_t.
+ *
+ * @see pepper_pointer_set_grab()
+ * @see pepper_pointer_get_grab()
+ */
 typedef struct pepper_pointer_grab      pepper_pointer_grab_t;
+
+/**
+ * @typedef pepper_keyboard_grab_t
+ *
+ * A #pepper_keyboard_grab_t is a set of function keyboards which are invoked
+ * when the corresponding input events are emitted on the #pepper_keyboard_t.
+ *
+ * @see pepper_keyboard_set_grab()
+ * @see pepper_keyboard_get_grab()
+ */
 typedef struct pepper_keyboard_grab     pepper_keyboard_grab_t;
+
+/**
+ * @typedef pepper_touch_grab_t
+ *
+ * A #pepper_touch_grab_t is a set of function touchs which are invoked
+ * when the corresponding input events are emitted on the #pepper_touch_t.
+ *
+ * @see pepper_touch_set_grab()
+ * @see pepper_touch_get_grab()
+ */
 typedef struct pepper_touch_grab        pepper_touch_grab_t;
 
 struct pepper_output_geometry
 {
-    int32_t     x;
-    int32_t     y;
-    int32_t     w;
-    int32_t     h;
-    int32_t     subpixel;
-    const char  *maker;
-    const char  *model;
-    int32_t     transform;
+    int32_t     x;          /**< x coordinate of the output on the compositor coordinate space. */
+    int32_t     y;          /**< y coordinate of the output on the compositor coordinate space. */
+    int32_t     w;          /**< width of the output. */
+    int32_t     h;          /**< height of the output. */
+    int32_t     subpixel;   /**< subpixel layout of the output. */
+    const char  *maker;     /**< maker of the output. */
+    const char  *model;     /**< model name of the output. */
+    int32_t     transform;  /**< wl_output::transform. */
 };
 
 struct pepper_output_mode
 {
-    uint32_t    flags;
-    int32_t     w, h;
-    int32_t     refresh;
+    uint32_t    flags;      /**< bit flag #pepper_outout_mode_flag. */
+    int32_t     w, h;       /**< width and height of the output mode. */
+    int32_t     refresh;    /**< refresh rate. */
 };
 
 enum pepper_output_mode_flag
 {
-    PEPPER_OUTPUT_MODE_INVALID      = (1 << 0),
-    PEPPER_OUTPUT_MODE_CURRENT      = (1 << 1),
-    PEPPER_OUTPUT_MODE_PREFERRED    = (1 << 2),
+    PEPPER_OUTPUT_MODE_INVALID      = (1 << 0), /**< the mode is invalid. */
+    PEPPER_OUTPUT_MODE_CURRENT      = (1 << 1), /**< the mode is current mode. */
+    PEPPER_OUTPUT_MODE_PREFERRED    = (1 << 2), /**< the mode is preferred mode. */
 };
 
 typedef enum pepper_object_type
 {
-    PEPPER_OBJECT_COMPOSITOR,
-    PEPPER_OBJECT_OUTPUT,
-    PEPPER_OBJECT_SURFACE,
-    PEPPER_OBJECT_BUFFER,
-    PEPPER_OBJECT_VIEW,
-    PEPPER_OBJECT_SEAT,
-    PEPPER_OBJECT_POINTER,
-    PEPPER_OBJECT_KEYBOARD,
-    PEPPER_OBJECT_TOUCH,
-    PEPPER_OBJECT_INPUT_DEVICE,
-    PEPPER_OBJECT_PLANE,
+    PEPPER_OBJECT_COMPOSITOR,   /**< #pepper_compositor_t */
+    PEPPER_OBJECT_OUTPUT,       /**< #pepper_output_t */
+    PEPPER_OBJECT_SURFACE,      /**< #pepper_surface_t */
+    PEPPER_OBJECT_BUFFER,       /**< #pepper_buffer_t */
+    PEPPER_OBJECT_VIEW,         /**< #pepper_view_t */
+    PEPPER_OBJECT_SEAT,         /**< #pepper_seat_t */
+    PEPPER_OBJECT_POINTER,      /**< #pepper_pointer_t */
+    PEPPER_OBJECT_KEYBOARD,     /**< #pepper_keyboard_t */
+    PEPPER_OBJECT_TOUCH,        /**< #pepper_touch_t */
+    PEPPER_OBJECT_INPUT_DEVICE, /**< #pepper_input_device_t */
+    PEPPER_OBJECT_PLANE,        /**< #pepper_plane_t (internally used) */
 } pepper_object_type_t;
 
 enum pepper_built_in_events
 {
+    /**
+     * All events of a #pepper_object_t
+     *
+     * #pepper_object_t
+     *  - when : Any event is emitted
+     *  - info : corresponding info of the event
+     */
     PEPPER_EVENT_ALL,
+
+    /**
+     * Destruction of a #pepper_object_t
+     *
+     * #pepper_object_t
+     * - when : #pepper_object_t is about to be destroyed
+     * - info : NULL
+     */
     PEPPER_EVENT_OBJECT_DESTROY,
 
+    /**
+     * Addition of a #pepper_output_t to a #pepper_compositor_t
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_output_t has been added
+     *  - info : the added #pepper_output_t
+     */
     PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD,
+
+    /**
+     * Removal of a #pepper_output_t from a #pepper_compositor_t
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_output_t has been removed
+     *  - info : the removed #pepper_output_t.
+     */
     PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE,
+
+    /**
+     * Addition of a #pepper_seat_t to a #pepper_compositor_t
+     *
+     * #pepper_compositor_t
+     * - when : #pepper_seat_t has been added
+     * - info : the added #pepper_seat_t
+     */
     PEPPER_EVENT_COMPOSITOR_SEAT_ADD,
+
+    /**
+     * Removal of a #pepper_seat_t from a #pepper_compositor_t.
+     * 
+     * #pepper_compositor_t
+     *  - when : #pepper_seat_t has been removed
+     *  - info : the removed #pepper_seat_t
+     */
     PEPPER_EVENT_COMPOSITOR_SEAT_REMOVE,
+
+    /**
+     * Addition of a #pepper_surface_t to a #pepper_compositor_t.
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_surface_t has been added
+     *  - info : the added #pepper_surface_t
+     */
     PEPPER_EVENT_COMPOSITOR_SURFACE_ADD,
+
+    /**
+     * Removal of a #pepper_surface_t from a #pepper_compositor_t.
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_surface_t has been removed
+     *  - info : the removed #pepper_surface_t
+     */
     PEPPER_EVENT_COMPOSITOR_SURFACE_REMOVE,
+
+    /**
+     * Addition of a #pepper_view_t to a #pepper_compositor_t.
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_view_t has been added
+     *  - info : the added #pepper_view_t
+     */
     PEPPER_EVENT_COMPOSITOR_VIEW_ADD,
+
+    /**
+     * Removal of a #pepper_view_t from a #pepper_compositor_t.
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_view_t has been removed
+     *  - info : the removed #pepper_view_t
+     */
     PEPPER_EVENT_COMPOSITOR_VIEW_REMOVE,
+
+    /**
+     * Addition of a #pepper_input_device_t to a #pepper_compositor_t.
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_input_device_t has been added
+     *  - info : the added #pepper_input_device_t
+     */
     PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
+
+    /**
+     * Removal of a #pepper_input_device_t from a #pepper_compositor_t.
+     *
+     * #pepper_compositor_t
+     *  - when : #pepper_input_device_t has been removed
+     *  - info : the removed #pepper_input_device_t
+     */
     PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE,
 
+    /**
+     * Change in current mode of a #pepper_output_t.
+     *
+     * #pepper_output_t
+     * - when : mode of the #pepper_output_t has been changed
+     * - info : NULL
+     */
     PEPPER_EVENT_OUTPUT_MODE_CHANGE,
+
+    /**
+     * Change in position of a #pepper_output_t.
+     *
+     * #pepper_output_t
+     * - when : #pepper_output_t has moved its position.
+     * - info : NULL
+     */
     PEPPER_EVENT_OUTPUT_MOVE,
 
+    /**
+     * wl_surface::commit
+     *
+     * #pepper_surface_t
+     *  - when : wl_surface::commit has been requested
+     *  - info : NULL
+     */
     PEPPER_EVENT_SURFACE_COMMIT,
 
+    /**
+     * wl_buffer::release
+     *
+     * #pepper_buffer_t
+     *  - when : wl_buffer::release has been sent
+     *  - info : NULL
+     */
     PEPPER_EVENT_BUFFER_RELEASE,
 
+    /**
+     * Z-order change of a #pepper_view_t.
+     *
+     * #pepper_view_t
+     *  - when : stack (z-order) has been changed
+     *  - info : NULL
+     */
     PEPPER_EVENT_VIEW_STACK_CHANGE,
 
+    /**
+     * Addition of a #pepper_pointer_t to a #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_pointer_t has been added
+     *  - info : the added #pepper_pointer_t
+     */
     PEPPER_EVENT_SEAT_POINTER_ADD,
+
+    /**
+     * Removal of a #pepper_pointer_t from a #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_pointer_t has been removed
+     *  - info : the removed #pepper_pointer_t
+     */
     PEPPER_EVENT_SEAT_POINTER_REMOVE,
+
+    /**
+     * Addition of a #pepper_keyboard_t to a #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_keyboard_t has been added
+     *  - info : the added #pepper_keyboard_t
+     */
     PEPPER_EVENT_SEAT_KEYBOARD_ADD,
+
+    /**
+     * Removal of a #pepper_keyboard_t from a #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_keyboard_t has been removed
+     *  - info : the removed #pepper_keyboard_t
+     */
     PEPPER_EVENT_SEAT_KEYBOARD_REMOVE,
+
+    /**
+     * Addition of a #pepper_touch_t to a #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_touch_t has been added
+     *  - info : the added #pepper_touch_t
+     */
     PEPPER_EVENT_SEAT_TOUCH_ADD,
+
+    /**
+     * Removal of a #pepper_touch_t from a #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_touch_t has been removed
+     *  - info : the removed #pepper_touch_t
+     */
     PEPPER_EVENT_SEAT_TOUCH_REMOVE,
 
+    /**
+     * Addition of a #pepper_input_device_t having pointer capability to a
+     * #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_input_device_t having pointer capability has been added
+     *  - info : the added #pepper_input_device_t
+     */
     PEPPER_EVENT_SEAT_POINTER_DEVICE_ADD,
+
+    /**
+     * Removal of a #pepper_input_device_t having pointer capability from a
+     * #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_input_device_t having pointer capability has been removed
+     *  - info : the removed #pepper_input_device_t
+     */
     PEPPER_EVENT_SEAT_POINTER_DEVICE_REMOVE,
+
+    /**
+     * Addition of a #pepper_input_device_t having keyboard capability to a
+     * #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_input_device_t having keyboard capability has been added
+     *  - info : the added #pepper_input_device_t
+     */
     PEPPER_EVENT_SEAT_KEYBOARD_DEVICE_ADD,
+
+    /**
+     * Removal of a #pepper_input_device_t having keyboard capability from a
+     * #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_input_device_t having keyboard capability has been removed
+     *  - info : the removed #pepper_input_device_t
+     */
     PEPPER_EVENT_SEAT_KEYBOARD_DEVICE_REMOVE,
+
+    /**
+     * Addition of a #pepper_input_device_t having touch capability to a
+     * #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_input_device_t having touch capability has been added
+     *  - info : the added #pepper_input_device_t
+     */
     PEPPER_EVENT_SEAT_TOUCH_DEVICE_ADD,
+
+    /**
+     * Removal of a #pepper_input_device_t having touch capability from a
+     * #pepper_seat_t.
+     *
+     * #pepper_seat_t
+     *  - when : #pepper_input_device_t having touch capability has been removed
+     *  - info : the removed #pepper_input_device_t
+     */
     PEPPER_EVENT_SEAT_TOUCH_DEVICE_REMOVE,
 
+    /**
+     * #pepper_view_t get an input focus.
+     *
+     * #pepper_pointer_t
+     *  - when : #pepper_view_t has been set for the focus
+     *  - info : the focused #pepper_view_t
+     *
+     * #pepper_keyboard_t
+     *  - when : #pepper_view_t has been set for the focus
+     *  - info : the focused #pepper_view_t
+     *
+     * #pepper_touch_t
+     *  - when : #pepper_view_t has been set for the focus
+     *  - info : the focused #pepper_view_t
+     *
+     * #pepper_view_t
+     *  - when : Get focused for any of #pepper_pointer_t/#pepper_keyboard_t/#pepper_touch_t
+     *  - info : #pepper_pointer_t/#pepper_keyboard_t/#pepper_touch_t
+     */
     PEPPER_EVENT_FOCUS_ENTER,
+
+    /**
+     * #pepper_view_t loses an input focus.
+     *
+     * #pepper_pointer_t
+     *  - when : current focus has been changed
+     *  - info : previously focused #pepper_view_t
+     *
+     * #pepper_keyboard_t
+     *  - when : current focus has been changed
+     *  - info : previously focused #pepper_view_t
+     *
+     * #pepper_touch_t
+     *  - when : current focus has been changed
+     *  - info : previously focused #pepper_view_t
+     *
+     * #pepper_view_t
+     *  - when : loses any focus of #pepper_pointer_t/#pepper_keyboard_t/#pepper_touch_t
+     *  - info : #pepper_pointer_t/#pepper_keyboard_t/#pepper_touch_t
+     */
     PEPPER_EVENT_FOCUS_LEAVE,
 
+    /**
+     * Relative pointer motion event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer motion event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_pointer_t
+     *  - when : #pepper_input_device_t emits pointer motion event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_POINTER_MOTION,
+
+    /**
+     * Absolute pointer motion event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer motion event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_pointer_t
+     *  - when : #pepper_input_device_t emits pointer motion event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_POINTER_MOTION_ABSOLUTE,
+
+    /**
+     * Pointer button event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer button event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_pointer_t
+     *  - when : #pepper_input_device_t emits pointer button event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_POINTER_BUTTON,
+
+    /**
+     * Pointer axis event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer axis event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_pointer_t
+     *  - when : #pepper_input_device_t emits pointer axis event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_POINTER_AXIS,
 
+    /**
+     * Keyboard key event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits key event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_keyboard_t
+     *  - when : #pepper_input_device_t emits key event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_KEYBOARD_KEY,
 
+    /**
+     * Touch down event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch down event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_touch_t
+     *  - when : #pepper_input_device_t emits touch down event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_TOUCH_DOWN,
+
+    /**
+     * Touch up event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch up event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_touch_t
+     *  - when : #pepper_input_device_t emits touch up event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_TOUCH_UP,
+
+    /**
+     * Touch motion event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch motion event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_touch_t
+     *  - when : #pepper_input_device_t emits touch motion event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_TOUCH_MOTION,
+
+    /**
+     * Touch frame event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch frame event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_touch_t
+     *  - when : #pepper_input_device_t emits touch frame event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_TOUCH_FRAME,
+
+    /**
+     * Touch calcen event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch cancel event
+     *  - info : #pepper_input_event_t
+     *
+     * #pepper_touch_t
+     *  - when : #pepper_input_device_t emits touch cancel event (to the attached #pepper_seat_t)
+     *  - info : #pepper_input_event_t
+     */
     PEPPER_EVENT_TOUCH_CANCEL,
 };
 
 enum pepper_pointer_axis
 {
-    PEPPER_POINTER_AXIS_VERTICAL,
-    PEPPER_POINTER_AXIS_HORIZONTAL,
+    PEPPER_POINTER_AXIS_VERTICAL,   /**< vertical pointer axis. */
+    PEPPER_POINTER_AXIS_HORIZONTAL, /**< horizontal pointer axis. */
 };
 
 enum pepper_button_state
 {
-    PEPPER_BUTTON_STATE_RELEASED,
-    PEPPER_BUTTON_STATE_PRESSED,
+    PEPPER_BUTTON_STATE_RELEASED,   /**< button is relased. */
+    PEPPER_BUTTON_STATE_PRESSED,    /**< button is pressed. */
 };
 
 enum pepper_key_state
 {
-    PEPPER_KEY_STATE_RELEASED,
-    PEPPER_KEY_STATE_PRESSED,
+    PEPPER_KEY_STATE_RELEASED,      /**< key is released. */
+    PEPPER_KEY_STATE_PRESSED,       /**< key is pressed. */
 };
 
 struct pepper_input_event
 {
-    uint32_t    id;
-    uint32_t    time;
+    uint32_t    id;         /**< event id #pepper_built_in_events */
+    uint32_t    time;       /**< time in mili-second with undefined base. */
 
-    uint32_t    button;
-    uint32_t    state;
-    uint32_t    axis;
-    uint32_t    key;
-    uint32_t    slot;
-    double      x, y;
-    double      value;
+    uint32_t    button;     /**< pointer button flag. */
+    uint32_t    state;      /**< pointer and key state flag. */
+    uint32_t    axis;       /**< pointer axis. */
+    uint32_t    key;        /**< keyboard key. */
+    uint32_t    slot;       /**< touch point id. */
+    double      x, y;       /**< x, y coordinate value. */
+    double      value;      /**< pointer axis value. */
 };
 
 /* Generic object functions. */
