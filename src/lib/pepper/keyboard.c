@@ -286,7 +286,7 @@ pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *reso
         close(fd);
     }
 
-    if (!keyboard->focus)
+    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
         return;
 
     if (wl_resource_get_client(keyboard->focus->surface->resource) == client)
@@ -355,7 +355,7 @@ pepper_keyboard_send_leave(pepper_keyboard_t *keyboard)
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus)
+    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(keyboard->focus->surface->resource);
@@ -375,7 +375,7 @@ pepper_keyboard_send_enter(pepper_keyboard_t *keyboard)
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus)
+    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(keyboard->focus->surface->resource);
@@ -398,7 +398,7 @@ pepper_keyboard_send_key(pepper_keyboard_t *keyboard, uint32_t time, uint32_t ke
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus)
+    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(keyboard->focus->surface->resource);
@@ -419,7 +419,7 @@ pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, 
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus)
+    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(keyboard->focus->surface->resource);

@@ -259,8 +259,8 @@ pepper_touch_send_down(pepper_touch_t *touch, uint32_t time, uint32_t id, double
     wl_fixed_t              fy = wl_fixed_from_double(y);
     pepper_touch_point_t   *point = get_touch_point(touch, id);
 
-    PEPPER_CHECK(!point || !point->focus || !point->focus->surface ||
-                 !point->focus->surface->resource, return, "No targets to send touch down.\n");
+    if (!point || !point->focus || !point->focus->surface || !point->focus->surface->resource)
+        return;
 
     wl_resource_for_each(resource, &touch->resource_list)
     {
@@ -278,8 +278,8 @@ pepper_touch_send_up(pepper_touch_t *touch, uint32_t time, uint32_t id)
     uint32_t                serial;
     pepper_touch_point_t   *point = get_touch_point(touch, id);
 
-    PEPPER_CHECK(!point || !point->focus || !point->focus->surface ||
-                 !point->focus->surface->resource, return, "No targets to send touch down.\n");
+    if (!point || !point->focus || !point->focus->surface || !point->focus->surface->resource)
+        return;
 
     serial = wl_display_next_serial(touch->seat->compositor->display);
 
@@ -301,8 +301,8 @@ pepper_touch_send_motion(pepper_touch_t *touch, uint32_t time, uint32_t id, doub
     wl_fixed_t              fy = wl_fixed_from_double(y);
     pepper_touch_point_t   *point = get_touch_point(touch, id);
 
-    PEPPER_CHECK(!point || !point->focus || !point->focus->surface ||
-                 !point->focus->surface->resource, return, "No targets to send touch down.\n");
+    if (!point || !point->focus || !point->focus->surface || !point->focus->surface->resource)
+        return;
 
     wl_resource_for_each(resource, &touch->resource_list)
     {

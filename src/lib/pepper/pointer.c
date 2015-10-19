@@ -187,7 +187,7 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
     wl_list_insert(&pointer->resource_list, wl_resource_get_link(res));
     wl_resource_set_implementation(res, &pointer_impl, pointer, unbind_resource);
 
-    if (!pointer->focus)
+    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
         return;
 
     if (wl_resource_get_client(pointer->focus->surface->resource) == client)
@@ -329,7 +329,7 @@ pepper_pointer_send_leave(pepper_pointer_t *pointer)
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!pointer->focus)
+    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(pointer->focus->surface->resource);
@@ -351,7 +351,7 @@ pepper_pointer_send_enter(pepper_pointer_t *pointer, double x, double y)
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!pointer->focus)
+    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(pointer->focus->surface->resource);
@@ -372,7 +372,7 @@ pepper_pointer_send_motion(pepper_pointer_t *pointer, uint32_t time, double x, d
     wl_fixed_t          fy = wl_fixed_from_double(y);
     struct wl_client   *client;
 
-    if (!pointer->focus)
+    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(pointer->focus->surface->resource);
@@ -391,7 +391,7 @@ pepper_pointer_send_button(pepper_pointer_t *pointer, uint32_t time, uint32_t bu
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!pointer->focus)
+    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(pointer->focus->surface->resource);
@@ -411,7 +411,7 @@ pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis
     wl_fixed_t          v = wl_fixed_from_double(value);
     struct wl_client   *client;
 
-    if (!pointer->focus)
+    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
         return;
 
     client = wl_resource_get_client(pointer->focus->surface->resource);
