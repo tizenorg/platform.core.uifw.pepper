@@ -379,6 +379,7 @@ pepper_surface_commit(pepper_surface_t *surface)
         {
             pepper_buffer_unreference(surface->buffer.buffer);
             pepper_event_listener_remove(surface->buffer.destroy_listener);
+            pepper_event_listener_remove(surface->buffer.release_listener);
         }
 
         if (surface->pending.buffer)
