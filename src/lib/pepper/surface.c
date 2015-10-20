@@ -381,8 +381,12 @@ pepper_surface_commit(pepper_surface_t *surface)
         if (surface->buffer.buffer)
         {
             pepper_event_listener_remove(surface->buffer.destroy_listener);
-            pepper_event_listener_remove(surface->buffer.release_listener);
-            pepper_buffer_unreference(surface->buffer.buffer);
+
+            if (surface->buffer.keep_buffer)
+            {
+                pepper_event_listener_remove(surface->buffer.release_listener);
+                pepper_buffer_unreference(surface->buffer.buffer);
+            }
         }
 
         if (surface->pending.buffer)
@@ -559,8 +563,5 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
     pixman_region32_clear(&surface->damage_region);
 
     if (surface->buffer.buffer && !surface->buffer.keep_buffer)
-    {
         pepper_buffer_unreference(surface->buffer.buffer);
-        pepper_event_listener_remove(surface->buffer.destroy_listener);
-    }
 }
