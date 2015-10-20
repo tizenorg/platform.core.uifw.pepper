@@ -20,11 +20,12 @@ struct pixman_renderer
 
 struct pixman_surface_state
 {
-    pixman_renderer_t  *renderer;
+    pixman_renderer_t      *renderer;
 
-    pepper_surface_t   *surface;
-    int                 buffer_width, buffer_height;
-    pixman_image_t     *image;
+    pepper_surface_t       *surface;
+    struct wl_shm_buffer   *shm_buffer;
+    int                     buffer_width, buffer_height;
+    pixman_image_t         *image;
 
     pepper_event_listener_t *buffer_destroy_listener;
     pepper_event_listener_t *surface_destroy_listener;
@@ -147,6 +148,7 @@ surface_state_attach_shm(pixman_surface_state_t *state, pepper_buffer_t *buffer)
     state->buffer_width = w;
     state->buffer_height = h;
     state->image = image;
+    state->shm_buffer = shm_buffer;
 
     return PEPPER_TRUE;;
 }
@@ -283,12 +285,14 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
         pixman_image_set_transform(ps->image, &trans);
         pixman_image_set_filter(ps->image, filter, NULL, 0);
 
+        wl_shm_buffer_begin_access(ps->shm_buffer);
         pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
                                  0, 0, /* src_x, src_y */
                                  0, 0, /* mask_x, mask_y */
                                  0, 0, /* dest_x, dest_y */
                                  pixman_image_get_width(target->image),
                                  pixman_image_get_height(target->image));
+        wl_shm_buffer_end_access(ps->shm_buffer);
     }
 
     pixman_region32_fini(&repaint);
