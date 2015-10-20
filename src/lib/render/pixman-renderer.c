@@ -64,6 +64,7 @@ surface_state_handle_surface_destroy(pepper_event_listener_t    *listener,
 
     surface_state_release_buffer(state);
     pepper_event_listener_remove(state->surface_destroy_listener);
+    pepper_event_listener_remove(state->buffer_destroy_listener);
     pepper_object_set_user_data((pepper_object_t *)state->surface, state->renderer, NULL, NULL);
     free(state);
 }
