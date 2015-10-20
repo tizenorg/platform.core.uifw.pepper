@@ -298,6 +298,7 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     surface->buffer.transform = WL_OUTPUT_TRANSFORM_NORMAL;
     surface->buffer.scale = 1;
+    surface->buffer.keep_buffer = PEPPER_TRUE;
 
     pixman_region32_init(&surface->damage_region);
     pixman_region32_init(&surface->opaque_region);
