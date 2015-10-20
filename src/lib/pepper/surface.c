@@ -362,8 +362,11 @@ attach_surface_to_outputs(pepper_surface_t *surface)
 
         output->backend->attach_surface(output->data, surface, &w, &h);
 
-        surface->buffer.buffer->w = w;
-        surface->buffer.buffer->h = h;
+        if (surface->buffer.buffer)
+        {
+            surface->buffer.buffer->w = w;
+            surface->buffer.buffer->h = h;
+        }
     }
 }
 
