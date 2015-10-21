@@ -138,8 +138,8 @@ pepper_pointer_create(pepper_seat_t *seat)
     pointer->seat = seat;
     wl_list_init(&pointer->resource_list);
 
-    pointer->clamp.x0 = DBL_MIN;
-    pointer->clamp.y0 = DBL_MIN;
+    pointer->clamp.x0 = -DBL_MAX;
+    pointer->clamp.y0 = -DBL_MAX;
     pointer->clamp.x1 = DBL_MAX;
     pointer->clamp.y1 = DBL_MAX;
 
