@@ -66,14 +66,14 @@ pointer_set_position(pepper_pointer_t *pointer, uint32_t time, double x, double 
     pointer_clamp(pointer);
 
     if (pointer->grab)
-        pointer->grab->motion(pointer, pointer->data, time, x, y);
+        pointer->grab->motion(pointer, pointer->data, time, pointer->x, pointer->y);
 
     /* Emit motion event. */
     memset(&event, 0x00, sizeof(pepper_input_event_t));
     event.id = PEPPER_EVENT_POINTER_MOTION;
     event.time = time;
-    event.x = x;
-    event.y = y;
+    event.x = pointer->x;
+    event.y = pointer->y;
     pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_MOTION, &event);
 }
 
