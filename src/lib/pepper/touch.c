@@ -197,7 +197,7 @@ PEPPER_API void
 pepper_touch_add_point(pepper_touch_t *touch, uint32_t id, double x, double y)
 {
     pepper_touch_point_t *point = get_touch_point(touch, id);
-    PEPPER_CHECK(point, return, "Touch point %d already exist.\n", id);
+    PEPPER_CHECK(!point, return, "Touch point %d already exist.\n", id);
 
     point = calloc(1, sizeof(pepper_touch_point_t));
     PEPPER_CHECK(point, return, "malloc() failed.\n");
