@@ -132,31 +132,32 @@ struct shell_surface
 
     struct
     {
-        double          dx, dy;     /* difference between pointer position and view position */
+        double               dx, dy;     /* difference between pointer position and view position */
     } move;
 
     struct
     {
-        double          px, py;     /* pointer x, y */
-        double          vx, vy;     /* view    x, y */
-        int32_t         vw, vh;     /* view    w, h */
-        uint32_t        edges;
-        pepper_bool_t   resizing;
+        double               px, py;     /* pointer x, y */
+        double               vx, vy;     /* view    x, y */
+        int32_t              vw, vh;     /* view    w, h */
+        uint32_t             edges;
+        pepper_bool_t        resizing;
     } resize;
 
-    int32_t         last_width, last_height;
+    int32_t                  last_width, last_height;
 
     /* Data structures per surface type */
     shell_surface_type_t     type;          /* Current surface type */
     shell_surface_type_t     next_type;     /* Requested surface type */
+    pepper_bool_t            type_changed;
 
     struct
     {
-        double          x, y;
-        uint32_t        flags;
-        pepper_seat_t  *seat;
-        uint32_t        serial;
-        pepper_bool_t   button_up;
+        double               x, y;
+        uint32_t             flags;
+        pepper_seat_t       *seat;
+        uint32_t             serial;
+        pepper_bool_t        button_up;
     } popup;
 
     struct
@@ -175,6 +176,7 @@ struct shell_surface
         uint32_t             method;
         uint32_t             framerate;
         pepper_output_t     *output;
+        double               scale;
     } fullscreen;
 
     struct
@@ -182,13 +184,11 @@ struct shell_surface
         double               x, y;
         int32_t              w, h;
         pepper_output_mode_t mode;
+        shell_surface_type_t type;
     } saved;
 
     /* map */
     void (*shell_surface_map)(shell_surface_t *shsurf);
-
-    /* (*map) was called */
-    pepper_bool_t            mapped;
 
     /* configure */
     void (*send_configure)(shell_surface_t *shsurf, int32_t width, int32_t height);
@@ -231,7 +231,7 @@ void
 remove_ping_timer(shell_client_t *shell_client);
 
 void
-shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type);
+shell_surface_set_next_type(shell_surface_t *shsurf, shell_surface_type_t new_type);
 
 void
 shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent);
@@ -304,3 +304,10 @@ shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial
 
 void
 shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial, uint32_t edges);
+
+void
+shell_surface_set_position(shell_surface_t *shsurf, double x, double y);
+
+void
+shell_surface_place_fullscreen_surface(shell_surface_t *shsurf);
+

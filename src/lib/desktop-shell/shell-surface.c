@@ -55,11 +55,11 @@ handle_surface_commit(pepper_event_listener_t *listener,
         shsurf->has_next_geometry = PEPPER_FALSE;
     }
 
-    if (!shsurf->mapped && shsurf->ack_configure && shsurf->shell_surface_map)
+    if (shsurf->type_changed && shsurf->ack_configure && shsurf->shell_surface_map)
     {
         shsurf->shell_surface_map(shsurf);
 
-        shsurf->mapped    = PEPPER_TRUE;
+        shsurf->type_changed = PEPPER_FALSE;
         shsurf->type      = shsurf->next_type;
         shsurf->next_type = SHELL_SURFACE_TYPE_NONE;
     }
@@ -81,7 +81,7 @@ handle_surface_commit(pepper_event_listener_t *listener,
         if (shsurf->resize.edges & WL_SHELL_SURFACE_RESIZE_TOP)
             vy = vy - sy;
 
-        pepper_view_set_position(shsurf->view, vx, vy);
+        shell_surface_set_position(shsurf, vx, vy);
 
         shsurf->last_width = vw;
         shsurf->last_height = vh;
@@ -152,22 +152,46 @@ shsurf_wl_shell_surface_send_configure(shell_surface_t *shsurf, int32_t width, i
 static void
 shsurf_xdg_surface_send_configure(shell_surface_t *shsurf, int32_t width, int32_t height)
 {
-    struct wl_display   *display;
-    struct wl_array      states;
-    uint32_t            *state;
-    uint32_t             serial;
+    struct wl_display       *display;
+    struct wl_array          states;
+    uint32_t                *state;
+    uint32_t                 serial;
+    shell_surface_type_t     type;
+
+    if (shsurf->type_changed)
+        type = shsurf->next_type;
+    else
+        type = shsurf->type;
 
     wl_array_init(&states);
 
-    if (shsurf->next_type == SHELL_SURFACE_TYPE_MAXIMIZED)
+    if (type == SHELL_SURFACE_TYPE_MAXIMIZED)
     {
         state  = wl_array_add(&states, sizeof(uint32_t));
         *state = XDG_SURFACE_STATE_MAXIMIZED;
+
+        if (!width && !height)
+        {
+            pixman_rectangle32_t area;
+            shell_get_output_workarea(shsurf->shell, shsurf->maximized.output, &area);
+
+            width = area.width;
+            height = area.height;
+        }
     }
-    else if (shsurf->next_type == SHELL_SURFACE_TYPE_FULLSCREEN)
+    else if (type == SHELL_SURFACE_TYPE_FULLSCREEN)
     {
         state  = wl_array_add(&states, sizeof(uint32_t));
         *state = XDG_SURFACE_STATE_FULLSCREEN;
+
+        if (!width && !height)
+        {
+            const pepper_output_geometry_t *geom;
+
+            geom   = pepper_output_get_geometry(shsurf->fullscreen.output);
+            width  = geom->w;
+            height = geom->h;
+        }
     }
 
     if (shsurf->resize.resizing )
@@ -194,7 +218,8 @@ shsurf_xdg_surface_send_configure(shell_surface_t *shsurf, int32_t width, int32_
 
     wl_array_release(&states);
 
-    shsurf->ack_configure = PEPPER_FALSE;
+    if (shsurf->type_changed && shsurf->type != SHELL_SURFACE_TYPE_NONE)
+        shsurf->ack_configure = PEPPER_FALSE;
 }
 
 static void
@@ -337,7 +362,8 @@ shell_surface_create(shell_client_t *shell_client, pepper_surface_t *surface,
                                          handle_focus, shsurf);
 
 
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_NONE);
+    shell_surface_set_next_type(shsurf, SHELL_SURFACE_TYPE_NONE);
+
     set_shsurf_to_surface(surface, shsurf);
 
     role = pepper_surface_get_role(shsurf->surface);
@@ -461,11 +487,18 @@ switch_output_mode(pepper_output_t *output, pepper_output_mode_t *mode)
 void
 shell_surface_set_toplevel(shell_surface_t *shsurf)
 {
-    if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN)
+    if (shsurf->type == SHELL_SURFACE_TYPE_TOPLEVEL)
+        return ;
+
+    if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN &&
+        shsurf->fullscreen.method == WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER)
     {
-        if (shsurf->fullscreen.method == WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER)
-            switch_output_mode(shsurf->fullscreen.output, &shsurf->saved.mode);
+        switch_output_mode(shsurf->fullscreen.output, &shsurf->saved.mode);
     }
+
+    shell_surface_set_parent(shsurf, NULL);
+
+    shell_surface_set_next_type(shsurf, SHELL_SURFACE_TYPE_TOPLEVEL);
 
     if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
         shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
@@ -473,10 +506,6 @@ shell_surface_set_toplevel(shell_surface_t *shsurf)
     {
         shsurf->send_configure(shsurf, shsurf->saved.w, shsurf->saved.h);
     }
-
-    shell_surface_set_parent(shsurf, NULL);
-
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TOPLEVEL);
 }
 
 void
@@ -488,6 +517,9 @@ shell_surface_set_popup(shell_surface_t     *shsurf,
                         uint32_t             flags,
                         uint32_t             serial)
 {
+    if (shsurf->type == SHELL_SURFACE_TYPE_POPUP)
+        return ;
+
     shell_surface_set_parent(shsurf, parent);
 
     shsurf->popup.x      = x;
@@ -496,7 +528,7 @@ shell_surface_set_popup(shell_surface_t     *shsurf,
     shsurf->popup.seat   = seat;
     shsurf->popup.serial = serial;
 
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_POPUP);
+    shell_surface_set_next_type(shsurf, SHELL_SURFACE_TYPE_POPUP);
 }
 
 void
@@ -506,13 +538,16 @@ shell_surface_set_transient(shell_surface_t     *shsurf,
                             double               y,
                             uint32_t             flags)
 {
+    if (shsurf->type == SHELL_SURFACE_TYPE_TRANSIENT)
+        return ;
+
     shell_surface_set_parent(shsurf, parent);
 
     shsurf->transient.x = x;
     shsurf->transient.y = y;
     shsurf->transient.flags = flags;
 
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_TRANSIENT);
+    shell_surface_set_next_type(shsurf, SHELL_SURFACE_TYPE_TRANSIENT);
 }
 
 static pepper_output_t *
@@ -551,11 +586,27 @@ shell_surface_get_geometry(shell_surface_t *shsurf, pixman_rectangle32_t *geomet
     geometry->height = (uint32_t)h;
 }
 
+static void
+shell_surface_save_current_geometry(shell_surface_t *shsurf)
+{
+    if (shsurf->type != SHELL_SURFACE_TYPE_MAXIMIZED &&
+        shsurf->type != SHELL_SURFACE_TYPE_FULLSCREEN)
+    {
+        pepper_view_get_position(shsurf->view, &shsurf->saved.x, &shsurf->saved.y);
+        shsurf->saved.w    = shsurf->geometry.w;
+        shsurf->saved.h    = shsurf->geometry.h;
+    }
+    shsurf->saved.type = shsurf->type;
+}
+
 void
 shell_surface_set_maximized(shell_surface_t     *shsurf,
                             pepper_output_t     *output)
 {
     pixman_rectangle32_t    area;
+
+    if (shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED)
+        return ;
 
     /* XXX: If the given shell_surface has a parent, what's the corrent behavior? */
     shell_surface_set_parent(shsurf, NULL);
@@ -566,14 +617,11 @@ shell_surface_set_maximized(shell_surface_t     *shsurf,
 
     shsurf->maximized.output = output;
 
-    /* Save current position and size for unset_maximized */
-    pepper_view_get_position(shsurf->view, &shsurf->saved.x, &shsurf->saved.y);
-    shsurf->saved.w = shsurf->geometry.w;
-    shsurf->saved.h = shsurf->geometry.h;
+    shell_surface_save_current_geometry(shsurf);
 
     shell_get_output_workarea(shsurf->shell, output, &area);
 
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_MAXIMIZED);
+    shell_surface_set_next_type(shsurf, SHELL_SURFACE_TYPE_MAXIMIZED);
 
     /* Send configure */
     shsurf->send_configure(shsurf, area.width, area.height);
@@ -582,7 +630,9 @@ shell_surface_set_maximized(shell_surface_t     *shsurf,
 void
 shell_surface_unset_maximized(shell_surface_t *shsurf)
 {
-    /* TODO */
+    if (shsurf->type != SHELL_SURFACE_TYPE_MAXIMIZED)
+        return ;
+
     shell_surface_set_toplevel(shsurf);
 }
 
@@ -605,12 +655,9 @@ shell_surface_set_fullscreen(shell_surface_t    *shsurf,
     shsurf->fullscreen.method    = method;
     shsurf->fullscreen.framerate = framerate;
 
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_FULLSCREEN);
+    shell_surface_set_next_type(shsurf, SHELL_SURFACE_TYPE_FULLSCREEN);
 
-    /* Save current position and size for unset_fullscreen */
-    pepper_view_get_position(shsurf->view, &shsurf->saved.x, &shsurf->saved.y);
-    shsurf->saved.w = shsurf->geometry.w;
-    shsurf->saved.h = shsurf->geometry.h;
+    shell_surface_save_current_geometry(shsurf);
 
     /* Find current output mode */
     {
@@ -638,16 +685,22 @@ shell_surface_set_fullscreen(shell_surface_t    *shsurf,
 void
 shell_surface_unset_fullscreen(shell_surface_t *shsurf)
 {
+    if (shsurf->type != SHELL_SURFACE_TYPE_FULLSCREEN)
+        return ;
+
     if (shsurf->fullscreen.method == WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER)
         switch_output_mode(shsurf->fullscreen.output, &shsurf->saved.mode);
 
-    shell_surface_set_toplevel(shsurf);
+    if (shsurf->saved.type == SHELL_SURFACE_TYPE_MAXIMIZED)
+        shell_surface_set_maximized(shsurf, shsurf->maximized.output);
+    else
+        shell_surface_set_toplevel(shsurf);
 }
 
 void
 shell_surface_set_minimized(shell_surface_t *shsurf)
 {
-    shell_surface_set_type(shsurf, SHELL_SURFACE_TYPE_MINIMIZED);
+    shell_surface_set_next_type(shsurf, SHELL_SURFACE_TYPE_MINIMIZED);
 }
 
 void
@@ -656,10 +709,14 @@ shell_surface_ack_configure(shell_surface_t *shsurf, uint32_t serial)
     shsurf->ack_configure = PEPPER_TRUE;
 }
 
-static void
+void
 shell_surface_set_position(shell_surface_t *shsurf, double x, double y)
 {
-    pepper_view_set_position(shsurf->view, x, y);
+    if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN)
+        shell_surface_place_fullscreen_surface(shsurf);
+    else
+        pepper_view_set_position(shsurf->view, x, y);
+
 }
 
 shell_surface_t *
@@ -843,7 +900,7 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
         shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
         shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED)
     {
-        shell_surface_set_position(shsurf, shsurf->saved.x, shsurf->saved.y);
+        pepper_view_set_position(shsurf->view, shsurf->saved.x, shsurf->saved.y);
     }
     else
     {
@@ -1091,11 +1148,11 @@ shell_surface_center_on_output_by_scale(shell_surface_t                 *shsurf,
     x = output->x + (output->w - surface_geom->width  * scale) / 2;
     y = output->y + (output->h - surface_geom->height * scale) / 2;
 
-    shell_surface_set_position(shsurf, x, y);
+    pepper_view_set_position(shsurf->view, x, y);
 }
 
-static void
-shell_surface_map_fullscreen(shell_surface_t *shsurf)
+void
+shell_surface_place_fullscreen_surface(shell_surface_t *shsurf)
 {
     pepper_output_t                     *output;
     const pepper_output_geometry_t      *output_geom;
@@ -1147,20 +1204,25 @@ shell_surface_map_fullscreen(shell_surface_t *shsurf)
 
     /* Place target view */
     shell_surface_center_on_output_by_scale(shsurf, output_geom, &shsurf_geom, scale);
+
+}
+
+static void
+shell_surface_map_fullscreen(shell_surface_t *shsurf)
+{
+    shell_surface_place_fullscreen_surface(shsurf);
+
     pepper_view_map(shsurf->view);
     pepper_view_stack_top(shsurf->view, PEPPER_TRUE /*FIXME*/ );
 }
 
 void
-shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
+shell_surface_set_next_type(shell_surface_t *shsurf, shell_surface_type_t new_type)
 {
-    if (shsurf->type == type )
-        return;
-
-    if (shsurf->next_type == type)
+    if (shsurf->next_type == new_type)
         return ;
 
-    switch (type)
+    switch (new_type)
     {
     case SHELL_SURFACE_TYPE_NONE:
         shsurf->shell_surface_map = NULL;
@@ -1184,12 +1246,12 @@ shell_surface_set_type(shell_surface_t *shsurf, shell_surface_type_t type)
         shsurf->shell_surface_map = shell_surface_map_minimized;
         break;
     default :
-        PEPPER_ERROR("invalid surface type = 0x%x\n", type);
+        PEPPER_ERROR("invalid surface type = 0x%x\n", new_type);
         return ;
     }
 
-    shsurf->next_type = type;
-    shsurf->mapped    = PEPPER_FALSE;
+    shsurf->next_type = new_type;
+    shsurf->type_changed = PEPPER_TRUE;
 }
 
 static void
