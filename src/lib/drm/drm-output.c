@@ -293,6 +293,9 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
     drm_plane_t    *plane;
     int             ret;
 
+    if (output->destroy_pending)
+        return;
+
     if (!output->back)
         drm_output_render(output);
 
@@ -588,6 +591,12 @@ drm_output_destroy(void *o)
     drm_output_t *output = o;
     drm_plane_t  *plane;
 
+    if (output->page_flip_pending || (output->vblank_pending_count > 0))
+    {
+        output->destroy_pending = PEPPER_TRUE;
+        return;
+    }
+
     if (output->render_type == DRM_RENDER_TYPE_PIXMAN)
         fini_pixman_renderer(output);
     else if (output->render_type == DRM_RENDER_TYPE_GL)
@@ -639,9 +648,16 @@ drm_handle_vblank(int fd, unsigned int frame, unsigned int sec, unsigned int use
 
     if (plane->output->vblank_pending_count == 0 && !plane->output->page_flip_pending)
     {
-        ts.tv_sec = sec;
-        ts.tv_nsec = usec * 1000;
-        pepper_output_finish_frame(plane->output->base, &ts);
+        if (plane->output->destroy_pending)
+        {
+            drm_output_destroy(plane->output);
+        }
+        else
+        {
+            ts.tv_sec = sec;
+            ts.tv_nsec = usec * 1000;
+            pepper_output_finish_frame(plane->output->base, &ts);
+        }
     }
 }
 
@@ -661,8 +677,15 @@ drm_handle_page_flip(int fd, unsigned int frame, unsigned int sec, unsigned int 
 
     if (output->vblank_pending_count == 0)
     {
-        ts.tv_sec = sec;
-        ts.tv_nsec = usec * 1000;
-        pepper_output_finish_frame(output->base, &ts);
+        if (output->destroy_pending)
+        {
+            drm_output_destroy(output);
+        }
+        else
+        {
+            ts.tv_sec = sec;
+            ts.tv_nsec = usec * 1000;
+            pepper_output_finish_frame(output->base, &ts);
+        }
     }
 }

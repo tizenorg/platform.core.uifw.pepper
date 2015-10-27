@@ -120,6 +120,7 @@ struct drm_output
     int32_t                 subpixel;
     drmModeModeInfo        *mode;
 
+    pepper_bool_t           destroy_pending;
     pepper_bool_t           page_flip_pending;
     int                     vblank_pending_count;
 
