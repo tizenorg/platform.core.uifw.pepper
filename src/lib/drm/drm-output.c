@@ -307,6 +307,8 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
         ret = drmModePageFlip(output->drm->fd, output->crtc_id, output->back->id,
                               DRM_MODE_PAGE_FLIP_EVENT, output);
         PEPPER_CHECK(ret == 0, , "page flip failed.\n");
+
+        output->page_flip_pending = PEPPER_TRUE;
     }
 
     pepper_list_for_each(plane, &output->drm->plane_list, link)
