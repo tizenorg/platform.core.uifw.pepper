@@ -625,6 +625,8 @@ drm_output_destroy(void *o)
         {
             plane->output = NULL;
             pepper_plane_destroy(plane->base);
+            drmModeSetPlane(output->drm->fd, plane->id, output->crtc_id,
+                            0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
         }
     }
 
