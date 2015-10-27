@@ -156,7 +156,58 @@ assign_fb_plane(drm_output_t *output, pepper_view_t *view)
 static pepper_plane_t *
 assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
 {
-    /* TODO: */
+    drm_plane_t        *plane;
+    pepper_surface_t   *surface;
+    pepper_buffer_t    *buffer;
+    struct wl_resource *resource;
+
+    double              x, y;
+    int                 w, h;
+
+    if (!output->drm->gbm_device)
+        return NULL;
+
+    surface = pepper_view_get_surface(view);
+    if (!surface)
+        return NULL;
+
+    buffer = pepper_surface_get_buffer(surface);
+    if (!buffer)
+        return NULL;
+
+    resource = pepper_buffer_get_resource(buffer);
+    if (!resource)
+        return NULL;
+
+    if (wl_shm_buffer_get(resource))
+        return NULL;
+
+    pepper_list_for_each(plane, &output->drm->plane_list, link)
+    {
+        if (!plane->back && (plane->plane->possible_crtcs & (1 << output->crtc_index)))
+        {
+            plane->back = drm_buffer_create_pepper(output->drm, buffer);
+            PEPPER_CHECK(plane->back, return NULL, "failed to create drm_buffer\n");
+
+            /* set position  */
+            pepper_view_get_position(view, &x, &y);
+            pepper_view_get_size(view, &w, &h);
+            plane->dx = (int)x;
+            plane->dy = (int)y;
+            plane->dw = w;
+            plane->dh = h;
+
+            plane->sx = 0 << 16;
+            plane->sy = 0 << 16;
+            plane->sw = w << 16;
+            plane->sh = h << 16;
+
+            plane->output = output;
+
+            return plane->base;
+        }
+    }
+
     return NULL;
 }
 

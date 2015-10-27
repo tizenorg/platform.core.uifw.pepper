@@ -20,6 +20,8 @@ drm_init_planes(pepper_drm_t *drm)
             free(plane);
             continue;
         }
+        plane->drm = drm;
+        plane->id = plane->plane->plane_id;
 
         pepper_list_insert(drm->plane_list.prev, &plane->link);
     }

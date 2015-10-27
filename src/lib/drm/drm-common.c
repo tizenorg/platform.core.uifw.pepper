@@ -167,8 +167,8 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
     drm->resources = drmModeGetResources(drm->fd);
     PEPPER_CHECK(drm->resources, goto error, "drmModeGetResources() failed.\n");
 
-    drm_init_connectors(drm);
     drm_init_planes(drm);
+    drm_init_connectors(drm);
     udev_device_unref(udev_device);
 
     /* Try to set clock. */
