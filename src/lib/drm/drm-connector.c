@@ -92,7 +92,7 @@ drm_update_connectors(pepper_drm_t *drm)
             /* Disconnected. */
             if (conn->output)
             {
-                drm_output_destroy(conn->output);
+                pepper_output_destroy(conn->output->base);
                 conn->output = NULL;
             }
         }
@@ -109,7 +109,7 @@ void
 drm_connector_destroy(drm_connector_t *conn)
 {
     if (conn->output)
-        drm_output_destroy(conn->output);
+        pepper_output_destroy(conn->output->base);
 
     if (conn->connector)
         drmModeFreeConnector(conn->connector);

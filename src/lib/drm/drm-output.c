@@ -574,7 +574,9 @@ error:
         output->saved_crtc = NULL;
     }
 
-    drm_output_destroy(output);
+    if (output->base)
+        pepper_output_destroy(output->base);
+
     return NULL;
 }
 
