@@ -48,6 +48,7 @@ surface_handle_buffer_release(pepper_event_listener_t *listener,
     pepper_surface_t *surface = data;
     surface->buffer.buffer = NULL;
     pepper_event_listener_remove(listener);
+    pepper_event_listener_remove(surface->buffer.destroy_listener);
 }
 
 static void
@@ -333,8 +334,9 @@ pepper_surface_destroy(pepper_surface_t *surface)
 
     if (surface->buffer.buffer)
     {
-        pepper_buffer_unreference(surface->buffer.buffer);
         pepper_event_listener_remove(surface->buffer.destroy_listener);
+        pepper_event_listener_remove(surface->buffer.release_listener);
+        pepper_buffer_unreference(surface->buffer.buffer);
     }
 
     pixman_region32_fini(&surface->damage_region);
