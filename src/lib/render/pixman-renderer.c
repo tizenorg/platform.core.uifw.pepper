@@ -284,6 +284,7 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
 
         pixman_image_set_transform(ps->image, &trans);
         pixman_image_set_filter(ps->image, filter, NULL, 0);
+        pixman_image_set_clip_region32(target->image, &repaint);
 
         wl_shm_buffer_begin_access(ps->shm_buffer);
         pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
