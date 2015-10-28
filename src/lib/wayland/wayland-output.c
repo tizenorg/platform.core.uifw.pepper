@@ -161,6 +161,16 @@ wayland_output_assign_planes(void *o, const pepper_list_t *view_list)
 }
 
 static void
+wayland_output_start_repaint_loop(void *o)
+{
+    wayland_output_t   *output = o;
+    struct timespec     ts;
+
+    pepper_compositor_get_time(output->conn->pepper, &ts);
+    pepper_output_finish_frame(output->base, &ts);
+}
+
+static void
 wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     wayland_output_t   *output = o;
@@ -219,6 +229,7 @@ static const pepper_output_backend_t wayland_output_backend =
     wayland_output_set_mode,
 
     wayland_output_assign_planes,
+    wayland_output_start_repaint_loop,
     wayland_output_repaint,
     wayland_output_attach_surface,
     wayland_output_flush_surface_damage,

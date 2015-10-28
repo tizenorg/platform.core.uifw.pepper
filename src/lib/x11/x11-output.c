@@ -436,6 +436,16 @@ x11_output_assign_planes(void *o, const pepper_list_t *view_list)
 }
 
 static void
+x11_output_start_repaint_loop(void *o)
+{
+    x11_output_t    *output = o;
+    struct timespec  ts;
+
+    pepper_compositor_get_time(output->connection->compositor, &ts);
+    pepper_output_finish_frame(output->base, &ts);
+}
+
+static void
 x11_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     x11_output_t *output = o;
@@ -518,6 +528,7 @@ static const pepper_output_backend_t x11_output_backend =
     x11_output_set_mode,
 
     x11_output_assign_planes,
+    x11_output_start_repaint_loop,
     x11_output_repaint,
     x11_output_attach_surface,
     x11_output_flush_surface_damage,

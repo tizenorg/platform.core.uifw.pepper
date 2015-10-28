@@ -287,6 +287,22 @@ drm_output_render(drm_output_t *output)
 }
 
 static void
+drm_output_start_repaint_loop(void *o)
+{
+    drm_output_t       *output = o;
+    struct timespec     ts;
+
+    if (output->front && drmModePageFlip(output->drm->fd, output->crtc_id,
+                                         output->front->id, DRM_MODE_PAGE_FLIP_EVENT, output) == 0)
+    {
+        return;
+    }
+
+    pepper_compositor_get_time(output->drm->compositor, &ts);
+    pepper_output_finish_frame(output->base, &ts);
+}
+
+static void
 drm_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     drm_output_t   *output = o;
@@ -377,6 +393,7 @@ struct pepper_output_backend drm_output_backend =
     drm_output_set_mode,
 
     drm_output_assign_planes,
+    drm_output_start_repaint_loop,
     drm_output_repaint,
     drm_output_attach_surface,
     drm_output_flush_surface_damage,

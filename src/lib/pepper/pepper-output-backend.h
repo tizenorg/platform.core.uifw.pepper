@@ -24,6 +24,7 @@ struct pepper_output_backend
     pepper_bool_t   (*set_mode)(void *output, const pepper_output_mode_t *mode);
 
     void            (*assign_planes)(void *output, const pepper_list_t *view_list);
+    void            (*start_repaint_loop)(void *output);
     void            (*repaint)(void *output, const pepper_list_t *plane_list);
     void            (*attach_surface)(void *output, pepper_surface_t *surface, int *w, int *h);
     void            (*flush_surface_damage)(void *output, pepper_surface_t *surface);

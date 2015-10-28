@@ -168,6 +168,17 @@ fbdev_output_assign_planes(void *o, const pepper_list_t *view_list)
 }
 
 static void
+fbdev_output_start_repaint_loop(void *o)
+{
+    fbdev_output_t     *output = o;
+    struct timespec     ts;
+
+    pepper_compositor_get_time(output->fbdev->compositor, &ts);
+    pepper_output_finish_frame(output->base, &ts);
+
+}
+
+static void
 fbdev_output_repaint(void *o, const pepper_list_t *plane_list)
 {
     fbdev_output_t *output = (fbdev_output_t *)o;
@@ -221,6 +232,7 @@ struct pepper_output_backend fbdev_output_backend =
     fbdev_output_set_mode,
 
     fbdev_output_assign_planes,
+    fbdev_output_start_repaint_loop,
     fbdev_output_repaint,
     fbdev_output_attach_surface,
     fbdev_output_flush_surface_damage,

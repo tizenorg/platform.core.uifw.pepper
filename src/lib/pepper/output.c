@@ -156,12 +156,7 @@ static void
 idle_repaint(void *data)
 {
     pepper_output_t *output = data;
-
-    if (!output->frame.pending)
-    {
-        /* We can repaint a frame immediately if it is not in pending state. */
-        output_repaint(output);
-    }
+    output->backend->start_repaint_loop(output->data);
 }
 
 void
@@ -172,10 +167,14 @@ pepper_output_schedule_repaint(pepper_output_t *output)
     if (output->frame.scheduled)
         return;
 
+    output->frame.scheduled = PEPPER_TRUE;
+
+    if (output->frame.pending)
+        return;
+
     /* Schedule on the next idle loop so that it can accumulate surface commits. */
     loop = wl_display_get_event_loop(output->compositor->display);
     wl_event_loop_add_idle(loop, idle_repaint, output);
-    output->frame.scheduled = PEPPER_TRUE;
 }
 
 PEPPER_API void
@@ -196,7 +195,6 @@ pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
     else
         pepper_compositor_get_time(output->compositor, &output->frame.time);
 
-    /* TODO: Better repaint scheduling by putting a delay before repaint. */
     if (output->frame.scheduled)
         output_repaint(output);
 }
