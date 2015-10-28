@@ -256,7 +256,6 @@ struct gl_surface_state
         int                     pitch;
     } shm;
 
-    pepper_event_listener_t *buffer_destroy_listener;
     pepper_event_listener_t *surface_destroy_listener;
 };
 
@@ -416,19 +415,6 @@ surface_state_handle_surface_destroy(pepper_event_listener_t    *listener,
     free(state);
 }
 
-static void
-surface_state_handle_buffer_destroy(pepper_event_listener_t    *listener,
-                                    pepper_object_t            *object,
-                                    uint32_t                    id,
-                                    void                       *info,
-                                    void                       *data)
-{
-    gl_surface_state_t *state = data;
-    surface_state_release_buffer(state);
-    pepper_event_listener_remove(state->buffer_destroy_listener);
-    state->buffer_destroy_listener = NULL;
-}
-
 static gl_surface_state_t *
 get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
 {
@@ -481,11 +467,7 @@ surface_state_ensure_textures(gl_surface_state_t *state, int num_planes)
             glBindTexture(GL_TEXTURE_2D, state->textures[i]);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        }
-        else if (state->textures[i] != 0 && i >= num_planes)
-        {
-            glDeleteTextures(1, &state->textures[i]);
-            state->textures[i] = 0;
+            state->shm.need_full_upload = PEPPER_TRUE;
         }
     }
 
@@ -581,16 +563,15 @@ gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surfac
     gl_surface_state_t *state = get_surface_state(renderer, surface);
     pepper_buffer_t    *buffer = pepper_surface_get_buffer(surface);
 
+    surface_state_destroy_images(state);
+
     if (!buffer)
     {
         *w = 0;
         *h = 0;
 
-        surface_state_release_buffer(state);
-        goto done;
+        return PEPPER_TRUE;
     }
-
-    surface_state_destroy_images(state);
 
     if (surface_state_attach_shm(state, buffer))
         goto done;
@@ -603,18 +584,6 @@ gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surfac
     return PEPPER_FALSE;
 
 done:
-
-    if (state->buffer_destroy_listener)
-    {
-        pepper_event_listener_remove(state->buffer_destroy_listener);
-        state->buffer_destroy_listener = NULL;
-    }
-
-    if (buffer)
-        state->buffer_destroy_listener =
-            pepper_object_add_event_listener((pepper_object_t *)buffer,
-                                             PEPPER_EVENT_OBJECT_DESTROY, 0,
-                                             surface_state_handle_buffer_destroy, state);
 
     /* Output buffer size info. */
     *w = state->buffer_width;
