@@ -1,6 +1,7 @@
 #ifndef DRM_INTERNAL_H
 #define DRM_INTERNAL_H
 
+#include <config.h>
 #include <pixman.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
@@ -90,7 +91,8 @@ struct drm_buffer
     struct gbm_surface      *surface;
     struct gbm_bo           *bo;
     void                    *map;
-    pepper_render_target_t  *pixman_render_target;
+
+    pixman_image_t          *image;
 };
 
 drm_buffer_t *
@@ -133,7 +135,10 @@ struct drm_output
     pepper_render_target_t *render_target;
 
     /* pixman */
+    pepper_bool_t           use_shadow;
+    pixman_image_t         *shadow_image;
     drm_buffer_t           *fb[2];
+    pepper_render_target_t *fb_target[2];
     int                     back_fb_index;
     pixman_region32_t       previous_damage;
 

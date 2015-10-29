@@ -51,12 +51,8 @@ drm_buffer_create_dumb(pepper_drm_t *drm, uint32_t w, uint32_t h)
     buffer->map = mmap(0, buffer->size, PROT_WRITE, MAP_SHARED, drm->fd, map_arg.offset);
     PEPPER_CHECK(buffer->map != MAP_FAILED, goto error, "mmap() failed.\n");
 
-    buffer->pixman_render_target = pepper_pixman_renderer_create_target(PEPPER_FORMAT_XRGB8888,
-                                                                        buffer->map,
-                                                                        buffer->stride,
-                                                                        buffer->w, buffer->h);
-    PEPPER_CHECK(buffer->pixman_render_target, goto error,
-                 "pepper_pixman_render_create_target() failed.\n");
+    buffer->image = pixman_image_create_bits(PIXMAN_x8r8g8b8, w, h, buffer->map, buffer->stride);
+    PEPPER_CHECK(buffer->image, goto error, "pixman_image_create_bits() failed.\n");
 
     return buffer;
 
@@ -75,6 +71,9 @@ error:
         destroy_arg.handle = buffer->handle;
         drmIoctl(drm->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_arg);
     }
+
+    if (buffer->image)
+        pixman_image_unref(buffer->image);
 
     free(buffer);
     return NULL;
@@ -194,8 +193,8 @@ drm_buffer_destroy(drm_buffer_t *buffer)
     {
         struct drm_mode_destroy_dumb destroy_arg;
 
-        if (buffer->pixman_render_target)
-            pepper_render_target_destroy(buffer->pixman_render_target);
+        if (buffer->image)
+            pixman_image_unref(buffer->image);
 
         munmap(buffer->map, buffer->size);
 

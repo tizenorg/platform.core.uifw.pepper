@@ -248,42 +248,68 @@ drm_output_assign_planes(void *o, const pepper_list_t *view_list)
 }
 
 static void
-drm_output_render(drm_output_t *output)
+drm_output_render_gl(drm_output_t *output)
+{
+    const pepper_list_t *render_list = pepper_plane_get_render_list(output->primary_plane);
+    pixman_region32_t   *damage = pepper_plane_get_damage_region(output->primary_plane);
+    struct gbm_bo       *bo;
+
+    pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+
+    bo = gbm_surface_lock_front_buffer(output->gbm_surface);
+    PEPPER_CHECK(bo, return, "gbm_surface_lock_front_buffer() failed.\n");
+
+    output->back = gbm_bo_get_user_data(bo);
+
+    if (!output->back)
+        output->back = drm_buffer_create_gbm(output->drm, output->gbm_surface, bo);
+
+    pepper_plane_clear_damage_region(output->primary_plane);
+}
+
+static void
+drm_output_render_pixman(drm_output_t *output)
 {
     const pepper_list_t *render_list = pepper_plane_get_render_list(output->primary_plane);
     pixman_region32_t   *damage = pepper_plane_get_damage_region(output->primary_plane);
     pixman_region32_t    total_damage;
 
-    if (output->render_type == DRM_RENDER_TYPE_PIXMAN)
-    {
-        pixman_region32_init(&total_damage);
-        pixman_region32_union(&total_damage, damage, &output->previous_damage);
-        pixman_region32_copy(&output->previous_damage, damage);
-        damage = &total_damage;
+    output->back_fb_index ^= 1;
+    output->back = output->fb[output->back_fb_index];
 
-        output->back_fb_index ^= 1;
-        output->render_target = output->fb[output->back_fb_index]->pixman_render_target;
+    pixman_region32_init(&total_damage);
+    pixman_region32_union(&total_damage, damage, &output->previous_damage);
+    pixman_region32_copy(&output->previous_damage, damage);
+
+    if (output->use_shadow)
+    {
+        pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+
+        /* Copy shadow image to the back frame buffer. */
+        pixman_image_set_clip_region32(output->back->image, &total_damage);
+        pixman_image_composite32(PIXMAN_OP_SRC,
+                                 output->shadow_image, NULL, output->back->image,
+                                 0, 0, 0, 0, 0, 0,
+                                 output->back->w, output->back->h);
+    }
+    else
+    {
+        output->render_target = output->fb_target[output->back_fb_index];
+        pepper_renderer_set_target(output->renderer, output->fb_target[output->back_fb_index]);
+        pepper_renderer_repaint_output(output->renderer, output->base, render_list, &total_damage);
     }
 
-    pepper_renderer_set_target(output->renderer, output->render_target);
-    pepper_renderer_repaint_output(output->renderer, output->base, render_list, damage);
+    pixman_region32_fini(&total_damage);
     pepper_plane_clear_damage_region(output->primary_plane);
+}
 
+static void
+drm_output_render(drm_output_t *output)
+{
     if (output->render_type == DRM_RENDER_TYPE_PIXMAN)
-    {
-        output->back = output->fb[output->back_fb_index];
-        pixman_region32_fini(&total_damage);
-    }
+        drm_output_render_pixman(output);
     else if (output->render_type == DRM_RENDER_TYPE_GL)
-    {
-        struct gbm_bo *bo = gbm_surface_lock_front_buffer(output->gbm_surface);
-        PEPPER_CHECK(bo, return, "gbm_surface_lock_front_buffer() failed.\n");
-
-        output->back = gbm_bo_get_user_data(bo);
-
-        if (!output->back)
-            output->back = drm_buffer_create_gbm(output->drm, output->gbm_surface, bo);
-    }
+        drm_output_render_gl(output);
 }
 
 static void
@@ -293,7 +319,7 @@ drm_output_start_repaint_loop(void *o)
     struct timespec     ts;
 
     if (output->front && drmModePageFlip(output->drm->fd, output->crtc_id,
-                                         output->front->id, DRM_MODE_PAGE_FLIP_EVENT, output) == 0)
+                                         output->front->id, DRM_MODE_PAGE_FLIP_EVENT, output) >= 0)
     {
         return;
     }
@@ -432,13 +458,28 @@ fini_pixman_renderer(drm_output_t *output)
 {
     int i;
 
+    if (output->use_shadow)
+    {
+        if (output->shadow_image)
+            pixman_image_unref(output->shadow_image);
+
+        if (output->render_target)
+            pepper_render_target_destroy(output->render_target);
+    }
+
+    output->shadow_image = NULL;
+    output->render_target = NULL;
+
     for (i = 0; i < 2; i++)
     {
         if (output->fb[i])
-        {
             drm_buffer_destroy(output->fb[i]);
-            output->fb[i] = NULL;
-        }
+
+        if (output->fb_target[i])
+            pepper_render_target_destroy(output->fb_target[i]);
+
+        output->fb[i] = NULL;
+        output->fb_target[i] = NULL;
     }
 
     pixman_region32_fini(&output->previous_damage);
@@ -470,6 +511,26 @@ init_pixman_renderer(drm_output_t *output)
 
     pixman_region32_init(&output->previous_damage);
     output->render_type = DRM_RENDER_TYPE_PIXMAN;
+
+    if (output->use_shadow)
+    {
+        output->shadow_image = pixman_image_create_bits(PIXMAN_x8r8g8b8, w, h, NULL, 0);
+        PEPPER_CHECK(output->shadow_image, goto error, "pixman_image_create_bits() failed.\n");
+
+        output->render_target = pepper_pixman_renderer_create_target_for_image(output->shadow_image);
+        PEPPER_CHECK(output->render_target, goto error, "pixman target creation failed.\n");
+
+        pepper_renderer_set_target(output->renderer, output->render_target);
+    }
+    else
+    {
+        for (i = 0; i < 2; i++)
+        {
+            output->fb_target[i] =
+                pepper_pixman_renderer_create_target_for_image(output->fb[i]->image);
+            PEPPER_CHECK(output->fb_target[i], goto error, "pixman target creation failed.\n");
+        }
+    }
 
     return;
 
@@ -524,6 +585,7 @@ init_gl_renderer(drm_output_t *output)
     PEPPER_CHECK(output->render_target, goto error, "pepper_gl_renderer_create_target() failed.\n");
     output->render_type = DRM_RENDER_TYPE_GL;
 
+    pepper_renderer_set_target(output->renderer, output->render_target);
     return;
 
 error:
@@ -537,6 +599,7 @@ drm_output_create(drm_connector_t *conn)
     drm_output_t   *output;
     drm_plane_t    *plane, *tmp;
     const char     *render_env = getenv("PEPPER_DRM_RENDERER");
+    const char     *shadow_env = getenv("PEPPER_DRM_USE_SHADOW");
 
     PEPPER_CHECK(conn->output == NULL, return NULL, "The connector already has an output.\n");
 
@@ -559,7 +622,11 @@ drm_output_create(drm_connector_t *conn)
 
     if (!output->renderer)
     {
-        /* Pixman is default. */
+        if (shadow_env && strcmp(shadow_env, "0") == 0)
+            output->use_shadow = PEPPER_FALSE;
+        else
+            output->use_shadow = PEPPER_TRUE;
+
         init_pixman_renderer(output);
         PEPPER_CHECK(output->renderer, goto error, "Failed to initialize renderer.\n");
     }
