@@ -7,8 +7,9 @@
 #include "pepper-output-backend.h"
 #include "pepper-input-backend.h"
 
-#define PEPPER_OBJECT_BUCKET_BITS   5
-#define PEPPER_MAX_OUTPUT_COUNT     32
+#define PEPPER_OBJECT_BUCKET_BITS       5
+#define PEPPER_MAX_OUTPUT_COUNT         32
+#define PEPPER_OUTPUT_MAX_TICK_COUNT    10
 
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
@@ -101,6 +102,13 @@ struct pepper_output
         pepper_bool_t           scheduled;
         pepper_bool_t           pending;
         struct timespec         time;
+        uint32_t                count;
+
+        /* For FPS measuring */
+        pepper_bool_t           print_fps;
+        uint32_t                ticks[PEPPER_OUTPUT_MAX_TICK_COUNT];
+        int                     tick_index;
+        uint32_t                total_time;
     } frame;
 
     pepper_list_t               plane_list;

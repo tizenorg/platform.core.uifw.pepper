@@ -188,12 +188,42 @@ pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *regi
 PEPPER_API void
 pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
 {
+    struct timespec time;
+
     output->frame.pending = PEPPER_FALSE;
 
     if (ts)
-        output->frame.time = *ts;
+        time = *ts;
     else
-        pepper_compositor_get_time(output->compositor, &output->frame.time);
+        pepper_compositor_get_time(output->compositor, &time);
+
+    if (output->frame.print_fps)
+    {
+        if (output->frame.count > 0)
+        {
+            uint32_t tick = (time.tv_sec - output->frame.time.tv_sec) * 1000 +
+                (time.tv_nsec - output->frame.time.tv_nsec) / 1000000;
+            uint32_t tick_count;
+
+            output->frame.total_time += tick;
+            output->frame.total_time -= output->frame.ticks[output->frame.tick_index];
+            output->frame.ticks[output->frame.tick_index] = tick;
+
+            if (++output->frame.tick_index == PEPPER_OUTPUT_MAX_TICK_COUNT)
+                output->frame.tick_index = 0;
+
+            if (output->frame.count < PEPPER_OUTPUT_MAX_TICK_COUNT)
+                tick_count = output->frame.count;
+            else
+                tick_count = PEPPER_OUTPUT_MAX_TICK_COUNT;
+
+            PEPPER_TRACE("%s FPS : %.2f\n", output->name,
+                         (double)(tick_count * 1000) / (double)output->frame.total_time);
+        }
+    }
+
+    output->frame.count++;
+    output->frame.time = time;
 
     if (output->frame.scheduled)
         output_repaint(output);
@@ -218,6 +248,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 {
     pepper_output_t    *output;
     uint32_t            id;
+    const char         *str;
 
     PEPPER_CHECK(name, return NULL, "Output name must be given.\n");
 
@@ -273,10 +304,14 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     output->geometry.h = output->current_mode.h;
 
     pepper_list_insert(&compositor->output_list, &output->link);
-
     pepper_list_init(&output->plane_list);
-    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD, output);
 
+    /* FPS */
+    str = getenv("PEPPER_DEBUG_FPS");
+    if (str && atoi(str) != 0)
+        output->frame.print_fps = PEPPER_TRUE;
+
+    pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD, output);
     return output;
 }
 
