@@ -368,10 +368,11 @@ PEPPER_API void
 pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *view,
                            uint32_t time, double x, double y)
 {
-    struct wl_resource *resource;
-    wl_fixed_t          fx = wl_fixed_from_double(x);
-    wl_fixed_t          fy = wl_fixed_from_double(y);
-    struct wl_client   *client;
+    struct wl_resource     *resource;
+    wl_fixed_t              fx = wl_fixed_from_double(x);
+    wl_fixed_t              fy = wl_fixed_from_double(y);
+    struct wl_client       *client;
+    pepper_input_event_t    event;
 
     if (!view || !view->surface || !view->surface->resource)
         return;
@@ -383,15 +384,22 @@ pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *view,
         if (wl_resource_get_client(resource) == client)
             wl_pointer_send_motion(resource, time, fx, fy);
     }
+
+    event.id = PEPPER_EVENT_POINTER_MOTION;
+    event.time = time;
+    event.x = x;
+    event.y = y;
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_POINTER_MOTION, &event);
 }
 
 PEPPER_API void
 pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *view,
                            uint32_t time, uint32_t button, uint32_t state)
 {
-    struct wl_resource *resource;
-    struct wl_client   *client;
-    uint32_t            serial;
+    struct wl_resource     *resource;
+    struct wl_client       *client;
+    uint32_t                serial;
+    pepper_input_event_t    event;
 
     if (!view || !view->surface || !view->surface->resource)
         return;
@@ -404,15 +412,22 @@ pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *view,
         if (wl_resource_get_client(resource) == client)
             wl_pointer_send_button(resource, serial, time, button, state);
     }
+
+    event.id = PEPPER_EVENT_POINTER_BUTTON;
+    event.time = time;
+    event.button = button;
+    event.state = state;
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_POINTER_BUTTON, &event);
 }
 
 PEPPER_API void
 pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *view,
                          uint32_t time, uint32_t axis, double value)
 {
-    struct wl_resource *resource;
-    wl_fixed_t          v = wl_fixed_from_double(value);
-    struct wl_client   *client;
+    struct wl_resource     *resource;
+    wl_fixed_t              v = wl_fixed_from_double(value);
+    struct wl_client       *client;
+    pepper_input_event_t    event;
 
     if (!view || !view->surface || !view->surface->resource)
         return;
@@ -424,6 +439,12 @@ pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *view,
         if (wl_resource_get_client(resource) == client)
             wl_pointer_send_axis(resource, time, axis, v);
     }
+
+    event.id = PEPPER_EVENT_POINTER_AXIS;
+    event.time = time;
+    event.axis = axis;
+    event.value = value;
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_POINTER_AXIS, &event);
 }
 
 PEPPER_API void

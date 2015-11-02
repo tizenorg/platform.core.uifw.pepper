@@ -392,9 +392,10 @@ PEPPER_API void
 pepper_keyboard_send_key(pepper_keyboard_t *keyboard, pepper_view_t *view,
                          uint32_t time, uint32_t key, uint32_t state)
 {
-    struct wl_resource *resource;
-    struct wl_client   *client;
-    uint32_t            serial;
+    struct wl_resource     *resource;
+    struct wl_client       *client;
+    uint32_t                serial;
+    pepper_input_event_t    event;
 
     if (!view || !view->surface || !view->surface->resource)
         return;
@@ -407,6 +408,12 @@ pepper_keyboard_send_key(pepper_keyboard_t *keyboard, pepper_view_t *view,
         if (wl_resource_get_client(resource) == client)
             wl_keyboard_send_key(resource, serial, time, key, state);
     }
+
+    event.id = PEPPER_EVENT_KEYBOARD_KEY;
+    event.time = time;
+    event.key = key;
+    event.state = state;
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_KEYBOARD_KEY, &event);
 }
 
 PEPPER_API void

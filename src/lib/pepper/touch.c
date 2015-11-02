@@ -281,6 +281,7 @@ pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,
     wl_fixed_t              fx = wl_fixed_from_double(x);
     wl_fixed_t              fy = wl_fixed_from_double(y);
     pepper_touch_point_t   *point = get_touch_point(touch, id);
+    pepper_input_event_t    event;
 
     if (!point || !view || !view->surface || !view->surface->resource)
         return;
@@ -292,6 +293,12 @@ pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,
         if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
             wl_touch_send_down(resource, point->focus_serial, time, surface_resource, id, fx, fy);
     }
+
+    event.id = PEPPER_EVENT_TOUCH_DOWN;
+    event.time = time;
+    event.x = x;
+    event.y = y;
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_DOWN, &event);
 }
 
 PEPPER_API void
@@ -300,6 +307,7 @@ pepper_touch_send_up(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, 
     struct wl_resource     *resource;
     uint32_t                serial;
     pepper_touch_point_t   *point = get_touch_point(touch, id);
+    pepper_input_event_t    event;
 
     if (!point || !view || !view->surface || !view->surface->resource)
         return;
@@ -313,6 +321,10 @@ pepper_touch_send_up(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, 
         if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
             wl_touch_send_up(resource, serial, time, id);
     }
+
+    event.id = PEPPER_EVENT_TOUCH_UP;
+    event.time = time;
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_UP, &event);
 }
 
 PEPPER_API void
@@ -323,6 +335,7 @@ pepper_touch_send_motion(pepper_touch_t *touch, pepper_view_t *view, uint32_t ti
     wl_fixed_t              fx = wl_fixed_from_double(x);
     wl_fixed_t              fy = wl_fixed_from_double(y);
     pepper_touch_point_t   *point = get_touch_point(touch, id);
+    pepper_input_event_t    event;
 
     if (!point || !view || !view->surface || !view->surface->resource)
         return;
@@ -334,6 +347,12 @@ pepper_touch_send_motion(pepper_touch_t *touch, pepper_view_t *view, uint32_t ti
         if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
             wl_touch_send_motion(resource, time, id, fx, fy);
     }
+
+    event.id = PEPPER_EVENT_TOUCH_MOTION;
+    event.time = time;
+    event.x = x;
+    event.y = y;
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_MOTION, &event);
 }
 
 PEPPER_API void
@@ -343,6 +362,8 @@ pepper_touch_send_frame(pepper_touch_t *touch, pepper_view_t *view)
 
     wl_resource_for_each(resource, &touch->resource_list)
         wl_touch_send_frame(resource);
+
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_FRAME, NULL);
 }
 
 PEPPER_API void
@@ -352,6 +373,8 @@ pepper_touch_send_cancel(pepper_touch_t *touch, pepper_view_t *view)
 
     wl_resource_for_each(resource, &touch->resource_list)
         wl_touch_send_cancel(resource);
+
+    pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_CANCEL, NULL);
 }
 
 PEPPER_API void
