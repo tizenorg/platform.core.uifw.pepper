@@ -219,15 +219,26 @@ pepper_touch_remove_point(pepper_touch_t *touch, uint32_t id)
 }
 
 PEPPER_API void
-pepper_touch_point_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus)
+pepper_touch_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus)
 {
     pepper_touch_point_t *point = get_touch_point(touch, id);
-    PEPPER_CHECK(point, return, "Touch point %d does not exist.\n", id);
-    touch_point_set_focus(point, focus);
+
+    if (focus)
+    {
+        if (!point)
+            pepper_touch_add_point(touch, id, 0, 0);
+
+        touch_point_set_focus(get_touch_point(touch, id), focus);
+    }
+    else
+    {
+        if (point)
+            pepper_touch_remove_point(touch, id);
+    }
 }
 
 PEPPER_API pepper_view_t *
-pepper_touch_point_get_focus(pepper_touch_t *touch, uint32_t id)
+pepper_touch_get_focus(pepper_touch_t *touch, uint32_t id)
 {
     pepper_touch_point_t *point = get_touch_point(touch, id);
     PEPPER_CHECK(point, return NULL, "Touch point %d does not exist.\n", id);
