@@ -323,27 +323,27 @@ pepper_pointer_get_focus(pepper_pointer_t *pointer)
 }
 
 PEPPER_API void
-pepper_pointer_send_leave(pepper_pointer_t *pointer)
+pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *view)
 {
     struct wl_resource *resource;
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(pointer->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
     serial = wl_display_next_serial(pointer->seat->compositor->display);
 
     wl_resource_for_each(resource, &pointer->resource_list)
     {
         if (wl_resource_get_client(resource) == client)
-            wl_pointer_send_leave(resource, serial, pointer->focus->surface->resource);
+            wl_pointer_send_leave(resource, serial, view->surface->resource);
     }
 }
 
 PEPPER_API void
-pepper_pointer_send_enter(pepper_pointer_t *pointer, double x, double y)
+pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *view, double x, double y)
 {
     struct wl_resource *resource;
     wl_fixed_t          fx = wl_fixed_from_double(x);
@@ -351,31 +351,32 @@ pepper_pointer_send_enter(pepper_pointer_t *pointer, double x, double y)
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(pointer->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
     serial = wl_display_next_serial(pointer->seat->compositor->display);
 
     wl_resource_for_each(resource, &pointer->resource_list)
     {
         if (wl_resource_get_client(resource) == client)
-            wl_pointer_send_enter(resource, serial, pointer->focus->surface->resource, fx, fy);
+            wl_pointer_send_enter(resource, serial, view->surface->resource, fx, fy);
     }
 }
 
 PEPPER_API void
-pepper_pointer_send_motion(pepper_pointer_t *pointer, uint32_t time, double x, double y)
+pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *view,
+                           uint32_t time, double x, double y)
 {
     struct wl_resource *resource;
     wl_fixed_t          fx = wl_fixed_from_double(x);
     wl_fixed_t          fy = wl_fixed_from_double(y);
     struct wl_client   *client;
 
-    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(pointer->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
 
     wl_resource_for_each(resource, &pointer->resource_list)
     {
@@ -385,16 +386,17 @@ pepper_pointer_send_motion(pepper_pointer_t *pointer, uint32_t time, double x, d
 }
 
 PEPPER_API void
-pepper_pointer_send_button(pepper_pointer_t *pointer, uint32_t time, uint32_t button, uint32_t state)
+pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *view,
+                           uint32_t time, uint32_t button, uint32_t state)
 {
     struct wl_resource *resource;
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(pointer->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
     serial = wl_display_next_serial(pointer->seat->compositor->display);
 
     wl_resource_for_each(resource, &pointer->resource_list)
@@ -405,16 +407,17 @@ pepper_pointer_send_button(pepper_pointer_t *pointer, uint32_t time, uint32_t bu
 }
 
 PEPPER_API void
-pepper_pointer_send_axis(pepper_pointer_t *pointer, uint32_t time, uint32_t axis, double value)
+pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *view,
+                         uint32_t time, uint32_t axis, double value)
 {
     struct wl_resource *resource;
     wl_fixed_t          v = wl_fixed_from_double(value);
     struct wl_client   *client;
 
-    if (!pointer->focus || !pointer->focus->surface || !pointer->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(pointer->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
 
     wl_resource_for_each(resource, &pointer->resource_list)
     {

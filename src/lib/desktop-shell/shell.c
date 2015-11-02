@@ -103,15 +103,16 @@ default_pointer_grab_motion(pepper_pointer_t *pointer, void *data, uint32_t time
     double               vx, vy;
     pepper_compositor_t *compositor = pepper_pointer_get_compositor(pointer);
     pepper_view_t       *view = pepper_compositor_pick_view(compositor, x, y, &vx, &vy);
+    pepper_view_t       *focus = pepper_pointer_get_focus(pointer);
 
-    if (pepper_pointer_get_focus(pointer) != view)
+    if (focus != view)
     {
-        pepper_pointer_send_leave(pointer);
+        pepper_pointer_send_leave(pointer, focus);
         pepper_pointer_set_focus(pointer, view);
-        pepper_pointer_send_enter(pointer, vx, vy);
+        pepper_pointer_send_enter(pointer, view, vx, vy);
     }
 
-    pepper_pointer_send_motion(pointer, time, vx, vy);
+    pepper_pointer_send_motion(pointer, view, time, vx, vy);
 }
 
 static void
@@ -120,30 +121,31 @@ default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
 {
     pepper_seat_t       *seat = pepper_pointer_get_seat(pointer);
     pepper_keyboard_t   *keyboard = pepper_seat_get_keyboard(seat);
+    pepper_view_t       *pointer_focus = pepper_pointer_get_focus(pointer);
 
     if (keyboard && state == PEPPER_BUTTON_STATE_PRESSED)
     {
-        pepper_view_t *focus = pepper_pointer_get_focus(pointer);
+        pepper_view_t *keyboard_focus = pepper_keyboard_get_focus(keyboard);
 
-        if (pepper_keyboard_get_focus(keyboard) != focus)
+        if (keyboard_focus != pointer_focus)
         {
-            pepper_keyboard_send_leave(keyboard);
-            pepper_keyboard_set_focus(keyboard, focus);
-            pepper_keyboard_send_enter(keyboard);
+            pepper_keyboard_send_leave(keyboard, keyboard_focus);
+            pepper_keyboard_set_focus(keyboard, pointer_focus);
+            pepper_keyboard_send_enter(keyboard, pointer_focus);
         }
 
-        if (focus)
-            pepper_view_stack_top(focus, PEPPER_FALSE);
+        if (pointer_focus)
+            pepper_view_stack_top(pointer_focus, PEPPER_FALSE);
     }
 
-    pepper_pointer_send_button(pointer, time, button, state);
+    pepper_pointer_send_button(pointer, pointer_focus, time, button, state);
 }
 
 static void
 default_pointer_grab_axis(pepper_pointer_t *pointer, void *data,
                           uint32_t time, uint32_t axis, double value)
 {
-    pepper_pointer_send_axis(pointer, time, axis, value);
+    pepper_pointer_send_axis(pointer, pepper_pointer_get_focus(pointer), time, axis, value);
 }
 
 static void
@@ -179,14 +181,15 @@ static void
 default_keyboard_grab_key(pepper_keyboard_t *keyboard, void *data,
                           uint32_t time, uint32_t key, uint32_t state)
 {
-    pepper_keyboard_send_key(keyboard, time, key, state);
+    pepper_keyboard_send_key(keyboard, pepper_keyboard_get_focus(keyboard), time, key, state);
 }
 
 static void
 default_keyboard_grab_modifiers(pepper_keyboard_t *keyboard, void *data, uint32_t mods_depressed,
                           uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
-    pepper_keyboard_send_modifiers(keyboard, mods_depressed, mods_latched, mods_locked, group);
+    pepper_keyboard_send_modifiers(keyboard, pepper_keyboard_get_focus(keyboard),
+                                   mods_depressed, mods_latched, mods_locked, group);
 }
 
 static void

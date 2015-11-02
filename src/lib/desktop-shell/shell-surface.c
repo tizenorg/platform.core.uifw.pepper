@@ -828,11 +828,12 @@ shell_surface_map_toplevel(shell_surface_t *shsurf)
                 keyboard = pepper_seat_get_keyboard(shseat->seat);
                 if (keyboard)
                 {
-                    if (pepper_keyboard_get_focus(keyboard) != shsurf->view)
+                    pepper_view_t *focus = pepper_keyboard_get_focus(keyboard);
+                    if ( focus != shsurf->view)
                     {
-                        pepper_keyboard_send_leave(keyboard);
+                        pepper_keyboard_send_leave(keyboard, focus);
                         pepper_keyboard_set_focus(keyboard, shsurf->view);
-                        pepper_keyboard_send_enter(keyboard);
+                        pepper_keyboard_send_enter(keyboard, shsurf->view);
                     }
                 }
             }
@@ -849,15 +850,16 @@ pointer_popup_grab_motion(pepper_pointer_t *pointer, void *data,
     double               vx, vy;
     pepper_compositor_t *compositor = pepper_pointer_get_compositor(pointer);
     pepper_view_t       *view = pepper_compositor_pick_view(compositor, x, y, &vx, &vy);
+    pepper_view_t       *focus = pepper_pointer_get_focus(pointer);
 
-    if (pepper_pointer_get_focus(pointer) != view)
+    if (focus != view)
     {
-        pepper_pointer_send_leave(pointer);
+        pepper_pointer_send_leave(pointer, focus);
         pepper_pointer_set_focus(pointer, view);
-        pepper_pointer_send_enter(pointer, vx, vy);
+        pepper_pointer_send_enter(pointer, view, vx, vy);
     }
 
-    pepper_pointer_send_motion(pointer, time, vx, vy);
+    pepper_pointer_send_motion(pointer, view, time, vx, vy);
 }
 
 static struct wl_client *
@@ -892,7 +894,7 @@ pointer_popup_grab_button(pepper_pointer_t *pointer, void *data,
 
     if (client == shsurf->client)
     {
-        pepper_pointer_send_button(pointer, time, button, state);
+        pepper_pointer_send_button(pointer, focus, time, button, state);
     }
     else if (shsurf->popup.button_up)
     {

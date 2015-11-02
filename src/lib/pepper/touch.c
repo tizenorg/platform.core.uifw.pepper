@@ -252,19 +252,20 @@ pepper_touch_point_get_position(pepper_touch_t *touch, uint32_t id, double *x, d
 }
 
 PEPPER_API void
-pepper_touch_send_down(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y)
+pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,
+                       uint32_t time, uint32_t id, double x, double y)
 {
     struct wl_resource     *resource;
     wl_fixed_t              fx = wl_fixed_from_double(x);
     wl_fixed_t              fy = wl_fixed_from_double(y);
     pepper_touch_point_t   *point = get_touch_point(touch, id);
 
-    if (!point || !point->focus || !point->focus->surface || !point->focus->surface->resource)
+    if (!point || !view || !view->surface || !view->surface->resource)
         return;
 
     wl_resource_for_each(resource, &touch->resource_list)
     {
-        struct wl_resource *surface_resource = point->focus->surface->resource;
+        struct wl_resource *surface_resource = view->surface->resource;
 
         if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
             wl_touch_send_down(resource, point->focus_serial, time, surface_resource, id, fx, fy);
@@ -272,20 +273,20 @@ pepper_touch_send_down(pepper_touch_t *touch, uint32_t time, uint32_t id, double
 }
 
 PEPPER_API void
-pepper_touch_send_up(pepper_touch_t *touch, uint32_t time, uint32_t id)
+pepper_touch_send_up(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, uint32_t id)
 {
     struct wl_resource     *resource;
     uint32_t                serial;
     pepper_touch_point_t   *point = get_touch_point(touch, id);
 
-    if (!point || !point->focus || !point->focus->surface || !point->focus->surface->resource)
+    if (!point || !view || !view->surface || !view->surface->resource)
         return;
 
     serial = wl_display_next_serial(touch->seat->compositor->display);
 
     wl_resource_for_each(resource, &touch->resource_list)
     {
-        struct wl_resource *surface_resource = point->focus->surface->resource;
+        struct wl_resource *surface_resource = view->surface->resource;
 
         if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
             wl_touch_send_up(resource, serial, time, id);
@@ -293,7 +294,7 @@ pepper_touch_send_up(pepper_touch_t *touch, uint32_t time, uint32_t id)
 }
 
 PEPPER_API void
-pepper_touch_send_motion(pepper_touch_t *touch, uint32_t time, uint32_t id, double x, double y)
+pepper_touch_send_motion(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, uint32_t id, double x, double y)
 {
 
     struct wl_resource     *resource;
@@ -301,12 +302,12 @@ pepper_touch_send_motion(pepper_touch_t *touch, uint32_t time, uint32_t id, doub
     wl_fixed_t              fy = wl_fixed_from_double(y);
     pepper_touch_point_t   *point = get_touch_point(touch, id);
 
-    if (!point || !point->focus || !point->focus->surface || !point->focus->surface->resource)
+    if (!point || !view || !view->surface || !view->surface->resource)
         return;
 
     wl_resource_for_each(resource, &touch->resource_list)
     {
-        struct wl_resource *surface_resource = point->focus->surface->resource;
+        struct wl_resource *surface_resource = view->surface->resource;
 
         if (wl_resource_get_client(resource) == wl_resource_get_client(surface_resource))
             wl_touch_send_motion(resource, time, id, fx, fy);
@@ -314,7 +315,7 @@ pepper_touch_send_motion(pepper_touch_t *touch, uint32_t time, uint32_t id, doub
 }
 
 PEPPER_API void
-pepper_touch_send_frame(pepper_touch_t *touch)
+pepper_touch_send_frame(pepper_touch_t *touch, pepper_view_t *view)
 {
     struct wl_resource     *resource;
 
@@ -323,7 +324,7 @@ pepper_touch_send_frame(pepper_touch_t *touch)
 }
 
 PEPPER_API void
-pepper_touch_send_cancel(pepper_touch_t *touch)
+pepper_touch_send_cancel(pepper_touch_t *touch, pepper_view_t *view)
 {
     struct wl_resource     *resource;
 

@@ -349,59 +349,57 @@ pepper_keyboard_get_focus(pepper_keyboard_t *keyboard)
 }
 
 PEPPER_API void
-pepper_keyboard_send_leave(pepper_keyboard_t *keyboard)
+pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *view)
 {
     struct wl_resource *resource;
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
     serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
     {
         if (wl_resource_get_client(resource) == client)
-            wl_keyboard_send_leave(resource, serial, keyboard->focus->surface->resource);
+            wl_keyboard_send_leave(resource, serial, view->surface->resource);
     }
 }
 
 PEPPER_API void
-pepper_keyboard_send_enter(pepper_keyboard_t *keyboard)
+pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *view)
 {
     struct wl_resource *resource;
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
     serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
     {
         if (wl_resource_get_client(resource) == client)
-        {
-            wl_keyboard_send_enter(resource, serial,
-                                   keyboard->focus->surface->resource, &keyboard->keys);
-        }
+            wl_keyboard_send_enter(resource, serial, view->surface->resource, &keyboard->keys);
     }
 }
 
 PEPPER_API void
-pepper_keyboard_send_key(pepper_keyboard_t *keyboard, uint32_t time, uint32_t key, uint32_t state)
+pepper_keyboard_send_key(pepper_keyboard_t *keyboard, pepper_view_t *view,
+                         uint32_t time, uint32_t key, uint32_t state)
 {
     struct wl_resource *resource;
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
     serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
@@ -412,17 +410,18 @@ pepper_keyboard_send_key(pepper_keyboard_t *keyboard, uint32_t time, uint32_t ke
 }
 
 PEPPER_API void
-pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, uint32_t depressed, uint32_t latched,
+pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, pepper_view_t *view,
+                               uint32_t depressed, uint32_t latched,
                                uint32_t locked, uint32_t group)
 {
     struct wl_resource *resource;
     struct wl_client   *client;
     uint32_t            serial;
 
-    if (!keyboard->focus || !keyboard->focus->surface || !keyboard->focus->surface->resource)
+    if (!view || !view->surface || !view->surface->resource)
         return;
 
-    client = wl_resource_get_client(keyboard->focus->surface->resource);
+    client = wl_resource_get_client(view->surface->resource);
     serial = wl_display_next_serial(keyboard->seat->compositor->display);
 
     wl_resource_for_each(resource, &keyboard->resource_list)
