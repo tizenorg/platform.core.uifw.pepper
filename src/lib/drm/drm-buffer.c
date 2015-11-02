@@ -143,26 +143,20 @@ handle_client_buffer_destroy(pepper_event_listener_t *listener, pepper_object_t 
 drm_buffer_t *
 drm_buffer_create_pepper(pepper_drm_t *drm, pepper_buffer_t *pb)
 {
-    struct gbm_bo      *bo;
-    drm_buffer_t       *buffer;
+    struct gbm_bo      *bo = NULL;
+    drm_buffer_t       *buffer = NULL;
     struct wl_resource *resource = pepper_buffer_get_resource(pb);
-
-    buffer = calloc(1, sizeof(drm_buffer_t));
-    PEPPER_CHECK(buffer, return NULL, "calloc() failed.\n");
 
     bo = gbm_bo_import(drm->gbm_device, GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
     if (!bo)
-    {
-        free(buffer);
-        return NULL;
-    }
+        goto error;
+
+    buffer = calloc(1, sizeof(drm_buffer_t));
+    if (!buffer)
+        goto error;
 
     if (!init_buffer_gbm(buffer, drm, bo, GBM_FORMAT_XRGB8888 /* FIXME */))
-    {
-        gbm_bo_destroy(bo);
-        free(buffer);
-        return NULL;
-    }
+        goto error;
 
     buffer->type = DRM_BUFFER_TYPE_CLIENT;
     buffer->client_buffer = pb;
@@ -173,6 +167,15 @@ drm_buffer_create_pepper(pepper_drm_t *drm, pepper_buffer_t *pb)
                                          handle_client_buffer_destroy, buffer);
 
     return buffer;
+
+error:
+    if (bo)
+        gbm_bo_destroy(bo);
+
+    if (buffer)
+        free(buffer);
+
+    return NULL;
 }
 
 void

@@ -148,7 +148,8 @@ assign_fb_plane(drm_output_t *output, pepper_view_t *view)
         return NULL;
 
     output->back = drm_buffer_create_pepper(output->drm, buffer);
-    PEPPER_CHECK(output->back, return NULL, "failed to create drm_buffer\n");
+    if (!output->back)
+        return NULL;
 
     return output->fb_plane;
 }
@@ -187,7 +188,8 @@ assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
         if (!plane->back && (plane->plane->possible_crtcs & (1 << output->crtc_index)))
         {
             plane->back = drm_buffer_create_pepper(output->drm, buffer);
-            PEPPER_CHECK(plane->back, return NULL, "failed to create drm_buffer\n");
+            if (!plane->back)
+                return NULL;
 
             /* set position  */
             pepper_view_get_position(view, &x, &y);
