@@ -1009,8 +1009,11 @@ pepper_touch_point_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *
 PEPPER_API pepper_view_t *
 pepper_touch_point_get_focus(pepper_touch_t *touch, uint32_t id);
 
-PEPPER_API void
-pepper_touch_point_get_position(pepper_touch_t *touch, uint32_t id, double *x, double *y);
+PEPPER_API pepper_bool_t
+pepper_touch_get_position(pepper_touch_t *touch, uint32_t id, double *x, double *y);
+
+PEPPER_API pepper_bool_t
+pepper_touch_set_position(pepper_touch_t *touch, uint32_t id, double x, double y);
 
 PEPPER_API void
 pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,

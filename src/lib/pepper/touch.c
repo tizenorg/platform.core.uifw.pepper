@@ -238,17 +238,31 @@ pepper_touch_point_get_focus(pepper_touch_t *touch, uint32_t id)
     return point->focus;
 }
 
-PEPPER_API void
-pepper_touch_point_get_position(pepper_touch_t *touch, uint32_t id, double *x, double *y)
+PEPPER_API pepper_bool_t
+pepper_touch_get_position(pepper_touch_t *touch, uint32_t id, double *x, double *y)
 {
     pepper_touch_point_t *point = get_touch_point(touch, id);
-    PEPPER_CHECK(point, return, "Touch point %d does not exist.\n", id);
+    PEPPER_CHECK(point, return PEPPER_FALSE, "Touch point %d does not exist.\n", id);
 
     if (x)
         *x = point->x;
 
     if (y)
         *y = point->y;
+
+    return PEPPER_TRUE;
+}
+
+PEPPER_API pepper_bool_t
+pepper_touch_set_position(pepper_touch_t *touch, uint32_t id, double x, double y)
+{
+    pepper_touch_point_t *point = get_touch_point(touch, id);
+    PEPPER_CHECK(point, return PEPPER_FALSE, "Touch point %d does not exist.\n", id);
+
+    point->x = x;
+    point->y = y;
+
+    return PEPPER_TRUE;
 }
 
 PEPPER_API void
