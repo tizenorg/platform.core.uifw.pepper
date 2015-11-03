@@ -517,6 +517,87 @@ enum pepper_built_in_events
     PEPPER_EVENT_SEAT_TOUCH_DEVICE_REMOVE,
 
     /**
+     * Relative pointer device motion event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer motion event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION,
+
+    /**
+     * Absolute pointer motion event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer motion event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE,
+
+    /**
+     * Pointer button event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer button event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON,
+
+    /**
+     * Pointer axis event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits pointer axis event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS,
+
+    /**
+     * Keyboard key event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits key event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY,
+
+    /**
+     * Touch down event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch down event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_DOWN,
+
+    /**
+     * Touch up event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch up event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_UP,
+
+    /**
+     * Touch motion event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch motion event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_MOTION,
+
+    /**
+     * touch frame event.
+     *
+     * #pepper_input_device_t
+     *  - when : input backend emits touch frame event
+     *  - info : #pepper_input_event_t
+     */
+    PEPPER_EVENT_INPUT_DEVICE_TOUCH_FRAME,
+
+    /**
      * #pepper_view_t get an input focus.
      *
      * #pepper_pointer_t
@@ -561,10 +642,6 @@ enum pepper_built_in_events
     /**
      * Relative pointer motion event.
      *
-     * #pepper_input_device_t
-     *  - when : input backend emits pointer motion event
-     *  - info : #pepper_input_event_t
-     *
      * #pepper_pointer_t
      *  - when : #pepper_input_device_t emits pointer motion event (to the attached #pepper_seat_t)
      *  - info : #pepper_input_event_t
@@ -573,10 +650,6 @@ enum pepper_built_in_events
 
     /**
      * Absolute pointer motion event.
-     *
-     * #pepper_input_device_t
-     *  - when : input backend emits pointer motion event
-     *  - info : #pepper_input_event_t
      *
      * #pepper_pointer_t
      *  - when : #pepper_input_device_t emits pointer motion event (to the attached #pepper_seat_t)
@@ -587,10 +660,6 @@ enum pepper_built_in_events
     /**
      * Pointer button event.
      *
-     * #pepper_input_device_t
-     *  - when : input backend emits pointer button event
-     *  - info : #pepper_input_event_t
-     *
      * #pepper_pointer_t
      *  - when : #pepper_input_device_t emits pointer button event (to the attached #pepper_seat_t)
      *  - info : #pepper_input_event_t
@@ -599,10 +668,6 @@ enum pepper_built_in_events
 
     /**
      * Pointer axis event.
-     *
-     * #pepper_input_device_t
-     *  - when : input backend emits pointer axis event
-     *  - info : #pepper_input_event_t
      *
      * #pepper_pointer_t
      *  - when : #pepper_input_device_t emits pointer axis event (to the attached #pepper_seat_t)
@@ -613,10 +678,6 @@ enum pepper_built_in_events
     /**
      * Keyboard key event.
      *
-     * #pepper_input_device_t
-     *  - when : input backend emits key event
-     *  - info : #pepper_input_event_t
-     *
      * #pepper_keyboard_t
      *  - when : #pepper_input_device_t emits key event (to the attached #pepper_seat_t)
      *  - info : #pepper_input_event_t
@@ -625,10 +686,6 @@ enum pepper_built_in_events
 
     /**
      * Touch down event.
-     *
-     * #pepper_input_device_t
-     *  - when : input backend emits touch down event
-     *  - info : #pepper_input_event_t
      *
      * #pepper_touch_t
      *  - when : #pepper_input_device_t emits touch down event (to the attached #pepper_seat_t)
@@ -639,10 +696,6 @@ enum pepper_built_in_events
     /**
      * Touch up event.
      *
-     * #pepper_input_device_t
-     *  - when : input backend emits touch up event
-     *  - info : #pepper_input_event_t
-     *
      * #pepper_touch_t
      *  - when : #pepper_input_device_t emits touch up event (to the attached #pepper_seat_t)
      *  - info : #pepper_input_event_t
@@ -652,10 +705,6 @@ enum pepper_built_in_events
     /**
      * Touch motion event.
      *
-     * #pepper_input_device_t
-     *  - when : input backend emits touch motion event
-     *  - info : #pepper_input_event_t
-     *
      * #pepper_touch_t
      *  - when : #pepper_input_device_t emits touch motion event (to the attached #pepper_seat_t)
      *  - info : #pepper_input_event_t
@@ -663,11 +712,7 @@ enum pepper_built_in_events
     PEPPER_EVENT_TOUCH_MOTION,
 
     /**
-     * Touch frame event.
-     *
-     * #pepper_input_device_t
-     *  - when : input backend emits touch frame event
-     *  - info : #pepper_input_event_t
+     * touch frame event.
      *
      * #pepper_touch_t
      *  - when : #pepper_input_device_t emits touch frame event (to the attached #pepper_seat_t)
@@ -677,10 +722,6 @@ enum pepper_built_in_events
 
     /**
      * Touch calcen event.
-     *
-     * #pepper_input_device_t
-     *  - when : input backend emits touch cancel event
-     *  - info : #pepper_input_event_t
      *
      * #pepper_touch_t
      *  - when : #pepper_input_device_t emits touch cancel event (to the attached #pepper_seat_t)
@@ -709,9 +750,7 @@ enum pepper_key_state
 
 struct pepper_input_event
 {
-    uint32_t    id;         /**< event id #pepper_built_in_events */
     uint32_t    time;       /**< time in mili-second with undefined base. */
-
     uint32_t    button;     /**< pointer button flag. */
     uint32_t    state;      /**< pointer and key state flag. */
     uint32_t    axis;       /**< pointer axis. */

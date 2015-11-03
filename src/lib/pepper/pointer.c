@@ -70,7 +70,7 @@ pointer_set_position(pepper_pointer_t *pointer, uint32_t time, double x, double 
 
     /* Emit motion event. */
     memset(&event, 0x00, sizeof(pepper_input_event_t));
-    event.id = PEPPER_EVENT_POINTER_MOTION;
+
     event.time = time;
     event.x = pointer->x;
     event.y = pointer->y;
@@ -82,19 +82,19 @@ pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input
 {
     switch (id)
     {
-    case PEPPER_EVENT_POINTER_MOTION_ABSOLUTE:
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE:
         {
             pointer_set_position(pointer, event->time, event->x, event->y);
         }
         break;
-    case PEPPER_EVENT_POINTER_MOTION:
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION:
         {
             pointer_set_position(pointer, event->time,
                                  pointer->x + event->x * pointer->x_velocity,
                                  pointer->y + event->y * pointer->y_velocity);
         }
         break;
-    case PEPPER_EVENT_POINTER_BUTTON:
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON:
         {
             if (pointer->grab)
             {
@@ -102,15 +102,15 @@ pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input
                                       event->time, event->button, event->state);
             }
 
-            pepper_object_emit_event(&pointer->base, id, event);
+            pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_BUTTON, event);
         }
         break;
-    case PEPPER_EVENT_POINTER_AXIS:
+    case PEPPER_EVENT_INPUT_DEVICE_POINTER_AXIS:
         {
             if (pointer->grab)
                 pointer->grab->axis(pointer, pointer->data, event->time, event->axis, event->value);
 
-            pepper_object_emit_event(&pointer->base, id, event);
+            pepper_object_emit_event(&pointer->base, PEPPER_EVENT_POINTER_AXIS, event);
         }
         break;
     }
@@ -235,7 +235,7 @@ pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double
             pointer->grab->motion(pointer, pointer->data, pointer->time, pointer->x, pointer->y);
 
         memset(&event, 0x00, sizeof(pepper_input_event_t));
-        event.id = PEPPER_EVENT_POINTER_MOTION;
+
         event.time = pointer->time;
         event.x = pointer->x;
         event.y = pointer->y;
@@ -385,7 +385,6 @@ pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *view,
             wl_pointer_send_motion(resource, time, fx, fy);
     }
 
-    event.id = PEPPER_EVENT_POINTER_MOTION;
     event.time = time;
     event.x = x;
     event.y = y;
@@ -413,7 +412,6 @@ pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *view,
             wl_pointer_send_button(resource, serial, time, button, state);
     }
 
-    event.id = PEPPER_EVENT_POINTER_BUTTON;
     event.time = time;
     event.button = button;
     event.state = state;
@@ -440,7 +438,6 @@ pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *view,
             wl_pointer_send_axis(resource, time, axis, v);
     }
 
-    event.id = PEPPER_EVENT_POINTER_AXIS;
     event.time = time;
     event.axis = axis;
     event.value = value;

@@ -409,7 +409,6 @@ pepper_keyboard_send_key(pepper_keyboard_t *keyboard, pepper_view_t *view,
             wl_keyboard_send_key(resource, serial, time, key, state);
     }
 
-    event.id = PEPPER_EVENT_KEYBOARD_KEY;
     event.time = time;
     event.key = key;
     event.state = state;

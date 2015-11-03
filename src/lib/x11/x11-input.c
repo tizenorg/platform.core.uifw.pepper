@@ -44,65 +44,60 @@ x11_handle_input_event(x11_seat_t* seat, uint32_t type, xcb_generic_event_t* xev
         {
             xcb_key_press_event_t *kp = (xcb_key_press_event_t *)xev;
 
-            event.id    = PEPPER_EVENT_KEYBOARD_KEY;
             event.time  = kp->time;
             event.key   = kp->detail - 8;
             event.state = PEPPER_KEY_STATE_PRESSED;
 
             pepper_object_emit_event((pepper_object_t *)seat->keyboard,
-                                     PEPPER_EVENT_KEYBOARD_KEY, &event);
+                                     PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
         }
         break;
     case XCB_KEY_RELEASE:
         {
             xcb_key_release_event_t *kr = (xcb_key_release_event_t *)xev;
 
-            event.id    = PEPPER_EVENT_KEYBOARD_KEY;
             event.time  = kr->time;
             event.key   = kr->detail - 8;
             event.state = PEPPER_KEY_STATE_RELEASED;
 
             pepper_object_emit_event((pepper_object_t *)seat->keyboard,
-                                     PEPPER_EVENT_KEYBOARD_KEY, &event);
+                                     PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
         }
         break;
     case XCB_BUTTON_PRESS:
         {
             xcb_button_press_event_t *bp = (xcb_button_press_event_t *)xev;
 
-            event.id     = PEPPER_EVENT_POINTER_BUTTON;
             event.time   = bp->time;
             event.state  = PEPPER_BUTTON_STATE_PRESSED;
             event.button = get_standard_button(bp->detail);
 
             pepper_object_emit_event((pepper_object_t *)seat->pointer,
-                                     PEPPER_EVENT_POINTER_BUTTON, &event);
+                                     PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
         }
         break;
     case XCB_BUTTON_RELEASE:
         {
             xcb_button_release_event_t *br = (xcb_button_release_event_t *)xev;
 
-            event.id     = PEPPER_EVENT_POINTER_BUTTON;
             event.time   = br->time;
             event.state  = PEPPER_BUTTON_STATE_RELEASED;
             event.button = get_standard_button(br->detail);
 
             pepper_object_emit_event((pepper_object_t *)seat->pointer,
-                                     PEPPER_EVENT_POINTER_BUTTON, &event);
+                                     PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
         }
         break;
     case XCB_MOTION_NOTIFY:
         {
             xcb_motion_notify_event_t *motion = (xcb_motion_notify_event_t *)xev;
 
-            event.id   = PEPPER_EVENT_POINTER_MOTION_ABSOLUTE;
             event.time = motion->time;
             event.x    = motion->event_x;
             event.y    = motion->event_y;
 
             pepper_object_emit_event((pepper_object_t *)seat->pointer,
-                                     PEPPER_EVENT_POINTER_MOTION_ABSOLUTE, &event);
+                                     PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE, &event);
         }
         break;
     default :

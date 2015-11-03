@@ -72,24 +72,24 @@ pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id, pepper_input_event
     case PEPPER_EVENT_TOUCH_DOWN:
         {
             if (touch->grab)
-                touch->grab->down(touch, touch->data, event->time, event->id, event->x, event->y);
+                touch->grab->down(touch, touch->data, event->time, event->slot, event->x, event->y);
         }
         break;
     case PEPPER_EVENT_TOUCH_UP:
         {
             if (touch->grab)
-                touch->grab->up(touch, touch->data, event->time, event->id);
+                touch->grab->up(touch, touch->data, event->time, event->slot);
         }
         break;
     case PEPPER_EVENT_TOUCH_MOTION:
         {
-            pepper_touch_point_t *point = get_touch_point(touch, event->id);
+            pepper_touch_point_t *point = get_touch_point(touch, event->slot);
 
             point->x = event->x;
             point->y = event->y;
 
             if (touch->grab)
-                touch->grab->motion(touch, touch->data, event->time, event->id, event->x, event->y);
+                touch->grab->motion(touch, touch->data, event->time, event->slot, event->x, event->y);
         }
         break;
     case PEPPER_EVENT_TOUCH_FRAME:
@@ -294,7 +294,6 @@ pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,
             wl_touch_send_down(resource, point->focus_serial, time, surface_resource, id, fx, fy);
     }
 
-    event.id = PEPPER_EVENT_TOUCH_DOWN;
     event.time = time;
     event.x = x;
     event.y = y;
@@ -322,7 +321,6 @@ pepper_touch_send_up(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, 
             wl_touch_send_up(resource, serial, time, id);
     }
 
-    event.id = PEPPER_EVENT_TOUCH_UP;
     event.time = time;
     pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_UP, &event);
 }
@@ -348,7 +346,6 @@ pepper_touch_send_motion(pepper_touch_t *touch, pepper_view_t *view, uint32_t ti
             wl_touch_send_motion(resource, time, id, fx, fy);
     }
 
-    event.id = PEPPER_EVENT_TOUCH_MOTION;
     event.time = time;
     event.x = x;
     event.y = y;
