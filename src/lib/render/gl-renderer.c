@@ -1200,13 +1200,20 @@ repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
         glUniform1i(shader->texture_uniform[i], i);
     glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
 
+
+    glEnable(GL_SCISSOR_TEST);
+    glEnable(GL_BLEND);
     rects = pixman_region32_rectangles(&repaint, &nrects);
+
     for (i = 0; i < nrects; i++)
     {
         glScissor(rects[i].x1, gt->height - rects[i].y2,
                   rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
+
+    glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_BLEND);
 
 done:
     pixman_region32_fini(&repaint);
@@ -1240,9 +1247,6 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
         return;
 
     glViewport(0, 0, geom->w, geom->h);
-
-    glEnable(GL_SCISSOR_TEST);
-    glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
     if (gr->has_buffer_age)
@@ -1279,6 +1283,7 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
             int                 i, nrects;
             pixman_box32_t     *rects;
 
+            glEnable(GL_SCISSOR_TEST);
             glClearColor(0.0, 0.0, 0.0, 1.0);
 
             rects = pixman_region32_rectangles(&total_damage, &nrects);
@@ -1289,6 +1294,8 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
                           rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
                 glClear(GL_COLOR_BUFFER_BIT);
             }
+
+            glDisable(GL_SCISSOR_TEST);
         }
 
         pepper_list_for_each_list_reverse(l, list)
