@@ -231,7 +231,7 @@ struct gl_renderer
 
     pepper_bool_t       clear_background;
 
-    pepper_bool_t       use_glscissor;
+    pepper_bool_t       use_clipper;
     struct wl_array     vertex_array;
     struct wl_array     vertex_count;
 };
@@ -1218,10 +1218,10 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
 {
     gl_renderer_t      *gr = (gl_renderer_t *)renderer;
 
-    if (gr->use_glscissor)
-        repaint_view_scissor(renderer, output, node, damage);
-    else
+    if (gr->use_clipper)
         repaint_view_clip(renderer, output, node, damage);
+    else
+        repaint_view_scissor(renderer, output, node, damage);
 }
 
 static void
@@ -1529,10 +1529,10 @@ pepper_gl_renderer_create(pepper_compositor_t *compositor, void *native_display,
     if (env && atoi(env) == 1)
         gr->clear_background = PEPPER_TRUE;
 
-    env = getenv("PEPPER_GL_RENDERER_USE_GLSCISSOR");
+    env = getenv("PEPPER_RENDER_GL_USE_POLYGON_CLIPPER");
 
     if (env && atoi(env) == 1)
-        gr->use_glscissor = PEPPER_TRUE;
+        gr->use_clipper = PEPPER_TRUE;
 
     return &gr->base;
 
