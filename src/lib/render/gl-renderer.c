@@ -859,6 +859,14 @@ clip(pepper_vec2_t *vertices, int *len, pixman_box32_t *clip_rect, pepper_bool_t
     if (is_rect)
     {
         int i;
+
+        if ((vertices[0].x > clip_rect->x2) || (vertices[2].x < clip_rect->x1) ||
+            (vertices[0].y > clip_rect->y2) || (vertices[2].y < clip_rect->y1))
+        {
+            *len = 0;
+            return;
+        }
+
         for (i = 0; i < *len; i++)
         {
             vertices[i].x = vertices[i].x > clip_rect->x1 ? vertices[i].x : clip_rect->x1;
@@ -945,28 +953,30 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
     vertex_count = wl_array_add(&gr->vertex_count,
                                 (surface_nrects * nrects + 1) * sizeof(uint32_t));
 
+    pepper_mat4_inverse(&inverse /* FIXME */, transform);
+
     for (n = 0; n < surface_nrects; n++)
     {
-        vertices[0].x = surface_rects[n].x1;
-        vertices[0].y = surface_rects[n].y1;
-        vertices[1].x = surface_rects[n].x2;
-        vertices[1].y = surface_rects[n].y1;
-        vertices[2].x = surface_rects[n].x2;
-        vertices[2].y = surface_rects[n].y2;
-        vertices[3].x = surface_rects[n].x1;
-        vertices[3].y = surface_rects[n].y2;
-
-        len = 4;
-        for (i = 0; i < len; i++)
-            pepper_mat4_transform_vec2(transform, &vertices[i]);
-        pepper_mat4_inverse(&inverse /* FIXME */, transform);
-
-        /* clip */
         for (i = 0; i < nrects; i++)
         {
             GLfloat x, y;
 
+            vertices[0].x = surface_rects[n].x1;
+            vertices[0].y = surface_rects[n].y1;
+            vertices[1].x = surface_rects[n].x2;
+            vertices[1].y = surface_rects[n].y1;
+            vertices[2].x = surface_rects[n].x2;
+            vertices[2].y = surface_rects[n].y2;
+            vertices[3].x = surface_rects[n].x1;
+            vertices[3].y = surface_rects[n].y2;
+
+            len = 4;
+            for (j = 0; j < len; j++)
+                pepper_mat4_transform_vec2(transform, &vertices[j]);
+
             clip(vertices, &len, &rects[i], (transform->flags <= PEPPER_MATRIX_TRANSLATE));
+            if (len == 0)
+                continue;
 
             *(vertex_array++) = x = (GLfloat)vertices[0].x;
             *(vertex_array++) = y = (GLfloat)vertices[0].y;
