@@ -144,6 +144,7 @@ struct drm_output
 
     /* OpenGL */
     struct gbm_surface     *gbm_surface;
+    pepper_bool_t           disable_no_comp;
 
     drm_buffer_t           *front, *back;
 };

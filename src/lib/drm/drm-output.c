@@ -123,6 +123,9 @@ assign_fb_plane(drm_output_t *output, pepper_view_t *view)
 
     const pepper_output_geometry_t *geometry;
 
+    if (output->disable_no_comp)
+        return NULL;
+
     if (output->back)
         return NULL;
 
@@ -602,6 +605,7 @@ drm_output_create(drm_connector_t *conn)
     drm_plane_t    *plane, *tmp;
     const char     *render_env = getenv("PEPPER_DRM_RENDERER");
     const char     *shadow_env = getenv("PEPPER_DRM_USE_SHADOW");
+    const char     *disable_no_comp_env = getenv("PEPPER_DRM_DISABLE_NO_COMP");
 
     PEPPER_CHECK(conn->output == NULL, return NULL, "The connector already has an output.\n");
 
@@ -632,6 +636,9 @@ drm_output_create(drm_connector_t *conn)
         init_pixman_renderer(output);
         PEPPER_CHECK(output->renderer, goto error, "Failed to initialize renderer.\n");
     }
+
+    if (disable_no_comp_env && strcmp(disable_no_comp_env, "1") == 0)
+        output->disable_no_comp = PEPPER_TRUE;
 
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
     PEPPER_CHECK(output->primary_plane, goto error, "pepper_output_add_plane() failed.\n");
