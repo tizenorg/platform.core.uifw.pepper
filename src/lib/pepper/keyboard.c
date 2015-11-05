@@ -175,7 +175,7 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
     unsigned int    num_keys = keyboard->keys.size / sizeof(uint32_t);
     unsigned int    i;
 
-    if (id != PEPPER_EVENT_KEYBOARD_KEY)
+    if (id != PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY)
         return;
 
     /* Update the array of pressed keys. */
@@ -201,7 +201,7 @@ pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id, pepper_in
 
     update_key(keyboard, event->key, event->state);
 
-    pepper_object_emit_event(&keyboard->base, id, event);
+    pepper_object_emit_event(&keyboard->base, PEPPER_EVENT_KEYBOARD_KEY, event);
 }
 
 static void
