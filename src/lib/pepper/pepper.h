@@ -93,6 +93,13 @@ typedef struct pepper_view              pepper_view_t;
 typedef struct pepper_subcompositor     pepper_subcompositor_t;
 
 /**
+ * @typedef pepper_subsurface
+ *
+ * A #pepper_subsurface represents a wl_subsurface.
+ */
+typedef struct pepper_subsurface        pepper_subsurface_t;
+
+/**
  * @typedef pepper_seat_t
  *
  * A #pepper_seat_t represents a wl_seat.

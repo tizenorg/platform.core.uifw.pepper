@@ -60,7 +60,7 @@ surface_handle_buffer_destroy(pepper_event_listener_t *listener,
     surface_update_size(surface);
 }
 
-static void
+void
 pepper_surface_state_init(pepper_surface_state_t *state)
 {
     state->buffer = NULL;
@@ -76,7 +76,7 @@ pepper_surface_state_init(pepper_surface_state_t *state)
     wl_list_init(&state->frame_callback_list);
 }
 
-static void
+void
 pepper_surface_state_fini(pepper_surface_state_t *state)
 {
     struct wl_resource *callback, *next;
@@ -307,6 +307,8 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     wl_list_init(&surface->frame_callback_list);
     pepper_list_init(&surface->view_list);
+    pepper_list_init(&surface->subsurface_list);
+    pepper_list_init(&surface->subsurface_pending_list);
     pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_SURFACE_ADD, surface);
 
     return surface;

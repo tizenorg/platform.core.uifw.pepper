@@ -148,6 +148,12 @@ struct pepper_surface_state
     pepper_event_listener_t    *buffer_destroy_listener;
 };
 
+void
+pepper_surface_state_init(pepper_surface_state_t *state);
+
+void
+pepper_surface_state_fini(pepper_surface_state_t *state);
+
 struct pepper_surface
 {
     pepper_object_t         base;
@@ -180,6 +186,10 @@ struct pepper_surface
 
     char                   *role;
     pepper_list_t           view_list;
+
+    pepper_list_t           subsurface_list;
+    pepper_list_t           subsurface_pending_list;
+    pepper_subsurface_t    *sub;
 };
 
 pepper_surface_t *
@@ -233,6 +243,40 @@ pepper_subcompositor_create(pepper_compositor_t *compositor);
 
 void
 pepper_subcompositor_destroy(pepper_subcompositor_t *subcompositor);
+
+/* Subsurface */
+struct pepper_subsurface
+{
+    pepper_surface_t        *surface;
+    pepper_surface_t        *parent;
+    struct wl_resource      *resource;
+
+    double                   x, y;
+    pepper_list_t            parent_link;
+
+    /* This state is applied when the parent surface's wl_surface state is applied,
+     * regardless of the sub-surface's mode. */
+    struct
+    {
+        double               x, y;
+        pepper_list_t        parent_link;
+    } pending;
+
+    pepper_bool_t            synchronized;    /* commit behavior */
+
+    /* In sync mode, wl_surface.commit will apply the pending state into cache.
+     * And cached state will flush into surface's current when parent's wl_surface.commit called */
+    pepper_surface_state_t   cache;
+
+    pepper_event_listener_t *parent_destroy_listener;
+};
+
+pepper_subsurface_t *
+pepper_subsurface_create(pepper_surface_t *surface, pepper_surface_t *parent,
+                         struct wl_client *client, struct wl_resource *resource, uint32_t id);
+
+void
+pepper_subsurface_destroy(pepper_subsurface_t *subsurface);
 
 /* Input */
 struct pepper_pointer

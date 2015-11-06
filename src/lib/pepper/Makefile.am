@@ -27,4 +27,5 @@ libpepper_la_SOURCES = pepper.h                 \
                        utils-map.c              \
                        utils-log.c              \
                        utils-vt.c               \
-                       subcompositor.c
+                       subcompositor.c          \
+                       subsurface.c
