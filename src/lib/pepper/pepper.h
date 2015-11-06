@@ -86,6 +86,13 @@ typedef struct pepper_buffer            pepper_buffer_t;
 typedef struct pepper_view              pepper_view_t;
 
 /**
+ * @typedef pepper_subcompositor
+ *
+ * A #pepper_subcompositor_t represents a wl_subcompositor.
+ */
+typedef struct pepper_subcompositor     pepper_subcompositor_t;
+
+/**
  * @typedef pepper_seat_t
  *
  * A #pepper_seat_t represents a wl_seat.
@@ -245,6 +252,7 @@ typedef enum pepper_object_type
     PEPPER_OBJECT_TOUCH,        /**< #pepper_touch_t */
     PEPPER_OBJECT_INPUT_DEVICE, /**< #pepper_input_device_t */
     PEPPER_OBJECT_PLANE,        /**< #pepper_plane_t (internally used) */
+    PEPPER_OBJECT_SUBCOMPOSITOR,/**< #pepper_compositor_t */
 } pepper_object_type_t;
 
 enum pepper_built_in_events

@@ -219,6 +219,21 @@ pepper_region_destroy(pepper_region_t *region);
 void
 pepper_transform_pixman_region(pixman_region32_t *region, const pepper_mat4_t *matrix);
 
+/* Subcompositor */
+struct pepper_subcompositor
+{
+    pepper_object_t          base;
+    pepper_compositor_t     *compositor;
+    struct wl_global        *global;
+    struct wl_list           resource_list;
+};
+
+pepper_subcompositor_t *
+pepper_subcompositor_create(pepper_compositor_t *compositor);
+
+void
+pepper_subcompositor_destroy(pepper_subcompositor_t *subcompositor);
+
 /* Input */
 struct pepper_pointer
 {
