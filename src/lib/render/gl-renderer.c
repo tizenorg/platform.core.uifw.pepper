@@ -1089,6 +1089,7 @@ repaint_view_clip(pepper_renderer_t *renderer, pepper_output_t *output,
     {
         int32_t             i, w, h;
         float               trans[16];
+        GLint               filter;
 
         pepper_view_get_size(node->view, &w, &h);
         surface_opaque = pepper_surface_get_opaque_region(surface);
@@ -1098,12 +1099,13 @@ repaint_view_clip(pepper_renderer_t *renderer, pepper_output_t *output,
         for (i = 0; i < 16; i++)
             trans[i] = (float)gt->proj_mat.m[i];
 
+        filter = (node->transform.flags <= PEPPER_MATRIX_TRANSLATE) ? GL_NEAREST : GL_LINEAR;
         for (i = 0; i < state->num_planes; i++)
         {
             glActiveTexture(GL_TEXTURE0 + i);
             glBindTexture(GL_TEXTURE_2D, state->textures[i]);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
         }
 
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -1166,6 +1168,7 @@ repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
     pixman_box32_t     *rects;
     GLfloat             vertex_array[16];
     float               trans[16];
+    GLint               filter;
 
     pixman_region32_init(&repaint);
     pixman_region32_intersect(&repaint, &node->visible_region, damage);
@@ -1197,12 +1200,13 @@ repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
             trans[i] = (float)tmp.m[i];
     }
 
+    filter = (node->transform.flags <= PEPPER_MATRIX_TRANSLATE) ? GL_NEAREST : GL_LINEAR;
     for (i = 0; i < state->num_planes; i++)
     {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, state->textures[i]);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
     }
 
     pepper_view_get_position(node->view, &x, &y);
