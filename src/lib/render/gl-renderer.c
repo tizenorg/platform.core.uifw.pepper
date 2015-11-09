@@ -261,7 +261,7 @@ struct gl_renderer
 
     pepper_bool_t       use_clipper;
     struct wl_array     vertex_array;
-    struct wl_array     vertex_count;
+    int                 triangles;
 };
 
 struct gl_surface_state
@@ -396,7 +396,6 @@ gl_renderer_destroy(pepper_renderer_t *renderer)
     gl_renderer_t *gr = (gl_renderer_t *)renderer;
 
     wl_array_release(&gr->vertex_array);
-    wl_array_release(&gr->vertex_count);
 
     fini_gl_shaders(gr);
 
@@ -963,6 +962,7 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
     int             w, h;
     int             len;
     pepper_vec2_t   vertices[8];
+    pepper_vec2_t   texcoords[8];
     pepper_mat4_t   inverse;
     pepper_mat4_t  *transform = &node->transform;
 
@@ -970,16 +970,14 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
     pixman_box32_t *rects, *surface_rects;
 
     GLfloat        *vertex_array;
-    uint32_t       *vertex_count;
 
     pepper_view_get_size(node->view, &w, &h);
 
     surface_rects = pixman_region32_rectangles(surface_region, &surface_nrects);
     rects = pixman_region32_rectangles(region, &nrects);
     vertex_array = wl_array_add(&gr->vertex_array,
-                                surface_nrects * nrects * 8 * 2 * 2 * sizeof(GLfloat));
-    vertex_count = wl_array_add(&gr->vertex_count,
-                                (surface_nrects * nrects + 1) * sizeof(uint32_t));
+                                surface_nrects * nrects * (8 - 2) * 3 * 2 * 2 * sizeof(GLfloat));
+    gr->triangles = 0;
 
     pepper_mat4_inverse(&inverse /* FIXME */, transform);
 
@@ -987,8 +985,6 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
     {
         for (i = 0; i < nrects; i++)
         {
-            GLfloat x, y;
-
             vertices[0].x = surface_rects[n].x1;
             vertices[0].y = surface_rects[n].y1;
             vertices[1].x = surface_rects[n].x2;
@@ -1006,24 +1002,27 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
             if (len == 0)
                 continue;
 
-            *(vertex_array++) = x = (GLfloat)vertices[0].x;
-            *(vertex_array++) = y = (GLfloat)vertices[0].y;
-            pepper_mat4_transform_vec2(&inverse, &vertices[0]);
-            *(vertex_array++) = (GLfloat)(vertices[0].x / w);
-            *(vertex_array++) = (GLfloat)(vertices[0].y / h);
+            memcpy(texcoords, vertices, sizeof(vertices));
+            for (j = 0; j < len; j++)
+            {
+                pepper_mat4_transform_vec2(&inverse, &texcoords[j]);
+                texcoords[j].x = texcoords[j].x / w;
+                texcoords[j].y = texcoords[j].y / h;
+            }
 
             for (j = 1, k = 1; j < len; j++)
             {
-                if ((float_difference(x, (float)vertices[j].x) == 0.0f) &&
-                    (float_difference(y, (float)vertices[j].y) == 0.0f))
+                if ((float_difference((float)vertices[j - 1].x, (float)vertices[j].x) == 0.0f) &&
+                    (float_difference((float)vertices[j - 1].y, (float)vertices[j].y) == 0.0f))
                     continue;
 
-                *(vertex_array++) = x = (GLfloat)vertices[j].x;
-                *(vertex_array++) = y = (GLfloat)vertices[j].y;
-                pepper_mat4_transform_vec2(&inverse, &vertices[j]);
-                *(vertex_array++) = (GLfloat)(vertices[j].x / w);
-                *(vertex_array++) = (GLfloat)(vertices[j].y / h);
-
+                if (j != k)
+                {
+                    vertices[k].x = vertices[j].x;
+                    vertices[k].y = vertices[j].y;
+                    texcoords[k].x = texcoords[j].x;
+                    texcoords[k].y = texcoords[j].y;
+                }
                 k++;
             }
 
@@ -1031,40 +1030,43 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
                 (float_difference((float)vertices[len - 1].y, (float)vertices[0].y) == 0.0f))
                 k--;
 
-            if (k > 0)
-                *(vertex_count++) = k;
+            for (j = 2; j < k; j++)
+            {
+                *(vertex_array++) = (GLfloat)vertices[0].x;
+                *(vertex_array++) = (GLfloat)vertices[0].y;
+                *(vertex_array++) = (GLfloat)texcoords[0].x;
+                *(vertex_array++) = (GLfloat)texcoords[0].y;
+                *(vertex_array++) = (GLfloat)vertices[j - 1].x;
+                *(vertex_array++) = (GLfloat)vertices[j - 1].y;
+                *(vertex_array++) = (GLfloat)texcoords[j - 1].x;
+                *(vertex_array++) = (GLfloat)texcoords[j - 1].y;
+                *(vertex_array++) = (GLfloat)vertices[j].x;
+                *(vertex_array++) = (GLfloat)vertices[j].y;
+                *(vertex_array++) = (GLfloat)texcoords[j].x;
+                *(vertex_array++) = (GLfloat)texcoords[j].y;
+                gr->triangles++;
+            }
         }
     }
-
-    *vertex_count = 0;
 }
 
 static void
 repaint_region(gl_renderer_t *gr, pepper_render_item_t *node,
                pixman_region32_t *damage, pixman_region32_t *surface_region)
 {
-    int             i;
     GLfloat        *vertex_array;
-    uint32_t       *vertex_count;
 
     calc_vertices(gr, node, damage, surface_region);
     vertex_array = gr->vertex_array.data;
-    vertex_count = gr->vertex_count.data;
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[2]);
     glEnableVertexAttribArray(1);
 
-    i = 0;
-    while (*vertex_count > 0)
-    {
-        glDrawArrays(GL_TRIANGLE_FAN, i, *vertex_count);
-        i += *vertex_count++;
-    }
+    glDrawArrays(GL_TRIANGLES, 0, gr->triangles * 3);
 
     gr->vertex_array.size = 0;
-    gr->vertex_count.size = 0;
 }
 
 static void
