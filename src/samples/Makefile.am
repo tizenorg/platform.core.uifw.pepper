@@ -34,18 +34,3 @@ x11_backend_LDADD  = $(SAMPLES_LIBS)
 x11_backend_SOURCES = x11-backend.c
 endif
 
-# simple-touch
-noinst_PROGRAMS += simple-touch
-
-simple_touch_CFLAGS = $(SAMPLES_CFLAGS)
-simple_touch_LDADD  = $(SAMPLES_LIBS)
-
-simple_touch_SOURCES = simple-touch.c
-
-# simple-shm
-noinst_PROGRAMS += simple-shm
-
-simple_shm_CFLAGS = $(SAMPLES_CFLAGS)
-simple_shm_LDADD  = $(SAMPLES_LIBS)
-
-simple_shm_SOURCES = simple-shm.c
