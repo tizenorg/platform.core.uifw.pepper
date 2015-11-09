@@ -860,8 +860,8 @@ clip(pepper_vec2_t *vertices, int *len, pixman_box32_t *clip_rect, pepper_bool_t
     {
         int i;
 
-        if ((vertices[0].x > clip_rect->x2) || (vertices[2].x < clip_rect->x1) ||
-            (vertices[0].y > clip_rect->y2) || (vertices[2].y < clip_rect->y1))
+        if ((vertices[0].x >= clip_rect->x2) || (vertices[2].x <= clip_rect->x1) ||
+            (vertices[0].y >= clip_rect->y2) || (vertices[2].y <= clip_rect->y1))
         {
             *len = 0;
             return;
