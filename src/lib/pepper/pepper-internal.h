@@ -290,6 +290,8 @@ struct pepper_subsurface
         pepper_list_t        parent_link;
     } pending;
 
+    pepper_bool_t            restacked;
+
     pepper_bool_t            synchronized;    /* commit behavior */
 
     /* In sync mode, wl_surface.commit will apply the pending state into cache.
