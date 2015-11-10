@@ -648,7 +648,7 @@ drm_output_create(drm_connector_t *conn)
     output->mode = &conn->connector->modes[0];
 
     output->base = pepper_compositor_add_output(drm->compositor, &drm_output_backend,
-                                                conn->name, output);
+                                                conn->name, output, WL_OUTPUT_TRANSFORM_NORMAL, 1);
     PEPPER_CHECK(output->base, goto error, "pepper_compositor_add_output() failed.\n");
 
     if (render_env && strcmp(render_env, "gl") == 0)

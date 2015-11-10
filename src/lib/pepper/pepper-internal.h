@@ -483,6 +483,7 @@ struct pepper_plane_entry
 
     pepper_plane_t             *plane;
     pepper_bool_t               need_damage;
+    pepper_bool_t               need_transform_update;
 
     pepper_list_t               link;
 };
@@ -566,12 +567,16 @@ void
 pepper_plane_add_damage_region(pepper_plane_t *plane, pixman_region32_t *region);
 
 void
-pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip);
-
-void
-pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list);
+pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list, pixman_region32_t *clip);
 
 void
 pepper_surface_flush_damage(pepper_surface_t *surface);
+
+/* Misc. */
+void
+pepper_pixman_region_global_to_output(pixman_region32_t *region, pepper_output_t *output);
+
+void
+pepper_transform_global_to_output(pepper_mat4_t *transform, pepper_output_t *output);
 
 #endif /* PEPPER_INTERNAL_H */

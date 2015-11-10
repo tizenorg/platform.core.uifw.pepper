@@ -379,7 +379,7 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h, const
 
     /* Add compositor base class output object for this output. */
     output->base = pepper_compositor_add_output(conn->pepper, &wayland_output_backend,
-                                                output->name, output);
+                                                output->name, output, WL_OUTPUT_TRANSFORM_NORMAL, 1);
     if (!output->base)
     {
         wayland_output_destroy(output);

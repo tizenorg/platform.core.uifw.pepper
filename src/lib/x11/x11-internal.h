@@ -70,7 +70,6 @@ struct x11_output
     int32_t                  x, y;
     int32_t                  w, h;
     uint32_t                 subpixel;
-    uint32_t                 scale;
     uint8_t                  depth;
     uint8_t                  bpp;
 

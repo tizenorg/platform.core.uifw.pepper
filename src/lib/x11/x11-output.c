@@ -409,8 +409,8 @@ x11_output_set_mode(void *o, const pepper_output_mode_t *mode)
             /* set hints for window */
             memset(&hints, 0, sizeof(hints));
             hints.flags = WM_NORMAL_HINTS_MAX_SIZE | WM_NORMAL_HINTS_MIN_SIZE;
-            hints.min_width  = hints.max_width  = output->w*output->scale;
-            hints.min_height = hints.max_height = output->h*output->scale;
+            hints.min_width  = hints.max_width  = output->w;
+            hints.min_height = hints.max_height = output->h;
             xcb_change_property(conn,
                                 XCB_PROP_MODE_REPLACE,
                                 output->window,
@@ -500,8 +500,8 @@ x11_output_repaint(void *o, const pepper_list_t *plane_list)
                 cookie = xcb_shm_put_image_checked(output->connection->xcb_connection,
                                                    output->window,
                                                    output->gc,
-                                                   output->w * output->scale,   /* total_width  */
-                                                   output->h * output->scale,   /* total_height */
+                                                   output->w,
+                                                   output->h,
                                                    0,   /* src_x */
                                                    0,   /* src_y */
                                                    output->shm.w,  /* src_w */
@@ -564,8 +564,7 @@ static const pepper_output_backend_t x11_output_backend =
 
 PEPPER_API pepper_output_t *
 pepper_x11_output_create(pepper_x11_connection_t *connection,
-                         int32_t w,
-                         int32_t h,
+                         int w, int h, int transform, int scale,
                          const char *renderer)
 {
     static const char       *window_name = "PePPer Compositor";
@@ -591,9 +590,6 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
     /* Hard-Coded: subpixel order to horizontal RGB. */
     output->subpixel = WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB;
 
-    /* Hard-Coded: scale value to 1. */
-    output->scale = 1;
-
     /* Create X11 window */
     {
         uint32_t mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
@@ -609,11 +605,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
                           XCB_COPY_FROM_PARENT,
                           output->window,
                           connection->screen->root,
-                          0,    /* X position of top-left corner of window */
-                          0,    /* Y position of top-left corner of window */
-                          w*output->scale,
-                          h*output->scale,
-                          0,    /* width of windows' border */
+                          0, 0, w, h, 0,
                           XCB_WINDOW_CLASS_INPUT_OUTPUT,
                           connection->screen->root_visual,
                           mask,
@@ -622,8 +614,8 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
         /* cannot resize */
         memset(&hints, 0, sizeof(hints));
         hints.flags = WM_NORMAL_HINTS_MAX_SIZE | WM_NORMAL_HINTS_MIN_SIZE;
-        hints.min_width  = hints.max_width  = w*output->scale;
-        hints.min_height = hints.max_height = h*output->scale;
+        hints.min_width  = hints.max_width  = w;
+        hints.min_height = hints.max_height = h;
         xcb_change_property(connection->xcb_connection,
                             XCB_PROP_MODE_REPLACE,
                             output->window,
@@ -675,7 +667,8 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
     /* Register output object */
     snprintf(&output->name[0], 32, "x11-%p", output);
     base = pepper_compositor_add_output(connection->compositor,
-                                        &x11_output_backend, output->name, output);
+                                        &x11_output_backend, output->name, output,
+                                        transform, scale);
     if (!base)
     {
         PEPPER_ERROR("pepper_compositor_add_output failed\n");

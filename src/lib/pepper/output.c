@@ -123,7 +123,7 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 }
 
 static void
-output_accumulate_damage(pepper_output_t *output)
+output_update_planes(pepper_output_t *output)
 {
     pepper_plane_t     *plane;
     pixman_region32_t   clip;
@@ -131,7 +131,7 @@ output_accumulate_damage(pepper_output_t *output)
     pixman_region32_init(&clip);
 
     pepper_list_for_each_reverse(plane, &output->plane_list, link)
-        pepper_plane_accumulate_damage(plane, &clip);
+        pepper_plane_update(plane, &output->view_list, &clip);
 
     pixman_region32_fini(&clip);
 }
@@ -140,7 +140,6 @@ static void
 output_repaint(pepper_output_t *output)
 {
     pepper_view_t  *view;
-    pepper_plane_t *plane;
 
     pepper_list_for_each(view, &output->compositor->view_list, compositor_link)
         pepper_view_update(view);
@@ -161,11 +160,7 @@ output_repaint(pepper_output_t *output)
     }
 
     output->backend->assign_planes(output->data, &output->view_list);
-
-    pepper_list_for_each(plane, &output->plane_list, link)
-        pepper_plane_update(plane, &output->view_list);
-
-    output_accumulate_damage(output);
+    output_update_planes(output);
     output->backend->repaint(output->data, &output->plane_list);
 
     output->frame.pending = PEPPER_TRUE;
@@ -272,7 +267,8 @@ pepper_output_update_mode(pepper_output_t *output)
 
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-                             const pepper_output_backend_t *backend, const char *name, void *data)
+                             const pepper_output_backend_t *backend, const char *name, void *data,
+                             int transform, int scale)
 {
     pepper_output_t    *output;
     uint32_t            id;
@@ -318,18 +314,29 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     /* Initialize output modes. */
     output_update_mode(output);
 
-    /* TODO: Set scale value according to the config or something. */
-    output->scale = 1;
-
-    /* Initialize geometry. TODO: Calculate position and size of the output. */
-    output->geometry.transform = WL_OUTPUT_TRANSFORM_NORMAL;
+    /* Initialize geometry. */
+    output->geometry.transform = transform;
+    output->scale = scale;
     output->geometry.subpixel = backend->get_subpixel_order(data);
     output->geometry.maker = backend->get_maker_name(data);
     output->geometry.model = backend->get_model_name(data);
     output->geometry.x = 0;
     output->geometry.y = 0;
-    output->geometry.w = output->current_mode.w;
-    output->geometry.h = output->current_mode.h;
+
+    switch (transform)
+    {
+    case WL_OUTPUT_TRANSFORM_90:
+    case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+    case WL_OUTPUT_TRANSFORM_270:
+    case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+        output->geometry.w = output->current_mode.h / scale;
+        output->geometry.h = output->current_mode.w / scale;
+        break;
+    default:
+        output->geometry.w = output->current_mode.w / scale;
+        output->geometry.h = output->current_mode.h / scale;
+        break;
+    }
 
     pepper_list_insert(&compositor->output_list, &output->link);
     pepper_list_init(&output->plane_list);

@@ -305,8 +305,8 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
         }
         else
         {
-            pepper_mat4_inverse(&node->transform, &node->transform);    /* FIXME */
             pixman_transform_from_pepper_mat4(&trans, &node->transform);
+            pixman_transform_invert(&trans, &trans);
             filter = PIXMAN_FILTER_BILINEAR;
         }
 

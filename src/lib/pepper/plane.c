@@ -29,72 +29,61 @@
 #include "pepper-internal.h"
 
 void
-pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list)
+pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list, pixman_region32_t *clip)
 {
-    pepper_view_t  *view;
-    double          output_x = plane->output->geometry.x;
-    double          output_y = plane->output->geometry.y;
+    int                 x = plane->output->geometry.x;
+    int                 y = plane->output->geometry.y;
+    int                 w = plane->output->geometry.w;
+    int                 h = plane->output->geometry.h;
+    pixman_region32_t   plane_clip;
+    pepper_view_t      *view;
 
+    pixman_region32_init(&plane_clip);
     pepper_list_init(&plane->entry_list);
 
     pepper_list_for_each(view, view_list, link)
     {
-        pepper_plane_entry_t   *entry = &view->plane_entries[plane->output->id];
+        pepper_plane_entry_t *entry = &view->plane_entries[plane->output->id];
 
         if (entry->plane == plane)
         {
             pepper_list_insert(plane->entry_list.prev, &entry->link);
 
-            /* Calculate view transform on output local coordinate space. */
-            pepper_mat4_init_translate(&entry->base.transform, -output_x, -output_y, 0.0);
-            pepper_mat4_multiply(&entry->base.transform,
-                                 &entry->base.transform, &view->global_transform);
+            if (entry->need_transform_update)
+            {
+                entry->base.transform = view->global_transform;
+                pepper_transform_global_to_output(&entry->base.transform, plane->output);
+                entry->need_transform_update = PEPPER_FALSE;
+            }
+
+            /* Calculate visible region (output space). */
+            pixman_region32_subtract(&entry->base.visible_region,
+                                     &view->bounding_region, &plane_clip);
+            pixman_region32_intersect_rect(&entry->base.visible_region,
+                                           &entry->base.visible_region, x, y, w, h);
+            pepper_pixman_region_global_to_output(&entry->base.visible_region, plane->output);
+
+            /* Accumulate opaque region of this view (global space). */
+            pixman_region32_union(&plane_clip, &plane_clip, &view->opaque_region);
+
+            /* Add damage for the new visible region. */
+            if (entry->need_damage)
+            {
+                pepper_plane_add_damage_region(plane, &entry->base.visible_region);
+                entry->need_damage = PEPPER_FALSE;
+            }
+
+            /* Flush surface damage. (eg. texture upload) */
+            if (view->surface)
+                pepper_surface_flush_damage(view->surface);
         }
     }
-}
 
-void
-pepper_plane_accumulate_damage(pepper_plane_t *plane, pixman_region32_t *clip)
-{
-    int                     x = plane->output->geometry.x;
-    int                     y = plane->output->geometry.y;
-    int                     w = plane->output->geometry.w;
-    int                     h = plane->output->geometry.h;
-    pepper_plane_entry_t   *entry;
-    pixman_region32_t       plane_clip;
-
-    pixman_region32_init(&plane_clip);
-
-    pepper_list_for_each(entry, &plane->entry_list, link)
-    {
-        pepper_view_t *view = (pepper_view_t *)entry->base.view;
-
-        pixman_region32_subtract(&entry->base.visible_region, &view->bounding_region, &plane_clip);
-        pixman_region32_translate(&entry->base.visible_region, -x, -y);
-        pixman_region32_intersect_rect(&entry->base.visible_region,
-                                       &entry->base.visible_region, 0, 0, w, h);
-
-        /* Accumulate opaque region of this plane on plane_clip. */
-        pixman_region32_union(&plane_clip, &plane_clip, &view->opaque_region);
-
-        if (entry->need_damage)
-        {
-            pepper_plane_add_damage_region(plane, &entry->base.visible_region);
-            entry->need_damage = PEPPER_FALSE;
-        }
-
-        if (view->surface)
-            pepper_surface_flush_damage(view->surface);
-    }
-
-    /* Transform plane_clip to output local coordinate space. */
-    pixman_region32_translate(&plane_clip, -x, -y);
-    pixman_region32_intersect_rect(&plane_clip, &plane_clip, 0, 0, w, h);
-
-    /* Copy accumulated clip region obsecured by opaque regions of views in front of this plane. */
+    /* Copy clip region of this plane. */
     pixman_region32_copy(&plane->clip_region, clip);
 
-    /* Accumulate clip region for the below plane. */
+    /* Accumulate clip region obsecured by this plane. */
+    pepper_pixman_region_global_to_output(&plane_clip, plane->output);
     pixman_region32_union(clip, clip, &plane_clip);
     pixman_region32_fini(&plane_clip);
 }

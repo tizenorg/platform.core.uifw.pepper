@@ -60,7 +60,8 @@ struct pepper_output_backend
 
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-                             const pepper_output_backend_t *backend, const char *name, void *data);
+                             const pepper_output_backend_t *backend, const char *name, void *data,
+                             int transform, int scale);
 
 struct pepper_render_item
 {

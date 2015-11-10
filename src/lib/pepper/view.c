@@ -32,7 +32,8 @@
 void
 pepper_view_mark_dirty(pepper_view_t *view, uint32_t flag)
 {
-    pepper_view_t *child;
+    pepper_view_t  *child;
+    int             i;
 
     if (view->dirty & flag)
         return;
@@ -44,6 +45,9 @@ pepper_view_mark_dirty(pepper_view_t *view, uint32_t flag)
     {
         pepper_list_for_each(child, &view->children_list, parent_link)
             pepper_view_mark_dirty(child, PEPPER_VIEW_GEOMETRY_DIRTY);
+
+        for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
+            view->plane_entries[i].need_transform_update = PEPPER_TRUE;
     }
 
     /* Mark entire subtree's active as dirty. */
