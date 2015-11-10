@@ -1152,6 +1152,54 @@ repaint_view_clip(pepper_renderer_t *renderer, pepper_output_t *output,
 }
 
 static void
+repaint_region_scissor(gl_renderer_t *gr, pepper_render_item_t *node,
+                       pixman_region32_t *damage, pixman_region32_t *surface_region)
+{
+    int                 i, j, w, h;
+    int                 nrects, surface_nrects;
+    pixman_box32_t     *rects, *surface_rects;
+    GLfloat             vertex_array[16];
+    gl_render_target_t *gt = (gl_render_target_t *)gr->base.target;
+
+    pepper_view_get_size(node->view, &w, &h);
+    surface_rects = pixman_region32_rectangles(surface_region, &surface_nrects);
+
+    for (i = 0; i < surface_nrects; i++)
+    {
+        vertex_array[ 0] = surface_rects[i].x1;
+        vertex_array[ 1] = surface_rects[i].y1;
+        vertex_array[ 4] = surface_rects[i].x2;
+        vertex_array[ 5] = surface_rects[i].y1;
+        vertex_array[ 8] = surface_rects[i].x2;
+        vertex_array[ 9] = surface_rects[i].y2;
+        vertex_array[12] = surface_rects[i].x1;
+        vertex_array[13] = surface_rects[i].y2;
+
+        vertex_array[ 2] = (GLfloat)surface_rects[i].x1 / w;
+        vertex_array[ 3] = (GLfloat)surface_rects[i].y1 / h;
+        vertex_array[ 6] = (GLfloat)surface_rects[i].x2 / w;
+        vertex_array[ 7] = (GLfloat)surface_rects[i].y1 / h;
+        vertex_array[10] = (GLfloat)surface_rects[i].x2 / w;
+        vertex_array[11] = (GLfloat)surface_rects[i].y2 / h;
+        vertex_array[14] = (GLfloat)surface_rects[i].x1 / w;
+        vertex_array[15] = (GLfloat)surface_rects[i].y2 / h;
+
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[2]);
+        glEnableVertexAttribArray(1);
+
+        rects = pixman_region32_rectangles(damage, &nrects);
+        for (j = 0; j < nrects; j++)
+        {
+            glScissor(rects[j].x1, gt->height - rects[j].y2,
+                      rects[j].x2 - rects[j].x1, rects[j].y2 - rects[j].y1);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        }
+    }
+}
+
+static void
 repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
                      pepper_render_item_t *node, pixman_region32_t *damage)
 {
@@ -1163,12 +1211,10 @@ repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
 
     gl_shader_t        *shader;
     pixman_region32_t   repaint;
+    pixman_region32_t   surface_blend;
+    pixman_region32_t  *surface_opaque;
 
-    double              x, y;
     int                 i, w, h;
-    int                 nrects;
-    pixman_box32_t     *rects;
-    GLfloat             vertex_array[16];
     float               trans[16];
     GLint               filter;
 
@@ -1211,55 +1257,47 @@ repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
     }
 
-    pepper_view_get_position(node->view, &x, &y);
     pepper_view_get_size(node->view, &w, &h);
-
-    vertex_array[ 0] = 0;
-    vertex_array[ 1] = 0;
-    vertex_array[ 4] = w;
-    vertex_array[ 5] = 0;
-    vertex_array[ 8] = w;
-    vertex_array[ 9] = h;
-    vertex_array[12] = 0;
-    vertex_array[13] = h;
-
-    vertex_array[ 2] = 0;
-    vertex_array[ 3] = 0;
-    vertex_array[ 6] = 1.0f;
-    vertex_array[ 7] = 0;
-    vertex_array[10] = 1.0f;
-    vertex_array[11] = 1.0f;
-    vertex_array[14] = 0;
-    vertex_array[15] = 1.0f;
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[2]);
-    glEnableVertexAttribArray(1);
-
-    shader = &gr->shaders[state->sampler];
-
-    gl_shader_use(gr, shader);
-
-    glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
-    for (i = 0; i < state->num_planes; i++)
-        glUniform1i(shader->texture_uniform[i], i);
-    glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
-
+    surface_opaque = pepper_surface_get_opaque_region(surface);
+    pixman_region32_init_rect(&surface_blend, 0, 0, w, h);
+    pixman_region32_subtract(&surface_blend, &surface_blend, surface_opaque);
 
     glEnable(GL_SCISSOR_TEST);
-    glEnable(GL_BLEND);
-    rects = pixman_region32_rectangles(&repaint, &nrects);
 
-    for (i = 0; i < nrects; i++)
+    if (pixman_region32_not_empty(surface_opaque))
     {
-        glScissor(rects[i].x1, gt->height - rects[i].y2,
-                  rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        if (state->sampler == GL_SHADER_SAMPLER_RGBA)
+            shader = &gr->shaders[GL_SHADER_SAMPLER_RGBX];
+        else
+            shader = &gr->shaders[state->sampler];
+
+        gl_shader_use(gr, shader);
+
+        glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
+        for (i = 0; i < state->num_planes; i++)
+            glUniform1i(shader->texture_uniform[i], i);
+        glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
+
+        repaint_region_scissor(gr, node, &repaint, surface_opaque);
+    }
+
+    if (pixman_region32_not_empty(&surface_blend))
+    {
+        shader = &gr->shaders[state->sampler];
+        gl_shader_use(gr, shader);
+
+        glUniform1f(shader->alpha_uniform, 1.0f /* FIXME: view->alpha? */);
+        for (i = 0; i < state->num_planes; i++)
+            glUniform1i(shader->texture_uniform[i], i);
+        glUniformMatrix4fv(shader->trans_uniform, 1, GL_FALSE, trans);
+
+        glEnable(GL_BLEND);
+        repaint_region_scissor(gr, node, &repaint, &surface_blend);
+        glDisable(GL_BLEND);
     }
 
     glDisable(GL_SCISSOR_TEST);
-    glDisable(GL_BLEND);
+    pixman_region32_fini(&surface_blend);
 
 done:
     pixman_region32_fini(&repaint);
