@@ -130,7 +130,8 @@ drm_buffer_t *
 drm_buffer_create_gbm(pepper_drm_t *drm, struct gbm_surface *surface, struct gbm_bo *bo);
 
 drm_buffer_t *
-drm_buffer_create_pepper(pepper_drm_t *drm, pepper_buffer_t *buffer);
+drm_buffer_create_client(pepper_drm_t *drm,
+                         struct gbm_bo *bo, pepper_buffer_t *buffer, uint32_t format);
 
 void
 drm_buffer_release(drm_buffer_t *buffer);

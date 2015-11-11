@@ -145,9 +145,11 @@ static pepper_plane_t *
 assign_fb_plane(drm_output_t *output, pepper_view_t *view)
 {
     double              x, y;
-    int32_t             w, h, transform;
+    int32_t             w, h;
     pepper_surface_t   *surface;
     pepper_buffer_t    *buffer;
+    struct wl_resource *resource;
+    struct gbm_bo      *bo;
 
     const pepper_output_geometry_t *geometry;
 
@@ -170,17 +172,55 @@ assign_fb_plane(drm_output_t *output, pepper_view_t *view)
         return NULL;
 
     surface = pepper_view_get_surface(view);
-    transform = pepper_surface_get_buffer_transform(surface);
-    if (geometry->transform != transform)
+    if (!surface)
+        return NULL;
+
+    if (geometry->transform != pepper_surface_get_buffer_transform(surface))
+        return NULL;
+
+    if (pepper_output_get_scale(output->base) != pepper_surface_get_buffer_scale(surface))
         return NULL;
 
     buffer = pepper_surface_get_buffer(surface);
     if (!buffer)
         return NULL;
 
-    output->back = drm_buffer_create_pepper(output->drm, buffer);
-    if (!output->back)
+    resource = pepper_buffer_get_resource(buffer);
+    if (!resource)
         return NULL;
+
+    bo = gbm_bo_import(output->drm->gbm_device,
+                       GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
+    if (!bo)
+        return NULL;
+
+    /* TODO: Other alpha formats like ARGB4444, ABGR8888 ?? */
+    if (gbm_bo_get_format(bo) == GBM_FORMAT_ARGB8888)
+    {
+        pixman_box32_t      box;
+        pixman_region32_t  *opaque;
+
+        box.x1 = 0;
+        box.y1 = 0;
+        box.x2 = w;
+        box.y2 = h;
+
+        opaque = pepper_surface_get_opaque_region(surface);
+
+        if (pixman_region32_contains_rectangle(opaque, &box) != PIXMAN_REGION_IN)
+        {
+            gbm_bo_destroy(bo);
+            return NULL;
+        }
+    }
+
+    /* TODO: Hard-coded XRGB8888 */
+    output->back = drm_buffer_create_client(output->drm, bo, buffer, GBM_FORMAT_XRGB8888);
+    if (!output->back)
+    {
+        gbm_bo_destroy(bo);
+        return NULL;
+    }
 
     return output->fb_plane;
 }
@@ -192,9 +232,15 @@ assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
     pepper_surface_t   *surface;
     pepper_buffer_t    *buffer;
     struct wl_resource *resource;
+    struct gbm_bo      *bo;
+    uint32_t            format;
+    pepper_bool_t       found;
+    uint32_t            i;
 
     double              x, y;
     int                 w, h;
+
+    return NULL;
 
     if (!output->drm->gbm_device)
         return NULL;
@@ -214,34 +260,87 @@ assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
     if (wl_shm_buffer_get(resource))
         return NULL;
 
+    found = PEPPER_FALSE;
+
     pepper_list_for_each(plane, &output->drm->plane_list, link)
     {
-        if (!plane->back && (plane->plane->possible_crtcs & (1 << output->crtc_index)))
+        if (plane->back)
+            continue;
+
+        if (!(plane->plane->possible_crtcs & (1 << output->crtc_index)))
+            continue;
+
+        found = PEPPER_TRUE;
+        break;
+    }
+
+    if (!found)
+        return NULL;
+
+    bo = gbm_bo_import(output->drm->gbm_device,
+                       GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
+    if (!bo)
+        return NULL;
+
+    /* TODO: Other alpha formats like ARGB4444, ABGR8888 ?? */
+    format = gbm_bo_get_format(bo);
+
+    if (format == GBM_FORMAT_ARGB8888)
+    {
+        pixman_box32_t      box;
+        pixman_region32_t  *opaque;
+
+        box.x1 = 0;
+        box.y1 = 0;
+        box.x2 = w;
+        box.y2 = h;
+
+        opaque = pepper_surface_get_opaque_region(surface);
+
+        if (pixman_region32_contains_rectangle(opaque, &box) == PIXMAN_REGION_IN)
+            format = GBM_FORMAT_XRGB8888;
+    }
+
+    found = PEPPER_FALSE;
+
+    for (i = 0; i < plane->plane->count_formats; i++)
+    {
+        if (plane->plane->formats[i] == format)
         {
-            plane->back = drm_buffer_create_pepper(output->drm, buffer);
-            if (!plane->back)
-                return NULL;
-
-            /* set position  */
-            pepper_view_get_position(view, &x, &y);
-            pepper_view_get_size(view, &w, &h);
-            plane->dx = (int)x;
-            plane->dy = (int)y;
-            plane->dw = w;
-            plane->dh = h;
-
-            plane->sx = 0 << 16;
-            plane->sy = 0 << 16;
-            plane->sw = w << 16;
-            plane->sh = h << 16;
-
-            plane->output = output;
-
-            return plane->base;
+            found = PEPPER_TRUE;
+            break;
         }
     }
 
-    return NULL;
+    if (!found)
+    {
+        gbm_bo_destroy(bo);
+        return NULL;
+    }
+
+    plane->back = drm_buffer_create_client(output->drm, bo, buffer, format);
+    if (!plane->back)
+    {
+        gbm_bo_destroy(bo);
+        return NULL;
+    }
+
+    /* set position  */
+    pepper_view_get_position(view, &x, &y);
+    pepper_view_get_size(view, &w, &h);
+    plane->dx = (int)x;
+    plane->dy = (int)y;
+    plane->dw = w;
+    plane->dh = h;
+
+    plane->sx = 0 << 16;
+    plane->sy = 0 << 16;
+    plane->sw = w << 16;
+    plane->sh = h << 16;
+
+    plane->output = output;
+
+    return plane->base;
 }
 
 static void

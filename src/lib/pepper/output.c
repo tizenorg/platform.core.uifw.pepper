@@ -399,7 +399,7 @@ pepper_output_get_geometry(pepper_output_t *output)
     return &output->geometry;
 }
 
-PEPPER_API uint32_t
+PEPPER_API int32_t
 pepper_output_get_scale(pepper_output_t *output)
 {
     return output->scale;

@@ -30,15 +30,6 @@
 #include <sys/mman.h>
 #include <pepper-pixman-renderer.h>
 
-static void
-destroy_buffer_gbm(struct gbm_bo *bo, void *data)
-{
-    drm_buffer_t *buffer = data;
-
-    drmModeRmFB(buffer->drm->fd, buffer->id);
-    free(buffer);
-}
-
 drm_buffer_t *
 drm_buffer_create_dumb(pepper_drm_t *drm, uint32_t w, uint32_t h)
 {
@@ -135,6 +126,9 @@ init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo, uint
         PEPPER_CHECK(ret, return PEPPER_FALSE, "drmModeAddFB() failed.\n");
     }
 
+    buffer->bo = bo;
+    gbm_bo_set_user_data(bo, buffer, NULL);
+
     return PEPPER_TRUE;
 }
 
@@ -155,7 +149,6 @@ drm_buffer_create_gbm(pepper_drm_t *drm, struct gbm_surface *surface, struct gbm
     buffer->type = DRM_BUFFER_TYPE_GBM;
     buffer->surface = surface;
     buffer->bo = bo;
-    gbm_bo_set_user_data(bo, buffer, destroy_buffer_gbm);
 
     return buffer;
 }
@@ -169,41 +162,29 @@ handle_client_buffer_destroy(pepper_event_listener_t *listener, pepper_object_t 
 }
 
 drm_buffer_t *
-drm_buffer_create_pepper(pepper_drm_t *drm, pepper_buffer_t *pb)
+drm_buffer_create_client(pepper_drm_t *drm,
+                         struct gbm_bo *bo, pepper_buffer_t *client_buffer, uint32_t format)
 {
-    struct gbm_bo      *bo = NULL;
-    drm_buffer_t       *buffer = NULL;
-    struct wl_resource *resource = pepper_buffer_get_resource(pb);
-
-    bo = gbm_bo_import(drm->gbm_device, GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
-    if (!bo)
-        goto error;
+    drm_buffer_t *buffer;
 
     buffer = calloc(1, sizeof(drm_buffer_t));
-    if (!buffer)
-        goto error;
+    PEPPER_CHECK(buffer, return NULL, "calloc() failed.\n");
 
-    if (!init_buffer_gbm(buffer, drm, bo, GBM_FORMAT_XRGB8888 /* FIXME */))
-        goto error;
+    if (!init_buffer_gbm(buffer, drm, bo, format))
+    {
+        free(buffer);
+        return NULL;
+    }
 
     buffer->type = DRM_BUFFER_TYPE_CLIENT;
-    buffer->client_buffer = pb;
-    buffer->bo = bo;
-    pepper_buffer_reference(pb);
+    buffer->client_buffer = client_buffer;
+    pepper_buffer_reference(client_buffer);
     buffer->client_buffer_destroy_listener =
-        pepper_object_add_event_listener((pepper_object_t *)pb, PEPPER_EVENT_OBJECT_DESTROY, 0,
+        pepper_object_add_event_listener((pepper_object_t *)client_buffer,
+                                         PEPPER_EVENT_OBJECT_DESTROY, 0,
                                          handle_client_buffer_destroy, buffer);
 
     return buffer;
-
-error:
-    if (bo)
-        gbm_bo_destroy(bo);
-
-    if (buffer)
-        free(buffer);
-
-    return NULL;
 }
 
 void

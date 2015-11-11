@@ -884,7 +884,7 @@ pepper_output_move(pepper_output_t *output, int32_t x, int32_t y);
 PEPPER_API const pepper_output_geometry_t *
 pepper_output_get_geometry(pepper_output_t *output);
 
-PEPPER_API unsigned int
+PEPPER_API int32_t
 pepper_output_get_scale(pepper_output_t *output);
 
 PEPPER_API int
