@@ -564,7 +564,7 @@ static const pepper_output_backend_t x11_output_backend =
 
 PEPPER_API pepper_output_t *
 pepper_x11_output_create(pepper_x11_connection_t *connection,
-                         int w, int h, int transform, int scale,
+                         int x, int y, int w, int h, int transform, int scale,
                          const char *renderer)
 {
     static const char       *window_name = "PePPer Compositor";
@@ -678,6 +678,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
 
     output->base = base;
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
+    pepper_output_move(base, x, y);
 
     return base;
 }
