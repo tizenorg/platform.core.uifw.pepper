@@ -54,6 +54,7 @@ pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list, pixma
                 entry->base.transform = view->global_transform;
                 pepper_transform_global_to_output(&entry->base.transform, plane->output);
                 entry->need_transform_update = PEPPER_FALSE;
+                pepper_mat4_inverse(&entry->base.inverse, &entry->base.transform);
             }
 
             /* Calculate visible region (output space). */

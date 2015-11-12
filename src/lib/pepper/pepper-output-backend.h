@@ -67,6 +67,7 @@ struct pepper_render_item
 {
     pepper_view_t       *view;
     pepper_mat4_t       transform;
+    pepper_mat4_t       inverse;
     pixman_region32_t   visible_region;
 };
 

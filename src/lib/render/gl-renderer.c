@@ -993,7 +993,7 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
     int             len;
     pepper_vec2_t   vertices[8];
     pepper_vec2_t   texcoords[8];
-    pepper_mat4_t   inverse;
+    pepper_mat4_t  *inverse = &node->inverse;
     pepper_mat4_t  *transform = &node->transform;
 
     int             nrects, surface_nrects;
@@ -1008,8 +1008,6 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
     vertex_array = wl_array_add(&gr->vertex_array,
                                 surface_nrects * nrects * (8 - 2) * 3 * 2 * 2 * sizeof(GLfloat));
     gr->triangles = 0;
-
-    pepper_mat4_inverse(&inverse /* FIXME */, transform);
 
     for (n = 0; n < surface_nrects; n++)
     {
@@ -1035,7 +1033,7 @@ calc_vertices(gl_renderer_t *gr, pepper_render_item_t *node,
             memcpy(texcoords, vertices, sizeof(vertices));
             for (j = 0; j < len; j++)
             {
-                pepper_mat4_transform_vec2(&inverse, &texcoords[j]);
+                pepper_mat4_transform_vec2(inverse, &texcoords[j]);
                 texcoords[j].x = texcoords[j].x / w;
                 texcoords[j].y = texcoords[j].y / h;
             }
