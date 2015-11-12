@@ -1156,6 +1156,12 @@ pepper_surface_get_opaque_region(pepper_surface_t *surface);
 PEPPER_API pixman_region32_t *
 pepper_surface_get_input_region(pepper_surface_t *surface);
 
+PEPPER_API void
+pepper_surface_send_enter(pepper_surface_t *surface, pepper_output_t *output);
+
+PEPPER_API void
+pepper_surface_send_leave(pepper_surface_t *surface, pepper_output_t *output);
+
 /* Buffer. */
 PEPPER_API void
 pepper_buffer_reference(pepper_buffer_t *buffer);

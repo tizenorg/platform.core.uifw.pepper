@@ -145,6 +145,7 @@ pepper_view_update(pepper_view_t *view)
 {
     pepper_bool_t   active;
     int             i;
+    uint32_t        output_overlap_prev;
 
     if (!view->dirty)
         return;
@@ -227,6 +228,7 @@ pepper_view_update(pepper_view_t *view)
         }
 
         /* Output overlap. */
+        output_overlap_prev = view->output_overlap;
         view->output_overlap = 0;
 
         pepper_list_for_each(output, &view->compositor->output_list, link)
@@ -240,7 +242,16 @@ pepper_view_update(pepper_view_t *view)
             };
 
             if (pixman_region32_contains_rectangle(&view->bounding_region, &box) != PIXMAN_REGION_OUT)
+            {
                 view->output_overlap |= (1 << output->id);
+                if (!(output_overlap_prev & (1 << output->id)))
+                    pepper_surface_send_enter(view->surface, output);
+            }
+            else
+            {
+                if (output_overlap_prev & (1 << output->id))
+                    pepper_surface_send_leave(view->surface, output);
+            }
         }
     }
 
