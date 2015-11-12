@@ -327,7 +327,6 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     surface->buffer.transform = WL_OUTPUT_TRANSFORM_NORMAL;
     surface->buffer.scale = 1;
-    surface->buffer.keep_buffer = PEPPER_TRUE;
 
     pixman_region32_init(&surface->damage_region);
     pixman_region32_init(&surface->opaque_region);
@@ -563,18 +562,6 @@ PEPPER_API pixman_region32_t *
 pepper_surface_get_input_region(pepper_surface_t *surface)
 {
     return &surface->input_region;
-}
-
-PEPPER_API pepper_bool_t
-pepper_surface_get_keep_buffer(pepper_surface_t *surface)
-{
-    return surface->buffer.keep_buffer;
-}
-
-PEPPER_API void
-pepper_surface_set_keep_buffer(pepper_surface_t *surface, pepper_bool_t keep_buffer)
-{
-    surface->buffer.keep_buffer = keep_buffer;
 }
 
 void

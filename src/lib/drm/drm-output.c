@@ -353,15 +353,6 @@ drm_output_assign_planes(void *o, const pepper_list_t *view_list)
     {
         pepper_view_t      *view = l->item;
         pepper_plane_t     *plane = NULL;
-        pepper_surface_t   *surface = pepper_view_get_surface(view);
-        pepper_buffer_t    *buffer = pepper_surface_get_buffer(surface);
-
-        if ((output->render_type == DRM_RENDER_TYPE_PIXMAN) ||
-            (buffer &&
-             (!wl_shm_buffer_get(pepper_buffer_get_resource(buffer)))))
-            pepper_surface_set_keep_buffer(surface, PEPPER_TRUE);
-        else
-            pepper_surface_set_keep_buffer(surface, PEPPER_FALSE);
 
         if (plane == NULL)
             plane = assign_cursor_plane(output, view);
