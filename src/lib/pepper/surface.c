@@ -414,12 +414,10 @@ pepper_surface_commit(pepper_surface_t *surface)
         if (surface->buffer.buffer)
         {
             pepper_event_listener_remove(surface->buffer.destroy_listener);
+            pepper_event_listener_remove(surface->buffer.release_listener);
 
-            if (surface->buffer.keep_buffer)
-            {
-                pepper_event_listener_remove(surface->buffer.release_listener);
+            if (!surface->buffer.flushed)
                 pepper_buffer_unreference(surface->buffer.buffer);
-            }
         }
 
         if (surface->pending.buffer)
@@ -441,6 +439,7 @@ pepper_surface_commit(pepper_surface_t *surface)
         surface->buffer.buffer   = surface->pending.buffer;
         surface->buffer.x       += surface->pending.x;
         surface->buffer.y       += surface->pending.y;
+        surface->buffer.flushed  = PEPPER_FALSE;
 
         surface->pending.newly_attached = PEPPER_FALSE;
         surface->pending.buffer = NULL;
@@ -595,6 +594,9 @@ pepper_surface_flush_damage(pepper_surface_t *surface)
 
     pixman_region32_clear(&surface->damage_region);
 
-    if (surface->buffer.buffer && !surface->buffer.keep_buffer)
+    if (surface->buffer.buffer)
+    {
         pepper_buffer_unreference(surface->buffer.buffer);
+        surface->buffer.flushed = PEPPER_TRUE;
+    }
 }

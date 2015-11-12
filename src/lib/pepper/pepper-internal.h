@@ -197,6 +197,7 @@ struct pepper_surface
         int32_t                  transform;
         int32_t                  scale;
         pepper_bool_t            keep_buffer;
+        pepper_bool_t            flushed;
     } buffer;
 
     /* Surface size in surface local coordinate space.
