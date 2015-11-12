@@ -240,7 +240,8 @@ assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
     double              x, y;
     int                 w, h;
 
-    return NULL;
+    if (!output->use_overlay)
+        return NULL;
 
     if (!output->drm->gbm_device)
         return NULL;
@@ -724,6 +725,7 @@ drm_output_create(drm_connector_t *conn)
     const char     *render_env = getenv("PEPPER_DRM_RENDERER");
     const char     *shadow_env = getenv("PEPPER_DRM_USE_SHADOW");
     const char     *disable_no_comp_env = getenv("PEPPER_DRM_DISABLE_NO_COMP");
+    const char     *use_overlay_env = getenv("PEPPER_DRM_USE_OVERLAY");
 
     PEPPER_CHECK(conn->output == NULL, return NULL, "The connector already has an output.\n");
 
@@ -757,6 +759,9 @@ drm_output_create(drm_connector_t *conn)
 
     if (disable_no_comp_env && strcmp(disable_no_comp_env, "1") == 0)
         output->disable_no_comp = PEPPER_TRUE;
+
+    if (use_overlay_env && strcmp(use_overlay_env, "1") == 0)
+        output->use_overlay = PEPPER_TRUE;
 
     output->primary_plane = pepper_output_add_plane(output->base, NULL);
     PEPPER_CHECK(output->primary_plane, goto error, "pepper_output_add_plane() failed.\n");

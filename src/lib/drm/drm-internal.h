@@ -158,6 +158,7 @@ struct drm_output
     pepper_plane_t         *cursor_plane;
     pepper_plane_t         *primary_plane;
     pepper_plane_t         *fb_plane;
+    pepper_bool_t           use_overlay;
 
     drm_render_type_t       render_type;
     pepper_renderer_t      *renderer;
