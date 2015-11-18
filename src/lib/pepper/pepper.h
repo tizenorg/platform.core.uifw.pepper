@@ -1266,6 +1266,11 @@ pepper_view_get_local_coordinate(pepper_view_t *view, double gx, double gy, doub
 PEPPER_API void
 pepper_view_get_global_coordinate(pepper_view_t *view, double lx, double ly, double *gx, double *gy);
 
+/* Misc */
+PEPPER_API void
+pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
+                                     double sx, double sy, double *bx, double *by);
+
 #ifdef __cplusplus
 }
 #endif
