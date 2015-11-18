@@ -90,7 +90,6 @@ surface_state_release_buffer(pixman_surface_state_t *state)
 
     if (state->buffer)
     {
-        pepper_buffer_unreference(state->buffer);
         pepper_event_listener_remove(state->buffer_destroy_listener);
         state->buffer = NULL;
     }
@@ -217,7 +216,6 @@ done:
 
     if (state->buffer)
     {
-        pepper_buffer_reference(state->buffer);
         state->buffer_destroy_listener =
             pepper_object_add_event_listener((pepper_object_t *)buffer,
                                              PEPPER_EVENT_OBJECT_DESTROY, 0,

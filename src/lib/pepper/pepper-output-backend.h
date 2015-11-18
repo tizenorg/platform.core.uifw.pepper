@@ -55,7 +55,8 @@ struct pepper_output_backend
     void            (*start_repaint_loop)(void *output);
     void            (*repaint)(void *output, const pepper_list_t *plane_list);
     void            (*attach_surface)(void *output, pepper_surface_t *surface, int *w, int *h);
-    void            (*flush_surface_damage)(void *output, pepper_surface_t *surface);
+    void            (*flush_surface_damage)(void *output, pepper_surface_t *surface,
+                                            pepper_bool_t *keep_buffer);
 };
 
 PEPPER_API pepper_output_t *
