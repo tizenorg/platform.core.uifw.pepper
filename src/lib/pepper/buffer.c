@@ -81,3 +81,20 @@ pepper_buffer_get_resource(pepper_buffer_t *buffer)
 {
     return buffer->resource;
 }
+
+PEPPER_API pepper_bool_t
+pepper_buffer_get_size(pepper_buffer_t *buffer, int *w, int *h)
+{
+    if (buffer->attached)
+    {
+        if (w)
+            *w = buffer->w;
+
+        if (h)
+            *h = buffer->h;
+
+        return PEPPER_TRUE;
+    }
+
+    return PEPPER_FALSE;
+}

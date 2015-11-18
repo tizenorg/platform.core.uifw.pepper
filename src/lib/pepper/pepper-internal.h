@@ -153,6 +153,7 @@ struct pepper_buffer
 
     /* the buffer size is unknown until it is actually attached to a renderer. */
     int32_t                 w, h;
+    pepper_bool_t           attached;
 };
 
 pepper_buffer_t *
