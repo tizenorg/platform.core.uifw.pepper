@@ -466,7 +466,6 @@ surface_state_release_buffer(gl_surface_state_t *state)
 
     if (state->buffer)
     {
-        pepper_buffer_unreference(state->buffer);
         pepper_event_listener_remove(state->buffer_destroy_listener);
         state->buffer = NULL;
     }
@@ -634,7 +633,6 @@ done:
 
     if (state->buffer)
     {
-        pepper_buffer_reference(state->buffer);
         state->buffer_destroy_listener =
             pepper_object_add_event_listener((pepper_object_t *)buffer,
                                              PEPPER_EVENT_OBJECT_DESTROY, 0,
@@ -766,9 +764,7 @@ surface_state_flush_shm(gl_surface_state_t *state)
         wl_shm_buffer_end_access(state->shm.buffer);
     }
 
-    pepper_buffer_unreference(state->buffer);
     state->buffer = NULL;
-
     return PEPPER_TRUE;
 }
 

@@ -537,9 +537,22 @@ x11_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 }
 
 static void
-x11_output_flush_surface_damage(void *o, pepper_surface_t *surface)
+x11_output_flush_surface_damage(void *o, pepper_surface_t *surface, pepper_bool_t *keep_buffer)
 {
-    pepper_renderer_flush_surface_damage(((x11_output_t *)o)->renderer, surface);
+    x11_output_t    *output = o;
+    pepper_buffer_t *buffer = pepper_surface_get_buffer(surface);
+
+    pepper_renderer_flush_surface_damage(output->renderer, surface);
+
+    if (output->renderer == output->connection->pixman_renderer ||
+        (buffer && !wl_shm_buffer_get(pepper_buffer_get_resource(buffer))))
+    {
+        *keep_buffer = PEPPER_TRUE;
+    }
+    else
+    {
+        *keep_buffer = PEPPER_FALSE;
+    }
 }
 
 /* X11 output backend to export for PePPer core */

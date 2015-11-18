@@ -191,12 +191,11 @@ struct pepper_surface
 
     struct {
         pepper_buffer_t         *buffer;
-        pepper_event_listener_t *release_listener;
+        pepper_bool_t            has_ref;
         pepper_event_listener_t *destroy_listener;
         int32_t                  x, y;
         int32_t                  transform;
         int32_t                  scale;
-        pepper_bool_t            flushed;
     } buffer;
 
     /* Surface size in surface local coordinate space.
