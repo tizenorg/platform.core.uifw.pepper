@@ -140,6 +140,59 @@ pepper_pixman_region_global_to_output(pixman_region32_t *region, pepper_output_t
     }
 }
 
+PEPPER_API void
+pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
+                                     double sx, double sy, double *bx, double *by)
+{
+    int32_t             scale, w, h;
+
+    scale = surface->buffer.scale;
+    w = surface->buffer.buffer->w;
+    h = surface->buffer.buffer->h;
+
+    switch (surface->buffer.transform)
+    {
+    case WL_OUTPUT_TRANSFORM_NORMAL:
+        *bx = sx - surface->buffer.x;
+        *by = sy - surface->buffer.y;
+        break;
+    case WL_OUTPUT_TRANSFORM_90:
+        *bx = h - (sy - surface->buffer.y);
+        *by = sx - surface->buffer.x;
+        break;
+    case WL_OUTPUT_TRANSFORM_180:
+        *bx = w - (sx - surface->buffer.x);
+        *by = h - (sy - surface->buffer.y);
+        break;
+    case WL_OUTPUT_TRANSFORM_270:
+        *bx = sy - surface->buffer.y;
+        *by = w - (sx - surface->buffer.x);
+        break;
+    case WL_OUTPUT_TRANSFORM_FLIPPED:
+        *bx = w - (sx - surface->buffer.x);
+        *by = sy - surface->buffer.y;
+        break;
+    case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+        *bx = h - (sy - surface->buffer.y);
+        *by = w - (sx - surface->buffer.x);
+        break;
+    case WL_OUTPUT_TRANSFORM_FLIPPED_180:
+        *bx = sx - surface->buffer.x;
+        *by = h - (sy - surface->buffer.y);
+        break;
+    case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+        *bx = sy - surface->buffer.y;
+        *by = sx - surface->buffer.x;
+        break;
+    }
+
+    if (scale != 1)
+    {
+        *bx *= scale;
+        *by *= scale;
+    }
+}
+
 /* Calculate a matrix which transforms vertices into the output local space,
  * so that output backends can simply use the matrix to transform a view
  * into the frame buffer space.
