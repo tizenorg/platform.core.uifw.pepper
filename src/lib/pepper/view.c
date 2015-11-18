@@ -249,7 +249,7 @@ pepper_view_update(pepper_view_t *view)
             }
             else
             {
-                if (output_overlap_prev & (1 << output->id))
+                if (view->surface && (output_overlap_prev & (1 << output->id)))
                     pepper_surface_send_leave(view->surface, output);
             }
         }
