@@ -1157,6 +1157,9 @@ PEPPER_API pixman_region32_t *
 pepper_surface_get_input_region(pepper_surface_t *surface);
 
 PEPPER_API void
+pepper_surface_get_size(pepper_surface_t *surface, int *w, int *h);
+
+PEPPER_API void
 pepper_surface_send_enter(pepper_surface_t *surface, pepper_output_t *output);
 
 PEPPER_API void
@@ -1171,6 +1174,9 @@ pepper_buffer_unreference(pepper_buffer_t *buffer);
 
 PEPPER_API struct wl_resource *
 pepper_buffer_get_resource(pepper_buffer_t *buffer);
+
+PEPPER_API pepper_bool_t
+pepper_buffer_get_size(pepper_buffer_t *buffer, int *w, int *h);
 
 /* View. */
 PEPPER_API pepper_view_t *

@@ -387,6 +387,7 @@ attach_surface_to_outputs(pepper_surface_t *surface)
         {
             surface->buffer.buffer->w = w;
             surface->buffer.buffer->h = h;
+            surface->buffer.buffer->attached = PEPPER_TRUE;
         }
     }
 }
@@ -545,6 +546,16 @@ PEPPER_API pixman_region32_t *
 pepper_surface_get_input_region(pepper_surface_t *surface)
 {
     return &surface->input_region;
+}
+
+PEPPER_API void
+pepper_surface_get_size(pepper_surface_t *surface, int *w, int *h)
+{
+    if (w)
+        *w = surface->w;
+
+    if (h)
+        *h = surface->h;
 }
 
 PEPPER_API void
