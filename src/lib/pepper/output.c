@@ -417,6 +417,12 @@ pepper_output_get_mode(pepper_output_t *output, int index, pepper_output_mode_t 
     return output->backend->get_mode(output->data, index, mode);
 }
 
+PEPPER_API const pepper_output_mode_t *
+pepper_output_get_current_mode(pepper_output_t *output)
+{
+    return &output->current_mode;
+}
+
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode)
 {
