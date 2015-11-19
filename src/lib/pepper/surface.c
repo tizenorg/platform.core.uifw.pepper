@@ -354,7 +354,9 @@ pepper_surface_destroy(pepper_surface_t *surface)
     if (surface->buffer.buffer)
     {
         pepper_event_listener_remove(surface->buffer.destroy_listener);
-        pepper_buffer_unreference(surface->buffer.buffer);
+
+        if (surface->buffer.has_ref)
+            pepper_buffer_unreference(surface->buffer.buffer);
     }
 
     pixman_region32_fini(&surface->damage_region);
