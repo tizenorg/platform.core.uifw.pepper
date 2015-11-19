@@ -893,6 +893,9 @@ pepper_output_get_mode_count(pepper_output_t *output);
 PEPPER_API void
 pepper_output_get_mode(pepper_output_t *output, int index, pepper_output_mode_t *mode);
 
+PEPPER_API const pepper_output_mode_t *
+pepper_output_get_current_mode(pepper_output_t *output);
+
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode);
 
