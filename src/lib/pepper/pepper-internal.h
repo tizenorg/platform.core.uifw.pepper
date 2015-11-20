@@ -233,6 +233,9 @@ void
 pepper_surface_commit(pepper_surface_t *surface);
 
 void
+pepper_surface_commit_state(pepper_surface_t *surface, pepper_surface_state_t *state);
+
+void
 pepper_surface_send_frame_callback_done(pepper_surface_t *surface, uint32_t time);
 
 struct pepper_region
@@ -280,30 +283,41 @@ struct pepper_subsurface
     struct wl_resource      *resource;
 
     double                   x, y;
-    pepper_list_t            parent_link;
+    pepper_list_t            children_list;
+
+    pepper_list_t            parent_link;       /* link to parent's children_list */
+    pepper_list_t            self_link;         /* link to its own children_list */
 
     /* This state is applied when the parent surface's wl_surface state is applied,
      * regardless of the sub-surface's mode. */
     struct
     {
         double               x, y;
+        pepper_list_t        children_list;
+
         pepper_list_t        parent_link;
+        pepper_list_t        self_link;
     } pending;
 
-    pepper_bool_t            restacked;
+    pepper_bool_t            need_restack;
 
-    pepper_bool_t            synchronized;    /* commit behavior */
+    pepper_bool_t            sync;          /* requested commit behavior */
 
     /* In sync mode, wl_surface.commit will apply the pending state into cache.
      * And cached state will flush into surface's current when parent's wl_surface.commit called */
     pepper_surface_state_t   cache;
+    pepper_bool_t            cached;
 
     pepper_event_listener_t *parent_destroy_listener;
+    pepper_event_listener_t *parent_commit_listener;
 };
 
 pepper_subsurface_t *
 pepper_subsurface_create(pepper_surface_t *surface, pepper_surface_t *parent,
                          struct wl_client *client, struct wl_resource *resource, uint32_t id);
+
+pepper_bool_t
+pepper_subsurface_commit(pepper_subsurface_t *subsurface);
 
 void
 pepper_subsurface_destroy(pepper_subsurface_t *subsurface);

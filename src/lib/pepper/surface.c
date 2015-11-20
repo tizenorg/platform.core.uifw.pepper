@@ -243,6 +243,12 @@ static void
 surface_commit(struct wl_client *client, struct wl_resource *resource)
 {
     pepper_surface_t *surface = wl_resource_get_user_data(resource);
+
+    /* If this surface is subsurface and subsurface is in synchronized mode,
+     * pending surface_state should be commit to cache, not current */
+    if (pepper_subsurface_commit(surface->sub))
+        return ;
+
     pepper_surface_commit(surface);
 }
 
@@ -324,8 +330,6 @@ pepper_surface_create(pepper_compositor_t *compositor,
 
     wl_list_init(&surface->frame_callback_list);
     pepper_list_init(&surface->view_list);
-    pepper_list_init(&surface->subsurface_list);
-    pepper_list_init(&surface->subsurface_pending_list);
     pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_SURFACE_ADD, surface);
 
     return surface;
@@ -395,12 +399,12 @@ attach_surface_to_outputs(pepper_surface_t *surface)
 }
 
 void
-pepper_surface_commit(pepper_surface_t *surface)
+pepper_surface_commit_state(pepper_surface_t *surface, pepper_surface_state_t *state)
 {
     pepper_view_t *view;
 
     /* surface.attach(). */
-    if (surface->pending.newly_attached)
+    if (state->newly_attached)
     {
         if (surface->buffer.buffer)
         {
@@ -410,46 +414,46 @@ pepper_surface_commit(pepper_surface_t *surface)
                 pepper_buffer_unreference(surface->buffer.buffer);
         }
 
-        if (surface->pending.buffer)
+        if (state->buffer)
         {
-            pepper_event_listener_remove(surface->pending.buffer_destroy_listener);
-            pepper_buffer_reference(surface->pending.buffer);
+            pepper_event_listener_remove(state->buffer_destroy_listener);
+            pepper_buffer_reference(state->buffer);
             surface->buffer.has_ref  = PEPPER_TRUE;
 
             surface->buffer.destroy_listener =
-                pepper_object_add_event_listener(&surface->pending.buffer->base,
+                pepper_object_add_event_listener(&state->buffer->base,
                                                  PEPPER_EVENT_OBJECT_DESTROY, 0,
                                                  surface_handle_buffer_destroy, surface);
         }
 
-        surface->buffer.buffer   = surface->pending.buffer;
-        surface->buffer.x       += surface->pending.x;
-        surface->buffer.y       += surface->pending.y;
+        surface->buffer.buffer   = state->buffer;
+        surface->buffer.x       += state->x;
+        surface->buffer.y       += state->y;
 
-        surface->pending.newly_attached = PEPPER_FALSE;
-        surface->pending.buffer = NULL;
+        state->newly_attached = PEPPER_FALSE;
+        state->buffer = NULL;
 
         /* Attach to all outputs. */
         attach_surface_to_outputs(surface);
     }
 
     /* surface.set_buffer_transform(), surface.set_buffer_scale(). */
-    surface->buffer.transform  = surface->pending.transform;
-    surface->buffer.scale      = surface->pending.scale;
+    surface->buffer.transform  = state->transform;
+    surface->buffer.scale      = state->scale;
 
     surface_update_size(surface);
 
     /* surface.frame(). */
-    wl_list_insert_list(&surface->frame_callback_list, &surface->pending.frame_callback_list);
-    wl_list_init(&surface->pending.frame_callback_list);
+    wl_list_insert_list(&surface->frame_callback_list, &state->frame_callback_list);
+    wl_list_init(&state->frame_callback_list);
 
     /* surface.damage(). */
-    pixman_region32_copy(&surface->damage_region, &surface->pending.damage_region);
-    pixman_region32_clear(&surface->pending.damage_region);
+    pixman_region32_copy(&surface->damage_region, &state->damage_region);
+    pixman_region32_clear(&state->damage_region);
 
     /* surface.set_opaque_region(), surface.set_input_region(). */
-    pixman_region32_copy(&surface->opaque_region, &surface->pending.opaque_region);
-    pixman_region32_copy(&surface->input_region, &surface->pending.input_region);
+    pixman_region32_copy(&surface->opaque_region, &state->opaque_region);
+    pixman_region32_copy(&surface->input_region, &state->input_region);
 
     pepper_list_for_each(view, &surface->view_list, surface_link)
     {
@@ -457,6 +461,12 @@ pepper_surface_commit(pepper_surface_t *surface)
         pepper_view_resize(view, surface->w, surface->h);
         pepper_view_mark_dirty(view, PEPPER_VIEW_CONTENT_DIRTY);
     }
+}
+
+void
+pepper_surface_commit(pepper_surface_t *surface)
+{
+    pepper_surface_commit_state(surface, &surface->pending);
 
     pepper_object_emit_event(&surface->base, PEPPER_EVENT_SURFACE_COMMIT, NULL);
 }
