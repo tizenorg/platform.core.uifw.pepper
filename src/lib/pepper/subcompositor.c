@@ -41,10 +41,8 @@ subcompositor_get_subsurface(struct wl_client   *client,
                              struct wl_resource *surface_resource,
                              struct wl_resource *parent_resource)
 {
-    pepper_subcompositor_t  *subcompositor = wl_resource_get_user_data(resource);
     pepper_surface_t        *surface = wl_resource_get_user_data(surface_resource);
     pepper_surface_t        *parent  = wl_resource_get_user_data(parent_resource);
-    pepper_subsurface_t     *subsurface;
 
     if (surface->sub)
     {

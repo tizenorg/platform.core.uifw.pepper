@@ -50,30 +50,35 @@ subsurface_set_position(struct wl_client    *client,
 static pepper_bool_t
 subsurface_is_sibling(pepper_subsurface_t *subsurface, pepper_surface_t *sib)
 {
-    pepper_subsurface_t *sibling = sib->sub;
-
-    if (sibling)
-    {
-        if (subsurface->parent == sibling->surface)
-            return PEPPER_TRUE;
-        else if(subsurface->parent == sibling->parent)
-            return PEPPER_TRUE;
-    }
+    if (subsurface->parent == sib)
+        return PEPPER_TRUE;
+    else if(sib->sub && sib->sub->parent == subsurface->parent)
+        return PEPPER_TRUE;
 
     return PEPPER_FALSE;
 }
 
 static void
-subsurface_stack_above(pepper_subsurface_t *subsurface, pepper_surface_t *sib)
+subsurface_stack_above(pepper_subsurface_t *subsurface, pepper_subsurface_t *sibling)
 {
-    pepper_subsurface_t *sibling = sib->sub;
+    pepper_subsurface_t *parent;
+    pepper_list_t       *pos;
 
-    /* TODO: sibling == parent */
+    if (subsurface->parent == sibling->surface)
+    {
+        parent = sibling;
+        pos = &parent->pending.self_link;
+    }
+    else
+    {
+        parent = subsurface->parent->sub;
+        pos = &sibling->pending.parent_link;
+    }
 
     pepper_list_remove(&subsurface->pending.parent_link);
-    pepper_list_insert(&sibling->pending.parent_link, &subsurface->pending.parent_link);
+    pepper_list_insert(pos, &subsurface->pending.parent_link);
 
-    subsurface->restacked = PEPPER_TRUE;
+    parent->need_restack = PEPPER_TRUE;
 }
 
 static void
@@ -107,20 +112,30 @@ subsurface_place_above(struct wl_client     *client,
         return ;
     }
 
-    subsurface_stack_above(sub, sibling);
+    subsurface_stack_above(sub, sibling->sub);
 }
 
 static void
-subsurface_stack_below(pepper_subsurface_t *subsurface, pepper_surface_t *sib)
+subsurface_stack_below(pepper_subsurface_t *subsurface, pepper_subsurface_t *sibling)
 {
-    pepper_subsurface_t *sibling = sib->sub;
+    pepper_subsurface_t *parent;
+    pepper_list_t       *pos;
 
-    /* TODO: sibling == parent */
+    if (subsurface->parent == sibling->surface)
+    {
+        parent = sibling;
+        pos = &parent->pending.self_link;
+    }
+    else
+    {
+        parent = subsurface->parent->sub;
+        pos = &sibling->pending.parent_link;
+    }
 
     pepper_list_remove(&subsurface->pending.parent_link);
-    pepper_list_insert(sibling->pending.parent_link.prev, &subsurface->pending.parent_link);
+    pepper_list_insert(pos->prev, &subsurface->pending.parent_link);
 
-    subsurface->restacked = PEPPER_TRUE;
+    parent->need_restack = PEPPER_TRUE;
 }
 
 static void
@@ -154,7 +169,7 @@ subsurface_place_below(struct wl_client     *client,
         return ;
     }
 
-    subsurface_stack_below(sub, sibling);
+    subsurface_stack_below(sub, sibling->sub);
 }
 
 static void
@@ -163,7 +178,179 @@ subsurface_set_sync(struct wl_client    *client,
 {
     pepper_subsurface_t *subsurface = wl_resource_get_user_data(resource);
 
-    subsurface->synchronized = 1;
+    subsurface->sync = PEPPER_TRUE;
+}
+
+/* Copy 'from' -> 'to' state and clear 'from' state */
+static void
+surface_state_move(pepper_surface_state_t *from, pepper_surface_state_t *to)
+{
+    if (from->newly_attached)
+    {
+        to->newly_attached = PEPPER_TRUE;
+        to->buffer         = from->buffer;
+
+        from->newly_attached = PEPPER_FALSE;
+        from->buffer         = NULL;
+    }
+
+    to->transform = from->transform;
+    to->scale     = from->scale;
+    to->x        += from->x;
+    to->y        += from->y;
+
+    /* FIXME: Need to create another one? */
+    to->buffer_destroy_listener = from->buffer_destroy_listener;
+
+    pixman_region32_copy(&to->damage_region, &from->damage_region);
+    pixman_region32_copy(&to->opaque_region, &from->opaque_region);
+    pixman_region32_copy(&to->input_region,  &from->input_region);
+
+    wl_list_insert_list(&to->frame_callback_list, &from->frame_callback_list);
+
+    /* Clear 'from' state */
+    from->x         = 0;
+    from->y         = 0;
+    from->scale     = 1;
+    from->transform = WL_OUTPUT_TRANSFORM_NORMAL;
+    from->buffer_destroy_listener = NULL;
+
+    pixman_region32_clear(&from->damage_region);
+    pixman_region32_clear(&from->opaque_region);
+    pixman_region32_clear(&from->input_region);
+
+    wl_list_init(&from->frame_callback_list);
+}
+
+static void
+surface_commit_to_cache(pepper_subsurface_t *subsurface)
+{
+    /* Commit surface.pending to subsurface.cache */
+    surface_state_move(&subsurface->surface->pending, &subsurface->cache);
+    subsurface->cached = PEPPER_TRUE;
+}
+
+static void
+surface_commit_from_cache(pepper_subsurface_t *subsurface)
+{
+    /* check if dummy */
+    if (!subsurface->parent)
+        return ;
+
+    /* Commit subsurface.cache to surface.current directly */
+    pepper_surface_commit_state(subsurface->surface, &subsurface->cache);
+    subsurface->cached = PEPPER_FALSE;
+
+    /* Subsurface emit commit event in here */
+    pepper_object_emit_event(&subsurface->surface->base, PEPPER_EVENT_SURFACE_COMMIT, NULL);
+}
+
+static pepper_bool_t
+subsurface_get_sync(pepper_subsurface_t *subsurface)
+{
+    /* TODO: FIXME */
+    if (!subsurface)
+        return PEPPER_FALSE;
+
+    if (!subsurface->parent)
+        return PEPPER_FALSE;
+
+    if (subsurface->sync)
+        return PEPPER_TRUE;
+
+    if (subsurface->parent->sub)
+        return subsurface_get_sync(subsurface->parent->sub);
+
+    return PEPPER_FALSE;
+}
+
+#define EACH_LIST_FOR_EACH(pos1, head1, pos2, head2, member)                             \
+    for (pos1 = pepper_container_of((head1)->next, pos1, member), pos2 = pepper_container_of((head2)->next, pos2, member);              \
+         (&pos1->member != (head1)) && (&pos2->member != (head2));                                            \
+         pos1 = pepper_container_of(pos1->member.next, pos1, member), pos2 = pepper_container_of(pos2->member.next, pos2, member))
+static void
+subsurface_restack_view(pepper_subsurface_t *subsurface)
+{
+    pepper_subsurface_t *child1 = NULL, *child2;
+    pepper_list_t       *list;
+
+    pepper_list_for_each_list(list, &subsurface->children_list)
+    {
+        pepper_view_t *view1, *view2;
+
+        child2 = list->item;
+
+        if (!child1)
+        {
+            child1 = child2;
+            continue;
+        }
+
+        EACH_LIST_FOR_EACH(view1, &child1->surface->view_list,
+                           view2, &child2->surface->view_list,
+                           surface_link)
+        {
+            pepper_view_stack_above(view1, view2, PEPPER_TRUE);
+        }
+
+        child1 = child2;
+    }
+}
+#undef EACH_LIST_FOR_EACH
+
+static void
+subsurface_apply_order(pepper_subsurface_t *subsurface)
+{
+    pepper_list_t       *list;
+    pepper_subsurface_t *child;
+
+    if (!subsurface->need_restack)
+        return ;
+
+    pepper_list_for_each_list(list, &subsurface->pending.children_list)
+    {
+        child = list->item;
+        if (child)
+        {
+            /* */
+            if (child == subsurface)
+            {
+                pepper_list_remove(&child->self_link);
+                pepper_list_insert(&subsurface->children_list, &child->self_link);
+            }
+            else
+            {
+                pepper_list_remove(&child->parent_link);
+                pepper_list_insert(&subsurface->children_list, &child->parent_link);
+            }
+        }
+    }
+    subsurface_restack_view(subsurface);
+
+    subsurface->need_restack = PEPPER_FALSE;
+}
+
+static void
+subsurface_apply_position(pepper_subsurface_t *subsurface)
+{
+    pepper_view_t *view;
+
+    /* Check this subsurface is dummy */
+    if (!subsurface->parent)
+        return ;
+
+    subsurface->x = subsurface->pending.x;
+    subsurface->y = subsurface->pending.y;
+
+    pepper_list_for_each(view, &subsurface->surface->view_list, surface_link)
+        pepper_view_set_position(view, subsurface->x, subsurface->y);
+}
+
+static void
+subsurface_apply_pending_state(pepper_subsurface_t *subsurface)
+{
+    subsurface_apply_position(subsurface);
+    subsurface_apply_order(subsurface);
 }
 
 static void
@@ -172,12 +359,10 @@ subsurface_set_desync(struct wl_client      *client,
 {
     pepper_subsurface_t *subsurface = wl_resource_get_user_data(resource);
 
-    if (subsurface->synchronized )
-    {
-        /* TODO: subsurface_commit(subsurface);? */
-    }
+    if (subsurface->cached)
+        surface_commit_from_cache(subsurface);
 
-    subsurface->synchronized = 0;
+    subsurface->sync = PEPPER_FALSE;
 }
 
 static struct wl_subsurface_interface subsurface_implementation =
@@ -193,14 +378,17 @@ static struct wl_subsurface_interface subsurface_implementation =
 void
 pepper_subsurface_destroy(pepper_subsurface_t *subsurface)
 {
-    pepper_view_t   *view;
-
     pepper_surface_state_fini(&subsurface->cache);
-    pepper_list_remove(&subsurface->parent_link);
-    pepper_list_remove(&subsurface->pending.parent_link);
 
-    pepper_list_for_each(view, &subsurface->surface->view_list, surface_link)
-        pepper_view_destroy(view);
+    if (subsurface->parent)
+    {
+        pepper_list_remove(&subsurface->parent_link);
+        pepper_list_remove(&subsurface->pending.parent_link);
+        pepper_event_listener_remove(subsurface->parent_destroy_listener);
+        pepper_event_listener_remove(subsurface->parent_commit_listener);
+    }
+
+    /* TODO: handle view_list */
 
     free(subsurface);
 }
@@ -216,9 +404,36 @@ static void
 handle_parent_destroy(pepper_event_listener_t *listener,
                       pepper_object_t *object, uint32_t id, void *info, void *data)
 {
-    /* TODO */
+    pepper_subsurface_t *subsurface = data;
+
+    /* TODO: handle view_list */
+
+    pepper_list_remove(&subsurface->parent_link);
+    pepper_list_remove(&subsurface->pending.parent_link);
+
+    pepper_event_listener_remove(subsurface->parent_destroy_listener);
+
+    subsurface->parent = NULL;
 }
 
+static void
+subsurface_parent_commit(pepper_subsurface_t *subsurface)
+{
+    /* Apply subsurface's pending state, and propagate to children */
+    subsurface_apply_pending_state(subsurface);
+
+    if (subsurface->cached)
+        surface_commit_from_cache(subsurface);
+}
+
+static void
+handle_parent_commit(pepper_event_listener_t *listener,
+                     pepper_object_t *object, uint32_t id, void *info, void *data)
+{
+    pepper_subsurface_t *subsurface = data;
+
+    subsurface_parent_commit(subsurface);
+}
 static pepper_bool_t
 pepper_subsurface_create_views(pepper_subsurface_t *subsurface)
 {
@@ -232,11 +447,34 @@ pepper_subsurface_create_views(pepper_subsurface_t *subsurface)
 
         pepper_view_set_surface(subview, subsurface->surface);
         pepper_view_set_parent(subview, parent_view);
+        pepper_view_stack_above(subview, parent_view, PEPPER_TRUE);
         pepper_view_set_transform_inherit(subview, PEPPER_TRUE);
+
+        /* FIXME: map later, when ? */
         pepper_view_map(subview);
     }
 
     return PEPPER_TRUE;
+}
+
+static pepper_subsurface_t *
+pepper_dummy_subsurface_create_for_parent(pepper_surface_t *parent)
+{
+    pepper_subsurface_t *subsurface;
+
+    subsurface = calloc(1, sizeof(pepper_subsurface_t));
+    PEPPER_CHECK(subsurface, return NULL, "calloc() failed.\n");
+
+    subsurface->surface = parent;
+
+    /* Insert itself to own children_list. Parent can be placed below/above of own children */
+    pepper_list_init(&subsurface->children_list);
+    pepper_list_insert(&subsurface->children_list, &subsurface->self_link);
+
+    pepper_list_init(&subsurface->pending.children_list);
+    pepper_list_insert(&subsurface->pending.children_list, &subsurface->pending.self_link);
+
+    return subsurface;
 }
 
 pepper_subsurface_t *
@@ -272,19 +510,43 @@ pepper_subsurface_create(pepper_surface_t   *surface,
 
     subsurface->surface      = surface;
     subsurface->parent       = parent;
-    subsurface->synchronized = PEPPER_TRUE;
+
+    /* A sub-surface is initially in the synchronized mode. */
+    subsurface->sync         = PEPPER_TRUE;
 
     subsurface->x            = subsurface->y         = 0.f;
     subsurface->pending.x    = subsurface->pending.y = 0.f;
 
+    subsurface->parent_link.item         = subsurface;
+    subsurface->self_link.item           = subsurface;
+    subsurface->pending.parent_link.item = subsurface;
+    subsurface->pending.self_link.item   = subsurface;
+
+    subsurface->parent_destroy_listener =
+        pepper_object_add_event_listener(&parent->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
+                                         handle_parent_destroy, subsurface);
+
+    subsurface->parent_commit_listener =
+        pepper_object_add_event_listener(&parent->base, PEPPER_EVENT_SURFACE_COMMIT, 0,
+                                         handle_parent_commit, subsurface);
+
     pepper_surface_state_init(&subsurface->cache);
 
-    pepper_object_add_event_listener(&parent->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
-                                     handle_parent_destroy, subsurface);
+    if (!parent->sub)
+        parent->sub = pepper_dummy_subsurface_create_for_parent(parent);
+    PEPPER_CHECK(parent->sub, goto error, "pepper_dummy_subsurface_create_for_parent() failed\n");
 
-    /* subsurface_list is z-order sorted, youngest child is top-most */
-    pepper_list_insert(&parent->subsurface_list, &subsurface->parent_link);
-    pepper_list_insert(&parent->subsurface_pending_list, &subsurface->pending.parent_link);
+    /* children_list is z-order sorted, youngest child is top-most */
+    pepper_list_init(&subsurface->children_list);
+    pepper_list_init(&subsurface->pending.children_list);
+
+    /* link to myself */
+    pepper_list_insert(&subsurface->children_list, &subsurface->self_link);
+    pepper_list_insert(&subsurface->pending.children_list, &subsurface->pending.self_link);
+
+    /* link to parent */
+    pepper_list_insert(&parent->sub->children_list, &subsurface->parent_link);
+    pepper_list_insert(&parent->sub->pending.children_list, &subsurface->pending.parent_link);
 
     /* create views that corresponding to parent's views */
     ret = pepper_subsurface_create_views(subsurface);
@@ -299,4 +561,18 @@ error:
         pepper_subsurface_destroy(subsurface);
 
     return NULL;
+}
+
+pepper_bool_t
+pepper_subsurface_commit(pepper_subsurface_t *subsurface)
+{
+    if (subsurface_get_sync(subsurface))
+    {
+        surface_commit_to_cache(subsurface);
+
+        /* consume this commit */
+        return PEPPER_TRUE;
+    }
+
+    return PEPPER_FALSE;
 }
