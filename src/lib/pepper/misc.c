@@ -28,7 +28,7 @@
 
 #include "pepper-internal.h"
 
-void
+PEPPER_API void
 pepper_pixman_region_global_to_output(pixman_region32_t *region, pepper_output_t *output)
 {
     pixman_box32_t *box, b;
