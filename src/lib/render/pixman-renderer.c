@@ -285,10 +285,15 @@ pixman_transform_from_pepper_mat4(pixman_transform_t *transform, pepper_mat4_t *
 }
 
 static void
-repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_region32_t *damage)
+repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
+             pepper_render_item_t *node, pixman_region32_t *damage)
 {
+    int32_t                  x, y, w, h, scale;
+    pepper_surface_t        *surface = pepper_view_get_surface(node->view);
+
     pixman_render_target_t  *target = (pixman_render_target_t*)renderer->target;
-    pixman_region32_t        repaint;
+    pixman_region32_t        repaint, repaint_surface;
+    pixman_region32_t        surface_blend, *surface_opaque;
     pixman_surface_state_t  *ps = get_surface_state(renderer, pepper_view_get_surface(node->view));
 
     pixman_region32_init(&repaint);
@@ -308,23 +313,124 @@ repaint_view(pepper_renderer_t *renderer, pepper_render_item_t *node, pixman_reg
         }
         else
         {
-            pixman_transform_from_pepper_mat4(&trans, &node->transform);
-            pixman_transform_invert(&trans, &trans);
+            pixman_transform_from_pepper_mat4(&trans, &node->inverse);
             filter = PIXMAN_FILTER_BILINEAR;
         }
 
+        scale = pepper_surface_get_buffer_scale(surface);
+        pepper_surface_get_buffer_offset(surface, &x, &y);
+        pepper_surface_get_size(surface, &w, &h);
+        pixman_transform_scale(&trans, NULL,
+                               pixman_double_to_fixed(1.0 / scale),
+                               pixman_double_to_fixed(1.0 / scale));
+
+        switch (pepper_surface_get_buffer_transform(surface))
+        {
+        case WL_OUTPUT_TRANSFORM_FLIPPED:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_180:
+            pixman_transform_scale(&trans, NULL, pixman_int_to_fixed(-1), pixman_int_to_fixed(1));
+            pixman_transform_translate(&trans, NULL, pixman_int_to_fixed(w), 0);
+            break;
+        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+            pixman_transform_scale(&trans, NULL, pixman_int_to_fixed(-1), pixman_int_to_fixed(1));
+            pixman_transform_translate(&trans, NULL, pixman_int_to_fixed(h), 0);
+            break;
+        }
+        switch (pepper_surface_get_buffer_transform(surface))
+        {
+        case WL_OUTPUT_TRANSFORM_NORMAL:
+        case WL_OUTPUT_TRANSFORM_FLIPPED:
+            break;
+        case WL_OUTPUT_TRANSFORM_90:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+            pixman_transform_rotate(&trans, NULL, 0, -pixman_fixed_1);
+            pixman_transform_translate(&trans, NULL, 0, pixman_int_to_fixed(w));
+            break;
+        case WL_OUTPUT_TRANSFORM_180:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_180:
+            pixman_transform_rotate(&trans, NULL, -pixman_fixed_1, 0);
+            pixman_transform_translate(&trans, NULL,
+                                       pixman_int_to_fixed(w),
+                                       pixman_int_to_fixed(h));
+            break;
+        case WL_OUTPUT_TRANSFORM_270:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+            pixman_transform_rotate(&trans, NULL, 0, pixman_fixed_1);
+            pixman_transform_translate(&trans, NULL, pixman_int_to_fixed(h), 0);
+            break;
+        }
+
+        pixman_transform_translate(&trans, NULL,
+                                   pixman_int_to_fixed(x), pixman_int_to_fixed(y));
+
         pixman_image_set_transform(ps->image, &trans);
         pixman_image_set_filter(ps->image, filter, NULL, 0);
-        pixman_image_set_clip_region32(target->image, &repaint);
 
-        wl_shm_buffer_begin_access(ps->shm_buffer);
-        pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
-                                 0, 0, /* src_x, src_y */
-                                 0, 0, /* mask_x, mask_y */
-                                 0, 0, /* dest_x, dest_y */
-                                 pixman_image_get_width(target->image),
-                                 pixman_image_get_height(target->image));
-        wl_shm_buffer_end_access(ps->shm_buffer);
+        pixman_region32_init(&repaint_surface);
+        pixman_region32_init_rect(&surface_blend, 0, 0, w, h);
+
+        if (node->transform.flags <= PEPPER_MATRIX_TRANSLATE)
+        {
+            surface_opaque = pepper_surface_get_opaque_region(surface);
+            pixman_region32_subtract(&surface_blend, &surface_blend, surface_opaque);
+
+            if (pixman_region32_not_empty(surface_opaque))
+            {
+                pixman_region32_translate(surface_opaque,
+                                          (int)node->transform.m[12], (int)node->transform.m[13]);
+                pepper_pixman_region_global_to_output(surface_opaque, output);
+                pixman_region32_intersect(&repaint_surface, &repaint, surface_opaque);
+                pixman_image_set_clip_region32(target->image, &repaint_surface);
+
+                wl_shm_buffer_begin_access(ps->shm_buffer);
+                pixman_image_composite32(PIXMAN_OP_SRC, ps->image, NULL, target->image,
+                                         0, 0, /* src_x, src_y */
+                                         0, 0, /* mask_x, mask_y */
+                                         0, 0, /* dest_x, dest_y */
+                                         pixman_image_get_width(target->image),
+                                         pixman_image_get_height(target->image));
+                wl_shm_buffer_end_access(ps->shm_buffer);
+            }
+
+            if (pixman_region32_not_empty(&surface_blend))
+            {
+                pixman_region32_translate(&surface_blend,
+                                          (int)node->transform.m[12], (int)node->transform.m[13]);
+                pepper_pixman_region_global_to_output(&surface_blend, output);
+                pixman_region32_intersect(&repaint_surface, &repaint, &surface_blend);
+                pixman_image_set_clip_region32(target->image, &repaint_surface);
+
+                wl_shm_buffer_begin_access(ps->shm_buffer);
+                pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
+                                         0, 0, /* src_x, src_y */
+                                         0, 0, /* mask_x, mask_y */
+                                         0, 0, /* dest_x, dest_y */
+                                         pixman_image_get_width(target->image),
+                                         pixman_image_get_height(target->image));
+                wl_shm_buffer_end_access(ps->shm_buffer);
+            }
+        }
+        else
+        {
+            pixman_region32_translate(&surface_blend,
+                                      (int)node->transform.m[12], (int)node->transform.m[13]);
+            pepper_pixman_region_global_to_output(&surface_blend, output);
+            pixman_region32_intersect(&repaint_surface, &repaint, &surface_blend);
+            pixman_image_set_clip_region32(target->image, &repaint_surface);
+
+            wl_shm_buffer_begin_access(ps->shm_buffer);
+            pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
+                                     0, 0, /* src_x, src_y */
+                                     0, 0, /* mask_x, mask_y */
+                                     0, 0, /* dest_x, dest_y */
+                                     pixman_image_get_width(target->image),
+                                     pixman_image_get_height(target->image));
+            wl_shm_buffer_end_access(ps->shm_buffer);
+        }
+
+        pixman_region32_fini(&repaint_surface);
+        pixman_region32_fini(&surface_blend);
     }
 
     pixman_region32_fini(&repaint);
@@ -356,7 +462,7 @@ pixman_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *out
             clear_background((pixman_renderer_t *)renderer, damage);
 
         pepper_list_for_each_list_reverse(l, render_list)
-            repaint_view(renderer, (pepper_render_item_t *)l->item, damage);
+            repaint_view(renderer, output, (pepper_render_item_t *)l->item, damage);
     }
 }
 

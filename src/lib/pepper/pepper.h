@@ -1271,6 +1271,9 @@ pepper_view_get_global_coordinate(pepper_view_t *view, double lx, double ly, dou
 
 /* Misc */
 PEPPER_API void
+pepper_pixman_region_global_to_output(pixman_region32_t *region, pepper_output_t *output);
+
+PEPPER_API void
 pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
                                      double sx, double sy, double *bx, double *by);
 
