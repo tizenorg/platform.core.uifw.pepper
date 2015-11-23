@@ -308,6 +308,22 @@ pepper_compositor_add_view(pepper_compositor_t *compositor)
     return view;
 }
 
+static void
+view_unlink_from_surface(pepper_view_t *view)
+{
+    pepper_list_remove(&view->surface_link);
+
+    subsurface_destroy_children_views(view->surface->sub, view);
+}
+
+static void
+view_link_to_surface(pepper_view_t *view)
+{
+    pepper_list_insert(&view->surface->view_list, &view->surface_link);
+
+    subsurface_create_children_views(view->surface->sub, view);
+}
+
 PEPPER_API pepper_bool_t
 pepper_view_set_surface(pepper_view_t *view, pepper_surface_t *surface)
 {
@@ -315,12 +331,12 @@ pepper_view_set_surface(pepper_view_t *view, pepper_surface_t *surface)
         return PEPPER_TRUE;
 
     if (view->surface)
-        pepper_list_remove(&view->surface_link);
+        view_unlink_from_surface(view);
 
     view->surface = surface;
 
     if (view->surface)
-        pepper_list_insert(&surface->view_list, &view->surface_link);
+        view_link_to_surface(view);
 
     pepper_view_mark_dirty(view, PEPPER_VIEW_GEOMETRY_DIRTY);
     return PEPPER_TRUE;

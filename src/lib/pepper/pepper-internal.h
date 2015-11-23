@@ -322,6 +322,12 @@ pepper_subsurface_commit(pepper_subsurface_t *subsurface);
 void
 pepper_subsurface_destroy(pepper_subsurface_t *subsurface);
 
+void
+subsurface_destroy_children_views(pepper_subsurface_t *subsurface, pepper_view_t *parent_view);
+
+void
+subsurface_create_children_views(pepper_subsurface_t *subsurface, pepper_view_t *parent_view);
+
 /* Input */
 struct pepper_pointer
 {
