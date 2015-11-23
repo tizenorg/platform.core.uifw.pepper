@@ -576,3 +576,61 @@ pepper_subsurface_commit(pepper_subsurface_t *subsurface)
 
     return PEPPER_FALSE;
 }
+
+void
+subsurface_destroy_children_views(pepper_subsurface_t *subsurface, pepper_view_t *parent_view)
+{
+    pepper_list_t *list;
+
+    if (!subsurface)
+        return ;
+
+    pepper_list_for_each_list(list, &subsurface->children_list)
+    {
+        pepper_subsurface_t *child = list->item;
+
+        /* Except its own */
+        if(child && (child != subsurface))
+        {
+            pepper_view_t *view;
+
+            pepper_list_for_each(view, &subsurface->surface->view_list, surface_link)
+            {
+                if (view->parent == parent_view)
+                {
+                    /* FIXME: need this ? */
+                    pepper_view_set_surface(view, NULL);
+                    pepper_view_destroy(view);
+                }
+            }
+        }
+    }
+}
+
+void
+subsurface_create_children_views(pepper_subsurface_t *subsurface, pepper_view_t *parent_view)
+{
+    pepper_list_t *list;
+
+    if (!subsurface)
+        return ;
+
+    pepper_list_for_each_list(list, &subsurface->children_list)
+    {
+        pepper_subsurface_t *child = list->item;
+
+        /* Except its own */
+        if(child && (child != subsurface))
+        {
+            pepper_view_t *view = pepper_compositor_add_view(subsurface->surface->compositor);
+            pepper_view_set_surface(view, child->surface);
+            pepper_view_set_parent(view, parent_view);
+            pepper_view_set_transform_inherit(view, PEPPER_TRUE);
+
+            /* FIXME */
+            pepper_view_map(view);
+        }
+    }
+
+    subsurface->need_restack = PEPPER_TRUE;
+}
