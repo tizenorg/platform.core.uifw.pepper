@@ -109,6 +109,8 @@ handle_surface_destroy(pepper_event_listener_t *listener,
     pepper_event_listener_remove(shsurf->focus_enter_listener);
     pepper_event_listener_remove(shsurf->focus_leave_listener);
 
+    pepper_view_destroy(shsurf->view);
+
     if (shsurf->resource)
         wl_resource_destroy(shsurf->resource);
 
