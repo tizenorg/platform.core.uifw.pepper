@@ -147,8 +147,8 @@ pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
     int32_t             scale, w, h;
 
     scale = surface->buffer.scale;
-    w = surface->buffer.buffer->w;
-    h = surface->buffer.buffer->h;
+    w = surface->w;
+    h = surface->h;
 
     switch (surface->buffer.transform)
     {
