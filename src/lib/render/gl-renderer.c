@@ -1193,30 +1193,35 @@ repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
 
     for (i = 0; i < surface_nrects; i++)
     {
-        double x1, y1, x2, y2;
+        double x, y;
 
         pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x1, surface_rects[i].y1,
-                                             &x1, &y1);
-        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x2, surface_rects[i].y2,
-                                             &x2, &y2);
-
+                                             &x, &y);
         vertex_array[ 0] = surface_rects[i].x1;
         vertex_array[ 1] = surface_rects[i].y1;
+        vertex_array[ 2] = (GLfloat)x / w;
+        vertex_array[ 3] = (GLfloat)y / h;
+
+        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x2, surface_rects[i].y1,
+                                             &x, &y);
         vertex_array[ 4] = surface_rects[i].x2;
         vertex_array[ 5] = surface_rects[i].y1;
+        vertex_array[ 6] = (GLfloat)x / w;
+        vertex_array[ 7] = (GLfloat)y / h;
+
+        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x2, surface_rects[i].y2,
+                                             &x, &y);
         vertex_array[ 8] = surface_rects[i].x2;
         vertex_array[ 9] = surface_rects[i].y2;
+        vertex_array[10] = (GLfloat)x / w;
+        vertex_array[11] = (GLfloat)y / h;
+
+        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x1, surface_rects[i].y2,
+                                             &x, &y);
         vertex_array[12] = surface_rects[i].x1;
         vertex_array[13] = surface_rects[i].y2;
-
-        vertex_array[ 2] = (GLfloat)x1 / w;
-        vertex_array[ 3] = (GLfloat)y1 / h;
-        vertex_array[ 6] = (GLfloat)x2 / w;
-        vertex_array[ 7] = (GLfloat)y1 / h;
-        vertex_array[10] = (GLfloat)x2 / w;
-        vertex_array[11] = (GLfloat)y2 / h;
-        vertex_array[14] = (GLfloat)x1 / w;
-        vertex_array[15] = (GLfloat)y2 / h;
+        vertex_array[14] = (GLfloat)x / w;
+        vertex_array[15] = (GLfloat)y / h;
 
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
         glEnableVertexAttribArray(0);
