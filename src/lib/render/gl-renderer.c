@@ -596,7 +596,8 @@ surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
 
     gr->query_buffer(display, resource, EGL_WIDTH, &state->buffer_width);
     gr->query_buffer(display, resource, EGL_HEIGHT, &state->buffer_height);
-    gr->query_buffer(display, resource, EGL_WAYLAND_Y_INVERTED_WL, &state->y_inverted);
+    if (!gr->query_buffer(display, resource, EGL_WAYLAND_Y_INVERTED_WL, &state->y_inverted))
+        state->y_inverted = 1;
 
     state->buffer_type = BUFFER_TYPE_EGL;
 
@@ -1030,6 +1031,8 @@ calc_vertices(gl_renderer_t *gr, gl_surface_state_t *state, pepper_render_item_t
                 pepper_mat4_transform_vec2(inverse, &texcoords[j]);
                 pepper_coordinates_surface_to_buffer(pepper_view_get_surface(node->view),
                                                      texcoords[j].x, texcoords[j].y, &x, &y);
+                if (!state->y_inverted)
+                    y = state->buffer_height - y;
                 texcoords[j].x = x / state->buffer_width;
                 texcoords[j].y = y / state->buffer_height;
             }
@@ -1197,6 +1200,8 @@ repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
 
         pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x1, surface_rects[i].y1,
                                              &x, &y);
+        if (!state->y_inverted)
+            y = h - y;
         vertex_array[ 0] = surface_rects[i].x1;
         vertex_array[ 1] = surface_rects[i].y1;
         vertex_array[ 2] = (GLfloat)x / w;
@@ -1204,6 +1209,8 @@ repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
 
         pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x2, surface_rects[i].y1,
                                              &x, &y);
+        if (!state->y_inverted)
+            y = h - y;
         vertex_array[ 4] = surface_rects[i].x2;
         vertex_array[ 5] = surface_rects[i].y1;
         vertex_array[ 6] = (GLfloat)x / w;
@@ -1211,6 +1218,8 @@ repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
 
         pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x2, surface_rects[i].y2,
                                              &x, &y);
+        if (!state->y_inverted)
+            y = h - y;
         vertex_array[ 8] = surface_rects[i].x2;
         vertex_array[ 9] = surface_rects[i].y2;
         vertex_array[10] = (GLfloat)x / w;
@@ -1218,6 +1227,8 @@ repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
 
         pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x1, surface_rects[i].y2,
                                              &x, &y);
+        if (!state->y_inverted)
+            y = h - y;
         vertex_array[12] = surface_rects[i].x1;
         vertex_array[13] = surface_rects[i].y2;
         vertex_array[14] = (GLfloat)x / w;
