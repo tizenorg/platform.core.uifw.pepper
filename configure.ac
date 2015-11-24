@@ -189,6 +189,22 @@ if test x$wayland_scanner = x; then
     wayland_scanner=`$PKG_CONFIG --variable=wayland_scanner wayland-scanner`
 fi
 
+# document
+AC_ARG_ENABLE([document],
+              [AC_HELP_STRING([--disable-document],
+                              [Disable building the documentation])],
+              [],
+              [enable_document=yes])
+
+AM_CONDITIONAL(ENABLE_DOCUMENT, test x$enable_document = xyes)
+
+if test x$enable_document = xyes; then
+    AC_PATH_PROG(DOXYGEN, [doxygen])
+    if test x$DOXYGEN = x; then
+        AC_MSG_ERROR([Documentation need doxygen, but not found])
+    fi
+fi
+
 # Output files
 AC_CONFIG_FILES([
 Makefile
@@ -215,6 +231,13 @@ if test x$enable_x11 = xyes; then
     AC_CONFIG_FILES([
         src/lib/x11/Makefile
         pkgconfig/pepper-x11.pc
+    ])
+fi
+
+if test x$enable_document = xyes; then
+    AC_CONFIG_FILES([
+        doc/Makefile
+        doc/doxygen/pepper.doxygen
     ])
 fi
 
