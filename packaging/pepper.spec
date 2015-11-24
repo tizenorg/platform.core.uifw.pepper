@@ -20,6 +20,7 @@ BuildRequires:	pkgconfig(gbm)
 BuildRequires:	pkgconfig(egl)
 BuildRequires:	pkgconfig(glesv2)
 BuildRequires:  pkgconfig(xkbcommon)
+BuildRequires:	doxygen
 
 %description
 Pepper is a lightweight and flexible library for developing various types of wayland compositors.

@@ -14,3 +14,7 @@ if ENABLE_X11
 pkgconfig_DATA += pkgconfig/pepper-x11.pc
 endif
 pkgconfig_DATA += pkgconfig/pepper-desktop-shell.pc
+
+if ENABLE_DOCUMENT
+SUBDIRS += doc
+endif

@@ -1,0 +1,11 @@
+PROJECT_NAME           = "Pepper"
+OUTPUT_DIRECTORY       = @top_builddir@/doc/
+JAVADOC_AUTOBRIEF      = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+INPUT                  = @top_builddir@/src/
+FILE_PATTERNS          = *.h *.c
+EXCLUDE_PATTERNS       = */protocol/*
+RECURSIVE              = YES
+GENERATE_LATEX         = NO
+DOTFILE_DIRS           = @top_srcdir@/doc/doxygen
+STRIP_FROM_PATH        = @top_srcdir@
