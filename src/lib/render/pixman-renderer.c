@@ -317,35 +317,31 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
             filter = PIXMAN_FILTER_BILINEAR;
         }
 
-        scale = pepper_surface_get_buffer_scale(surface);
         pepper_surface_get_buffer_offset(surface, &x, &y);
         pepper_surface_get_size(surface, &w, &h);
-        pixman_transform_scale(&trans, NULL,
-                               pixman_double_to_fixed(1.0 / scale),
-                               pixman_double_to_fixed(1.0 / scale));
+        pixman_transform_translate(&trans, NULL,
+                                   pixman_int_to_fixed(x), pixman_int_to_fixed(y));
 
         switch (pepper_surface_get_buffer_transform(surface))
         {
         case WL_OUTPUT_TRANSFORM_FLIPPED:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
         case WL_OUTPUT_TRANSFORM_FLIPPED_180:
+        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
             pixman_transform_scale(&trans, NULL, pixman_int_to_fixed(-1), pixman_int_to_fixed(1));
             pixman_transform_translate(&trans, NULL, pixman_int_to_fixed(w), 0);
             break;
-        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
-        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
-            pixman_transform_scale(&trans, NULL, pixman_int_to_fixed(-1), pixman_int_to_fixed(1));
-            pixman_transform_translate(&trans, NULL, pixman_int_to_fixed(h), 0);
-            break;
         }
+
         switch (pepper_surface_get_buffer_transform(surface))
         {
         case WL_OUTPUT_TRANSFORM_NORMAL:
         case WL_OUTPUT_TRANSFORM_FLIPPED:
             break;
         case WL_OUTPUT_TRANSFORM_90:
-        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
-            pixman_transform_rotate(&trans, NULL, 0, -pixman_fixed_1);
-            pixman_transform_translate(&trans, NULL, 0, pixman_int_to_fixed(w));
+        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
+            pixman_transform_rotate(&trans, NULL, 0, pixman_fixed_1);
+            pixman_transform_translate(&trans, NULL, pixman_int_to_fixed(h), 0);
             break;
         case WL_OUTPUT_TRANSFORM_180:
         case WL_OUTPUT_TRANSFORM_FLIPPED_180:
@@ -355,14 +351,16 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
                                        pixman_int_to_fixed(h));
             break;
         case WL_OUTPUT_TRANSFORM_270:
-        case WL_OUTPUT_TRANSFORM_FLIPPED_90:
-            pixman_transform_rotate(&trans, NULL, 0, pixman_fixed_1);
-            pixman_transform_translate(&trans, NULL, pixman_int_to_fixed(h), 0);
+        case WL_OUTPUT_TRANSFORM_FLIPPED_270:
+            pixman_transform_rotate(&trans, NULL, 0, -pixman_fixed_1);
+            pixman_transform_translate(&trans, NULL, 0, pixman_int_to_fixed(w));
             break;
         }
 
-        pixman_transform_translate(&trans, NULL,
-                                   pixman_int_to_fixed(x), pixman_int_to_fixed(y));
+        scale = pepper_surface_get_buffer_scale(surface);
+        pixman_transform_scale(&trans, NULL,
+                               pixman_int_to_fixed(scale),
+                               pixman_int_to_fixed(scale));
 
         pixman_image_set_transform(ps->image, &trans);
         pixman_image_set_filter(ps->image, filter, NULL, 0);
