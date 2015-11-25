@@ -1179,60 +1179,39 @@ repaint_view_clip(pepper_renderer_t *renderer, pepper_output_t *output,
 }
 
 static void
+set_vertex(gl_surface_state_t *state, int32_t sx, int32_t sy, GLfloat *vertex_array)
+{
+    double x, y;
+
+    pepper_coordinates_surface_to_buffer(state->surface, sx, sy, &x, &y);
+
+    if (!state->y_inverted)
+        y = state->buffer_height - y;
+
+    vertex_array[ 0] = sx;
+    vertex_array[ 1] = sy;
+    vertex_array[ 2] = (GLfloat)x / state->buffer_width;
+    vertex_array[ 3] = (GLfloat)y / state->buffer_height;
+}
+
+static void
 repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
                        pixman_region32_t *damage, pixman_region32_t *surface_region)
 {
-    int                 i, j, w, h;
+    int                 i, j;
     int                 nrects, surface_nrects;
     pixman_box32_t     *rects, *surface_rects;
     GLfloat             vertex_array[16];
-
     gl_render_target_t *gt = (gl_render_target_t *)gr->base.target;
-    pepper_surface_t   *surface = state->surface;
 
-    w = state->buffer_width;
-    h = state->buffer_height;
     surface_rects = pixman_region32_rectangles(surface_region, &surface_nrects);
 
     for (i = 0; i < surface_nrects; i++)
     {
-        double x, y;
-
-        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x1, surface_rects[i].y1,
-                                             &x, &y);
-        if (!state->y_inverted)
-            y = h - y;
-        vertex_array[ 0] = surface_rects[i].x1;
-        vertex_array[ 1] = surface_rects[i].y1;
-        vertex_array[ 2] = (GLfloat)x / w;
-        vertex_array[ 3] = (GLfloat)y / h;
-
-        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x2, surface_rects[i].y1,
-                                             &x, &y);
-        if (!state->y_inverted)
-            y = h - y;
-        vertex_array[ 4] = surface_rects[i].x2;
-        vertex_array[ 5] = surface_rects[i].y1;
-        vertex_array[ 6] = (GLfloat)x / w;
-        vertex_array[ 7] = (GLfloat)y / h;
-
-        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x2, surface_rects[i].y2,
-                                             &x, &y);
-        if (!state->y_inverted)
-            y = h - y;
-        vertex_array[ 8] = surface_rects[i].x2;
-        vertex_array[ 9] = surface_rects[i].y2;
-        vertex_array[10] = (GLfloat)x / w;
-        vertex_array[11] = (GLfloat)y / h;
-
-        pepper_coordinates_surface_to_buffer(surface, surface_rects[i].x1, surface_rects[i].y2,
-                                             &x, &y);
-        if (!state->y_inverted)
-            y = h - y;
-        vertex_array[12] = surface_rects[i].x1;
-        vertex_array[13] = surface_rects[i].y2;
-        vertex_array[14] = (GLfloat)x / w;
-        vertex_array[15] = (GLfloat)y / h;
+        set_vertex(state, surface_rects[i].x1, surface_rects[i].y1, &vertex_array[0]);
+        set_vertex(state, surface_rects[i].x2, surface_rects[i].y1, &vertex_array[4]);
+        set_vertex(state, surface_rects[i].x2, surface_rects[i].y2, &vertex_array[8]);
+        set_vertex(state, surface_rects[i].x1, surface_rects[i].y2, &vertex_array[12]);
 
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), &vertex_array[0]);
         glEnableVertexAttribArray(0);
