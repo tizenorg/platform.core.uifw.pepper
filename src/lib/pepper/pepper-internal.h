@@ -79,24 +79,25 @@ struct pepper_event_listener
 /* compositor */
 struct pepper_compositor
 {
-    pepper_object_t     base;
-    char               *socket_name;
-    struct wl_display  *display;
-    struct wl_global   *global;
-    struct wl_list      resource_list;
+    pepper_object_t          base;
+    char                    *socket_name;
+    struct wl_display       *display;
+    struct wl_global        *global;
+    struct wl_list           resource_list;
 
-    pepper_list_t       surface_list;
-    pepper_list_t       region_list;
-    pepper_list_t       seat_list;
-    pepper_list_t       output_list;
-    pepper_list_t       view_list;
-    pepper_list_t       input_device_list;
+    pepper_list_t            surface_list;
+    pepper_list_t            region_list;
+    pepper_list_t            seat_list;
+    pepper_list_t            output_list;
+    pepper_list_t            view_list;
+    pepper_list_t            input_device_list;
+    pepper_subcompositor_t  *subcomp;
 
-    uint32_t            output_id_allocator;
-    pepper_bool_t       update_scheduled;
+    uint32_t                 output_id_allocator;
+    pepper_bool_t            update_scheduled;
 
-    clockid_t           clock_id;
-    pepper_bool_t       clock_used;
+    clockid_t                clock_id;
+    pepper_bool_t            clock_used;
 };
 
 void

@@ -140,6 +140,9 @@ pepper_compositor_create(const char *socket_name)
     ret = pepper_data_device_manager_init(compositor->display);
     PEPPER_CHECK(ret == PEPPER_TRUE, goto error, "pepper_data_device_manager_init() failed.\n");
 
+    compositor->subcomp = pepper_subcompositor_create(compositor);
+    PEPPER_CHECK(compositor->subcomp, goto error, "pepper_subcompositor_create() failed.\n");
+
     compositor->clock_id = CLOCK_MONOTONIC;
     return compositor;
 
@@ -163,6 +166,9 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
 
     pepper_list_for_each_safe(region, next_region, &compositor->region_list, link)
         pepper_region_destroy(region);
+
+    if (compositor->subcomp)
+        pepper_subcompositor_destroy(compositor->subcomp);
 
     if (compositor->socket_name)
         free(compositor->socket_name);
