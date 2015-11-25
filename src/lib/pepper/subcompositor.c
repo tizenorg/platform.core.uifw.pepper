@@ -124,10 +124,13 @@ error:
 void
 pepper_subcompositor_destroy(pepper_subcompositor_t *subcompositor)
 {
+    struct wl_resource *resource, *tmp;
+
     if (subcompositor->global)
         wl_global_destroy(subcompositor->global);
 
-    /* TODO */
+    wl_resource_for_each_safe(resource, tmp, &subcompositor->resource_list)
+        wl_resource_destroy(resource);
 
     pepper_object_fini(&subcompositor->base);
     free(subcompositor);
