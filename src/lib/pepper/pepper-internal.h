@@ -455,7 +455,6 @@ struct pepper_seat
     struct wl_list              resource_list;
 
     enum wl_seat_capability     caps;
-    uint32_t                    modifier;
 
     pepper_pointer_t           *pointer;
     pepper_keyboard_t          *keyboard;
