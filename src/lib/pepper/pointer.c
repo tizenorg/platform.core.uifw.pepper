@@ -108,6 +108,8 @@ pointer_set_position(pepper_pointer_t *pointer, uint32_t time, double x, double 
 void
 pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id, pepper_input_event_t *event)
 {
+    pointer->time = event->time;
+
     switch (id)
     {
     case PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE:
