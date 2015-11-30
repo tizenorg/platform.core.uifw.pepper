@@ -202,13 +202,6 @@ xdg_surface_set_minimized(struct wl_client      *client,
     shell_surface_set_minimized(shsurf);
 }
 
-static void
-xdg_surface_needs_attention(struct wl_client    *client,
-                            struct wl_resource  *resource)
-{
-    /* TODO: Show the minimized shell surface */
-}
-
 static const struct xdg_surface_interface xdg_surface_implementation =
 {
     xdg_surface_destroy,
@@ -225,8 +218,14 @@ static const struct xdg_surface_interface xdg_surface_implementation =
     xdg_surface_set_fullscreen,
     xdg_surface_unset_fullscreen,
     xdg_surface_set_minimized,
-    xdg_surface_needs_attention,
 };
+
+static void
+xdg_shell_destroy(struct wl_client     *client,
+                               struct wl_resource   *resource)
+{
+    /* TODO: */
+}
 
 static void
 xdg_shell_use_unstable_version(struct wl_client     *client,
@@ -286,14 +285,14 @@ xdg_shell_get_xdg_popup(struct wl_client    *client,
                         struct wl_resource  *seat_resource,
                         uint32_t             serial,
                         int32_t              x,
-                        int32_t              y,
-                        uint32_t             flags)
+                        int32_t              y)
 {
     shell_client_t      *shell_client = wl_resource_get_user_data(resource);
     pepper_surface_t    *surface;
     pepper_seat_t       *seat;
     pepper_surface_t    *parent;
     shell_surface_t     *shsurf;
+    int flags = 0;
 
     /* Check parameters */
     if (!surface_resource)
@@ -364,6 +363,7 @@ xdg_shell_pong(struct wl_client     *client,
 
 static const struct xdg_shell_interface xdg_shell_implementation =
 {
+    xdg_shell_destroy,
     xdg_shell_use_unstable_version,
     xdg_shell_get_xdg_surface,
     xdg_shell_get_xdg_popup,
