@@ -34,7 +34,9 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <gbm.h>
-
+#ifdef HAVE_TBM
+#include <wayland-tbm-server.h>
+#endif
 #include <pepper-output-backend.h>
 #include <pepper-libinput.h>
 #include <pepper-render.h>
@@ -77,7 +79,9 @@ struct pepper_drm
 
     drmModeRes                 *resources;
     struct gbm_device          *gbm_device;
-
+#ifdef HAVE_TBM
+    struct wayland_tbm_server  *wl_tbm_server;
+#endif
     pepper_renderer_t          *pixman_renderer;
     pepper_renderer_t          *gl_renderer;
 };

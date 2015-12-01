@@ -174,6 +174,12 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
     PEPPER_CHECK(drm->udev_monitor, goto error, "udev_monitor_new_from_netlink() failed.\n");
     udev_monitor_filter_add_match_subsystem_devtype(drm->udev_monitor, "drm", NULL);
 
+#ifdef HAVE_TBM
+    /* Create wayland-tbm*/
+    drm->wl_tbm_server = wayland_tbm_server_init(pepper_compositor_get_display(compositor),
+                                                filepath, drm->fd, 0);
+#endif
+
     /* Add DRM event FDs to the compositor's display. */
     loop = wl_display_get_event_loop(pepper_compositor_get_display(compositor));
 
