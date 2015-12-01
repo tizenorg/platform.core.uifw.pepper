@@ -246,6 +246,11 @@ pepper_drm_destroy(pepper_drm_t *drm)
     if (drm->gl_renderer)
         pepper_renderer_destroy(drm->gl_renderer);
 
+#ifdef HAVE_TBM
+    if (drm->wl_tbm_server)
+        wayland_tbm_server_deinit(drm->wl_tbm_server);
+#endif
+
     if (drm->gbm_device)
         gbm_device_destroy(drm->gbm_device);
 
