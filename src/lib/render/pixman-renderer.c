@@ -25,10 +25,16 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 * DEALINGS IN THE SOFTWARE.
 */
+#include <config.h>
 
 #include "pepper-pixman-renderer.h"
 #include "pepper-render-internal.h"
 #include <pepper-output-backend.h>
+
+#ifdef HAVE_TBM
+#include <tbm_surface.h>
+#include <wayland-tbm-server.h>
+#endif
 
 typedef struct pixman_renderer      pixman_renderer_t;
 typedef struct pixman_surface_state pixman_surface_state_t;
@@ -56,7 +62,6 @@ struct pixman_surface_state
     pepper_buffer_t         *buffer;
     pepper_event_listener_t *buffer_destroy_listener;
     int                      buffer_width, buffer_height;
-    struct wl_shm_buffer    *shm_buffer;
 
     pixman_image_t          *image;
 
@@ -121,6 +126,52 @@ surface_state_handle_surface_destroy(pepper_event_listener_t    *listener,
     free(state);
 }
 
+static void
+surface_state_begin_access(pixman_surface_state_t *state)
+{
+    struct wl_shm_buffer *shm_buffer;
+    tbm_surface_h tbm_surface;
+
+    shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(state->buffer));
+    if (shm_buffer)
+    {
+        wl_shm_buffer_begin_access(shm_buffer);
+        return;
+    }
+#ifdef HAVE_TBM
+    tbm_surface = wayland_tbm_server_get_surface(NULL, pepper_buffer_get_resource(state->buffer));
+    if (tbm_surface)
+    {
+        tbm_surface_info_s tmp;
+        tbm_surface_map(tbm_surface, TBM_SURF_OPTION_READ, &tmp);
+        return;
+    }
+#endif
+}
+
+static void
+surface_state_end_access(pixman_surface_state_t *state)
+{
+    struct wl_shm_buffer *shm_buffer;
+    tbm_surface_h tbm_surface;
+
+    shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(state->buffer));
+    if (shm_buffer)
+    {
+        wl_shm_buffer_end_access(shm_buffer);
+        return;
+    }
+#ifdef HAVE_TBM
+    tbm_surface = wayland_tbm_server_get_surface(NULL, pepper_buffer_get_resource(state->buffer));
+    if (tbm_surface)
+    {
+        tbm_surface_unmap(tbm_surface);
+        return;
+    }
+#endif
+}
+
+
 static pixman_surface_state_t *
 get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
 {
@@ -183,10 +234,60 @@ surface_state_attach_shm(pixman_surface_state_t *state, pepper_buffer_t *buffer)
     state->buffer_width = w;
     state->buffer_height = h;
     state->image = image;
-    state->shm_buffer = shm_buffer;
+    //state->shm_buffer = shm_buffer;
 
     return PEPPER_TRUE;;
 }
+
+#ifdef HAVE_TBM
+static pepper_bool_t
+surface_state_attach_tbm(pixman_surface_state_t *state, pepper_buffer_t *buffer)
+{
+    tbm_surface_h   tbm_surface = wayland_tbm_server_get_surface(NULL, pepper_buffer_get_resource(buffer));
+    tbm_surface_info_s info;
+    pixman_format_code_t    format;
+    int                     w, h;
+    pixman_image_t         *image;
+
+    if (!tbm_surface)
+        return PEPPER_FALSE;
+
+    switch (tbm_surface_get_format(tbm_surface))
+    {
+    case TBM_FORMAT_XRGB8888:
+        format = PIXMAN_x8r8g8b8;
+        break;
+    case TBM_FORMAT_ARGB8888:
+        format = PIXMAN_a8r8g8b8;
+        break;
+    case TBM_FORMAT_RGB565:
+        format = PIXMAN_r5g6b5;
+        break;
+    default:
+        return PEPPER_FALSE;
+    }
+
+    tbm_surface_get_info(tbm_surface, &info);
+    if (info.num_planes != 1)
+        return PEPPER_FALSE;
+
+    w = info.width;
+    h = info.height;
+    image = pixman_image_create_bits(format, w, h,
+                                     (uint32_t*)info.planes[0].ptr,
+                                     info.planes[0].stride);
+
+    if (!image)
+        return PEPPER_FALSE;
+
+    state->buffer_width = w;
+    state->buffer_height = h;
+    state->image = image;
+    //state->shm_buffer = shm_buffer;
+
+    return PEPPER_TRUE;;
+}
+#endif
 
 static pepper_bool_t
 pixman_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surface,
@@ -207,6 +308,11 @@ pixman_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *su
 
     if (surface_state_attach_shm(state, buffer))
         goto done;
+
+#ifdef HAVE_TBM
+    if (surface_state_attach_tbm(state, buffer))
+        goto done;
+#endif
 
     PEPPER_ERROR("Not supported buffer type.\n");
     return PEPPER_FALSE;
@@ -381,14 +487,14 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
                 pixman_region32_intersect(&repaint_surface, &repaint, surface_opaque);
                 pixman_image_set_clip_region32(target->image, &repaint_surface);
 
-                wl_shm_buffer_begin_access(ps->shm_buffer);
+                surface_state_begin_access(ps);
                 pixman_image_composite32(PIXMAN_OP_SRC, ps->image, NULL, target->image,
                                          0, 0, /* src_x, src_y */
                                          0, 0, /* mask_x, mask_y */
                                          0, 0, /* dest_x, dest_y */
                                          pixman_image_get_width(target->image),
                                          pixman_image_get_height(target->image));
-                wl_shm_buffer_end_access(ps->shm_buffer);
+                surface_state_end_access(ps);
             }
 
             if (pixman_region32_not_empty(&surface_blend))
@@ -399,14 +505,14 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
                 pixman_region32_intersect(&repaint_surface, &repaint, &surface_blend);
                 pixman_image_set_clip_region32(target->image, &repaint_surface);
 
-                wl_shm_buffer_begin_access(ps->shm_buffer);
+                surface_state_begin_access(ps);
                 pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
                                          0, 0, /* src_x, src_y */
                                          0, 0, /* mask_x, mask_y */
                                          0, 0, /* dest_x, dest_y */
                                          pixman_image_get_width(target->image),
                                          pixman_image_get_height(target->image));
-                wl_shm_buffer_end_access(ps->shm_buffer);
+                surface_state_end_access(ps);
             }
         }
         else
@@ -417,14 +523,14 @@ repaint_view(pepper_renderer_t *renderer, pepper_output_t *output,
             pixman_region32_intersect(&repaint_surface, &repaint, &surface_blend);
             pixman_image_set_clip_region32(target->image, &repaint_surface);
 
-            wl_shm_buffer_begin_access(ps->shm_buffer);
+            surface_state_begin_access(ps);
             pixman_image_composite32(PIXMAN_OP_OVER, ps->image, NULL, target->image,
                                      0, 0, /* src_x, src_y */
                                      0, 0, /* mask_x, mask_y */
                                      0, 0, /* dest_x, dest_y */
                                      pixman_image_get_width(target->image),
                                      pixman_image_get_height(target->image));
-            wl_shm_buffer_end_access(ps->shm_buffer);
+            surface_state_end_access(ps);
         }
 
         pixman_region32_fini(&repaint_surface);

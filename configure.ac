@@ -31,6 +31,11 @@ AC_SUBST(GCC_CFLAGS)
 # pepper
 PEPPER_REQUIRES="wayland-server pixman-1 xkbcommon"
 PKG_CHECK_MODULES(PEPPER, [$PEPPER_REQUIRES])
+PKG_CHECK_MODULES([TBM], [libtbm wayland-tbm-server], [have_tbm=yes], [have_tbm=no])
+if test x$have_tbm = xyes; then
+   AC_DEFINE([HAVE_TBM], [1], [Build the tbm backend])
+   PEPPER_REQUIRES="$PEPPER_REQUIRES libtbm wayland-tbm-server"
+fi
 
 PEPPER_DIR="-I\$(top_srcdir)/src/lib/pepper"
 PEPPER_LIB="\$(top_srcdir)/src/lib/pepper/libpepper.la"
@@ -84,12 +89,6 @@ AC_SUBST(PEPPER_RENDER_REQUIRES)
 PEPPER_DRM_REQUIRES="libdrm gbm"
 PKG_CHECK_MODULES(PEPPER_DRM, [$PEPPER_DRM_REQUIRES])
 PEPPER_DRM_REQUIRES="$PEPPER_DRM_REQUIRES pepper pepper-render pepper-libinput"
-
-PKG_CHECK_MODULES([TBM], [libtbm wayland-tbm-server], [have_tbm=yes], [have_tbm=no])
-if test x$have_tbm = xyes; then
-   AC_DEFINE([HAVE_TBM], [1], [Build the tbm backend])
-   PEPPER_DRM_REQUIRES="$PEPPER_DRM_REQUIRES libtbm wayland-tbm-server" 
-fi
 
 PEPPER_DRM_DIR="-I\$(top_srcdir)/src/lib/drm"
 PEPPER_DRM_LIB="\$(top_srcdir)/src/lib/drm/libpepper-drm.la"
