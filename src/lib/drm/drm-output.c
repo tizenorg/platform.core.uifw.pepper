@@ -898,13 +898,16 @@ drm_handle_page_flip(int fd, unsigned int frame, unsigned int sec, unsigned int 
     drm_output_t       *output = data;
     struct timespec     ts;
 
-    output->page_flip_pending = PEPPER_FALSE;
+    if (output->page_flip_pending == PEPPER_TRUE)
+    {
+        output->page_flip_pending = PEPPER_FALSE;
 
-    if (output->front)
-        drm_buffer_release(output->front);
+        if (output->front)
+            drm_buffer_release(output->front);
 
-    output->front = output->back;
-    output->back = NULL;
+        output->front = output->back;
+        output->back = NULL;
+    }
 
     if (output->vblank_pending_count == 0)
     {
