@@ -138,7 +138,7 @@ This package includes doctor server files.
 %setup -q
 
 %build
-%autogen --disable-x11
+%autogen --disable-x11 --enable-socket-fd=yes
 make %{?_smp_mflags}
 
 %install

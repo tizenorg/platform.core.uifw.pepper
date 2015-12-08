@@ -118,7 +118,11 @@ pepper_compositor_create_fd(const char *socket_name, int fd)
 
     if (socket_name)
     {
+#if ENABLE_SOCKET_FD
         ret = wl_display_add_socket_fd(compositor->display, socket_name, fd);
+#else
+        ret = wl_display_add_socket(compositor->display, socket_name);
+#endif
         PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
     }
     else

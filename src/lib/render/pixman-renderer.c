@@ -130,7 +130,9 @@ static void
 surface_state_begin_access(pixman_surface_state_t *state)
 {
     struct wl_shm_buffer *shm_buffer;
+#ifdef HAVE_TBM
     tbm_surface_h tbm_surface;
+#endif
 
     shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(state->buffer));
     if (shm_buffer)
@@ -153,7 +155,9 @@ static void
 surface_state_end_access(pixman_surface_state_t *state)
 {
     struct wl_shm_buffer *shm_buffer;
+#ifdef HAVE_TBM
     tbm_surface_h tbm_surface;
+#endif
 
     shm_buffer = wl_shm_buffer_get(pepper_buffer_get_resource(state->buffer));
     if (shm_buffer)

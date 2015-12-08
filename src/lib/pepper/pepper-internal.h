@@ -29,6 +29,7 @@
 #ifndef PEPPER_INTERNAL_H
 #define PEPPER_INTERNAL_H
 
+#include <config.h>
 #include "pepper.h"
 #include <wayland-util.h>
 #include <pixman.h>

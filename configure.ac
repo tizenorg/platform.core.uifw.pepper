@@ -42,6 +42,16 @@ PEPPER_LIB="\$(top_srcdir)/src/lib/pepper/libpepper.la"
 
 AC_SUBST(PEPPER_REQUIRES)
 
+AC_ARG_ENABLE(socket_fd,
+              AC_HELP_STRING([--enable-socket-fd],
+                             [enable wl_display_add_socket_fd()]),
+              enable_socket_fd=$enableval,
+              enable_socket_fd=no)
+
+if test x$enable_socket_fd = xyes; then
+    AC_DEFINE([ENABLE_SOCKET_FD], [1], [Use wl_display_add_socket_fd])
+fi
+
 # pepper-libinput
 PEPPER_LIBINPUT_REQUIRES="libinput"
 PKG_CHECK_MODULES(PEPPER_LIBINPUT, [$PEPPER_LIBINPUT_REQUIRES])
