@@ -831,6 +831,9 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info);
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name);
 
+PEPPER_API pepper_compositor_t *
+pepper_compositor_create_fd(const char *socket_name, int fd);
+
 PEPPER_API void
 pepper_compositor_destroy(pepper_compositor_t *compositor);
 

@@ -95,7 +95,7 @@ pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
 }
 
 PEPPER_API pepper_compositor_t *
-pepper_compositor_create(const char *socket_name)
+pepper_compositor_create_fd(const char *socket_name, int fd)
 {
     int                  ret;
     pepper_compositor_t *compositor;
@@ -118,11 +118,14 @@ pepper_compositor_create(const char *socket_name)
 
     if (socket_name)
     {
-        ret = wl_display_add_socket(compositor->display, socket_name);
+        ret = wl_display_add_socket_fd(compositor->display, socket_name, fd);
         PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
     }
     else
     {
+        if (fd != -1 && socket_name == NULL)
+            PEPPER_CHECK(socket_name, goto error, "pepper_compositor_create_fd()cannot support NULL socket name.\n");
+
         socket_name = wl_display_add_socket_auto(compositor->display);
         PEPPER_CHECK(socket_name, goto error, "wl_display_add_socket_auto() failed.\n");
     }
@@ -151,6 +154,12 @@ error:
         pepper_compositor_destroy(compositor);
 
     return NULL;
+}
+
+PEPPER_API pepper_compositor_t *
+pepper_compositor_create(const char *socket_name)
+{
+    return pepper_compositor_create_fd(socket_name, -1);
 }
 
 PEPPER_API void
