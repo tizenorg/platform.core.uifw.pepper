@@ -35,20 +35,59 @@
 extern "C" {
 #endif
 
+/**
+ * @typedef pepper_input_device_backend_t
+ *
+ * A #pepper_input_backend_t is a set of interface functions to use input backend.
+ */
 typedef struct pepper_input_device_backend      pepper_input_device_backend_t;
 
 struct pepper_input_device_backend
 {
+    /**
+     * Get property of the device corresponding to the key.
+     *
+     * @param device    device
+     * @param key       key string
+     *
+     * @returns         property string
+     */
     const char *    (*get_property)(void *device, const char *key);
 };
 
+/**
+ * Create #pepper_input_device_t. Emit PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD event.
+ *
+ * @param compositor    compositor to add the device
+ * @param caps          capabilities of the device
+ * @param backend       pointer to an input device backend function table
+ * @param data          backend data
+ *
+ * @returns             #pepper_input_device_t
+ */
 PEPPER_API pepper_input_device_t *
 pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
                            const pepper_input_device_backend_t *backend, void *data);
 
+/**
+ * Destroy #pepper_input_device_t. Emit PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE event.
+ *
+ * @param device    input device to destroy
+ */
 PEPPER_API void
 pepper_input_device_destroy(pepper_input_device_t *device);
 
+/**
+ * Get capabilities value of a device. Capabilities value is a bitmap of available input devices.
+ *
+ * @param device    device to get capabilities
+ *
+ * @returns         capabilities of the device
+ *
+ * @see wl_seat_capability
+ *  WL_SEAT_CAPABILITY_POINTER, WL_SEAT_CAPABILITY_KEYBOARD, WL_SEAT_CAPABILITY_TOUCH
+ *
+ */
 PEPPER_API uint32_t
 pepper_input_device_get_caps(pepper_input_device_t *device);
 
