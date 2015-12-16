@@ -394,6 +394,12 @@ init_input(desktop_shell_t *shell)
         shell_add_input_device(shell, l->item);
 }
 
+static pepper_bool_t
+launch_shell_client(desktop_shell_t *shell)
+{
+    /* TODO: */
+}
+
 PEPPER_API pepper_bool_t
 pepper_desktop_shell_init(pepper_compositor_t *compositor)
 {
@@ -414,18 +420,30 @@ pepper_desktop_shell_init(pepper_compositor_t *compositor)
 
     if (!init_wl_shell(shell))
     {
-        PEPPER_ERROR("wl_shell initialize failed\n");
+        PEPPER_ERROR("init_wl_shell() failed\n");
         free(shell);
         return PEPPER_FALSE;
     }
 
     if (!init_xdg_shell(shell))
     {
-        PEPPER_ERROR("wl_shell initialize failed\n");
+        PEPPER_ERROR("init_xdg_shell() failed\n");
         fini_wl_shell(shell);
         free(shell);
         return PEPPER_FALSE;
     }
+
+    if (!init_pepper_shell(shell))
+    {
+        PEPPER_ERROR("init_pepper_shell() failed.\n");
+        fini_wl_shell(shell);
+        fini_xdg_shell(shell);
+        free(shell);
+        return PEPPER_FALSE;
+    }
+
+    if (!lauch_shell_client(shell))
+        PEPPER_ERROR("shell client launch failed, compositor runs without shell client.\n");
 
     init_listeners(shell);
     init_input(shell);
