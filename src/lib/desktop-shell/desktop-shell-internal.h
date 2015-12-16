@@ -37,6 +37,7 @@ typedef struct desktop_shell    desktop_shell_t;
 typedef struct shell_client     shell_client_t;
 typedef struct shell_surface    shell_surface_t;
 typedef struct shell_seat       shell_seat_t;
+typedef struct pepper_shell     pepper_shell_t;
 
 struct shell_seat
 {
@@ -62,6 +63,11 @@ struct desktop_shell
     pepper_list_t                shell_client_list;
     pepper_list_t                shell_surface_list;
     pepper_list_t                shseat_list;
+
+    struct wl_global            *pepper_shell_global;
+    struct wl_list               pepper_shell_list;
+    pepper_surface_t            *cursor_surface;
+    pepper_view_t               *cursor_view;
 
     /* input device add/remove listeners */
     pepper_event_listener_t     *input_device_add_listener;
@@ -314,3 +320,20 @@ shell_surface_set_position(shell_surface_t *shsurf, double x, double y);
 void
 shell_surface_place_fullscreen_surface(shell_surface_t *shsurf);
 
+struct pepper_shell
+{
+    desktop_shell_t    *shell;
+
+    struct wl_resource *resource;
+    struct wl_client   *client;
+
+    pepper_surface_t   *cursor;
+
+    pepper_list_t       link;
+};
+
+pepper_bool_t
+init_pepper_shell(desktop_shell_t *shell);
+
+void
+fini_pepper_shell(desktop_shell_t *shell);
