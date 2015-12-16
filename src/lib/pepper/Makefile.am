@@ -20,7 +20,6 @@ libpepper_la_SOURCES = pepper.h                 \
                        surface.c                \
                        region.c                 \
                        buffer.c                 \
-                       data-device.c            \
                        view.c                   \
                        plane.c                  \
                        utils-file.c             \

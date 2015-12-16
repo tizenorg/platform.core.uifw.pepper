@@ -158,9 +158,6 @@ pepper_compositor_create_fd(const char *socket_name, int fd)
                                           3, compositor, compositor_bind);
     PEPPER_CHECK(compositor->global, goto error, "wl_global_create() failed.\n");
 
-    ret = pepper_data_device_manager_init(compositor->display);
-    PEPPER_CHECK(ret == PEPPER_TRUE, goto error, "pepper_data_device_manager_init() failed.\n");
-
     compositor->subcomp = pepper_subcompositor_create(compositor);
     PEPPER_CHECK(compositor->subcomp, goto error, "pepper_subcompositor_create() failed.\n");
 

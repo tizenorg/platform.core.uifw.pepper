@@ -43,9 +43,6 @@
 typedef struct pepper_region        pepper_region_t;
 typedef struct pepper_surface_state pepper_surface_state_t;
 typedef struct pepper_plane_entry   pepper_plane_entry_t;
-typedef struct pepper_data_source   pepper_data_source_t;
-typedef struct pepper_data_device   pepper_data_device_t;
-typedef struct pepper_data_offer    pepper_data_offer_t;
 typedef struct pepper_input         pepper_input_t;
 typedef struct pepper_touch_point   pepper_touch_point_t;
 
@@ -475,30 +472,6 @@ struct pepper_input_device
     void                                   *data;
     const pepper_input_device_backend_t    *backend;
 };
-
-/* Data device */
-struct pepper_data_source
-{
-    struct wl_resource      *resource;
-    struct wl_signal         destroy_signal;
-    struct wl_array          mime_types;
-};
-
-struct pepper_data_offer
-{
-    struct wl_resource      *resource;
-    pepper_data_source_t    *source;
-    struct wl_listener       source_destroy_listener;
-};
-
-struct pepper_data_device
-{
-    struct wl_resource      *resource;
-    pepper_seat_t           *seat;
-};
-
-pepper_bool_t
-pepper_data_device_manager_init(struct wl_display *display);
 
 struct pepper_plane_entry
 {
