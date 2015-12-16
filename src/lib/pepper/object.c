@@ -83,12 +83,32 @@ pepper_object_fini(pepper_object_t *object)
         pepper_event_listener_remove(listener);
 }
 
+/**
+ * Get the type of the given object
+ *
+ * @param object    (none)
+ *
+ * @return type of the object
+ */
 PEPPER_API pepper_object_type_t
 pepper_object_get_type(pepper_object_t *object)
 {
     return object->type;
 }
 
+/**
+ * Set user data to the given object with the given key
+ *
+ * @param object    (none)
+ * @param key       (none)
+ * @param data      (none)
+ * @param free_func function to free the user data when the object is destroyed
+ *
+ * Only a single user data can be set for a key simultaneously. Be aware not to overwrite previous
+ * user data by checking existing user data with #pepper_object_get_user_data() before write.
+ *
+ * @see pepper_object_get_user_data()
+ */
 PEPPER_API void
 pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data,
                             pepper_free_func_t free_func)
@@ -96,6 +116,16 @@ pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data
     pepper_map_set(&object->user_data_map, key, data, free_func);
 }
 
+/**
+ * Get the user data of the given object for the given key
+ *
+ * @param object    (none)
+ * @param key       (none)
+ *
+ * @return the user data which has been set for the given key
+ *
+ * @see pepper_object_set_user_data()
+ */
 PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key)
 {
@@ -120,6 +150,20 @@ insert_listener(pepper_object_t *object, pepper_event_listener_t *listener)
         pepper_list_insert(object->event_listener_list.prev, &listener->link);
 }
 
+/**
+ * Add an event listener to the given object
+ *
+ * @param object    (none)
+ * @param id        event id
+ * @param priority  priority (higher priority called earlier)
+ * @param callback  callback to be called when the event is emitted
+ * @param data      data passed to the callback when the event is emitted
+ *
+ * @return added event listener object
+ *
+ * @see pepper_event_listener_remove()
+ * @see pepper_event_listener_set_priority()
+ */
 PEPPER_API pepper_event_listener_t *
 pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int priority,
                                  pepper_event_callback_t callback, void *data)
@@ -141,6 +185,13 @@ pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int prior
     return listener;
 }
 
+/**
+ * Remove an event listener from the belonging object
+ *
+ * @param listener  event listener
+ *
+ * @see pepper_object_add_event_listener()
+ */
 PEPPER_API void
 pepper_event_listener_remove(pepper_event_listener_t *listener)
 {
@@ -148,6 +199,12 @@ pepper_event_listener_remove(pepper_event_listener_t *listener)
     free(listener);
 }
 
+/**
+ * Set priority of the given event listener
+ *
+ * @param listener  event listener
+ * @param priority  priority (higher priority called earlier)
+ */
 PEPPER_API void
 pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priority)
 {
@@ -159,10 +216,28 @@ pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priori
     insert_listener(listener->object, listener);
 }
 
+/**
+ * Emit an event to the given object
+ *
+ * @param object    (none)
+ * @param id        event id
+ * @param info      event info passed to the listeners
+ *
+ * Emitting an event to an object causes registered listeners are called. Higher priority listeners
+ * will get called ealier than lower priority listeners. The type of the info is dependent on the
+ * event type. Event info for the built-in events are defined in #pepper_built_in_events. Emitting
+ * #PEPPER_EVENT_ALL has no effect. Some event ids are reserved by pepper which is defined in
+ * #pepper_built_in_event.
+ *
+ * @see pepper_object_add_event_listener()
+ * @see pepper_built_in_event
+ */
 PEPPER_API void
 pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
 {
     pepper_event_listener_t *listener, *tmp;
+
+    PEPPER_CHECK(id != PEPPER_EVENT_ALL, return, "Cannot emit the PEPPER_EVENT_ALL event");
 
     pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
     {

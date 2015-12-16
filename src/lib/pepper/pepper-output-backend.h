@@ -126,18 +126,6 @@ struct pepper_output_backend
                                             pepper_bool_t *keep_buffer);
 };
 
-/**
- * Create and add #pepper_output_t to compositor.
- *
- * @param compositor    compositor to add the output
- * @param backend       pointer to an output backend function table
- * @param name          name of the output to add
- * @param data          backend data
- * @param transform     transform of the output to add
- * @param scale         scale of the output to add
- *
- * @returns             #pepper_output_t
- */
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
                              const pepper_output_backend_t *backend, const char *name, void *data,
@@ -151,118 +139,36 @@ struct pepper_render_item
     pixman_region32_t   visible_region; /**< visible region of the view */
 };
 
-/**
- * Create and add #pepper_plane_t to the output.
- *
- * @param output        output to add the plane
- * @param above_plane   added plane will be placed above above_plane
- *
- * @returns             #pepper_plane_t
- */
 PEPPER_API pepper_plane_t *
 pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above_plane);
 
-/**
- * Destroy the plane.
- *
- * @param plane     plane to destroy
- */
 PEPPER_API void
 pepper_plane_destroy(pepper_plane_t *plane);
 
-/**
- * Get the region that has been changed. Not necessarily the damage region should be visible.
- *
- * @param plane     plane to get the damage region
- *
- * @returns         #pixman_region32_t
- */
 PEPPER_API pixman_region32_t *
 pepper_plane_get_damage_region(pepper_plane_t *plane);
 
-/**
- * Get the region that is obscured by other planes in front of the plane. Visible damage region
- * should be (DAMAGE - CLIP)
- *
- * @param plane     plane to get the clip region
- *
- * @returns         #pixman_region32_t
- */
 PEPPER_API pixman_region32_t *
 pepper_plane_get_clip_region(pepper_plane_t *plane);
 
-/**
- * Get list of #pepper_render_item_t.
- *
- * @param plane     plane to get the list
- *
- * @returns         #pepper_list_t
- */
 PEPPER_API const pepper_list_t *
 pepper_plane_get_render_list(pepper_plane_t *plane);
 
-/**
- * Subtract given region from the damage region of a plane. Called to partially update the
- * damage region of a plane.
- *
- * @param plane     plane
- * @param damage    region to subtract
- */
 PEPPER_API void
 pepper_plane_subtract_damage_region(pepper_plane_t *plane, pixman_region32_t *damage);
 
-/**
- * Clear the damage region of a plane. Called when the output backend has processed the damage
- * region. Or if you partially updated the damage region use pepper_plane_subtract_damage_region.
- *
- * @param plane     plane to clear the damage region
- */
 PEPPER_API void
 pepper_plane_clear_damage_region(pepper_plane_t *plane);
 
-/**
- * Assign a view to a plane.
- *
- * @param view      view to assign
- * @param output    output of the plane
- * @param plane     plane to assign a view
- */
 PEPPER_API void
 pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_plane_t *plane);
 
-/**
- * Add damage region to planes in the output. if damage region is empty, whole area is set to
- * damage region.
- *
- * @param output    output to add damage
- * @param region    damage region
- */
 PEPPER_API void
 pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *region);
 
-/**
- * Notifying that the pending frame has been finished. Output backend should call this function
- * when they are ready to draw a new frame in response to the requests from the pepper library.
- *
- * @param output    output to finish frame
- * @param ts        time of finishing frame
- */
 PEPPER_API void
 pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts);
 
-/**
- * Destroy output and backend internal resources.
- *
- * @param output    output to destroy
- */
-PEPPER_API void
-pepper_output_remove(pepper_output_t *output);
-
-/**
- * Update output mode. Backend should call this function after change output mode.
- *
- * @param output    output to update mode
- */
 PEPPER_API void
 pepper_output_update_mode(pepper_output_t *output);
 

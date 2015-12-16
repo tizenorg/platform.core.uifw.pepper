@@ -324,24 +324,55 @@ pepper_keyboard_bind_resource(struct wl_client *client, struct wl_resource *reso
     }
 }
 
+/**
+ * Get the list of wl_resource of the given keyboard
+ *
+ * @param keyboard  keyboard object
+ *
+ * @return list of the keyboard resources
+ */
 PEPPER_API struct wl_list *
 pepper_keyboard_get_resource_list(pepper_keyboard_t *keyboard)
 {
     return &keyboard->resource_list;
 }
 
+/**
+ * Get the compositor of the given keyboard
+ *
+ * @param keyboard  keyboard object
+ *
+ * @return compositor
+ */
 PEPPER_API pepper_compositor_t *
 pepper_keyboard_get_compositor(pepper_keyboard_t *keyboard)
 {
     return keyboard->seat->compositor;
 }
 
+/**
+ * Get the seat of the given keyboard
+ *
+ * @param keyboard  keyboard object
+ *
+ * @return seat
+ */
 PEPPER_API pepper_seat_t *
 pepper_keyboard_get_seat(pepper_keyboard_t *keyboard)
 {
     return keyboard->seat;
 }
 
+/**
+ * Set the focus view of the given keyboard
+ *
+ * @param keyboard  keyboard object
+ * @param focus     focus view
+ *
+ * @see pepper_keyboard_send_enter()
+ * @see pepper_keyboard_send_leave()
+ * @see pepper_keyboard_get_focus()
+ */
 PEPPER_API void
 pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus)
 {
@@ -370,12 +401,27 @@ pepper_keyboard_set_focus(pepper_keyboard_t *keyboard, pepper_view_t *focus)
     }
 }
 
+/**
+ * Get the focus view of the given keyboard
+ *
+ * @param keyboard   keyboard object
+ *
+ * @return focus view
+ *
+ * @see pepper_keyboard_set_focus()
+ */
 PEPPER_API pepper_view_t *
 pepper_keyboard_get_focus(pepper_keyboard_t *keyboard)
 {
     return keyboard->focus;
 }
 
+/**
+ * Send wl_keyboard.leave event to the client
+ *
+ * @param keyboard  keyboard object
+ * @param view      view object having the target surface for the leave event
+ */
 PEPPER_API void
 pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *view)
 {
@@ -396,6 +442,12 @@ pepper_keyboard_send_leave(pepper_keyboard_t *keyboard, pepper_view_t *view)
     }
 }
 
+/**
+ * Send wl_keyboard.enter event to the client
+ *
+ * @param keyboard  keyboard object
+ * @param view      view object having the target surface for the enter event
+ */
 PEPPER_API void
 pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *view)
 {
@@ -416,6 +468,15 @@ pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *view)
     }
 }
 
+/**
+ * Send wl_keyboard.key event to the client
+ *
+ * @param keyboard  keyboard object
+ * @param view      view object having the target surface for the enter event
+ * @param time      time in mili-second with undefined base
+ * @param key       key code
+ * @param state     state flag (ex. WL_KEYBOARD_KEY_STATE_PRESSED)
+ */
 PEPPER_API void
 pepper_keyboard_send_key(pepper_keyboard_t *keyboard, pepper_view_t *view,
                          uint32_t time, uint32_t key, uint32_t state)
@@ -443,6 +504,16 @@ pepper_keyboard_send_key(pepper_keyboard_t *keyboard, pepper_view_t *view,
     pepper_object_emit_event(&view->base, PEPPER_EVENT_KEYBOARD_KEY, &event);
 }
 
+/**
+ * Send wl_keyboard.key event to the client
+ *
+ * @param keyboard  keyboard object
+ * @param view      view object having the target surface for the enter event
+ * @param depressed (none)
+ * @param latched   (none)
+ * @param locked    (none)
+ * @param group     (none)
+ */
 PEPPER_API void
 pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, pepper_view_t *view,
                                uint32_t depressed, uint32_t latched,
@@ -465,6 +536,13 @@ pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, pepper_view_t *view,
     }
 }
 
+/**
+ * Install keyboard grab
+ *
+ * @param keyboard  keyboard object
+ * @param grab      grab handler
+ * @param data      user data to be passed to grab functions
+ */
 PEPPER_API void
 pepper_keyboard_set_grab(pepper_keyboard_t *keyboard, const pepper_keyboard_grab_t *grab, void *data)
 {
@@ -472,18 +550,46 @@ pepper_keyboard_set_grab(pepper_keyboard_t *keyboard, const pepper_keyboard_grab
     keyboard->data = data;
 }
 
+/**
+ * Get the current keyboard grab
+ *
+ * @param keyboard  keyboard object
+ *
+ * @return grab handler which is most recently installed
+ *
+ * @see pepper_keyboard_set_grab()
+ * @see pepper_keyboard_get_grab_data()
+ */
 PEPPER_API const pepper_keyboard_grab_t *
 pepper_keyboard_get_grab(pepper_keyboard_t *keyboard)
 {
     return keyboard->grab;
 }
 
+/**
+ * Get the current keyboard grab data
+ *
+ * @param keyboard  keyboard object
+ *
+ * @return grab data which is most recently installed
+ *
+ * @see pepper_keyboard_set_grab()
+ * @see pepper_keyboard_get_grab()
+ */
 PEPPER_API void *
 pepper_keyboard_get_grab_data(pepper_keyboard_t *keyboard)
 {
     return keyboard->data;
 }
 
+/**
+ * Set xkb keymap for the given keyboard
+ *
+ * @param keyboard  keyboard object
+ * @param keymap    xkb keymap
+ *
+ * This function might send wl_pointer.keymap and wl_pointer.modifers events internally
+ */
 PEPPER_API void
 pepper_keyboard_set_keymap(pepper_keyboard_t *keyboard, struct xkb_keymap *keymap)
 {

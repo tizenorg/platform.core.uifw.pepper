@@ -483,24 +483,56 @@ pepper_surface_send_frame_callback_done(pepper_surface_t *surface, uint32_t time
     }
 }
 
+/**
+ * Get the wl_resource of the given surface
+ *
+ * @param surface   surface object
+ *
+ * @return wl_resource of the given surface
+ */
 PEPPER_API struct wl_resource *
 pepper_surface_get_resource(pepper_surface_t *surface)
 {
     return surface->resource;
 }
 
+/**
+ * Get the compositor of the given surface
+ *
+ * @param surface   surface object
+ *
+ * @return compositor of the given surface
+ */
 PEPPER_API pepper_compositor_t *
 pepper_surface_get_compositor(pepper_surface_t *surface)
 {
     return surface->compositor;
 }
 
+/**
+ * Get the role name of the given surface
+ *
+ * @param surface   surface object
+ *
+ * @return role name of the given surface
+ */
 PEPPER_API const char *
 pepper_surface_get_role(pepper_surface_t *surface)
 {
     return surface->role;
 }
 
+/**
+ * Set role name of the given surface
+ *
+ * @param surface   surface object
+ * @param role      role name
+ *
+ * @return PEPPER_TRUE on sucess, PEPPER_FALSE otherwise
+ *
+ * If the given surface already has a role, the function will fail. NULL role name make the surface
+ * having no role.
+ */
 PEPPER_API pepper_bool_t
 pepper_surface_set_role(pepper_surface_t *surface, const char *role)
 {
@@ -514,12 +546,28 @@ pepper_surface_set_role(pepper_surface_t *surface, const char *role)
     return PEPPER_TRUE;
 }
 
+/**
+ * Get the buffer of the surface which is most recently committed
+ *
+ * @param surface   surface object
+ *
+ * @return the most recently committed buffer
+ *
+ * The surface might not have a reference to the buffer depending on the output backend.
+ */
 PEPPER_API pepper_buffer_t *
 pepper_surface_get_buffer(pepper_surface_t *surface)
 {
     return surface->buffer.buffer;
 }
 
+/**
+ * Get the buffer offset of the given surface
+ *
+ * @param surface   surface object
+ * @param x         pointer to receive x coordinate of the offset
+ * @param y         pointer to receive y coordinate of the offset
+ */
 PEPPER_API void
 pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x, int32_t *y)
 {
@@ -530,36 +578,89 @@ pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x, int32_t 
         *y = surface->buffer.y;
 }
 
+/**
+ * Get the buffer scale of the given surface
+ *
+ * @param surface   surface object
+ *
+ * @return buffer scale value
+ */
 PEPPER_API int32_t
 pepper_surface_get_buffer_scale(pepper_surface_t *surface)
 {
     return surface->buffer.scale;
 }
 
+/**
+ * Get the buffer transform of the given surface
+ *
+ * @param surface   surface object
+ *
+ * @return buffer transform value
+ */
 PEPPER_API int32_t
 pepper_surface_get_buffer_transform(pepper_surface_t *surface)
 {
     return surface->buffer.transform;
 }
 
+/**
+ * Get the damage region of the given surface (wl_surface.damage)
+ *
+ * @param surface   surface object
+ *
+ * @return the damage region
+ *
+ * The damage region is the current state of the surface which is updated on wl_surface.commit.
+ */
 PEPPER_API pixman_region32_t *
 pepper_surface_get_damage_region(pepper_surface_t *surface)
 {
     return &surface->damage_region;
 }
 
+
+/**
+ * Get the opaque region of the given surface (wl_surface.set_opaque_region)
+ *
+ * @param surface   surface object
+ *
+ * @return the damage region
+ *
+ * The opaque region is the current state of the surface which is updated on wl_surface.commit.
+ */
 PEPPER_API pixman_region32_t *
 pepper_surface_get_opaque_region(pepper_surface_t *surface)
 {
     return &surface->opaque_region;
 }
 
+/**
+ * Get the input region of the given surface (wl_surface.input)
+ *
+ * @param surface   surface object
+ *
+ * @return the input region
+ *
+ * The input region is the current state of the surface which is updated on wl_surface.commit.
+ */
 PEPPER_API pixman_region32_t *
 pepper_surface_get_input_region(pepper_surface_t *surface)
 {
     return &surface->input_region;
 }
 
+/**
+ * Get the size of the given surface
+ *
+ * @param surface   surface object
+ * @param w         pointer to receive width
+ * @param h         pointer to receive height
+ *
+ * The size of a surface is determined by applying buffer transform and buffer scale to the size of
+ * the attached buffer. First buffer size is divided by the buffer scale, then width and height is
+ * swapped when the transform is a kind of 90 or 270 degree rotation.
+ */
 PEPPER_API void
 pepper_surface_get_size(pepper_surface_t *surface, int *w, int *h)
 {
@@ -570,6 +671,12 @@ pepper_surface_get_size(pepper_surface_t *surface, int *w, int *h)
         *h = surface->h;
 }
 
+/**
+ * Send wl_surface.enter to the client
+ *
+ * @param surface   surface object
+ * @param output    output object
+ */
 PEPPER_API void
 pepper_surface_send_enter(pepper_surface_t *surface, pepper_output_t *output)
 {
@@ -583,6 +690,12 @@ pepper_surface_send_enter(pepper_surface_t *surface, pepper_output_t *output)
     }
 }
 
+/**
+ * Send wl_surface.leave to the client
+ *
+ * @param surface   surface object
+ * @param output    output object
+ */
 PEPPER_API void
 pepper_surface_send_leave(pepper_surface_t *surface, pepper_output_t *output)
 {

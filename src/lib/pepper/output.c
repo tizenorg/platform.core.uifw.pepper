@@ -200,6 +200,14 @@ pepper_output_schedule_repaint(pepper_output_t *output)
     wl_event_loop_add_idle(loop, idle_repaint, output);
 }
 
+/**
+ * Add damage region to all planes in the given output.
+ *
+ * @param output    output object
+ * @param region    damage region
+ *
+ * If the damage region is NULL, entire output area is marked as damaged.
+ */
 PEPPER_API void
 pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *region)
 {
@@ -208,6 +216,15 @@ pepper_output_add_damage_region(pepper_output_t *output, pixman_region32_t *regi
         pepper_plane_add_damage_region(plane, region);
 }
 
+/**
+ * Finish the currently pending frame of the given output.
+ *
+ * @param output    output object
+ * @param ts        current time
+ *
+ * Output backend should call this function when they are ready to draw a new frame in response to
+ * the requests from pepper library.
+ */
 PEPPER_API void
 pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
 {
@@ -252,12 +269,13 @@ pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
         output_repaint(output);
 }
 
-PEPPER_API void
-pepper_output_remove(pepper_output_t *output)
-{
-    pepper_output_destroy(output);
-}
-
+/**
+ * Update mode of the given output.
+ *
+ * @param output    output object
+ *
+ * Backend should call this function after changing output mode.
+ */
 PEPPER_API void
 pepper_output_update_mode(pepper_output_t *output)
 {
@@ -265,6 +283,18 @@ pepper_output_update_mode(pepper_output_t *output)
     pepper_object_emit_event(&output->base, PEPPER_EVENT_OUTPUT_MODE_CHANGE, NULL);
 }
 
+/**
+ * Create an output and add it to the given compositor
+ *
+ * @param compositor    compositor object
+ * @param backend       output backend function table
+ * @param name          output name
+ * @param data          backend private data
+ * @param transform     output transform (ex. WL_OUTPUT_TRANSFORM_NORMAL)
+ * @param scale         output scale
+ *
+ * @returns the created output object
+ */
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
                              const pepper_output_backend_t *backend, const char *name, void *data,
@@ -350,12 +380,26 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
     return output;
 }
 
+/**
+ * Get the compositor of the given output
+ *
+ * @param output    output object
+ *
+ * @return compositor of the output
+ */
 PEPPER_API pepper_compositor_t *
 pepper_output_get_compositor(pepper_output_t *output)
 {
     return output->compositor;
 }
 
+/**
+ * Destroy the given output
+ *
+ * @param output    output object
+ *
+ * Destroying an output will emit PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE event to the compositor.
+ */
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output)
 {
@@ -372,12 +416,28 @@ pepper_output_destroy(pepper_output_t *output)
     free(output);
 }
 
+/**
+ * Get the list of wl_resource of the given output
+ *
+ * @param output    output object
+ *
+ * @return list of output resources
+ */
 PEPPER_API struct wl_list *
 pepper_output_get_resource_list(pepper_output_t *output)
 {
     return &output->resource_list;
 }
 
+/**
+ * Move origin of the given output to the given position in global space
+ *
+ * @param output    output object
+ * @param x         x coordinate of the new origin in global space
+ * @param y         y coordinate of the new origin in global space
+ *
+ * Repaint is scheduled for the output if the origin of the output changes.
+ */
 PEPPER_API void
 pepper_output_move(pepper_output_t *output, int32_t x, int32_t y)
 {
@@ -393,36 +453,82 @@ pepper_output_move(pepper_output_t *output, int32_t x, int32_t y)
     }
 }
 
+/**
+ * Get the geometry of the given output
+ *
+ * @param output    output object
+ *
+ * @return pointer to the structure of the output geometry
+ */
 PEPPER_API const pepper_output_geometry_t *
 pepper_output_get_geometry(pepper_output_t *output)
 {
     return &output->geometry;
 }
 
+/**
+ * Get the scale value of the given output
+ *
+ * @param output    output object
+ *
+ * @return output scale
+ */
 PEPPER_API int32_t
 pepper_output_get_scale(pepper_output_t *output)
 {
     return output->scale;
 }
 
+/**
+ * Get the number of available modes of the given output
+ *
+ * @param output    output object
+ *
+ * @return the number of available modes
+ */
 PEPPER_API int
 pepper_output_get_mode_count(pepper_output_t *output)
 {
     return output->backend->get_mode_count(output->data);
 }
 
+/**
+ * Get the mode for the given mode index of the given output
+ *
+ * @param output    output object
+ * @param index     index of the mode
+ * @param mode      pointer to receive the mode info
+ */
 PEPPER_API void
 pepper_output_get_mode(pepper_output_t *output, int index, pepper_output_mode_t *mode)
 {
     return output->backend->get_mode(output->data, index, mode);
 }
 
+/**
+ * Get the current mode of the given output
+ *
+ * @param output    output object
+ *
+ * @return pointer to the current mode info
+ */
 PEPPER_API const pepper_output_mode_t *
 pepper_output_get_current_mode(pepper_output_t *output)
 {
     return &output->current_mode;
 }
 
+/**
+ * Set display mode of the given output
+ *
+ * @param output    output object
+ * @param mode      mode info
+ *
+ * @return PEPPER_TRUE on sucess, PEPPER_FALSE otherwise
+ *
+ * Mode setting might succeed even if the mode count is zero. There might be infinite available
+ * modes for some output backends like x11 and wayland backend.
+ */
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode)
 {
@@ -439,12 +545,27 @@ pepper_output_set_mode(pepper_output_t *output, const pepper_output_mode_t *mode
     return PEPPER_FALSE;
 }
 
+/**
+ * Get the name of the given output
+ *
+ * @param output    output to get the name
+ *
+ * @return null terminating string of the output name
+ */
 PEPPER_API const char *
 pepper_output_get_name(pepper_output_t *output)
 {
     return output->name;
 }
 
+/**
+ * Find the output for the given name in the given compositor
+ *
+ * @param compositor    compositor to find the output
+ * @param name          name of the output to be found
+ *
+ * @return output with the given name if exist, NULL otherwise
+ */
 PEPPER_API pepper_output_t *
 pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name)
 {

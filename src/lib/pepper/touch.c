@@ -200,24 +200,53 @@ pepper_touch_bind_resource(struct wl_client *client, struct wl_resource *resourc
     /* TODO: Send down for newly bound resources. */
 }
 
+/**
+ * Get the list of wl_resource of the given touch
+ *
+ * @param touch touch object
+ *
+ * @return list of the touch resources
+ */
 PEPPER_API struct wl_list *
 pepper_touch_get_resource_list(pepper_touch_t *touch)
 {
     return &touch->resource_list;
 }
 
+/**
+ * Get the compositor of the given touch
+ *
+ * @param touch touch object
+ *
+ * @return compositor
+ */
 PEPPER_API pepper_compositor_t *
 pepper_touch_get_compositor(pepper_touch_t *touch)
 {
     return touch->seat->compositor;
 }
 
+/**
+ * Get the seat of the given touch
+ *
+ * @param touch touch object
+ *
+ * @return seat
+ */
 PEPPER_API pepper_seat_t *
 pepper_touch_get_seat(pepper_touch_t *touch)
 {
     return touch->seat;
 }
 
+/**
+ * Add a touch pointer to the given touch
+ *
+ * @param touch touch object
+ * @param id    touch point id
+ * @param x     x coordinate in global space
+ * @param y     y coordinate in global space
+ */
 PEPPER_API void
 pepper_touch_add_point(pepper_touch_t *touch, uint32_t id, double x, double y)
 {
@@ -235,6 +264,12 @@ pepper_touch_add_point(pepper_touch_t *touch, uint32_t id, double x, double y)
     pepper_list_insert(touch->point_list.prev, &point->link);
 }
 
+/**
+ * Remove a touch point from the given touch
+ *
+ * @param touch touch object
+ * @param id    touch point id
+ */
 PEPPER_API void
 pepper_touch_remove_point(pepper_touch_t *touch, uint32_t id)
 {
@@ -246,6 +281,16 @@ pepper_touch_remove_point(pepper_touch_t *touch, uint32_t id)
     free(point);
 }
 
+/**
+ * Set the focus view of the given touch
+ *
+ * @param touch touch object
+ * @param focus focus view
+ *
+ * @see pepper_touch_send_enter()
+ * @see pepper_touch_send_leave()
+ * @see pepper_touch_get_focus()
+ */
 PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus)
 {
@@ -265,6 +310,15 @@ pepper_touch_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus)
     }
 }
 
+/**
+ * Get the focus view of the given touch
+ *
+ * @param touch touch object
+ *
+ * @return focus view
+ *
+ * @see pepper_touch_set_focus()
+ */
 PEPPER_API pepper_view_t *
 pepper_touch_get_focus(pepper_touch_t *touch, uint32_t id)
 {
@@ -274,6 +328,16 @@ pepper_touch_get_focus(pepper_touch_t *touch, uint32_t id)
     return point->focus;
 }
 
+/**
+ * Get the position of the given touch point
+ *
+ * @param touch touch object
+ * @param id    touch point id
+ * @param x     pointer to receive x coordinate in global space
+ * @param y     pointer to receive y coordinate in global space
+ *
+ * @return PEPPER_TRUE on success, PEPPER_FALSE otherwise
+ */
 PEPPER_API pepper_bool_t
 pepper_touch_get_position(pepper_touch_t *touch, uint32_t id, double *x, double *y)
 {
@@ -289,6 +353,16 @@ pepper_touch_get_position(pepper_touch_t *touch, uint32_t id, double *x, double 
     return PEPPER_TRUE;
 }
 
+/**
+ * Set the position of the given touch point
+ *
+ * @param touch touch object
+ * @param id    touch point id
+ * @param x     x coordinate in global space
+ * @param y     y coordinate in global space
+ *
+ * @return PEPPER_TRUE on success, PEPPER_FALSE otherwise
+ */
 PEPPER_API pepper_bool_t
 pepper_touch_set_position(pepper_touch_t *touch, uint32_t id, double x, double y)
 {
@@ -301,6 +375,16 @@ pepper_touch_set_position(pepper_touch_t *touch, uint32_t id, double x, double y
     return PEPPER_TRUE;
 }
 
+/**
+ * Send wl_touch.down event to the client
+ *
+ * @param touch touch object
+ * @param view  target view
+ * @param time  time in mili-second with undefined base
+ * @param id    touch point id
+ * @param x     x coordinate in global space
+ * @param y     y coordinate in global space
+ */
 PEPPER_API void
 pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,
                        uint32_t time, uint32_t id, double x, double y)
@@ -328,6 +412,14 @@ pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,
     pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_DOWN, &event);
 }
 
+/**
+ * Send wl_touch.up event to the client
+ *
+ * @param touch touch object
+ * @param view  target view
+ * @param time  time in mili-second with undefined base
+ * @param id    touch point id
+ */
 PEPPER_API void
 pepper_touch_send_up(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, uint32_t id)
 {
@@ -353,6 +445,16 @@ pepper_touch_send_up(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, 
     pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_UP, &event);
 }
 
+/**
+ * Send wl_touch.motion event to the client
+ *
+ * @param touch touch object
+ * @param view  target view
+ * @param time  time in mili-second with undefined base
+ * @param id    touch point id
+ * @param x     x coordinate in global space
+ * @param y     y coordinate in global space
+ */
 PEPPER_API void
 pepper_touch_send_motion(pepper_touch_t *touch, pepper_view_t *view, uint32_t time, uint32_t id, double x, double y)
 {
@@ -380,6 +482,12 @@ pepper_touch_send_motion(pepper_touch_t *touch, pepper_view_t *view, uint32_t ti
     pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_MOTION, &event);
 }
 
+/**
+ * Send wl_touch.frame event to the client
+ *
+ * @param touch touch object
+ * @param view  target view
+ */
 PEPPER_API void
 pepper_touch_send_frame(pepper_touch_t *touch, pepper_view_t *view)
 {
@@ -391,6 +499,12 @@ pepper_touch_send_frame(pepper_touch_t *touch, pepper_view_t *view)
     pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_FRAME, NULL);
 }
 
+/**
+ * Send wl_touch.cancel event to the client
+ *
+ * @param touch touch object
+ * @param view  target view
+ */
 PEPPER_API void
 pepper_touch_send_cancel(pepper_touch_t *touch, pepper_view_t *view)
 {
@@ -402,6 +516,13 @@ pepper_touch_send_cancel(pepper_touch_t *touch, pepper_view_t *view)
     pepper_object_emit_event(&view->base, PEPPER_EVENT_TOUCH_CANCEL, NULL);
 }
 
+/**
+ * Install touch grab
+ *
+ * @param touch touch object
+ * @param grab  grab handler
+ * @param data  user data to be passed to grab functions
+ */
 PEPPER_API void
 pepper_touch_set_grab(pepper_touch_t *touch, const pepper_touch_grab_t *grab, void *data)
 {
@@ -409,12 +530,32 @@ pepper_touch_set_grab(pepper_touch_t *touch, const pepper_touch_grab_t *grab, vo
     touch->data = data;
 }
 
+/**
+ * Get the current touch grab
+ *
+ * @param touch touch object
+ *
+ * @return grab handler which is most recently installed
+ *
+ * @see pepper_touch_set_grab()
+ * @see pepper_touch_get_grab_data()
+ */
 PEPPER_API const pepper_touch_grab_t *
 pepper_touch_get_grab(pepper_touch_t *touch)
 {
     return touch->grab;
 }
 
+/**
+ * Get the current touch grab data
+ *
+ * @param touch touch object
+ *
+ * @return grab data which is most recently installed
+ *
+ * @see pepper_touch_set_grab()
+ * @see pepper_touch_get_grab()
+ */
 PEPPER_API void *
 pepper_touch_get_grab_data(pepper_touch_t *touch)
 {

@@ -228,24 +228,60 @@ pepper_pointer_bind_resource(struct wl_client *client, struct wl_resource *resou
     }
 }
 
+/**
+ * Get the list of wl_resource of the given pointer
+ *
+ * @param pointer   pointer object
+ *
+ * @return list of the pointer resources
+ */
 PEPPER_API struct wl_list *
 pepper_pointer_get_resource_list(pepper_pointer_t *pointer)
 {
     return &pointer->resource_list;
 }
 
+/**
+ * Get the compositor of the given pointer
+ *
+ * @param pointer   pointer object
+ *
+ * @return compositor
+ */
 PEPPER_API pepper_compositor_t *
 pepper_pointer_get_compositor(pepper_pointer_t *pointer)
 {
     return pointer->seat->compositor;
 }
 
+/**
+ * Get the seat of the given pointer
+ *
+ * @param pointer   pointer object
+ *
+ * @return seat
+ */
 PEPPER_API pepper_seat_t *
 pepper_pointer_get_seat(pepper_pointer_t *pointer)
 {
     return pointer->seat;
 }
 
+/**
+ * Set the clamp area of the given pointer
+ *
+ * @param pointer   pointer object
+ * @param x0        x coordinate of top left corner of the clamp area
+ * @param y0        y coordinate of top left corner of the clamp area
+ * @param x1        x coordinate of bottom right corner of the clamp area
+ * @param y1        y coordinate of bottom right corner of the clamp area
+ *
+ * @return PEPPER_TRUE on success, PEPPER_FALSE otherwise
+ *
+ * Clamp area is a rectangular boundary that a pointer's cursor can never go out of it. Changing the
+ * clamp area might cause the pointer cursor to be moved (to be located inside of the area)
+ * resulting motion events.
+ */
 PEPPER_API pepper_bool_t
 pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double x1, double y1)
 {
@@ -275,6 +311,15 @@ pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0, double
     return PEPPER_TRUE;
 }
 
+/**
+ * Get the clamp area of the given pointer
+ *
+ * @param pointer   pointer object
+ * @param x0        pointer to receive x coordinate of top left corner of the clamp area
+ * @param y0        pointer to receive y coordinate of top left corner of the clamp area
+ * @param x1        pointer to receive x coordinate of bottom right corner of the clamp area
+ * @param y1        pointer to receive y coordinate of bottom right corner of the clamp area
+ */
 PEPPER_API void
 pepper_pointer_get_clamp(pepper_pointer_t *pointer, double *x0, double *y0, double *x1, double *y1)
 {
@@ -291,6 +336,20 @@ pepper_pointer_get_clamp(pepper_pointer_t *pointer, double *x0, double *y0, doub
         *y1 = pointer->clamp.y1;
 }
 
+/**
+ * Set the velocity of the given pointer
+ *
+ * @param pointer   pointer object
+ * @param vx        velocity in x direction
+ * @param vy        velocity in y direction
+ *
+ * Pointer cursor movement is calculated as follows.
+ *
+ *  dx = x_velocity * motion.x
+ *  dy = y_velocity * motion.x
+ *
+ * Default value is (1.0, 1.0).
+ */
 PEPPER_API void
 pepper_pointer_set_velocity(pepper_pointer_t *pointer, double vx, double vy)
 {
@@ -298,6 +357,15 @@ pepper_pointer_set_velocity(pepper_pointer_t *pointer, double vx, double vy)
     pointer->y_velocity = vy;
 }
 
+/**
+ * Get the velocity of the given pointer
+ *
+ * @param pointer   pointer object
+ * @param vx        pointer to receive velocity in x direction
+ * @param vx        pointer to receive velocity in y direction
+ *
+ * @see pepper_pointer_set_velocity()
+ */
 PEPPER_API void
 pepper_pointer_get_velocity(pepper_pointer_t *pointer, double *vx, double *vy)
 {
@@ -308,6 +376,13 @@ pepper_pointer_get_velocity(pepper_pointer_t *pointer, double *vx, double *vy)
         *vy = pointer->y_velocity;
 }
 
+/**
+ * Get the current cursor position of the given pointer
+ *
+ * @param pointer   pointer object
+ * @param x         pointer to receive x coordinate of the cursor in global space
+ * @param x         pointer to receive y coordinate of the cursor in global space
+ */
 PEPPER_API void
 pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y)
 {
@@ -318,6 +393,16 @@ pepper_pointer_get_position(pepper_pointer_t *pointer, double *x, double *y)
         *y = pointer->y;
 }
 
+/**
+ * Set the focus view of the given pointer
+ *
+ * @param pointer   pointer object
+ * @param focus     focus view
+ *
+ * @see pepper_pointer_send_enter()
+ * @see pepper_pointer_send_leave()
+ * @see pepper_pointer_get_focus()
+ */
 PEPPER_API void
 pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
 {
@@ -346,12 +431,27 @@ pepper_pointer_set_focus(pepper_pointer_t *pointer, pepper_view_t *focus)
     }
 }
 
+/**
+ * Get the focus view of the given pointer
+ *
+ * @param pointer   pointer object
+ *
+ * @return focus view
+ *
+ * @see pepper_pointer_set_focus()
+ */
 PEPPER_API pepper_view_t *
 pepper_pointer_get_focus(pepper_pointer_t *pointer)
 {
     return pointer->focus;
 }
 
+/**
+ * Send wl_pointer.leave event to the client
+ *
+ * @param pointer   pointer object
+ * @param view      view object having the target surface for the leave event
+ */
 PEPPER_API void
 pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *view)
 {
@@ -372,6 +472,12 @@ pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *view)
     }
 }
 
+/**
+ * Send wl_pointer.enter event to the client
+ *
+ * @param pointer   pointer object
+ * @param view      view object having the target surface for the enter event
+ */
 PEPPER_API void
 pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *view, double x, double y)
 {
@@ -394,6 +500,15 @@ pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *view, double
     }
 }
 
+/**
+ * Send wl_pointer.motion event to the client
+ *
+ * @param pointer   pointer object
+ * @param view      view object having the target surface for the motion event
+ * @param time      time in mili-second with undefined base
+ * @param x         movement in x direction in global space
+ * @param y         movement in y direction in global space
+ */
 PEPPER_API void
 pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *view,
                            uint32_t time, double x, double y)
@@ -421,6 +536,15 @@ pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *view,
     pepper_object_emit_event(&view->base, PEPPER_EVENT_POINTER_MOTION, &event);
 }
 
+/**
+ * Send wl_pointer.button event to the client
+ *
+ * @param pointer   pointer object
+ * @param view      view object having the target surface for the button event
+ * @param time      time in mili-second with undefined base
+ * @param button    button flag (ex. BTN_LEFT)
+ * @param state     state flag (ex. WL_POINTER_BUTTON_STATE_PRESSED)
+ */
 PEPPER_API void
 pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *view,
                            uint32_t time, uint32_t button, uint32_t state)
@@ -448,6 +572,15 @@ pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *view,
     pepper_object_emit_event(&view->base, PEPPER_EVENT_POINTER_BUTTON, &event);
 }
 
+/**
+ * Send wl_pointer.axis event to the client
+ *
+ * @param pointer   pointer object
+ * @param view      view object having the target surface for the axis event
+ * @param time      time in mili-second with undefined base
+ * @param axis      axis flag (ex. WL_POINTER_AXIS_VERTICAL_SCROLL)
+ * @param value     amount of the scrolling
+ */
 PEPPER_API void
 pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *view,
                          uint32_t time, uint32_t axis, double value)
@@ -474,6 +607,13 @@ pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *view,
     pepper_object_emit_event(&view->base, PEPPER_EVENT_POINTER_AXIS, &event);
 }
 
+/**
+ * Install pointer grab
+ *
+ * @param pointer   pointer object
+ * @param grab      grab handler
+ * @param data      user data to be passed to grab functions
+ */
 PEPPER_API void
 pepper_pointer_set_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t *grab, void *data)
 {
@@ -481,12 +621,32 @@ pepper_pointer_set_grab(pepper_pointer_t *pointer, const pepper_pointer_grab_t *
     pointer->data = data;
 }
 
+/**
+ * Get the current pointer grab
+ *
+ * @param pointer   pointer object
+ *
+ * @return grab handler which is most recently installed
+ *
+ * @see pepper_pointer_set_grab()
+ * @see pepper_pointer_get_grab_data()
+ */
 PEPPER_API const pepper_pointer_grab_t *
 pepper_pointer_get_grab(pepper_pointer_t *pointer)
 {
     return pointer->grab;
 }
 
+/**
+ * Get the current pointer grab data
+ *
+ * @param pointer   pointer object
+ *
+ * @return grab data which is most recently installed
+ *
+ * @see pepper_pointer_set_grab()
+ * @see pepper_pointer_get_grab()
+ */
 PEPPER_API void *
 pepper_pointer_get_grab_data(pepper_pointer_t *pointer)
 {

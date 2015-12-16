@@ -28,7 +28,6 @@
 
 #include "pepper-internal.h"
 
-/* compositor interface */
 static void
 compositor_create_surface(struct wl_client   *client,
                           struct wl_resource *resource,
@@ -94,6 +93,21 @@ pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
         pepper_output_schedule_repaint(output);
 }
 
+/**
+ * Create a compositor with the given fd and socket name
+ *
+ * @param socket_name   socket name, if NULL, automatically determined internally
+ * @param fd            file descriptor to the socket, if -1, socket is created internally
+ *
+ * @return created compositor object
+ *
+ * On tizen, there're some security issues so that creating a socket is not allowed to applications.
+ * In that situation, creating a compositor from already existing socket fd is required. The fd is
+ * acquired by requesting to some kind of system service rather than creating directly by the
+ * application.
+ *
+ * @see pepper_compositor_create()
+ */
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create_fd(const char *socket_name, int fd)
 {
@@ -160,19 +174,38 @@ error:
     return NULL;
 }
 
+
+/**
+ * Create a compositor with the given socket name
+ *
+ * @param socket_name   socket name, if NULL, automatically determined internally
+ *
+ * @return created compositor object
+ *
+ * After creating a compositor, clients can connect to the socket.
+ * wl_compositor global is internally created.
+ *
+ * @see pepper_compositor_destroy()
+ */
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name)
 {
     return pepper_compositor_create_fd(socket_name, -1);
 }
 
+/**
+ * Destroy the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @see pepper_compositor_create()
+ * @see pepper_compositor_create_fd()
+ */
 PEPPER_API void
 pepper_compositor_destroy(pepper_compositor_t *compositor)
 {
     pepper_surface_t        *surface, *next_surface;
     pepper_region_t         *region, *next_region;
-
-    /* TODO: Data device manager fini. */
 
     pepper_list_for_each_safe(surface, next_surface, &compositor->surface_list, link)
         pepper_surface_destroy(surface);
@@ -196,54 +229,127 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
     free(compositor);
 }
 
+/**
+ * Get the wl_display of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return wl_display of the compositor
+ *
+ * Exposing wl_display of a compositor is useful, as user can construct their own main loop and
+ * install desired globals to provide extension protocols.
+ */
 PEPPER_API struct wl_display *
 pepper_compositor_get_display(pepper_compositor_t *compositor)
 {
     return compositor->display;
 }
 
+/**
+ * Get the list of bound wl_resource of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return list of the bound wl_resource
+ */
 PEPPER_API struct wl_list *
 pepper_compositor_get_resource_list(pepper_compositor_t *compositor)
 {
     return &compositor->resource_list;
 }
 
+/**
+ * Get the socket name of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return null terminating string of the socket name
+ */
 PEPPER_API const char *
 pepper_compositor_get_socket_name(pepper_compositor_t *compositor)
 {
     return compositor->socket_name;
 }
 
+/**
+ * Get the list of outputs of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return list of outputs
+ */
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_output_list(pepper_compositor_t *compositor)
 {
     return &compositor->output_list;
 }
 
+/**
+ * Get the list of surfaces of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return list of surfaces
+ */
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_surface_list(pepper_compositor_t *compositor)
 {
     return &compositor->surface_list;
 }
 
+/**
+ * Get the list of views of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return list of views sorted in z-order (front to back)
+ */
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_view_list(pepper_compositor_t *compositor)
 {
     return &compositor->view_list;
 }
 
+/**
+ * Get the list of seats of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return list of seats
+ */
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_seat_list(pepper_compositor_t *compositor)
 {
     return &compositor->seat_list;
 }
 
+/**
+ * Get the list of input devices of the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return list of input devices
+ */
 PEPPER_API const pepper_list_t *
 pepper_compositor_get_input_device_list(pepper_compositor_t *compositor)
 {
     return &compositor->input_device_list;
 }
 
+/**
+ * Pick a view for given position in the compositor
+ *
+ * @param compositor    compositor object
+ * @param x             x coordinate in global space
+ * @param y             y coordinate in global space
+ * @param vx            pointer to receive x coordinate in view space
+ * @param vx            pointer to receive y coordinate in view space
+ *
+ * @return picked view if there's any, NULL otherwise
+ *
+ * Pepper picks a view which is located topmost for the given position. If input region is set for
+ * the surface of the view, the region should contain the position.
+ */
 PEPPER_API pepper_view_t *
 pepper_compositor_pick_view(pepper_compositor_t *compositor,
                             double x, double y, double *vx, double *vy)
@@ -286,6 +392,18 @@ pepper_compositor_pick_view(pepper_compositor_t *compositor,
     return NULL;
 }
 
+/**
+ * Set clock id for clock_gettime() function of the given pepper_compositor_t
+ *
+ * @param compositor    compositor object
+ * @param id            clock id
+ *
+ * @return PEPPER_TRUE on success, otherwise PEPPER_FALSE
+ *
+ * It is recommended to use the same clock id with output backend. If multiple output backends use
+ * different timer, you should not use pepper_compositor_get_time(). Also, be aware that changing
+ * clock id might cause the timer base changes.
+ */
 PEPPER_API pepper_bool_t
 pepper_compositor_set_clock_id(pepper_compositor_t *compositor, clockid_t id)
 {
@@ -306,6 +424,14 @@ pepper_compositor_set_clock_id(pepper_compositor_t *compositor, clockid_t id)
     return PEPPER_TRUE;
 }
 
+/**
+ * Get current time of the given compositor with undefined base
+ *
+ * @param compositor    compositor object
+ * @param ts            pointer to receive the current time
+ *
+ * @return PEPPER_TRUE on success, otherwise PEPPER_FALSE
+ */
 PEPPER_API pepper_bool_t
 pepper_compositor_get_time(pepper_compositor_t *compositor, struct timespec *ts)
 {

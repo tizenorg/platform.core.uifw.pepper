@@ -89,6 +89,14 @@ pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list, pixma
     pixman_region32_fini(&plane_clip);
 }
 
+/**
+ * Create and add #pepper_plane_t to the output.
+ *
+ * @param output        output to add the plane
+ * @param above_plane   added plane will be placed above above_plane
+ *
+ * @returns             #pepper_plane_t
+ */
 PEPPER_API pepper_plane_t *
 pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above)
 {
@@ -114,6 +122,11 @@ pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above)
     return plane;
 }
 
+/**
+ * Destroy the plane.
+ *
+ * @param plane     plane to destroy
+ */
 PEPPER_API void
 pepper_plane_destroy(pepper_plane_t *plane)
 {
@@ -147,30 +160,65 @@ pepper_plane_add_damage_region(pepper_plane_t *plane, pixman_region32_t *damage)
     }
 }
 
+/**
+ * Get the region that has been changed. Not necessarily the damage region should be visible.
+ *
+ * @param plane     plane to get the damage region
+ *
+ * @returns         #pixman_region32_t
+ */
 PEPPER_API pixman_region32_t *
 pepper_plane_get_damage_region(pepper_plane_t *plane)
 {
     return &plane->damage_region;
 }
 
+/**
+ * Get the region that is obscured by other planes in front of the plane. Visible damage region
+ * should be (DAMAGE - CLIP)
+ *
+ * @param plane     plane to get the clip region
+ *
+ * @returns         #pixman_region32_t
+ */
 PEPPER_API pixman_region32_t *
 pepper_plane_get_clip_region(pepper_plane_t *plane)
 {
     return &plane->clip_region;
 }
 
+/**
+ * Get list of #pepper_render_item_t.
+ *
+ * @param plane     plane to get the list
+ *
+ * @returns         #pepper_list_t
+ */
 PEPPER_API const pepper_list_t *
 pepper_plane_get_render_list(pepper_plane_t *plane)
 {
     return &plane->entry_list;
 }
 
+/**
+ * Subtract given region from the damage region of a plane. Called to partially update the
+ * damage region of a plane.
+ *
+ * @param plane     plane
+ * @param damage    region to subtract
+ */
 PEPPER_API void
 pepper_plane_subtract_damage_region(pepper_plane_t *plane, pixman_region32_t *damage)
 {
     pixman_region32_subtract(&plane->damage_region, &plane->damage_region, damage);
 }
 
+/**
+ * Clear the damage region of a plane. Called when the output backend has processed the damage
+ * region. Or if you partially updated the damage region use pepper_plane_subtract_damage_region.
+ *
+ * @param plane     plane to clear the damage region
+ */
 PEPPER_API void
 pepper_plane_clear_damage_region(pepper_plane_t *plane)
 {

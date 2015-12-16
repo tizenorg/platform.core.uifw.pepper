@@ -72,6 +72,16 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
         wl_seat_send_name(resource, seat->name);
 }
 
+/**
+ * Create and add a seat to the given compositor
+ *
+ * @param compositor    compositor object
+ * @param seat_name     name of the seat to be added
+ *
+ * @return added seat
+ *
+ * Global for the wl_seat is created internally, thus broadcasted to all clients via registry.
+ */
 PEPPER_API pepper_seat_t *
 pepper_compositor_add_seat(pepper_compositor_t *compositor, const char *seat_name)
 {
@@ -107,6 +117,11 @@ error:
     return NULL;
 }
 
+/**
+ * Destroy the given seat
+ *
+ * @param seat  seat object
+ */
 PEPPER_API void
 pepper_seat_destroy(pepper_seat_t *seat)
 {
@@ -131,36 +146,84 @@ pepper_seat_destroy(pepper_seat_t *seat)
         wl_resource_destroy(resource);
 }
 
+/**
+ * Get the list of wl_resource of the given seat
+ *
+ * @param seat  seat object
+ *
+ * @return list of seat resource
+ */
 PEPPER_API struct wl_list *
 pepper_seat_get_resource_list(pepper_seat_t *seat)
 {
     return &seat->resource_list;
 }
 
+/**
+ * Get the compositor of the given seat
+ *
+ * @param seat  seat object
+ *
+ * @return compositor of the seat
+ */
 PEPPER_API pepper_compositor_t *
 pepper_seat_get_compositor(pepper_seat_t *seat)
 {
     return seat->compositor;
 }
 
+/**
+ * Get the pointer of the given seat
+ *
+ * @param seat  seat object
+ *
+ * @return pointer if exist, NULL otherwise
+ *
+ * When the seat doesn't have pointer capability, NULL would be returned.
+ */
 PEPPER_API pepper_pointer_t *
 pepper_seat_get_pointer(pepper_seat_t *seat)
 {
     return seat->pointer;
 }
 
+/**
+ * Get the keyboard of the given seat
+ *
+ * @param seat  keyboard object
+ *
+ * @return keyboard to the keyboard object if exist, NULL otherwise
+ *
+ * When the seat doesn't have keyboard capability, NULL would be returned.
+ */
 PEPPER_API pepper_keyboard_t *
 pepper_seat_get_keyboard(pepper_seat_t *seat)
 {
     return seat->keyboard;
 }
 
+/**
+ * Get the touch of the given seat
+ *
+ * @param seat  touch object
+ *
+ * @return touch to the touch object if exist, NULL otherwise
+ *
+ * When the seat doesn't have touch capability, NULL would be returned.
+ */
 PEPPER_API pepper_touch_t *
 pepper_seat_get_touch(pepper_seat_t *seat)
 {
     return seat->touch;
 }
 
+/**
+ * Get the name of the given seat
+ *
+ * @param seat  seat object
+ *
+ * @return pointer the null terminating string of the seat name
+ */
 PEPPER_API const char *
 pepper_seat_get_name(pepper_seat_t *seat)
 {
@@ -269,6 +332,19 @@ seat_handle_device_event(pepper_event_listener_t *listener, pepper_object_t *obj
     }
 }
 
+/**
+ * Add the input device to the given seat
+ *
+ * @param seat      seat object
+ * @param device    input device object
+ *
+ * Seat's capabilities will be updated according to the device's capabilities and the change is
+ * broadcasted to all resources. The seat installs an event listener on the device and dispatches
+ * input events to proper destination which is one of pepper_pointer/keyboard/touch_t of the seat.
+ * Device add events are emitted to the seat according to the device's capabilities like
+ * PEPPER_EVENT_SEAT_POINTER_DEVICE_ADD. If any of pepper_pointer/keyboard/touch_t has been created
+ * by adding the input device, event is emitted to the seat like PEPPER_EVENT_SEAT_POINTER_ADD.
+ */
 PEPPER_API void
 pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 {
@@ -293,6 +369,16 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
                                                        seat_handle_device_event, entry);
 }
 
+/**
+ * Remove an input device from the given seat
+ *
+ * @param seat      seat to remove the input device
+ * @param device    input device to be removed
+ *
+ * If the device is not added to the seat, this function has no effect. Removing the device causes
+ * the capabilities of the seat to change resulting wayland events and pepper events. Refer to the
+ * events described in pepper_seat_add_input_device().
+ */
 PEPPER_API void
 pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 {
@@ -311,6 +397,18 @@ pepper_seat_remove_input_device(pepper_seat_t *seat, pepper_input_device_t *devi
     }
 }
 
+/**
+ * Create an input device.
+ *
+ * @param compositor    compositor to add the device
+ * @param caps          capabilities of the device
+ * @param backend       pointer to an input device backend function table
+ * @param data          backend data
+ *
+ * @returns             #pepper_input_device_t
+ *
+ * PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD event is emitted.
+ */
 PEPPER_API pepper_input_device_t *
 pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
                            const pepper_input_device_backend_t *backend, void *data)
@@ -333,6 +431,13 @@ pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
     return device;
 }
 
+/**
+ * Destroy the given input device.
+ *
+ * @param device    input device to destroy
+ *
+ * PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE event is emitted.
+ */
 PEPPER_API void
 pepper_input_device_destroy(pepper_input_device_t *device)
 {
@@ -343,12 +448,29 @@ pepper_input_device_destroy(pepper_input_device_t *device)
     free(device);
 }
 
+/**
+ * Get the #pepper_compositor_t of the given #pepper_input_device_t
+ *
+ * @param device    input device to get the compositor
+ *
+ * @return compositor
+ */
 PEPPER_API pepper_compositor_t *
 pepper_input_device_get_compositor(pepper_input_device_t *device)
 {
     return device->compositor;
 }
 
+/**
+ * Get property of the given #pepper_input_device_t for the given key
+ *
+ * @param device    input device to get the property
+ * @param key       key for the property
+ *
+ * @return null terminating string of the property if exist, NULL otherwise
+ *
+ * Available keys for the properties are different between input backends.
+ */
 PEPPER_API const char *
 pepper_input_device_get_property(pepper_input_device_t *device, const char *key)
 {
@@ -358,6 +480,15 @@ pepper_input_device_get_property(pepper_input_device_t *device, const char *key)
     return device->backend->get_property(device->data, key);
 }
 
+/**
+ * Get capabilities value of the given input device.
+ *
+ * @param device    device to get capabilities
+ *
+ * @returns         capabilities of the device
+ *
+ * @see wl_seat_capability
+ */
 PEPPER_API uint32_t
 pepper_input_device_get_caps(pepper_input_device_t *device)
 {

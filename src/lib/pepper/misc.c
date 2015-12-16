@@ -28,6 +28,12 @@
 
 #include "pepper-internal.h"
 
+/**
+ * Transforms a pixman region from global space to output local space
+ *
+ * @param region    pixman region
+ * @param output    output object
+ */
 PEPPER_API void
 pepper_pixman_region_global_to_output(pixman_region32_t *region, pepper_output_t *output)
 {
@@ -140,6 +146,15 @@ pepper_pixman_region_global_to_output(pixman_region32_t *region, pepper_output_t
     }
 }
 
+/**
+ * Transforms coordinates from surface local to buffer local space
+ *
+ * @param surface   surface object
+ * @param sx        x coordinate in surface local space
+ * @param sy        y coordinate in surface local space
+ * @param bx        pointer to receive x coordinate in buffer local space
+ * @param by        pointer to receive y coordinate in buffer local space
+ */
 PEPPER_API void
 pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
                                      double sx, double sy, double *bx, double *by)

@@ -57,6 +57,13 @@ pepper_buffer_from_resource(struct wl_resource *resource)
     return buffer;
 }
 
+/**
+ * Increase reference count of the given buffer
+ *
+ * @param buffer    buffer object
+ *
+ * @see pepper_buffer_unreference()
+ */
 PEPPER_API void
 pepper_buffer_reference(pepper_buffer_t *buffer)
 {
@@ -64,6 +71,14 @@ pepper_buffer_reference(pepper_buffer_t *buffer)
     buffer->ref_count++;
 }
 
+/**
+ * Decrease reference count of the given buffer
+ *
+ * @param buffer    buffer object
+ *
+ * If the reference count drops to 0, wl_buffer.release is sent to the client but the buffer is not
+ * destroyed. Buffer is destroyed only for the wl_buffer.destroy request.
+ */
 PEPPER_API void
 pepper_buffer_unreference(pepper_buffer_t *buffer)
 {
@@ -76,12 +91,31 @@ pepper_buffer_unreference(pepper_buffer_t *buffer)
     }
 }
 
+/**
+ * Get the wl_resource of the given buffer
+ *
+ * @param buffer    buffer object
+ *
+ * @return wl_resource of the buffer
+ */
 PEPPER_API struct wl_resource *
 pepper_buffer_get_resource(pepper_buffer_t *buffer)
 {
     return buffer->resource;
 }
 
+/**
+ * Get the size of the given buffer
+ *
+ * @param buffer    buffer object
+ * @param w         pointer to receive width
+ * @param h         pointer to receive height
+ *
+ * @return PEPPER_TRUE on success, PEPPER_FALSE otherwise
+ *
+ * Buffer size is unknown until it is actually attached to the output backend. So, querying the size
+ * of a buffer might fail and never forget that.
+ */
 PEPPER_API pepper_bool_t
 pepper_buffer_get_size(pepper_buffer_t *buffer, int *w, int *h)
 {

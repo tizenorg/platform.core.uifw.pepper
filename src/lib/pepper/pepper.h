@@ -803,7 +803,6 @@ struct pepper_input_event
     double      value;      /**< pointer axis value. */
 };
 
-/* Generic object functions. */
 PEPPER_API pepper_object_type_t
 pepper_object_get_type(pepper_object_t *object);
 
@@ -827,7 +826,6 @@ pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priori
 PEPPER_API void
 pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info);
 
-/* Compositor functions. */
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name);
 
@@ -871,7 +869,6 @@ pepper_compositor_set_clock_id(pepper_compositor_t *compositor, clockid_t id);
 PEPPER_API pepper_bool_t
 pepper_compositor_get_time(pepper_compositor_t *compositor, struct timespec *ts);
 
-/* Output. */
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output);
 
@@ -908,7 +905,6 @@ pepper_output_get_name(pepper_output_t *output);
 PEPPER_API pepper_output_t *
 pepper_compositor_find_output(pepper_compositor_t *compositor, const char *name);
 
-/* Seat & Input Device. */
 PEPPER_API pepper_seat_t *
 pepper_compositor_add_seat(pepper_compositor_t *compositor, const char *seat_name);
 
@@ -945,13 +941,51 @@ pepper_input_device_get_property(pepper_input_device_t *device, const char *key)
 PEPPER_API pepper_compositor_t *
 pepper_input_device_get_compositor(pepper_input_device_t *device);
 
-/* Pointer. */
 struct pepper_pointer_grab
 {
+    /**
+     * Handler for pointer motion event
+     *
+     * @param pointer   pointer object
+     * @param data      data registered for the grab (@see pepper_pointer_set_grab)
+     * @param time      time in mili-second with undefined base
+     * @param x         movement in x direction on global space
+     * @param x         movement in y direction on global space
+     **/
     void (*motion)(pepper_pointer_t *pointer, void *data, uint32_t time, double x, double y);
+
+    /**
+     * Handler for pointer button event
+     *
+     * @param pointer   pointer object
+     * @param data      data registered for the grab (@see pepper_pointer_set_grab)
+     * @param time      time in mili-second with undefined base
+     * @param button    button id
+     * @param state     button state (@see pepper_button_state)
+     **/
     void (*button)(pepper_pointer_t *pointer, void *data, uint32_t time, uint32_t button,
                    uint32_t state);
+
+    /**
+     * Handler for pointer axis event
+     *
+     * @param pointer   pointer object
+     * @param data      data registered for the grab (@see pepper_pointer_set_grab)
+     * @param time      time in mili-second with undefined base
+     * @param axis      axis id
+     * @param value     amount of axis movement
+     **/
     void (*axis)(pepper_pointer_t *pointer, void *data, uint32_t time, uint32_t axis, double value);
+
+    /**
+     * Handler for the grab cancel
+     *
+     * @param pointer   pointer object
+     * @param data      data registered for the grab (@see pepper_pointer_set_grab)
+     *
+     * Notifying that the grab is canceled and removed. Place to release resources or clean up grab
+     * states.
+     **/
     void (*cancel)(pepper_pointer_t *pointer, void *data);
 };
 
@@ -1015,10 +1049,37 @@ pepper_pointer_get_grab_data(pepper_pointer_t *pointer);
 /* Keyboard. */
 struct pepper_keyboard_grab
 {
+    /**
+     * Handler for keyboard key event
+     *
+     * @param keyboard  keyboard object
+     * @param data      data registered for the grab (@see pepper_keyboard_set_grab)
+     * @param time      time in mili-second with undefined base
+     * @param key       key code
+     * @param state     state flag (ex. WL_KEYBOARD_KEY_STATE_PRESSED)
+     **/
     void (*key)(pepper_keyboard_t *keyboard, void *data, uint32_t time, uint32_t key,
                 uint32_t state);
+
+    /**
+     * Handler for keyboard modifier event
+     *
+     * @param keyboard          keyboard object
+     * @param data              data registered for the grab (@see pepper_keyboard_set_grab)
+     * @param mods_depressed    depressed mods
+     * @param mods_latched      latched mods
+     * @param mods_locked       locked mods
+     * @param group             (none)
+     **/
     void (*modifiers)(pepper_keyboard_t *keyboard, void *data, uint32_t mods_depressed,
                       uint32_t mods_latched, uint32_t mods_locked, uint32_t group);
+
+    /**
+     * Handler for grab cancel
+     *
+     * @param keyboard  keyboard object
+     * @param data      data registered for the grab (@see pepper_keyboard_set_grab)
+     **/
     void (*cancel)(pepper_keyboard_t *keyboard, void *data);
 };
 

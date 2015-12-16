@@ -133,7 +133,14 @@ plane_entry_set_plane(pepper_plane_entry_t *entry, pepper_plane_t *plane)
     }
 }
 
-void
+/**
+ * Assign a view to a plane.
+ *
+ * @param view      view to assign
+ * @param output    output of the plane
+ * @param plane     plane to assign a view
+ */
+PEPPER_API void
 pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output, pepper_plane_t *plane)
 {
     PEPPER_CHECK(!plane || plane->output == output, return, "Plane output mismatch.\n");
@@ -290,6 +297,13 @@ view_init(pepper_view_t *view, pepper_compositor_t *compositor)
     }
 }
 
+/**
+ * Create and add a view to the given compositor
+ *
+ * @param compositor    compositor object
+ *
+ * @return the created view
+ */
 PEPPER_API pepper_view_t *
 pepper_compositor_add_view(pepper_compositor_t *compositor)
 {
@@ -324,6 +338,18 @@ view_link_to_surface(pepper_view_t *view)
     subsurface_create_children_views(view->surface->sub, view);
 }
 
+/**
+ * Set a surface to the given view as its content
+ *
+ * @param view      view object
+ * @param surface   surface object
+ *
+ * @return PEPPER_TRUE on success, PEPPER_FALSE otherwise
+ *
+ * View is just a container which can be located on the compositor space. Its content come from
+ * other resources like wl_surface. This function sets the content of the given view with the given
+ * surface.
+ */
 PEPPER_API pepper_bool_t
 pepper_view_set_surface(pepper_view_t *view, pepper_surface_t *surface)
 {
@@ -342,6 +368,11 @@ pepper_view_set_surface(pepper_view_t *view, pepper_surface_t *surface)
     return PEPPER_TRUE;
 }
 
+/**
+ * Destroy the given view
+ *
+ * @param view  view object
+ */
 PEPPER_API void
 pepper_view_destroy(pepper_view_t *view)
 {
@@ -371,18 +402,51 @@ pepper_view_destroy(pepper_view_t *view)
     free(view);
 }
 
+/**
+ * Get the compositor of the given view
+ *
+ * @param view  view object
+ *
+ * @return compositor of the view
+ */
 PEPPER_API pepper_compositor_t *
 pepper_view_get_compositor(pepper_view_t *view)
 {
     return view->compositor;
 }
 
+/**
+ * Get the surface of the given view
+ *
+ * @param view  view object
+ *
+ * @return surface of the view
+ *
+ * @see pepper_view_set_surface()
+ */
 PEPPER_API pepper_surface_t *
 pepper_view_get_surface(pepper_view_t *view)
 {
     return view->surface;
 }
 
+/**
+ * Set the parent of the given view
+ *
+ * @param view      view object
+ * @param parent    parent view object
+ *
+ * Views can inherit some of the properties from their parent. Changing the parent of a view might
+ * result repaint.
+ *
+ * @see pepper_view_set_transform_inherit()
+ * @see pepper_view_get_parent()
+ * @see pepper_view_get_children_list()
+ * @see pepper_view_stack_above()
+ * @see pepper_view_stack_below()
+ * @see pepper_view_stack_top()
+ * @see pepper_view_stack_bottom()
+ */
 PEPPER_API void
 pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent)
 {
@@ -400,12 +464,33 @@ pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent)
     pepper_view_mark_dirty(view, PEPPER_VIEW_ACTIVE_DIRTY | PEPPER_VIEW_GEOMETRY_DIRTY);
 }
 
+/**
+ * Get the parent of the given view
+ *
+ * @param view view object
+ *
+ * @return the parent view
+ *
+ * @see pepper_view_set_parent()
+ */
 PEPPER_API pepper_view_t *
 pepper_view_get_parent(pepper_view_t *view)
 {
     return view->parent;
 }
 
+/**
+ * Set the transform inheritance flag of the given view
+ *
+ * @param view      view object
+ * @param inherit   boolean value to enable inherit or not
+ *
+ * If the inherit is set to PEPPER_TRUE, view position and transform is interpreted as
+ * relative to its parent. If it is not, position and transform is relative to the global frame.
+ *
+ * @see pepper_view_set_parent()
+ * @see pepper_view_get_transform_inherit()
+ */
 PEPPER_API void
 pepper_view_set_transform_inherit(pepper_view_t *view, pepper_bool_t inherit)
 {
@@ -445,12 +530,38 @@ pepper_view_set_transform_inherit(pepper_view_t *view, pepper_bool_t inherit)
     view->inherit_transform = inherit;
 }
 
+/**
+ * Get the transform inheritance flag of the given view
+ *
+ * @param view  view object
+ *
+ * @return transform inheritance flag
+ *
+ * @see pepper_view_set_transform_inherit()
+ */
 PEPPER_API pepper_bool_t
 pepper_view_get_transform_inherit(pepper_view_t *view)
 {
     return view->inherit_transform;
 }
 
+/**
+ * Stack the given view above the target view
+ *
+ * @param view      view object
+ * @param below     target view to stack the given view above it
+ * @param subtree   flag for stacking entire subtree or not
+ *
+ * @return PEPPER_TRUE on success, PEPPER_FALSE otherwise
+ *
+ * If the subtree is PEPPER_TRUE, entire subtree is taken from the tack, and inserted above the
+ * target view. Child views are stacked above their parents. Z-order between siblings is determined
+ * by the order in the list.
+ *
+ * @see pepper_view_stack_below()
+ * @see pepper_view_stack_top()
+ * @see pepper_view_stack_bottom()
+ */
 PEPPER_API pepper_bool_t
 pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below, pepper_bool_t subtree)
 {
@@ -458,6 +569,19 @@ pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below, pepper_bool_t
     return PEPPER_TRUE;
 }
 
+/**
+ * Stack the given view below the target view
+ *
+ * @param view      view object
+ * @param above     target view to stack the given view below it
+ * @param subtree   flag for stacking entire subtree or not
+ *
+ * @return PEPPER_TRUE on success, PEPPER_FALSE otherwise
+ *
+ * @see pepper_view_stack_above()
+ * @see pepper_view_stack_top()
+ * @see pepper_view_stack_bottom()
+ */
 PEPPER_API pepper_bool_t
 pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above, pepper_bool_t subtree)
 {
@@ -465,36 +589,92 @@ pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above, pepper_bool_t
     return PEPPER_TRUE;
 }
 
+/**
+ * Stack the given view at the top
+ *
+ * @param view      view object
+ * @param subtree   flag for stacking entire subtree or not
+ *
+ * @see pepper_view_stack_above()
+ * @see pepper_view_stack_below()
+ * @see pepper_view_stack_bottom()
+ */
 PEPPER_API void
 pepper_view_stack_top(pepper_view_t *view, pepper_bool_t subtree)
 {
     view_insert(view, &view->compositor->view_list, subtree);
 }
 
+/**
+ * Stack the given view at the bottom
+ *
+ * @param view      view object
+ * @param subtree   flag for stacking entire subtree or not
+ *
+ * @see pepper_view_stack_above()
+ * @see pepper_view_stack_below()
+ * @see pepper_view_stack_top()
+ */
 PEPPER_API void
 pepper_view_stack_bottom(pepper_view_t *view, pepper_bool_t subtree)
 {
     view_insert(view, view->compositor->view_list.prev, subtree);
 }
 
+/**
+ * Get the view right above the given view
+ *
+ * @param view  view object
+ *
+ * @return the view right above the given view
+ *
+ * @see pepper_view_get_below()
+ */
 PEPPER_API pepper_view_t *
 pepper_view_get_above(pepper_view_t *view)
 {
     return view->compositor_link.next->item;
 }
 
+/**
+ * Get the view right below the given view
+ *
+ * @param view  view object
+ *
+ * @return the view right below the given view
+ *
+ * @see pepper_view_get_below()
+ */
 PEPPER_API pepper_view_t *
 pepper_view_get_below(pepper_view_t *view)
 {
     return view->compositor_link.prev->item;
 }
 
+/**
+ * Get the list of children of the given view
+ *
+ * @param view  view object
+ *
+ * @return the children list
+ *
+ * @see pepper_view_set_parent()
+ */
 PEPPER_API const pepper_list_t *
 pepper_view_get_children_list(pepper_view_t *view)
 {
     return &view->children_list;
 }
 
+/**
+ * Resize the given view (Don't use this function)
+ *
+ * @param view  view object
+ * @param w     width of the new size
+ * @param h     height of the new size
+ *
+ * Never use this function. The view size is automatically determined by the surface.
+ */
 PEPPER_API void
 pepper_view_resize(pepper_view_t *view, int w, int h)
 {
@@ -506,6 +686,13 @@ pepper_view_resize(pepper_view_t *view, int w, int h)
     pepper_view_mark_dirty(view, PEPPER_VIEW_GEOMETRY_DIRTY);
 }
 
+/**
+ * Get the size of the given view
+ *
+ * @param view  view object
+ * @param w     pointer to receive width
+ * @param h     pointer to receive height
+ */
 PEPPER_API void
 pepper_view_get_size(pepper_view_t *view, int *w, int *h)
 {
@@ -516,6 +703,19 @@ pepper_view_get_size(pepper_view_t *view, int *w, int *h)
         *h = view->h;
 }
 
+/**
+ * Set the position of the given view
+ *
+ * @param view  view object
+ * @param x     x coordinate of the new position
+ * @param y     y coordinate of the new position
+ *
+ * The position can be interpreted differently according to the transform inheritance flag of the
+ * view.
+ *
+ * @see pepper_view_set_transform_inherit()
+ * @see pepper_view_get_position()
+ */
 PEPPER_API void
 pepper_view_set_position(pepper_view_t *view, double x, double y)
 {
@@ -527,6 +727,15 @@ pepper_view_set_position(pepper_view_t *view, double x, double y)
     pepper_view_mark_dirty(view, PEPPER_VIEW_GEOMETRY_DIRTY);
 }
 
+/**
+ * Get the position of the given view
+ *
+ * @param view  view object
+ * @param x     pointer to receive x coordinate
+ * @param y     pointer to receive y coordinate
+ *
+ * @see pepper_view_set_position()
+ */
 PEPPER_API void
 pepper_view_get_position(pepper_view_t *view, double *x, double *y)
 {
@@ -537,6 +746,16 @@ pepper_view_get_position(pepper_view_t *view, double *x, double *y)
         *y = view->y;
 }
 
+/**
+ * Set the transform matrix of the given view
+ *
+ * @param view      view object
+ * @param matrix    4x4 transform matrix
+ *
+ * The transform might be relative to its parent or global frame.
+ *
+ * @see pepper_view_set_transform_inherit()
+ */
 PEPPER_API void
 pepper_view_set_transform(pepper_view_t *view, const pepper_mat4_t *matrix)
 {
@@ -544,12 +763,28 @@ pepper_view_set_transform(pepper_view_t *view, const pepper_mat4_t *matrix)
     pepper_view_mark_dirty(view, PEPPER_VIEW_GEOMETRY_DIRTY);
 }
 
+/**
+ * Get the transform matrix of the given view
+ *
+ * @param view  view object
+ *
+ * @return the transform matrix
+ */
 PEPPER_API const pepper_mat4_t *
 pepper_view_get_transform(pepper_view_t *view)
 {
     return &view->transform;
 }
 
+/**
+ * Map the given view
+ *
+ * @param view  view object
+ *
+ * View is visible if it is mapped and its parent is visible.
+ *
+ * @see pepper_view_unmap()
+ */
 PEPPER_API void
 pepper_view_map(pepper_view_t *view)
 {
@@ -560,6 +795,13 @@ pepper_view_map(pepper_view_t *view)
     pepper_view_mark_dirty(view, PEPPER_VIEW_ACTIVE_DIRTY);
 }
 
+/**
+ * Unmap the given view
+ *
+ * @param view  view object
+ *
+ * @see pepper_view_map()
+ */
 PEPPER_API void
 pepper_view_unmap(pepper_view_t *view)
 {
@@ -570,12 +812,37 @@ pepper_view_unmap(pepper_view_t *view)
     pepper_view_mark_dirty(view, PEPPER_VIEW_ACTIVE_DIRTY);
 }
 
+/**
+ * Check if the view is mapped
+ *
+ * @param view  view object
+ *
+ * @return PEPPER_TRUE if the view is mapped, PEPPER_FALSE otherwise
+ *
+ * @see pepper_view_map()
+ * @see pepper_view_unmap()
+ * @see pepper_view_is_visible()
+ */
 PEPPER_API pepper_bool_t
 pepper_view_is_mapped(pepper_view_t *view)
 {
     return view->mapped;
 }
 
+/**
+ * Check if the view is visible
+ *
+ * @param view  view object
+ *
+ * @return PEPPER_TRUE if the view is visible, PEPPER_FALSE otherwise
+ *
+ * Here, visible means that all its parent and direct ancestors are mapped. The visility is not
+ * affected by the views obscuring the given view.
+ *
+ * @see pepper_view_map()
+ * @see pepper_view_unmap()
+ * @see pepper_view_is_mapped()
+ */
 PEPPER_API pepper_bool_t
 pepper_view_is_visible(pepper_view_t *view)
 {
@@ -585,6 +852,16 @@ pepper_view_is_visible(pepper_view_t *view)
     return view->mapped;
 }
 
+/**
+ * Check if the view is opaque
+ *
+ * @param view  view object
+ *
+ * @return PEPPER_TRUE if the view is opaque, PEPPER_FALSE otherwise
+ *
+ * If the content is opaque or opaque region of the surface covers entire region, the view is
+ * opaque.
+ */
 PEPPER_API pepper_bool_t
 pepper_view_is_opaque(pepper_view_t *view)
 {
@@ -613,6 +890,15 @@ pepper_view_is_opaque(pepper_view_t *view)
     return PEPPER_FALSE;
 }
 
+/**
+ * Get the view local coordinates for the given global coordinates
+ *
+ * @param view  view object
+ * @param gx    x coordinate in global space
+ * @param gy    y coordinate in global space
+ * @param lx    pointer to receive x coordinate in view local space
+ * @param ly    pointer to receive y coordinate in view local space
+ */
 PEPPER_API void
 pepper_view_get_local_coordinate(pepper_view_t *view, double gx, double gy, double *lx, double *ly)
 {
@@ -626,6 +912,15 @@ pepper_view_get_local_coordinate(pepper_view_t *view, double gx, double gy, doub
     *ly = pos.y / pos.w;
 }
 
+/**
+ * Get the global coodinates for the given local coordinates
+ *
+ * @param view  view object
+ * @param lx    x coordinate in view local space
+ * @param ly    y coordinate in view local space
+ * @param gx    pointer to receive x coordinate in global space
+ * @param gy    pointer to receive y coordinate in global space
+ */
 PEPPER_API void
 pepper_view_get_global_coordinate(pepper_view_t *view, double lx, double ly, double *gx, double *gy)
 {
