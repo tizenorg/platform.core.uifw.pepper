@@ -32,6 +32,7 @@
 
 #include <libudev.h>
 
+#include <config.h>
 #include <pepper.h>
 #include <pepper-libinput.h>
 #include <pepper-drm.h>
@@ -80,13 +81,6 @@ main(int argc, char **argv)
     struct wl_event_source *sigint = NULL;
     int                     tty;
     const char             *tty_str;
-
-    {   /* for gdb attach */
-        char cc;
-        int  ret;
-
-        ret = scanf("%c", &cc);
-    }
 
     init_signals();
 

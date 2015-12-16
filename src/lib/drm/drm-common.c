@@ -26,10 +26,15 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
+#include <config.h>
 #include <libudev.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include "drm-internal.h"
+#ifdef HAVE_DRM_SPRD
+#include <sprd_drmif.h>
+struct sprd_drm_device *sprd_dev = NULL;
+#endif
 
 static struct udev_device *
 find_primary_gpu(struct udev *udev) /* FIXME: copied from weston */
@@ -81,6 +86,53 @@ find_primary_gpu(struct udev *udev) /* FIXME: copied from weston */
     udev_enumerate_unref(e);
     return drm_device;
 }
+
+#ifdef HAVE_DRM_SPRD
+static void
+drm_sprd_init(int fd)
+{
+    drmVersionPtr drm_info;
+    int drmIRQ = 78;
+    int length = 0;
+
+    if (sprd_dev)
+    {
+        return;
+    }
+
+    drm_info = drmGetVersion(fd);
+    length = drm_info->name_len;
+
+    if (length != 4)
+    {
+        drmFreeVersion(drm_info);
+        return;
+    }
+    if (strncmp("sprd", drm_info->name, 4))
+    {
+        drmFreeVersion(drm_info);
+        return;
+    }
+    drmFreeVersion(drm_info);
+
+    PEPPER_CHECK(!drmCtlInstHandler(fd, drmIRQ), return, "drmCtlInstHandler() failed.\n");
+
+    sprd_dev = sprd_device_create(fd);
+    PEPPER_CHECK(sprd_dev, return, "sprd_device_create() failed.\n");
+
+    return;
+}
+
+static void
+drm_sprd_deinit(void)
+{
+    if (sprd_dev == NULL)
+        return;
+
+    sprd_device_destroy(sprd_dev);
+    sprd_dev = NULL;
+}
+#endif
 
 static int
 handle_drm_event(int fd, uint32_t mask, void *data)
@@ -156,6 +208,11 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev, const char
     /* Open DRM device file and check validity. */
     drm->fd = open(filepath, O_RDWR | O_CLOEXEC);
     PEPPER_CHECK(drm->fd != -1, goto error, "open(%s, O_RDWR | O_CLOEXEC) failed.\n", filepath);
+
+#ifdef HAVE_DRM_SPRD
+    /*If drm is sprd, this fuction MUST call before other drm function*/
+    drm_sprd_init(drm->fd);
+#endif
 
     ret = fstat(drm->fd, &s);
     PEPPER_CHECK(ret != -1, goto error, "fstat() failed %s.\n", filepath);
@@ -265,6 +322,10 @@ pepper_drm_destroy(pepper_drm_t *drm)
 
     if (drm->udev_monitor)
         udev_monitor_unref(drm->udev_monitor);
+
+#ifdef HAVE_DRM_SPRD
+    drm_sprd_deinit();
+#endif
 
     if (drm->fd != -1)
         close(drm->fd);

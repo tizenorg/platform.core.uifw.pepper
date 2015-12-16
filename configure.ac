@@ -100,6 +100,14 @@ PEPPER_DRM_REQUIRES="libdrm gbm"
 PKG_CHECK_MODULES(PEPPER_DRM, [$PEPPER_DRM_REQUIRES])
 PEPPER_DRM_REQUIRES="$PEPPER_DRM_REQUIRES pepper pepper-render pepper-libinput"
 
+PKG_CHECK_MODULES([DRM_SPRD], [libdrm_sprd], [have_drm_sprd=yes], [have_drm_sprd=no])
+if test x$have_drm_sprd = xyes; then
+   AC_DEFINE([HAVE_DRM_SPRD], [1], [Build the drm_sprd])
+   PEPPER_DRM_REQUIRES="$PEPPER_DRM_REQUIRES libdrm-sprd"
+   PEPPER_DRM_CFLAGS="$PEPPER_DRM_CFLAGS $DRM_SPRD_CFLAGS"
+   PEPPER_DRM_LIBS="$PEPPER_DRM_LIBS $DRM_SPRD_LIBS"
+fi
+
 PEPPER_DRM_DIR="-I\$(top_srcdir)/src/lib/drm"
 PEPPER_DRM_LIB="\$(top_srcdir)/src/lib/drm/libpepper-drm.la"
 
