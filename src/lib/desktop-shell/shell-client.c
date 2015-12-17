@@ -3,6 +3,7 @@
 #include <pepper-utils.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #define CURSOR_WIDTH    32
 #define CURSOR_HEIGHT   32
@@ -145,6 +146,8 @@ init_cursor(struct cursor *cursor, struct display *display)
 
     cursor->frame_done = 0;
     pepper_shell_set_cursor(display->shell, cursor->surface);
+
+    return 0;
 }
 
 static void

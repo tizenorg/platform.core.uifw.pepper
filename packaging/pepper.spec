@@ -194,10 +194,13 @@ make %{?_smp_mflags}
 %files desktop-shell
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-desktop-shell.so.*
+%{_bindir}/shell-client
 
 %files desktop-shell-devel
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-desktop-shell.h
+%{_includedir}/pepper/pepper-shell-client-protocol.h
+%{_includedir}/pepper/xdg-shell-client-protocol.h
 %{_libdir}/pkgconfig/pepper-desktop-shell.pc
 %{_libdir}/libpepper-desktop-shell.so
 

@@ -42,6 +42,6 @@ $(srcdir)/protocol/%-server-protocol.h : $(srcdir)/protocol/%.xml
 $(srcdir)/protocol/%-client-protocol.h : $(srcdir)/protocol/%.xml
 	$(AM_V_GEN)$(wayland_scanner) client-header < $< > $@
 
-shell_client_CFLAGS = $(SHELL_CLIENT_CFLAGS)
-shell_client_LDADD = $(SHELL_CLIENT_LIBS)
+shell_client_CFLAGS = $(SHELL_CLIENT_CFLAGS) -I$(srcdir)/protocol/
+shell_client_LDADD = $(SHELL_CLIENT_LIBS) libpepper-desktop-shell.la
 shell_client_SOURCES = shell-client.c
