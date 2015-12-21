@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+libexecdir=@libexecdir@
+pkglibexecdir=${libexecdir}/@PACKAGE@
+
+Name: Pepper TDM Backend Library
+Description: Pepper TDM backend library header and library files
+Version: @PEPPER_TDM_VERSION@
+
+Requires.private: @PEPPER_TDM_REQUIRES@
+Cflags: -I${includedir}/pepper
+Libs: -L${libdir} -lpepper-tdm
