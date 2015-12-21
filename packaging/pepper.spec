@@ -7,6 +7,8 @@ Group:		Graphics & UI Framework/Wayland Window System
 
 Source:		%{name}-%{version}.tar.xz
 
+%define ENABLE_TDM	0
+
 BuildRequires:	autoconf > 2.64
 BuildRequires:	automake >= 1.11
 BuildRequires:	libtool >= 2.2
@@ -25,6 +27,10 @@ BuildRequires:	pkgconfig(wayland-tbm-client)
 BuildRequires:  pkgconfig(wayland-tbm-server)
 %if ("%{?tizen_target_name}" == "TM1")
 BuildRequires:  pkgconfig(libdrm_sprd)
+%endif
+BuildRequires:  pkgconfig(libtbm)
+%if "%{ENABLE_TDM}" == "1"
+BuildRequires:  pkgconfig(libtdm)
 %endif
 
 %description
@@ -98,6 +104,21 @@ Requires: pepper-drm = %{version}-%{release}
 %description drm-devel
 This package includes drm backend development module files.
 
+###### tdm backend
+%package tdm
+Summary: TDM backend module for pepper package
+
+%description tdm
+This package includes tdm backend module files.
+
+###### tdm backend devel
+%package tdm-devel
+Summary: TDM backend development module for pepper package
+Requires: pepper-tdm = %{version}-%{release}
+
+%description tdm-devel
+This package includes drm backend development module files.
+
 ###### fbdev backend
 %package fbdev
 Summary: Fbdev backend module for pepper package
@@ -141,7 +162,13 @@ This package includes doctor server files.
 %setup -q
 
 %build
-%autogen --disable-x11 --enable-socket-fd=yes
+%autogen \
+	--disable-x11 \
+%if "%{ENABLE_TDM}" == "0"
+	--disable-tdm \
+%endif
+	--enable-socket-fd=yes
+
 make %{?_smp_mflags}
 
 %install
@@ -224,6 +251,18 @@ make %{?_smp_mflags}
 %{_includedir}/pepper/pepper-drm.h
 %{_libdir}/pkgconfig/pepper-drm.pc
 %{_libdir}/libpepper-drm.so
+
+%if "%{ENABLE_TDM}" == "1"
+%files tdm
+%defattr(-,root,root,-)
+%{_libdir}/libpepper-tdm.so.*
+
+%files tdm-devel
+%defattr(-,root,root,-)
+%{_includedir}/pepper/pepper-tdm.h
+%{_libdir}/pkgconfig/pepper-tdm.pc
+%{_libdir}/libpepper-tdm.so
+%endif
 
 %files fbdev
 %defattr(-,root,root,-)
