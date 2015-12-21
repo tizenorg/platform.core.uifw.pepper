@@ -8,6 +8,16 @@ drm_backend_LDADD  = $(SAMPLES_LIBS)
 
 drm_backend_SOURCES = drm-backend.c
 
+# tdm-backend
+if ENABLE_TDM
+noinst_PROGRAMS += tdm-backend
+
+tdm_backend_CFLAGS = $(SAMPLES_CFLAGS)
+tdm_backend_LDADD  = $(SAMPLES_LIBS)
+
+tdm_backend_SOURCES = tdm-backend.c
+endif
+
 # fbdev-backend
 noinst_PROGRAMS += fbdev-backend
 
