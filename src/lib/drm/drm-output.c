@@ -903,7 +903,7 @@ drm_output_create(drm_connector_t *conn)
             output->cursor_bo[i] = gbm_bo_create(drm->gbm_device,
                                                  drm->cursor_width, drm->cursor_height,
                                                  GBM_FORMAT_ARGB8888,
-                                                 GBM_BO_USE_CURSOR | GBM_BO_USE_WRITE);
+                                                 GBM_BO_USE_CURSOR_64X64 | GBM_BO_USE_WRITE);
         if (!output->cursor_bo[0] || !output->cursor_bo[1])
         {
             PEPPER_TRACE("failed to create cursor bo\n");
