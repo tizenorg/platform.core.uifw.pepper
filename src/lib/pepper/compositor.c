@@ -26,6 +26,13 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+
 #include "pepper-internal.h"
 
 static void
@@ -84,6 +91,55 @@ compositor_bind(struct wl_client *client,
     wl_resource_set_implementation(resource, &compositor_interface, compositor, unbind_resource);
 }
 
+static pepper_bool_t
+compositor_bind_socket(pepper_compositor_t *compositor, int socket_fd, const char *name)
+{
+	struct stat buf;
+	socklen_t size, name_size;
+	const char *runtime_dir;
+	long flags;
+
+	if (socket_fd < 0 || fstat(socket_fd, &buf) < 0 || !S_ISSOCK(buf.st_mode))
+		return PEPPER_FALSE;
+
+	flags = fcntl(socket_fd, F_GETFD);
+	PEPPER_CHECK((-1 != flags), return PEPPER_FALSE, "fcntl(F_GETFD) failed\n");
+
+	PEPPER_CHECK((-1 != fcntl(socket_fd, F_SETFD, flags | FD_CLOEXEC)), return PEPPER_FALSE,
+	            "fcntl(F_SETFD) failed\n");
+
+	runtime_dir = getenv("XDG_RUNTIME_DIR");
+	if (!runtime_dir) {
+		PEPPER_ERROR("XDG_RUNTIME_DIR not set in the environment\n");
+		return PEPPER_FALSE;
+	}
+
+    compositor->addr.sun_family = AF_LOCAL;
+    name_size = snprintf(compositor->addr.sun_path, sizeof compositor->addr.sun_path,
+                            "%s/%s", runtime_dir, name) + 1;
+    if (name_size > (int)sizeof(compositor->addr.sun_path))
+    {
+        PEPPER_ERROR("socket path \"%s/%s\" plus null terminator"
+                    " exceeds 108 bytes\n", runtime_dir, name);
+        return PEPPER_FALSE;
+    }
+
+	size = offsetof(struct sockaddr_un, sun_path) + name_size;
+	if (bind(socket_fd, (struct sockaddr *) &compositor->addr, size) < 0)
+	{
+		PEPPER_ERROR("failed to bind to %s: %m\n", compositor->addr.sun_path);
+		close(socket_fd);
+		return PEPPER_FALSE;
+	}
+
+	if (listen(socket_fd, 1) < 0) {
+		close(socket_fd);
+		return PEPPER_FALSE;
+	}
+
+	return PEPPER_TRUE;
+}
+
 void
 pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
 {
@@ -105,6 +161,9 @@ pepper_compositor_schedule_repaint(pepper_compositor_t *compositor)
  * In that situation, creating a compositor from already existing socket fd is required. The fd is
  * acquired by requesting to some kind of system service rather than creating directly by the
  * application.
+ * See below usecase
+ * 1. socket_name != NULL, fd > 0, the socket fd MUST BE unbound and no listen.
+ * 2. socket_name == NULL, fd > 0, the socket fd MUST BE bound and listen
  *
  * @see pepper_compositor_create()
  */
@@ -132,24 +191,38 @@ pepper_compositor_create_fd(const char *socket_name, int fd)
 
     if (socket_name)
     {
-#if ENABLE_SOCKET_FD
-        ret = wl_display_add_socket_fd(compositor->display, socket_name, fd);
-#else
-        ret = wl_display_add_socket(compositor->display, socket_name);
-#endif
-        PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
+        if (fd > 0)
+        {
+            PEPPER_CHECK(PEPPER_TRUE == compositor_bind_socket(compositor, fd, socket_name), goto error,
+                            "compositor_bind_socket()");
+            ret = wl_display_add_socket_fd(compositor->display, fd);
+            PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket_fd(name = %s, fd = %d) failed.\n", socket_name, fd);
+        }
+        else
+        {
+            ret = wl_display_add_socket(compositor->display, socket_name);
+            PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n", socket_name);
+        }
     }
     else
     {
-        if (fd != -1 && socket_name == NULL)
-            PEPPER_CHECK(socket_name, goto error, "pepper_compositor_create_fd()cannot support NULL socket name.\n");
-
-        socket_name = wl_display_add_socket_auto(compositor->display);
-        PEPPER_CHECK(socket_name, goto error, "wl_display_add_socket_auto() failed.\n");
+        if (fd > 0)
+        {
+            ret = wl_display_add_socket_fd(compositor->display, fd);
+            PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket_fd(name = %s, fd = %d) failed.\n", socket_name, fd);
+        }
+        else
+        {
+            socket_name = wl_display_add_socket_auto(compositor->display);
+            PEPPER_CHECK(socket_name, goto error, "wl_display_add_socket_auto() failed.\n");
+        }
     }
 
-    compositor->socket_name = strdup(socket_name);
-    PEPPER_CHECK(compositor->socket_name, goto error, "strdup() failed.\n");
+    if (socket_name)
+    {
+        compositor->socket_name = strdup(socket_name);
+        PEPPER_CHECK(compositor->socket_name, goto error, "strdup() failed.\n");
+    }
 
     ret = wl_display_init_shm(compositor->display);
     PEPPER_CHECK(ret == 0, goto error, "wl_display_init_shm() failed.\n");
@@ -221,6 +294,9 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
 
     if (compositor->display)
         wl_display_destroy(compositor->display);
+
+    if (compositor->addr.sun_path[0])
+        unlink(compositor->addr.sun_path);
 
     pepper_object_fini(&compositor->base);
     free(compositor);

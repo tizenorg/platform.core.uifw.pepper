@@ -29,6 +29,7 @@
 #ifndef PEPPER_INTERNAL_H
 #define PEPPER_INTERNAL_H
 
+#include <sys/un.h>
 #include <config.h>
 #include "pepper.h"
 #include <wayland-util.h>
@@ -96,6 +97,8 @@ struct pepper_compositor
 
     clockid_t                clock_id;
     pepper_bool_t            clock_used;
+
+    struct sockaddr_un       addr;
 };
 
 void
