@@ -275,7 +275,6 @@ src/lib/libinput/Makefile
 src/lib/desktop-shell/Makefile
 src/lib/render/Makefile
 src/lib/drm/Makefile
-src/lib/tdm/Makefile
 src/lib/fbdev/Makefile
 src/lib/wayland/Makefile
 src/bin/doctor/Makefile
@@ -283,12 +282,18 @@ src/samples/Makefile
 pkgconfig/pepper.pc
 pkgconfig/pepper-render.pc
 pkgconfig/pepper-drm.pc
-pkgconfig/pepper-tdm.pc
 pkgconfig/pepper-fbdev.pc
 pkgconfig/pepper-libinput.pc
 pkgconfig/pepper-wayland.pc
 pkgconfig/pepper-desktop-shell.pc
 ])
+
+if test x$enable_tdm = xyes; then
+    AC_CONFIG_FILES([
+        src/lib/tdm/Makefile
+        pkgconfig/pepper-tdm.pc
+    ])
+fi
 
 if test x$enable_x11 = xyes; then
     AC_CONFIG_FILES([
