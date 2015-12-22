@@ -525,7 +525,7 @@ pepper_tdm_output_flush_surface_damage(void *o, pepper_surface_t *surface, peppe
     }
     else
     {
-        *keep_buffer = PEPPER_FALSE;
+        *keep_buffer = PEPPER_TRUE;
     }
 }
 
