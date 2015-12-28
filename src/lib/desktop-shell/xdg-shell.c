@@ -346,7 +346,10 @@ xdg_shell_get_xdg_popup(struct wl_client    *client,
     shsurf = shell_surface_create(shell_client, surface, client, &xdg_popup_interface,
                                   &xdg_popup_implementation, 1, id);
     if (!shsurf)
+    {
         wl_client_post_no_memory(client);
+        return ;
+    }
 
     shell_surface_set_popup(shsurf, seat, parent, x, y, flags, serial);
 }
