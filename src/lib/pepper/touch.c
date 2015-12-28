@@ -159,7 +159,7 @@ pepper_touch_destroy(pepper_touch_t *touch)
 
     pepper_list_for_each_safe(point, tmp, &touch->point_list, link)
     {
-        if (point->focus)
+        if (point->focus_destroy_listener)
             pepper_event_listener_remove(point->focus_destroy_listener);
 
         free(point);
