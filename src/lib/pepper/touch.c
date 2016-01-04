@@ -157,6 +157,8 @@ pepper_touch_destroy(pepper_touch_t *touch)
 {
     pepper_touch_point_t *point, *tmp;
 
+    PEPPER_CHECK(touch, return, "pepper_touch_destroy() failed.\n");
+
     pepper_list_for_each_safe(point, tmp, &touch->point_list, link)
     {
         if (point->focus_destroy_listener)
