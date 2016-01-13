@@ -50,6 +50,7 @@ typedef struct pepper_touch_point   pepper_touch_point_t;
 struct pepper_object
 {
     pepper_object_type_t    type;
+    uint32_t                id;
     pepper_map_t            user_data_map;
     pepper_map_entry_t     *buckets[1 << PEPPER_OBJECT_BUCKET_BITS];
     pepper_list_t           event_listener_list;

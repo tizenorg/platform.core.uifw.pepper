@@ -826,6 +826,12 @@ pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priori
 PEPPER_API void
 pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info);
 
+PEPPER_API uint32_t
+pepper_object_get_id(pepper_object_t *object);
+
+PEPPER_API pepper_object_t *
+pepper_object_from_id(uint32_t id);
+
 PEPPER_API pepper_compositor_t *
 pepper_compositor_create(const char *socket_name);
 

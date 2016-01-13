@@ -28,6 +28,11 @@
 
 #include "pepper-internal.h"
 
+#define PEPPER_OBJECT_MAP_BUCKET_BITS   8
+
+static pepper_id_allocator_t    id_allocator;
+static pepper_map_t            *object_map = NULL;
+
 pepper_object_t *
 pepper_object_alloc(pepper_object_type_t type, size_t size)
 {
@@ -50,6 +55,16 @@ pepper_object_init(pepper_object_t *object, pepper_object_type_t type)
 #else
     #error "Not 32 or 64bit system"
 #endif
+
+    if (!object_map)
+    {
+        pepper_id_allocator_init(&id_allocator);
+
+        object_map = pepper_map_int32_create(PEPPER_OBJECT_MAP_BUCKET_BITS);
+        PEPPER_CHECK(object_map, return, "pepper_map_int32_create() failed.\n");
+    }
+
+    object->id = pepper_id_allocator_alloc(&id_allocator);
 }
 
 void
@@ -62,6 +77,9 @@ pepper_object_fini(pepper_object_t *object)
 
     pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
         pepper_event_listener_remove(listener);
+
+    pepper_map_set(object_map, &object->id, NULL, NULL);
+    pepper_id_allocator_free(&id_allocator, object->id);
 }
 
 /**
@@ -225,4 +243,34 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
         if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
             listener->callback(listener, object, id, info, listener->data);
     }
+}
+
+/**
+ * Get an unique 32bit integer ID of the given object
+ *
+ * @param object    (none)
+ *
+ * @return unique 32bit integer ID
+ *
+ * @see pepper_object_from_id()
+ */
+PEPPER_API uint32_t
+pepper_object_get_id(pepper_object_t *object)
+{
+    return object->id;
+}
+
+/**
+ * Get an object from the given ID
+ *
+ * @param id    (none)
+ *
+ * @return pointer to the #pepper_object_t if exist, NULL otherwise
+ *
+ * @see pepper_object_get_id()
+ */
+PEPPER_API pepper_object_t *
+pepper_object_from_id(uint32_t id)
+{
+    return (pepper_object_t *)pepper_map_get(object_map, &id);
 }
