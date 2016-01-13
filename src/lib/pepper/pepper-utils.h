@@ -228,6 +228,33 @@ pepper_list_insert_list(pepper_list_t *list, pepper_list_t *other)
     list->next = other->next;
 }
 
+/* Hash functions from Thomas Wang https://gist.github.com/badboy/6267743 */
+static inline int
+pepper_hash32(uint32_t key)
+{
+    key  = ~key + (key << 15);
+    key ^= key >> 12;
+    key += key << 2;
+    key ^= key >> 4;
+    key *= 2057;
+    key ^= key >> 16;
+
+    return key;
+}
+
+static inline int
+pepper_hash64(uint64_t key)
+{
+    key  = ~key + (key << 18);
+    key ^= key >> 31;
+    key *= 21;
+    key ^= key >> 11;
+    key += key << 6;
+    key ^= key >> 22;
+
+    return (int)key;
+}
+
 typedef struct pepper_map_entry pepper_map_entry_t;
 typedef struct pepper_map       pepper_map_t;
 
@@ -257,6 +284,12 @@ pepper_map_init(pepper_map_t               *map,
                 void                       *buckets);
 
 PEPPER_API void
+pepper_map_int32_init(pepper_map_t *map, int bucket_bits, void *buckets);
+
+PEPPER_API void
+pepper_map_int64_init(pepper_map_t *map, int bucket_bits, void *buckets);
+
+PEPPER_API void
 pepper_map_fini(pepper_map_t *map);
 
 PEPPER_API pepper_map_t *
@@ -264,6 +297,12 @@ pepper_map_create(int                       bucket_bits,
                   pepper_hash_func_t        hash_func,
                   pepper_key_length_func_t  key_length_func,
                   pepper_key_compare_func_t key_compare_func);
+
+PEPPER_API pepper_map_t *
+pepper_map_int32_create(int bucket_bits);
+
+PEPPER_API pepper_map_t *
+pepper_map_int64_create(int bucket_bits);
 
 PEPPER_API void
 pepper_map_destroy(pepper_map_t *map);

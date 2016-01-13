@@ -75,6 +75,61 @@ pepper_map_init(pepper_map_t               *map,
     map->buckets = buckets;
 }
 
+static int
+int32_hash(const void *key, int key_length)
+{
+    return pepper_hash32(*(const uint32_t *)key);
+}
+
+static int
+int32_key_length(const void *key)
+{
+    return 4;
+}
+
+static int
+int32_key_compare(const void *key0, int key0_length,
+                  const void *key1, int key1_length)
+{
+    uint64_t k0 = *(const uint32_t *)key0;
+    uint64_t k1 = *(const uint32_t *)key1;
+    return (int)(k0 - k1);
+}
+
+
+PEPPER_API void
+pepper_map_int32_init(pepper_map_t *map, int bucket_bits, void *buckets)
+{
+    pepper_map_init(map, bucket_bits, int32_hash, int32_key_length, int32_key_compare, buckets);
+}
+
+static int
+int64_hash(const void *key, int key_length)
+{
+    return pepper_hash64(*(const uint64_t *)key);
+}
+
+static int
+int64_key_length(const void *key)
+{
+    return 8;
+}
+
+static int
+int64_key_compare(const void *key0, int key0_length,
+                  const void *key1, int key1_length)
+{
+    uint64_t k0 = *(const uint64_t *)key0;
+    uint64_t k1 = *(const uint64_t *)key1;
+    return (int)(k0 - k1);
+}
+
+PEPPER_API void
+pepper_map_int64_init(pepper_map_t *map, int bucket_bits, void *buckets)
+{
+    pepper_map_init(map, bucket_bits, int64_hash, int64_key_length, int64_key_compare, buckets);
+}
+
 PEPPER_API void
 pepper_map_fini(pepper_map_t *map)
 {
@@ -95,6 +150,18 @@ pepper_map_create(int                       bucket_bits,
 
     pepper_map_init(map, bucket_bits, hash_func, key_length_func, key_compare_func, map + 1);
     return map;
+}
+
+PEPPER_API pepper_map_t *
+pepper_map_int32_create(int bucket_bits)
+{
+    return pepper_map_create(bucket_bits, int32_hash, int32_key_length, int32_key_compare);
+}
+
+PEPPER_API pepper_map_t *
+pepper_map_int64_create(int bucket_bits)
+{
+    return pepper_map_create(bucket_bits, int64_hash, int64_key_length, int64_key_compare);
 }
 
 PEPPER_API void
