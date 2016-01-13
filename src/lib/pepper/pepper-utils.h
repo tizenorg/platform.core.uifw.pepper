@@ -277,6 +277,28 @@ pepper_map_get(pepper_map_t *map, const void *key);
 PEPPER_API void
 pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_t free_func);
 
+typedef struct pepper_id_allocator  pepper_id_allocator_t;
+
+struct pepper_id_allocator
+{
+    uint32_t        next_id;
+    int             free_id_count;
+    int             free_id_size;
+    uint32_t       *free_ids;
+};
+
+PEPPER_API void
+pepper_id_allocator_init(pepper_id_allocator_t *allocator);
+
+PEPPER_API void
+pepper_id_allocator_fini(pepper_id_allocator_t *allocator);
+
+PEPPER_API uint32_t
+pepper_id_allocator_alloc(pepper_id_allocator_t *allocator);
+
+PEPPER_API void
+pepper_id_allocator_free(pepper_id_allocator_t *allocator, uint32_t id);
+
 PEPPER_API int
 pepper_create_anonymous_file(off_t size);
 
