@@ -168,7 +168,6 @@ PEPPER_API void
 pepper_map_destroy(pepper_map_t *map)
 {
     pepper_map_fini(map);
-    free(map->buckets);
     free(map);
 }
 
