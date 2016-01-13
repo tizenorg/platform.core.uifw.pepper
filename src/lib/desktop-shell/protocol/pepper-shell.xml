@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<protocol name="pepper_shellr">
+<protocol name="pepper_shell">
+
   <copyright>
     Copyright © 2015      S-Core Corporation
 
@@ -42,7 +43,7 @@
     </enum>
 
     <request name="destroy" type="destructor">
-      <description summary="destroy pepper_cursor">
+      <description summary="destroy pepper_shell">
         Destroy this pepper_shell object.
       </description>
     </request>
@@ -53,5 +54,6 @@
       </description>
       <arg name="surface" type="object" interface="wl_surface"/>
     </request>
+
   </interface>
 </protocol>
