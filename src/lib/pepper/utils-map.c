@@ -29,6 +29,9 @@
 #include "pepper-utils.h"
 #include "pepper-utils.h"
 
+#define PEPPER_MAP_BUCKET_SIZE  8
+static unsigned int hash_seed = 0;
+
 struct pepper_map_entry
 {
     const void         *key;
@@ -54,6 +57,35 @@ static inline pepper_map_entry_t **
 get_bucket(pepper_map_t *map, const void *key)
 {
     return &map->buckets[get_bucket_index(map, key)];
+}
+
+static unsigned int
+int32_key_length(const uint32_t *key)
+{
+   return 4;
+}
+
+static int
+int32_key_cmp(const uint32_t *key1, int key1_length,
+                    const uint32_t *key2, int key2_length)
+{
+   return *key1 - *key2;
+}
+
+static inline int
+int32_hash(const unsigned int *pkey, int len)
+{
+   unsigned int key = *pkey;
+
+   (void) len;
+
+   key  = ~key + (key << 15);
+   key ^= key >> 12;
+   key += key << 2;
+   key ^= key >> 4;
+   key *= 2057 ^ hash_seed;
+   key ^= key >> 16;
+   return key;
 }
 
 PEPPER_API void
@@ -223,4 +255,24 @@ pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_
     /* Insert at the head of the bucket. */
     curr->next = *bucket;
     *bucket = curr;
+}
+
+PEPPER_API pepper_map_t*
+pepper_map_int32_create(void)
+{
+    pepper_map_t   *map;
+    int             bucket_size = 1 << PEPPER_MAP_BUCKET_SIZE;
+
+    while(!hash_seed)
+        hash_seed = rand();
+
+    map = calloc(1, sizeof(pepper_map_t) + bucket_size * sizeof(pepper_map_entry_t *));
+    PEPPER_CHECK(map, return NULL, "calloc() failed.\n");
+
+    pepper_map_init(map,
+                PEPPER_MAP_BUCKET_SIZE,
+                int32_hash,
+                int32_key_length,
+                int32_key_cmp, map + 1);
+    return map;
 }

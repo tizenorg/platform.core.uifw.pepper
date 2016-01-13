@@ -28,6 +28,22 @@
 
 #include "pepper-internal.h"
 
+#define GET_NEXT_ID()   (object_id ? object_id++:1)
+
+static pepper_map_t* object_map;
+static uint32_t object_id;
+
+static inline pepper_map_t*
+get_object_map(void)
+{
+    if (!object_map)
+    {
+        object_map = pepper_map_int32_create();
+    }
+
+    return object_map;
+}
+
 static int
 user_data_hash(const void *key, int key_length)
 {
@@ -81,6 +97,9 @@ pepper_object_fini(pepper_object_t *object)
 
     pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
         pepper_event_listener_remove(listener);
+
+    if (object->object_map)
+        pepper_map_set(object->object_map, object->id, NULL, NULL);
 }
 
 /**
@@ -130,6 +149,28 @@ PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key)
 {
     return pepper_map_get(&object->user_data_map, key);
+}
+
+PEPPER_API uint32_t
+pepper_object_get_id(pepper_object_t *object)
+{
+    if (object->object_map)
+        return object->id;
+
+    object->id = GET_NEXT_ID();
+    object->object_map = get_object_map();
+
+    pepper_map_set(object->object_map, (const void*)object->id, object, NULL);
+
+    return (uint32_t)object->id;
+}
+
+PEPPER_API pepper_object_t*
+pepper_object_from_id(uint32_t id)
+{
+    pepper_map_t *map = get_object_map();
+
+    return (pepper_object_t*)pepper_map_get(map, (const void*)id);
 }
 
 static void

@@ -265,6 +265,9 @@ pepper_map_create(int                       bucket_bits,
                   pepper_key_length_func_t  key_length_func,
                   pepper_key_compare_func_t key_compare_func);
 
+PEPPER_API pepper_map_t*
+pepper_map_int32_create(void);
+
 PEPPER_API void
 pepper_map_destroy(pepper_map_t *map);
 
