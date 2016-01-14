@@ -57,7 +57,8 @@ pepper_id_allocator_free(pepper_id_allocator_t *allocator, uint32_t id)
     if (allocator->free_id_size <= allocator->free_id_count)
     {
         allocator->free_id_size += 64;
-        allocator->free_ids = realloc(allocator->free_ids, allocator->free_id_size);
+        allocator->free_ids = realloc(allocator->free_ids,
+                                      allocator->free_id_size * sizeof(uint32_t));
     }
 
     allocator->free_ids[allocator->free_id_count++] = id;
