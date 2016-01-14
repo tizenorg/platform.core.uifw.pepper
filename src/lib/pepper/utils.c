@@ -28,6 +28,10 @@
 
 #include "pepper-utils.h"
 
+#define PEPPER_ID_BITS  24
+#define PEPPER_ID_AGE   (1 << (PEPPER_ID_BITS))
+#define PEPPER_ID_MAX   (0xffffffff >> (32 - PEPPER_ID_BITS))
+
 PEPPER_API void
 pepper_id_allocator_init(pepper_id_allocator_t *allocator)
 {
@@ -45,21 +49,54 @@ pepper_id_allocator_fini(pepper_id_allocator_t *allocator)
 PEPPER_API uint32_t
 pepper_id_allocator_alloc(pepper_id_allocator_t *allocator)
 {
-    if (allocator->free_id_count)
-        return allocator->free_ids[--allocator->free_id_count];
+    uint32_t id;
 
-    return allocator->next_id++;
+    if (allocator->free_id_count)
+    {
+        /* Increase age of the ID (upper N bits) when reusing it. */
+        id =  allocator->free_ids[allocator->free_id_head++] + PEPPER_ID_AGE;
+        allocator->free_id_count--;
+
+        if (allocator->free_id_head == allocator->free_id_size)
+            allocator->free_id_head = 0;
+    }
+    else
+    {
+        id = allocator->next_id++;
+        PEPPER_CHECK(id <= PEPPER_ID_MAX, return 0, "No available IDs left.\n");
+    }
+
+    return id;
 }
 
 PEPPER_API void
 pepper_id_allocator_free(pepper_id_allocator_t *allocator, uint32_t id)
 {
-    if (allocator->free_id_size <= allocator->free_id_count)
+    if (allocator->free_id_count == allocator->free_id_size)
     {
+        int i;
+        uint32_t *ids = malloc((allocator->free_id_size + 64) * sizeof(uint32_t));
+
+        for (i = 0; i < allocator->free_id_size; i++)
+        {
+            ids[i] = allocator->free_ids[allocator->free_id_head++];
+
+            if (allocator->free_id_head == allocator->free_id_size)
+                allocator->free_id_head = 0;
+        }
+
+        if (allocator->free_ids)
+            free(allocator->free_ids);
+
+        allocator->free_id_head = 0;
+        allocator->free_id_tail = allocator->free_id_size;
         allocator->free_id_size += 64;
-        allocator->free_ids = realloc(allocator->free_ids,
-                                      allocator->free_id_size * sizeof(uint32_t));
+        allocator->free_ids = ids;
     }
 
-    allocator->free_ids[allocator->free_id_count++] = id;
+    allocator->free_ids[allocator->free_id_tail++] = id;
+    allocator->free_id_count++;
+
+    if (allocator->free_id_tail == allocator->free_id_size)
+        allocator->free_id_tail = 0;
 }
