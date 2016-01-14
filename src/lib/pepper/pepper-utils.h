@@ -321,9 +321,11 @@ typedef struct pepper_id_allocator  pepper_id_allocator_t;
 struct pepper_id_allocator
 {
     uint32_t        next_id;
+    uint32_t       *free_ids;
     int             free_id_count;
     int             free_id_size;
-    uint32_t       *free_ids;
+    int             free_id_head;
+    int             free_id_tail;
 };
 
 PEPPER_API void
