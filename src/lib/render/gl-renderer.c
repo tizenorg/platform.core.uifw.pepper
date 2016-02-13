@@ -55,9 +55,15 @@ typedef EGLSurface  (*PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)(EGLDisplay      
                                                                 const EGLint   *attrib_list);
 #endif
 
+#ifndef EGL_PLATFORM_X11_KHR
 #define EGL_PLATFORM_X11_KHR        0x31d5
+#endif
+#ifndef EGL_PLATFORM_GBM_KHR
 #define EGL_PLATFORM_GBM_KHR        0x31d7
+#endif
+#ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR    0x31d8
+#endif
 
 #define NUM_MAX_PLANES  3
 
