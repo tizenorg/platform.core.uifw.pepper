@@ -48,13 +48,7 @@ pepper_object_init(pepper_object_t *object, pepper_object_type_t type)
     object->type = type;
     pepper_list_init(&object->event_listener_list);
 
-#if INTPTR_MAX == INT32_MAX
-    pepper_map_int32_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS, &object->buckets[0]);
-#elif INTPTR_MAX == INT64_MAX
-    pepper_map_int64_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS, &object->buckets[0]);
-#else
-    #error "Not 32 or 64bit system"
-#endif
+    pepper_map_pointer_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS, &object->buckets[0]);
 
     if (!object_map)
     {
@@ -112,7 +106,7 @@ PEPPER_API void
 pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data,
                             pepper_free_func_t free_func)
 {
-    pepper_map_set(&object->user_data_map, &key, data, free_func);
+    pepper_map_set(&object->user_data_map, key, data, free_func);
 }
 
 /**
@@ -128,7 +122,7 @@ pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data
 PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key)
 {
-    return pepper_map_get(&object->user_data_map, &key);
+    return pepper_map_get(&object->user_data_map, key);
 }
 
 static void

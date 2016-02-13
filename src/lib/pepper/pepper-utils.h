@@ -290,6 +290,9 @@ PEPPER_API void
 pepper_map_int64_init(pepper_map_t *map, int bucket_bits, void *buckets);
 
 PEPPER_API void
+pepper_map_pointer_init(pepper_map_t *map, int bucket_bits, void *buckets);
+
+PEPPER_API void
 pepper_map_fini(pepper_map_t *map);
 
 PEPPER_API pepper_map_t *
@@ -303,6 +306,9 @@ pepper_map_int32_create(int bucket_bits);
 
 PEPPER_API pepper_map_t *
 pepper_map_int64_create(int bucket_bits);
+
+PEPPER_API pepper_map_t *
+pepper_map_pointer_create(int bucket_bits);
 
 PEPPER_API void
 pepper_map_destroy(pepper_map_t *map);
