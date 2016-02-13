@@ -555,7 +555,7 @@ shell_surface_set_transient(shell_surface_t     *shsurf,
 static pepper_output_t *
 shell_surface_get_output(shell_surface_t *shsurf)
 {
-    pepper_output_t        *output;
+    pepper_output_t        *output = NULL;
     const pepper_list_t    *list;
     pepper_list_t          *l;
 
