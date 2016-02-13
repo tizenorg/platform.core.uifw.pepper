@@ -45,16 +45,12 @@ pepper_object_alloc(pepper_object_type_t type, size_t size)
 void
 pepper_object_init(pepper_object_t *object, pepper_object_type_t type)
 {
+    pepper_map_key_t key;
+
     object->type = type;
     pepper_list_init(&object->event_listener_list);
 
-#if INTPTR_MAX == INT32_MAX
-    pepper_map_int32_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS, &object->buckets[0]);
-#elif INTPTR_MAX == INT64_MAX
-    pepper_map_int64_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS, &object->buckets[0]);
-#else
-    #error "Not 32 or 64bit system"
-#endif
+    pepper_map_pointer_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS, &object->buckets[0]);
 
     if (!object_map)
     {
@@ -65,12 +61,16 @@ pepper_object_init(pepper_object_t *object, pepper_object_type_t type)
     }
 
     object->id = pepper_id_allocator_alloc(&id_allocator);
+
+    key.key32 = object->id;
+    pepper_map_set(object_map, key, object, NULL);
 }
 
 void
 pepper_object_fini(pepper_object_t *object)
 {
     pepper_event_listener_t *listener, *tmp;
+    pepper_map_key_t key;
 
     pepper_object_emit_event(object, PEPPER_EVENT_OBJECT_DESTROY, NULL);
     pepper_map_fini(&object->user_data_map);
@@ -78,7 +78,8 @@ pepper_object_fini(pepper_object_t *object)
     pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
         pepper_event_listener_remove(listener);
 
-    pepper_map_set(object_map, &object->id, NULL, NULL);
+    key.key32 = object->id;
+    pepper_map_set(object_map, key, NULL, NULL);
     pepper_id_allocator_free(&id_allocator, object->id);
 }
 
@@ -112,7 +113,10 @@ PEPPER_API void
 pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data,
                             pepper_free_func_t free_func)
 {
-    pepper_map_set(&object->user_data_map, &key, data, free_func);
+    pepper_map_key_t map_key;
+
+    map_key.keyPtr = (uintptr_t)key;
+    pepper_map_set(&object->user_data_map, map_key, data, free_func);
 }
 
 /**
@@ -128,7 +132,10 @@ pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data
 PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key)
 {
-    return pepper_map_get(&object->user_data_map, &key);
+    pepper_map_key_t map_key;
+
+    map_key.keyPtr = (uintptr_t)key;
+    return pepper_map_get(&object->user_data_map, map_key);
 }
 
 static void
@@ -272,5 +279,8 @@ pepper_object_get_id(pepper_object_t *object)
 PEPPER_API pepper_object_t *
 pepper_object_from_id(uint32_t id)
 {
-    return (pepper_object_t *)pepper_map_get(object_map, &id);
+    pepper_map_key_t map_key;
+
+    map_key.key32 = id;
+    return (pepper_object_t *)pepper_map_get(object_map, map_key);
 }

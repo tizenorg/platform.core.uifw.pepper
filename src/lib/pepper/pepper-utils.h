@@ -257,11 +257,18 @@ pepper_hash64(uint64_t key)
 
 typedef struct pepper_map_entry pepper_map_entry_t;
 typedef struct pepper_map       pepper_map_t;
+typedef union pepper_map_key   pepper_map_key_t;
 
-typedef int (*pepper_hash_func_t)(const void *key, int key_length);
-typedef int (*pepper_key_length_func_t)(const void *key);
-typedef int (*pepper_key_compare_func_t)(const void *key0, int key0_length,
-                                         const void *key1, int key1_length);
+typedef int (*pepper_hash_func_t)(const pepper_map_key_t key, int key_length);
+typedef int (*pepper_key_length_func_t)(const pepper_map_key_t key);
+typedef int (*pepper_key_compare_func_t)(const pepper_map_key_t key0, int key0_length,
+                                         const pepper_map_key_t key1, int key1_length);
+union pepper_map_key
+{
+    uint32_t    key32;
+    uint64_t    key64;
+    uintptr_t   keyPtr;
+};
 
 struct pepper_map
 {
@@ -290,6 +297,9 @@ PEPPER_API void
 pepper_map_int64_init(pepper_map_t *map, int bucket_bits, void *buckets);
 
 PEPPER_API void
+pepper_map_pointer_init(pepper_map_t *map, int bucket_bits, void *buckets);
+
+PEPPER_API void
 pepper_map_fini(pepper_map_t *map);
 
 PEPPER_API pepper_map_t *
@@ -304,6 +314,9 @@ pepper_map_int32_create(int bucket_bits);
 PEPPER_API pepper_map_t *
 pepper_map_int64_create(int bucket_bits);
 
+PEPPER_API pepper_map_t *
+pepper_map_pointer_create(int bucket_bits);
+
 PEPPER_API void
 pepper_map_destroy(pepper_map_t *map);
 
@@ -311,10 +324,10 @@ PEPPER_API void
 pepper_map_clear(pepper_map_t *map);
 
 PEPPER_API void *
-pepper_map_get(pepper_map_t *map, const void *key);
+pepper_map_get(pepper_map_t *map, pepper_map_key_t key);
 
 PEPPER_API void
-pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_t free_func);
+pepper_map_set(pepper_map_t *map, pepper_map_key_t key, void *data, pepper_free_func_t free_func);
 
 typedef struct pepper_id_allocator  pepper_id_allocator_t;
 

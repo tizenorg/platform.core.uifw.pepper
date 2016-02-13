@@ -31,14 +31,14 @@
 
 struct pepper_map_entry
 {
-    const void         *key;
+    pepper_map_key_t    key;
     void               *data;
     pepper_free_func_t  free_func;
     pepper_map_entry_t *next;
 };
 
 static inline int
-get_bucket_index(pepper_map_t *map, const void *key)
+get_bucket_index(pepper_map_t *map, const pepper_map_key_t key)
 {
     int                 key_length = 0;
     int                 hash;
@@ -51,7 +51,7 @@ get_bucket_index(pepper_map_t *map, const void *key)
 }
 
 static inline pepper_map_entry_t **
-get_bucket(pepper_map_t *map, const void *key)
+get_bucket(pepper_map_t *map, const pepper_map_key_t key)
 {
     return &map->buckets[get_bucket_index(map, key)];
 }
@@ -76,24 +76,22 @@ pepper_map_init(pepper_map_t               *map,
 }
 
 static int
-int32_hash(const void *key, int key_length)
+int32_hash(const pepper_map_key_t key, int key_length)
 {
-    return pepper_hash32(*(const uint32_t *)key);
+    return pepper_hash32(key.key32);
 }
 
 static int
-int32_key_length(const void *key)
+int32_key_length(const pepper_map_key_t key)
 {
     return 4;
 }
 
 static int
-int32_key_compare(const void *key0, int key0_length,
-                  const void *key1, int key1_length)
+int32_key_compare(const pepper_map_key_t key0, int key0_length,
+                  const pepper_map_key_t key1, int key1_length)
 {
-    uint64_t k0 = *(const uint32_t *)key0;
-    uint64_t k1 = *(const uint32_t *)key1;
-    return (int)(k0 - k1);
+    return (int)(key0.key32 - key1.key32);
 }
 
 
@@ -104,30 +102,40 @@ pepper_map_int32_init(pepper_map_t *map, int bucket_bits, void *buckets)
 }
 
 static int
-int64_hash(const void *key, int key_length)
+int64_hash(const pepper_map_key_t key, int key_length)
 {
-    return pepper_hash64(*(const uint64_t *)key);
+    return pepper_hash64(key.key64);
 }
 
 static int
-int64_key_length(const void *key)
+int64_key_length(const pepper_map_key_t key)
 {
     return 8;
 }
 
 static int
-int64_key_compare(const void *key0, int key0_length,
-                  const void *key1, int key1_length)
+int64_key_compare(const pepper_map_key_t key0, int key0_length,
+                  const pepper_map_key_t key1, int key1_length)
 {
-    uint64_t k0 = *(const uint64_t *)key0;
-    uint64_t k1 = *(const uint64_t *)key1;
-    return (int)(k0 - k1);
+    return (int)(key0.key64 - key1.key64);
 }
 
 PEPPER_API void
 pepper_map_int64_init(pepper_map_t *map, int bucket_bits, void *buckets)
 {
     pepper_map_init(map, bucket_bits, int64_hash, int64_key_length, int64_key_compare, buckets);
+}
+
+PEPPER_API void
+pepper_map_pointer_init(pepper_map_t *map, int bucket_bits, void *buckets)
+{
+#if INTPTR_MAX == INT32_MAX
+    pepper_map_int32_init(map, bucket_bits, buckets);
+#elif INTPTR_MAX == INT64_MAX
+    pepper_map_int64_init(map, bucket_bits, buckets);
+#else
+    #error "Not 32 or 64bit system"
+#endif
 }
 
 PEPPER_API void
@@ -162,6 +170,19 @@ PEPPER_API pepper_map_t *
 pepper_map_int64_create(int bucket_bits)
 {
     return pepper_map_create(bucket_bits, int64_hash, int64_key_length, int64_key_compare);
+}
+
+PEPPER_API pepper_map_t *
+pepper_map_pointer_create(int bucket_bits)
+{
+#if INTPTR_MAX == INT32_MAX
+    return pepper_map_create(bucket_bits, int32_hash, int32_key_length, int32_key_compare);
+#elif INTPTR_MAX == INT64_MAX
+    return pepper_map_create(bucket_bits, int64_hash, int64_key_length, int64_key_compare);
+#else
+    #error "Not 32 or 64bit system"
+#endif
+    return NULL;
 }
 
 PEPPER_API void
@@ -199,7 +220,7 @@ pepper_map_clear(pepper_map_t *map)
 }
 
 PEPPER_API void *
-pepper_map_get(pepper_map_t *map, const void *key)
+pepper_map_get(pepper_map_t *map, const pepper_map_key_t key)
 {
     pepper_map_entry_t *curr = *get_bucket(map, key);
 
@@ -224,7 +245,7 @@ pepper_map_get(pepper_map_t *map, const void *key)
 }
 
 PEPPER_API void
-pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_t free_func)
+pepper_map_set(pepper_map_t *map, const pepper_map_key_t key, void *data, pepper_free_func_t free_func)
 {
     pepper_map_entry_t    **bucket = get_bucket(map, key);
     pepper_map_entry_t     *curr = *bucket;
