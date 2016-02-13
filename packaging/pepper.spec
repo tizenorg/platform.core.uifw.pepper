@@ -7,7 +7,7 @@ Group:		Graphics & UI Framework/Wayland Window System
 
 Source:		%{name}-%{version}.tar.xz
 
-%define ENABLE_TDM	0
+%define ENABLE_TDM	1
 
 BuildRequires:	autoconf > 2.64
 BuildRequires:	automake >= 1.11

@@ -129,12 +129,11 @@ __tdm_renderer_pixman_fini(pepper_tdm_output_t *output)
     if (output->render_target)
         pepper_render_target_destroy(output->render_target);
 
-    if (output->gbm_surface)
-        gbm_surface_destroy(output->gbm_surface);
+    if (output->tbm_surface_queue)
+        tbm_surface_queue_destroy(output->tbm_surface_queue);
 
     output->renderer = NULL;
     output->render_target = NULL;
-    output->gbm_surface = NULL;
     output->tbm_surface_queue = NULL;
 }
 
@@ -153,13 +152,10 @@ __tdm_renderer_pixman_init(pepper_tdm_output_t *output)
     output->renderer = tdm->pixman_renderer;
 
     tdm_output_get_mode(output->output, &mode);
-    output->gbm_surface = gbm_surface_create(tdm->gbm_device,
-                                                mode->width, mode->height, GBM_FORMAT_XRGB8888,
-                                                GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-    PEPPER_CHECK(output->gbm_surface, goto error, "gbm_surface_create() failed.\n");
-
-    output->tbm_surface_queue = gbm_tbm_get_surface_queue(output->gbm_surface);
-    PEPPER_CHECK(output->tbm_surface_queue, goto error, "gbm_tbm_get_surface_queue() failed.\n");
+    output->tbm_surface_queue = tbm_surface_queue_create(3,
+                                        mode->width, mode->height,
+                                        TBM_FORMAT_XBGR8888, TBM_BO_SCANOUT);
+    PEPPER_CHECK(output->tbm_surface_queue, goto error, "tbm_surface_queue_create() failed.\n");
 
     pixman_region32_init(&output->previous_damage);
     output->render_type = TDM_RENDER_TYPE_PIXMAN;
@@ -195,12 +191,11 @@ __tdm_renderer_gl_fini(pepper_tdm_output_t *output)
     if (output->render_target)
         pepper_render_target_destroy(output->render_target);
 
-    if (output->gbm_surface)
-        gbm_surface_destroy(output->gbm_surface);
+    if (output->tbm_surface_queue)
+        tbm_surface_queue_destroy(output->tbm_surface_queue);
 
     output->renderer = NULL;
     output->render_target = NULL;
-    output->gbm_surface = NULL;
     output->tbm_surface_queue = NULL;
 }
 
@@ -209,27 +204,25 @@ __tdm_renderer_gl_init(pepper_tdm_output_t *output)
 {
     pepper_tdm_t    *tdm = output->tdm;
     const tdm_output_mode *mode;
-    uint32_t        native_visual_id = GBM_FORMAT_XRGB8888;
+    uint32_t        native_visual_id = TBM_FORMAT_XRGB8888;
 
     if (!tdm->gl_renderer)
     {
-        tdm->gl_renderer = pepper_gl_renderer_create(tdm->compositor, tdm->gbm_device, "gbm");
+        tdm->gl_renderer = pepper_gl_renderer_create(tdm->compositor, tdm->bufmgr, "tbm");
         PEPPER_CHECK(tdm->gl_renderer, return, "pepper_gl_renderer_create() failed.\n");
     }
 
     output->renderer = tdm->gl_renderer;
 
     tdm_output_get_mode(output->output, &mode);
-    output->gbm_surface = gbm_surface_create(tdm->gbm_device,
-                                                mode->width, mode->height, GBM_FORMAT_XRGB8888,
-                                                GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-    PEPPER_CHECK(output->gbm_surface, goto error, "gbm_surface_create() failed.\n");
-
-    output->tbm_surface_queue = gbm_tbm_get_surface_queue(output->gbm_surface);
-    PEPPER_CHECK(output->tbm_surface_queue, goto error, "gbm_tbm_get_surface_queue() failed.\n");
+    output->tbm_surface_queue = tbm_surface_queue_create(3,
+                                        mode->width, mode->height,
+                                        TBM_FORMAT_XRGB8888,
+                                        TBM_BO_SCANOUT);
+    PEPPER_CHECK(output->tbm_surface_queue, goto error, "tbm_surface_queue_create() failed.\n");
 
     output->render_target = pepper_gl_renderer_create_target(tdm->gl_renderer,
-                                                 output->gbm_surface,
+                                                 output->tbm_surface_queue,
                                                  PEPPER_FORMAT_XRGB8888,
                                                  &native_visual_id,
                                                  mode->width, mode->height);

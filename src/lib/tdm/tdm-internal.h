@@ -32,9 +32,10 @@
 #include <unistd.h>
 #include <config.h>
 #include <pixman.h>
-#include <gbm.h>
-#include <gbm/gbm_tbm.h>
 #include <tdm.h>
+#include <tbm_bufmgr.h>
+#include <tbm_surface.h>
+#include <tbm_surface_queue.h>
 #ifdef HAVE_TBM
 #include <wayland-tbm-server.h>
 #endif
@@ -57,11 +58,11 @@ struct pepper_tdm
 {
     pepper_compositor_t        *compositor;
     tdm_display                *disp;
+    tbm_bufmgr                  bufmgr;
     int                         fd;
 
     pepper_list_t               output_list;
 
-    struct gbm_device          *gbm_device;
     struct wayland_tbm_server  *wl_tbm_server;
     struct wl_event_source     *tdm_event_source;
 
@@ -76,7 +77,6 @@ struct pepper_tdm_output
     pepper_tdm_output_t    *output;
     pepper_tdm_plane_t     *primary_plane;
 
-    struct gbm_surface     *gbm_surface;
     tbm_surface_queue_h     tbm_surface_queue;
 
     tdm_render_type_t       render_type;

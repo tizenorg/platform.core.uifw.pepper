@@ -58,8 +58,8 @@ pepper_tdm_create(pepper_compositor_t *compositor)
     ret = tdm_display_get_fd(tdm->disp, &tdm->fd);
     PEPPER_CHECK(ret == TDM_ERROR_NONE, goto error, "tdm_display_get_fd() failed %d\n", ret);
 
-    tdm->gbm_device = gbm_create_device(tdm->fd);
-    PEPPER_CHECK(tdm->gbm_device, goto error, "gbm_create_device() failed \n");
+    tdm->bufmgr = tbm_bufmgr_init(tdm->fd);
+    PEPPER_CHECK(tdm->bufmgr, goto error, "tbm_bufmgr_init() failed \n");
 
 #ifdef HAVE_TBM
     /* Create wayland-tbm
@@ -101,8 +101,8 @@ pepper_tdm_destroy(pepper_tdm_t *tdm)
     if (tdm->wl_tbm_server)
         wayland_tbm_server_deinit(tdm->wl_tbm_server);
 
-    if (tdm->gbm_device)
-        gbm_device_destroy(tdm->gbm_device);
+    if (tdm->bufmgr)
+        tbm_bufmgr_deinit(tdm->bufmgr);
 
     if (tdm->disp)
         tdm_display_deinit(tdm->disp);
