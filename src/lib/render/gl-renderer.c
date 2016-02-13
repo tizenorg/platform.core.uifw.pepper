@@ -25,6 +25,7 @@
 * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 * DEALINGS IN THE SOFTWARE.
 */
+#include "config.h"
 
 #include "pepper-gl-renderer.h"
 #include "pepper-render-internal.h"
@@ -38,6 +39,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <float.h>
+
+#ifdef HAVE_TBM
+#include <tbm_surface.h>
+#include <wayland-tbm-server.h>
+#endif
 
 typedef struct gl_renderer      gl_renderer_t;
 typedef struct gl_shader        gl_shader_t;
@@ -63,6 +69,9 @@ typedef EGLSurface  (*PFNEGLCREATEPLATFORMWINDOWSURFACEEXTPROC)(EGLDisplay      
 #endif
 #ifndef EGL_PLATFORM_WAYLAND_KHR
 #define EGL_PLATFORM_WAYLAND_KHR    0x31d8
+#endif
+#ifndef EGL_PLATFORM_TBM_EXT
+#define EGL_PLATFORM_TBM_EXT        0x31d9
 #endif
 
 #define NUM_MAX_PLANES  3
@@ -205,6 +214,7 @@ enum buffer_type
     BUFFER_TYPE_NONE,
     BUFFER_TYPE_SHM,
     BUFFER_TYPE_EGL,
+    BUFFER_TYPE_TBM
 };
 
 #define MAX_BUFFER_COUNT    3
@@ -298,6 +308,9 @@ struct gl_surface_state
         GLenum                  pixel_format;
         int                     pitch;
     } shm;
+
+    /*TBM buffer type*/
+    tbm_surface_h       tbm_surface;
 };
 
 static pepper_bool_t
@@ -593,6 +606,25 @@ surface_state_attach_shm(gl_surface_state_t *state, pepper_buffer_t *buffer)
     return PEPPER_TRUE;
 }
 
+#ifdef HAVE_TBM
+static pepper_bool_t
+surface_state_attach_tbm(gl_surface_state_t *state, pepper_buffer_t *buffer)
+{
+    tbm_surface_h   tbm_surface = wayland_tbm_server_get_surface(NULL, pepper_buffer_get_resource(buffer));
+
+    if (!tbm_surface)
+        return PEPPER_FALSE;
+
+    state->tbm_surface      = tbm_surface;
+    state->buffer_width     = tbm_surface_get_width(tbm_surface);
+    state->buffer_height    = tbm_surface_get_height(tbm_surface);
+    state->y_inverted       = 1;
+    state->buffer_type      = BUFFER_TYPE_TBM;
+
+    return PEPPER_TRUE;;
+}
+#endif
+
 static pepper_bool_t
 surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
 {
@@ -628,6 +660,11 @@ gl_renderer_attach_surface(pepper_renderer_t *renderer, pepper_surface_t *surfac
 
     if (surface_state_attach_shm(state, buffer))
         goto done;
+
+#ifdef HAVE_TBM
+    if (surface_state_attach_tbm(state, buffer))
+        goto done;
+#endif
 
     if (surface_state_attach_egl(state, buffer))
         goto done;
@@ -717,6 +754,55 @@ surface_state_flush_egl(gl_surface_state_t *state)
     return PEPPER_TRUE;
 }
 
+#ifdef HAVE_TBM
+static pepper_bool_t
+surface_state_flush_tbm(gl_surface_state_t *state)
+{
+    gl_renderer_t      *gr = (gl_renderer_t *)state->renderer;
+    EGLDisplay          display = gr->display;
+    tbm_surface_h       tbm_surface = wayland_tbm_server_get_surface(NULL, pepper_buffer_get_resource(state->buffer));
+    int                 sampler;
+
+	const EGLint image_attribs[] =
+	{
+		EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
+		EGL_NONE
+	};
+
+    if (!tbm_surface)
+        return PEPPER_FALSE;
+
+    switch (tbm_surface_get_format(tbm_surface))
+    {
+        case TBM_FORMAT_XRGB8888:
+            sampler = GL_SHADER_SAMPLER_RGBX;
+            break;
+        case TBM_FORMAT_ARGB8888:
+            sampler = GL_SHADER_SAMPLER_RGBA;
+            break;
+        case TBM_FORMAT_RGB565:
+            sampler = GL_SHADER_SAMPLER_RGBA;
+            break;
+        default:
+            PEPPER_ERROR("Unknown shm buffer format.\n");
+            return PEPPER_FALSE;
+    }
+
+    surface_state_ensure_textures(state, 1);
+    state->images[0] = gr->create_image(display, NULL, EGL_NATIVE_SURFACE_TIZEN,
+                                        state->tbm_surface, image_attribs);
+    PEPPER_ASSERT(state->images[0] != EGL_NO_IMAGE_KHR);
+
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D, state->textures[0]);
+    gr->image_target_texture_2d(GL_TEXTURE_2D, state->images[0]);
+
+    state->sampler = sampler;
+
+    return PEPPER_TRUE;
+}
+#endif
+
 static pepper_bool_t
 surface_state_flush_shm(gl_surface_state_t *state)
 {
@@ -785,6 +871,10 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer, pepper_surface_t *
 
     if (state->buffer_type == BUFFER_TYPE_SHM)
         return surface_state_flush_shm(state);
+#ifdef HAVE_TBM
+    else if(state->buffer_type == BUFFER_TYPE_TBM)
+        return surface_state_flush_tbm(state);
+#endif
     else
         return surface_state_flush_egl(state);
 }
@@ -1541,6 +1631,8 @@ get_egl_platform(const char *str)
     if (!strcmp(str, "x11"))
         return EGL_PLATFORM_X11_KHR;
 
+    if (!strcmp(str, "tbm"))
+        return EGL_PLATFORM_TBM_EXT;
     return EGL_NONE;
 }
 
