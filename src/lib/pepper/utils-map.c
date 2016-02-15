@@ -82,12 +82,6 @@ int32_hash(const void *key, int key_length)
 }
 
 static int
-int32_key_length(const void *key)
-{
-    return 4;
-}
-
-static int
 int32_key_compare(const void *key0, int key0_length,
                   const void *key1, int key1_length)
 {
@@ -100,19 +94,13 @@ int32_key_compare(const void *key0, int key0_length,
 PEPPER_API void
 pepper_map_int32_init(pepper_map_t *map, int bucket_bits, void *buckets)
 {
-    pepper_map_init(map, bucket_bits, int32_hash, int32_key_length, int32_key_compare, buckets);
+    pepper_map_init(map, bucket_bits, int32_hash, NULL, int32_key_compare, buckets);
 }
 
 static int
 int64_hash(const void *key, int key_length)
 {
     return pepper_hash64(*(const uint64_t *)key);
-}
-
-static int
-int64_key_length(const void *key)
-{
-    return 8;
 }
 
 static int
@@ -127,7 +115,7 @@ int64_key_compare(const void *key0, int key0_length,
 PEPPER_API void
 pepper_map_int64_init(pepper_map_t *map, int bucket_bits, void *buckets)
 {
-    pepper_map_init(map, bucket_bits, int64_hash, int64_key_length, int64_key_compare, buckets);
+    pepper_map_init(map, bucket_bits, int64_hash, NULL, int64_key_compare, buckets);
 }
 
 PEPPER_API void
@@ -155,13 +143,13 @@ pepper_map_create(int                       bucket_bits,
 PEPPER_API pepper_map_t *
 pepper_map_int32_create(int bucket_bits)
 {
-    return pepper_map_create(bucket_bits, int32_hash, int32_key_length, int32_key_compare);
+    return pepper_map_create(bucket_bits, int32_hash, NULL, int32_key_compare);
 }
 
 PEPPER_API pepper_map_t *
 pepper_map_int64_create(int bucket_bits)
 {
-    return pepper_map_create(bucket_bits, int64_hash, int64_key_length, int64_key_compare);
+    return pepper_map_create(bucket_bits, int64_hash, NULL, int64_key_compare);
 }
 
 PEPPER_API void
@@ -229,6 +217,7 @@ pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_
     pepper_map_entry_t    **bucket = get_bucket(map, key);
     pepper_map_entry_t     *curr = *bucket;
     pepper_map_entry_t     *prev = NULL;
+    int                     key_length = 0;
 
     /* Find existing entry for the key. */
     while (curr)
@@ -279,10 +268,17 @@ pepper_map_set(pepper_map_t *map, const void *key, void *data, pepper_free_func_
     }
 
     /* Allocate a new entry. */
-    curr = malloc(sizeof(pepper_map_entry_t));
+    if (map->key_length_func)
+        key_length = map->key_length_func(key);
+
+    curr = malloc(sizeof(pepper_map_entry_t) + key_length);
     PEPPER_CHECK(curr, return, "malloc() failed.\n");
 
-    curr->key = key;
+    if (key_length > 0)
+        memcpy(curr->key, key, key_length);
+    else
+        curr->key = key;
+
     curr->data = data;
     curr->free_func = free_func;
 
