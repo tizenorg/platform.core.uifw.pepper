@@ -112,7 +112,7 @@ PEPPER_API void
 pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data,
                             pepper_free_func_t free_func)
 {
-    pepper_map_set(&object->user_data_map, &key, data, free_func);
+    pepper_map_set(&object->user_data_map, key, data, free_func);
 }
 
 /**
@@ -128,7 +128,7 @@ pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data
 PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key)
 {
-    return pepper_map_get(&object->user_data_map, &key);
+    return pepper_map_get(&object->user_data_map, key);
 }
 
 static void
