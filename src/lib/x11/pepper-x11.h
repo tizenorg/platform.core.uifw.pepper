@@ -49,7 +49,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
                          const char *renderer);
 
 PEPPER_API pepper_bool_t
-pepper_x11_input_create(pepper_x11_connection_t* conn);
+pepper_x11_input_create(pepper_x11_connection_t *conn);
 
 #ifdef __cplusplus
 }

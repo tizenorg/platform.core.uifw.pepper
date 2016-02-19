@@ -42,17 +42,16 @@ extern "C" {
  */
 typedef struct pepper_input_device_backend      pepper_input_device_backend_t;
 
-struct pepper_input_device_backend
-{
-    /**
-     * Get property of the device corresponding to the key.
-     *
-     * @param device    device
-     * @param key       key string
-     *
-     * @returns         property string
-     */
-    const char *    (*get_property)(void *device, const char *key);
+struct pepper_input_device_backend {
+	/**
+	 * Get property of the device corresponding to the key.
+	 *
+	 * @param device    device
+	 * @param key       key string
+	 *
+	 * @returns         property string
+	 */
+	const char     *(*get_property)(void *device, const char *key);
 };
 
 PEPPER_API pepper_input_device_t *

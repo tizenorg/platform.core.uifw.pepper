@@ -48,53 +48,49 @@
 typedef struct pepper_tdm_output        pepper_tdm_output_t;
 typedef struct pepper_tdm_plane         pepper_tdm_plane_t;
 
-typedef enum tdm_render_type
-{
-    TDM_RENDER_TYPE_PIXMAN,
-    TDM_RENDER_TYPE_GL,
+typedef enum tdm_render_type {
+        TDM_RENDER_TYPE_PIXMAN,
+        TDM_RENDER_TYPE_GL,
 } tdm_render_type_t;
 
-struct pepper_tdm
-{
-    pepper_compositor_t        *compositor;
-    tdm_display                *disp;
-    tbm_bufmgr                  bufmgr;
-    int                         fd;
+struct pepper_tdm {
+	pepper_compositor_t        *compositor;
+	tdm_display                *disp;
+	tbm_bufmgr                  bufmgr;
+	int                         fd;
 
-    pepper_list_t               output_list;
+	pepper_list_t               output_list;
 
-    struct wayland_tbm_server  *wl_tbm_server;
-    struct wl_event_source     *tdm_event_source;
+	struct wayland_tbm_server  *wl_tbm_server;
+	struct wl_event_source     *tdm_event_source;
 
-    pepper_renderer_t          *pixman_renderer;
-    pepper_renderer_t          *gl_renderer;
+	pepper_renderer_t          *pixman_renderer;
+	pepper_renderer_t          *gl_renderer;
 };
 
-struct pepper_tdm_output
-{
-    pepper_output_t        *base;
-    pepper_tdm_t           *tdm;
-    pepper_tdm_output_t    *output;
-    pepper_tdm_plane_t     *primary_plane;
+struct pepper_tdm_output {
+	pepper_output_t        *base;
+	pepper_tdm_t           *tdm;
+	pepper_tdm_output_t    *output;
+	pepper_tdm_plane_t     *primary_plane;
 
-    tbm_surface_queue_h     tbm_surface_queue;
+	tbm_surface_queue_h     tbm_surface_queue;
 
-    tdm_render_type_t       render_type;
-    pepper_renderer_t      *renderer;
-    pepper_render_target_t *render_target;
+	tdm_render_type_t       render_type;
+	pepper_renderer_t      *renderer;
+	pepper_render_target_t *render_target;
 
-    tbm_surface_h           back, front;
-    pepper_bool_t           page_flip_pending;
-    /*For pixman*/
-    pixman_region32_t       previous_damage;
+	tbm_surface_h           back, front;
+	pepper_bool_t           page_flip_pending;
+	/*For pixman*/
+	pixman_region32_t       previous_damage;
 };
 
-struct pepper_tdm_plane
-{
-    pepper_plane_t         *base;
-    pepper_tdm_output_t    *output;
-    tdm_layer              *layer;
-    tdm_layer_capability    caps;
+struct pepper_tdm_plane {
+	pepper_plane_t         *base;
+	pepper_tdm_output_t    *output;
+	tdm_layer              *layer;
+	tdm_layer_capability    caps;
 };
 
 int pepper_tdm_output_init(pepper_tdm_t *tdm);

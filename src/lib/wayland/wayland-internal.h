@@ -46,115 +46,108 @@ typedef struct wayland_output       wayland_output_t;
 typedef struct wayland_seat         wayland_seat_t;
 typedef struct wayland_shm_buffer   wayland_shm_buffer_t;
 
-struct pepper_wayland
-{
-    pepper_compositor_t    *pepper;
+struct pepper_wayland {
+	pepper_compositor_t    *pepper;
 
-    char                   *socket_name;
-    struct wl_display      *display;
-    int                     fd;
+	char                   *socket_name;
+	struct wl_display      *display;
+	int                     fd;
 
-    struct wl_event_source *event_source;
+	struct wl_event_source *event_source;
 
-    struct wl_registry     *registry;
-    struct wl_compositor   *compositor;
-    struct wl_shell        *shell;
-    pepper_list_t           seat_list;
-    pepper_list_t           output_list;
+	struct wl_registry     *registry;
+	struct wl_compositor   *compositor;
+	struct wl_shell        *shell;
+	pepper_list_t           seat_list;
+	pepper_list_t           output_list;
 
-    struct wl_signal        destroy_signal;
+	struct wl_signal        destroy_signal;
 
-    struct wl_shm          *shm;
+	struct wl_shm          *shm;
 
-    pepper_renderer_t      *pixman_renderer;
-    pepper_renderer_t      *gl_renderer;
+	pepper_renderer_t      *pixman_renderer;
+	pepper_renderer_t      *gl_renderer;
 };
 
-struct wayland_shm_buffer
-{
-    wayland_output_t       *output;
-    pepper_list_t           link;
+struct wayland_shm_buffer {
+	wayland_output_t       *output;
+	pepper_list_t           link;
 
-    struct wl_buffer       *buffer;
+	struct wl_buffer       *buffer;
 
-    void                   *pixels;
-    int                     stride;
-    int                     size;
-    int                     w, h;
+	void                   *pixels;
+	int                     stride;
+	int                     size;
+	int                     w, h;
 
-    pepper_render_target_t *target;
-    pixman_region32_t       damage;
+	pepper_render_target_t *target;
+	pixman_region32_t       damage;
 
-    void                   *data;
+	void                   *data;
 };
 
-struct wayland_output
-{
-    pepper_wayland_t           *conn;
-    pepper_output_t            *base;
-    char                        name[32];
+struct wayland_output {
+	pepper_wayland_t           *conn;
+	pepper_output_t            *base;
+	char                        name[32];
 
-    struct wl_listener          conn_destroy_listener;
+	struct wl_listener          conn_destroy_listener;
 
-    int32_t                     w, h;
-    int32_t                     subpixel;
+	int32_t                     w, h;
+	int32_t                     subpixel;
 
-    struct wl_surface          *surface;
-    struct wl_shell_surface    *shell_surface;
+	struct wl_surface          *surface;
+	struct wl_shell_surface    *shell_surface;
 
-    pepper_renderer_t          *renderer;
-    pepper_render_target_t     *render_target;
-    pepper_render_target_t     *gl_render_target;
+	pepper_renderer_t          *renderer;
+	pepper_render_target_t     *render_target;
+	pepper_render_target_t     *gl_render_target;
 
-    void    (*render_pre)(wayland_output_t *output);
-    void    (*render_post)(wayland_output_t *output);
+	void    (*render_pre)(wayland_output_t *output);
+	void    (*render_post)(wayland_output_t *output);
 
-    struct {
-        /* list containing free buffers. */
-        pepper_list_t           free_buffers;
+	struct {
+		/* list containing free buffers. */
+		pepper_list_t           free_buffers;
 
-        /* list containing attached but not released (from the compositor) buffers. */
-        pepper_list_t           attached_buffers;
+		/* list containing attached but not released (from the compositor) buffers. */
+		pepper_list_t           attached_buffers;
 
-        /* current render target buffer. */
-        wayland_shm_buffer_t   *current_buffer;
-    } shm;
+		/* current render target buffer. */
+		wayland_shm_buffer_t   *current_buffer;
+	} shm;
 
 #if ENABLE_WAYLAND_BACKEND_EGL
-    struct {
-        struct wl_egl_window   *window;
-    } egl;
+	struct {
+		struct wl_egl_window   *window;
+	} egl;
 #endif
 
-    pepper_plane_t             *primary_plane;
-    pepper_list_t               link;
+	pepper_plane_t             *primary_plane;
+	pepper_list_t               link;
 };
 
-struct wayland_seat
-{
-    pepper_wayland_t           *conn;
-    struct wl_seat             *seat;
-    uint32_t                    id;
+struct wayland_seat {
+	pepper_wayland_t           *conn;
+	struct wl_seat             *seat;
+	uint32_t                    id;
 
-    struct
-    {
-        pepper_input_device_t      *base;
-        struct wl_pointer          *wl_pointer;
-    } pointer;
+	struct {
+		pepper_input_device_t      *base;
+		struct wl_pointer          *wl_pointer;
+	} pointer;
 
-    struct
-    {
-        pepper_input_device_t      *base;
-        struct wl_keyboard         *wl_keyboard;
-    } keyboard;
+	struct {
+		pepper_input_device_t      *base;
+		struct wl_keyboard         *wl_keyboard;
+	} keyboard;
 
-    struct
-    {
-        pepper_input_device_t      *base;
-        struct wl_touch            *wl_touch;
-    } touch;
+	struct {
+		pepper_input_device_t      *base;
+		struct wl_touch            *wl_touch;
+	} touch;
 
-    pepper_list_t                   link;
+	pepper_list_t                   link;
 };
 
 void
