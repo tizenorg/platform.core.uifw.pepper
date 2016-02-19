@@ -36,44 +36,44 @@ static pepper_map_t            *object_map = NULL;
 pepper_object_t *
 pepper_object_alloc(pepper_object_type_t type, size_t size)
 {
-    pepper_object_t *object = calloc(1, size);
-    PEPPER_CHECK(object, return NULL, "calloc() failed.\n");
-    pepper_object_init(object, type);
-    return object;
+	pepper_object_t *object = calloc(1, size);
+	PEPPER_CHECK(object, return NULL, "calloc() failed.\n");
+	pepper_object_init(object, type);
+	return object;
 }
 
 void
 pepper_object_init(pepper_object_t *object, pepper_object_type_t type)
 {
-    object->type = type;
-    pepper_list_init(&object->event_listener_list);
+	object->type = type;
+	pepper_list_init(&object->event_listener_list);
 
-    pepper_map_pointer_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS, &object->buckets[0]);
+	pepper_map_pointer_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS,
+	                        &object->buckets[0]);
 
-    if (!object_map)
-    {
-        pepper_id_allocator_init(&id_allocator);
+	if (!object_map) {
+		pepper_id_allocator_init(&id_allocator);
 
-        object_map = pepper_map_int32_create(PEPPER_OBJECT_MAP_BUCKET_BITS);
-        PEPPER_CHECK(object_map, return, "pepper_map_int32_create() failed.\n");
-    }
+		object_map = pepper_map_int32_create(PEPPER_OBJECT_MAP_BUCKET_BITS);
+		PEPPER_CHECK(object_map, return, "pepper_map_int32_create() failed.\n");
+	}
 
-    object->id = pepper_id_allocator_alloc(&id_allocator);
+	object->id = pepper_id_allocator_alloc(&id_allocator);
 }
 
 void
 pepper_object_fini(pepper_object_t *object)
 {
-    pepper_event_listener_t *listener, *tmp;
+	pepper_event_listener_t *listener, *tmp;
 
-    pepper_object_emit_event(object, PEPPER_EVENT_OBJECT_DESTROY, NULL);
-    pepper_map_fini(&object->user_data_map);
+	pepper_object_emit_event(object, PEPPER_EVENT_OBJECT_DESTROY, NULL);
+	pepper_map_fini(&object->user_data_map);
 
-    pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
-        pepper_event_listener_remove(listener);
+	pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
+	pepper_event_listener_remove(listener);
 
-    pepper_map_set(object_map, &object->id, NULL, NULL);
-    pepper_id_allocator_free(&id_allocator, object->id);
+	pepper_map_set(object_map, &object->id, NULL, NULL);
+	pepper_id_allocator_free(&id_allocator, object->id);
 }
 
 /**
@@ -86,7 +86,7 @@ pepper_object_fini(pepper_object_t *object)
 PEPPER_API pepper_object_type_t
 pepper_object_get_type(pepper_object_t *object)
 {
-    return object->type;
+	return object->type;
 }
 
 /**
@@ -103,10 +103,11 @@ pepper_object_get_type(pepper_object_t *object)
  * @see pepper_object_get_user_data()
  */
 PEPPER_API void
-pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data,
+pepper_object_set_user_data(pepper_object_t *object, const void *key,
+                            void *data,
                             pepper_free_func_t free_func)
 {
-    pepper_map_set(&object->user_data_map, key, data, free_func);
+	pepper_map_set(&object->user_data_map, key, data, free_func);
 }
 
 /**
@@ -122,25 +123,23 @@ pepper_object_set_user_data(pepper_object_t *object, const void *key, void *data
 PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key)
 {
-    return pepper_map_get(&object->user_data_map, key);
+	return pepper_map_get(&object->user_data_map, key);
 }
 
 static void
 insert_listener(pepper_object_t *object, pepper_event_listener_t *listener)
 {
-    pepper_event_listener_t *pos;
+	pepper_event_listener_t *pos;
 
-    pepper_list_for_each(pos, &object->event_listener_list, link)
-    {
-        if (listener->priority >= pos->priority)
-        {
-            pepper_list_insert(pos->link.prev, &listener->link);
-            break;
-        }
-    }
+	pepper_list_for_each(pos, &object->event_listener_list, link) {
+		if (listener->priority >= pos->priority) {
+			pepper_list_insert(pos->link.prev, &listener->link);
+			break;
+		}
+	}
 
-    if (!listener->link.next)
-        pepper_list_insert(object->event_listener_list.prev, &listener->link);
+	if (!listener->link.next)
+		pepper_list_insert(object->event_listener_list.prev, &listener->link);
 }
 
 /**
@@ -158,24 +157,25 @@ insert_listener(pepper_object_t *object, pepper_event_listener_t *listener)
  * @see pepper_event_listener_set_priority()
  */
 PEPPER_API pepper_event_listener_t *
-pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int priority,
+pepper_object_add_event_listener(pepper_object_t *object, uint32_t id,
+                                 int priority,
                                  pepper_event_callback_t callback, void *data)
 {
-    pepper_event_listener_t *listener;
+	pepper_event_listener_t *listener;
 
-    PEPPER_CHECK(callback, return NULL, "callback must be given.\n");
+	PEPPER_CHECK(callback, return NULL, "callback must be given.\n");
 
-    listener = calloc(1, sizeof(pepper_event_listener_t));
-    PEPPER_CHECK(listener, return NULL, "calloc() failed.\n");
+	listener = calloc(1, sizeof(pepper_event_listener_t));
+	PEPPER_CHECK(listener, return NULL, "calloc() failed.\n");
 
-    listener->object    = object;
-    listener->id        = id;
-    listener->priority  = priority;
-    listener->callback  = callback;
-    listener->data      = data;
+	listener->object    = object;
+	listener->id        = id;
+	listener->priority  = priority;
+	listener->callback  = callback;
+	listener->data      = data;
 
-    insert_listener(object, listener);
-    return listener;
+	insert_listener(object, listener);
+	return listener;
 }
 
 /**
@@ -188,8 +188,8 @@ pepper_object_add_event_listener(pepper_object_t *object, uint32_t id, int prior
 PEPPER_API void
 pepper_event_listener_remove(pepper_event_listener_t *listener)
 {
-    pepper_list_remove(&listener->link);
-    free(listener);
+	pepper_list_remove(&listener->link);
+	free(listener);
 }
 
 /**
@@ -199,14 +199,15 @@ pepper_event_listener_remove(pepper_event_listener_t *listener)
  * @param priority  priority (higher priority called earlier)
  */
 PEPPER_API void
-pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priority)
+pepper_event_listener_set_priority(pepper_event_listener_t *listener,
+                                   int priority)
 {
-    if (!listener->object)
-        return;
+	if (!listener->object)
+		return;
 
-    listener->priority = priority;
-    pepper_list_remove(&listener->link);
-    insert_listener(listener->object, listener);
+	listener->priority = priority;
+	pepper_list_remove(&listener->link);
+	insert_listener(listener->object, listener);
 }
 
 /**
@@ -228,15 +229,15 @@ pepper_event_listener_set_priority(pepper_event_listener_t *listener, int priori
 PEPPER_API void
 pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
 {
-    pepper_event_listener_t *listener, *tmp;
+	pepper_event_listener_t *listener, *tmp;
 
-    PEPPER_CHECK(id != PEPPER_EVENT_ALL, return, "Cannot emit the PEPPER_EVENT_ALL event");
+	PEPPER_CHECK(id != PEPPER_EVENT_ALL, return,
+	             "Cannot emit the PEPPER_EVENT_ALL event");
 
-    pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link)
-    {
-        if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
-            listener->callback(listener, object, id, info, listener->data);
-    }
+	pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link) {
+		if (listener->id == PEPPER_EVENT_ALL || listener->id == id)
+			listener->callback(listener, object, id, info, listener->data);
+	}
 }
 
 /**
@@ -251,7 +252,7 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
 PEPPER_API uint32_t
 pepper_object_get_id(pepper_object_t *object)
 {
-    return object->id;
+	return object->id;
 }
 
 /**
@@ -266,5 +267,5 @@ pepper_object_get_id(pepper_object_t *object)
 PEPPER_API pepper_object_t *
 pepper_object_from_id(uint32_t id)
 {
-    return (pepper_object_t *)pepper_map_get(object_map, &id);
+	return (pepper_object_t *)pepper_map_get(object_map, &id);
 }

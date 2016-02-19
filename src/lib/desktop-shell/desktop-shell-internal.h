@@ -39,188 +39,177 @@ typedef struct shell_surface    shell_surface_t;
 typedef struct shell_seat       shell_seat_t;
 typedef struct pepper_shell     pepper_shell_t;
 
-struct shell_seat
-{
-    desktop_shell_t             *shell;
-    pepper_seat_t               *seat;
-    pepper_list_t                link;
+struct shell_seat {
+	desktop_shell_t             *shell;
+	pepper_seat_t               *seat;
+	pepper_list_t                link;
 
-    /* Seat's logical device add/remove */
-    pepper_event_listener_t     *pointer_add_listener;
-    pepper_event_listener_t     *pointer_remove_listener;
+	/* Seat's logical device add/remove */
+	pepper_event_listener_t     *pointer_add_listener;
+	pepper_event_listener_t     *pointer_remove_listener;
 
-    pepper_event_listener_t     *keyboard_add_listener;
-    pepper_event_listener_t     *keyboard_remove_listener;
+	pepper_event_listener_t     *keyboard_add_listener;
+	pepper_event_listener_t     *keyboard_remove_listener;
 
-    pepper_event_listener_t     *touch_add_listener;
-    pepper_event_listener_t     *touch_remove_listener;
+	pepper_event_listener_t     *touch_add_listener;
+	pepper_event_listener_t     *touch_remove_listener;
 };
 
-struct desktop_shell
-{
-    pepper_compositor_t         *compositor;
+struct desktop_shell {
+	pepper_compositor_t         *compositor;
 
-    pepper_list_t                shell_client_list;
-    pepper_list_t                shell_surface_list;
-    pepper_list_t                shseat_list;
+	pepper_list_t                shell_client_list;
+	pepper_list_t                shell_surface_list;
+	pepper_list_t                shseat_list;
 
-    struct wl_global            *pepper_shell_global;
-    struct wl_list               pepper_shell_list;
-    pepper_surface_t            *cursor_surface;
-    pepper_view_t               *cursor_view;
+	struct wl_global            *pepper_shell_global;
+	struct wl_list               pepper_shell_list;
+	pepper_surface_t            *cursor_surface;
+	pepper_view_t               *cursor_view;
 
-    /* input device add/remove listeners */
-    pepper_event_listener_t     *input_device_add_listener;
+	/* input device add/remove listeners */
+	pepper_event_listener_t     *input_device_add_listener;
 
-    /* seat add/remove */
-    pepper_event_listener_t     *seat_add_listener;
-    pepper_event_listener_t     *seat_remove_listener;
+	/* seat add/remove */
+	pepper_event_listener_t     *seat_add_listener;
+	pepper_event_listener_t     *seat_remove_listener;
 };
 
-struct shell_client
-{
-    desktop_shell_t         *shell;
-    struct wl_resource      *resource;
-    struct wl_client        *client;
+struct shell_client {
+	desktop_shell_t         *shell;
+	struct wl_resource      *resource;
+	struct wl_client        *client;
 
-    struct wl_listener       client_destroy_listener;
+	struct wl_listener       client_destroy_listener;
 
-    /* Ping-Pong */
-    struct wl_event_source  *ping_timer;
-    pepper_bool_t            need_pong;
-    uint32_t                 ping_serial;
-    pepper_bool_t            irresponsive;
+	/* Ping-Pong */
+	struct wl_event_source  *ping_timer;
+	pepper_bool_t            need_pong;
+	uint32_t                 ping_serial;
+	pepper_bool_t            irresponsive;
 
-    pepper_list_t            link;
+	pepper_list_t            link;
 };
 
-typedef enum
-{
-    SHELL_SURFACE_TYPE_NONE,
-    SHELL_SURFACE_TYPE_TOPLEVEL,
-    SHELL_SURFACE_TYPE_TRANSIENT,
-    SHELL_SURFACE_TYPE_FULLSCREEN,
-    SHELL_SURFACE_TYPE_POPUP,
-    SHELL_SURFACE_TYPE_MAXIMIZED,
-    SHELL_SURFACE_TYPE_MINIMIZED,
+typedef enum {
+        SHELL_SURFACE_TYPE_NONE,
+        SHELL_SURFACE_TYPE_TOPLEVEL,
+        SHELL_SURFACE_TYPE_TRANSIENT,
+        SHELL_SURFACE_TYPE_FULLSCREEN,
+        SHELL_SURFACE_TYPE_POPUP,
+        SHELL_SURFACE_TYPE_MAXIMIZED,
+        SHELL_SURFACE_TYPE_MINIMIZED,
 } shell_surface_type_t;
 
-struct shell_surface
-{
-    desktop_shell_t         *shell;
+struct shell_surface {
+	desktop_shell_t         *shell;
 
-    shell_client_t          *shell_client;
+	shell_client_t          *shell_client;
 
-    struct wl_client        *client;
-    struct wl_resource      *resource;
+	struct wl_client        *client;
+	struct wl_resource      *resource;
 
-    /* Hierarchy */
-    pepper_surface_t        *parent;
-    pepper_list_t            child_list;   /* children surfaces of this */
-    pepper_list_t            parent_link;
+	/* Hierarchy */
+	pepper_surface_t        *parent;
+	pepper_list_t            child_list;   /* children surfaces of this */
+	pepper_list_t            parent_link;
 
-    /* Contents */
-    pepper_surface_t        *surface;
-    pepper_view_t           *view;
+	/* Contents */
+	pepper_surface_t        *surface;
+	pepper_view_t           *view;
 
-    char                    *title, *class_;
+	char                    *title, *class_;
 
-    struct
-    {
-        double x, y;
-        int32_t w,h;
-    } geometry, next_geometry;
+	struct {
+		double x, y;
+		int32_t w, h;
+	} geometry, next_geometry;
 
-    pepper_bool_t            has_next_geometry;
+	pepper_bool_t            has_next_geometry;
 
-    const void              *old_pointer_grab;
-    void                    *old_pointer_grab_data;
+	const void              *old_pointer_grab;
+	void                    *old_pointer_grab_data;
 
-    struct
-    {
-        double               dx, dy;     /* difference between pointer position and view position */
-    } move;
+	struct {
+		double               dx,
+		                     dy;     /* difference between pointer position and view position */
+	} move;
 
-    struct
-    {
-        double               px, py;     /* pointer x, y */
-        double               vx, vy;     /* view    x, y */
-        int32_t              vw, vh;     /* view    w, h */
-        uint32_t             edges;
-        pepper_bool_t        resizing;
-    } resize;
+	struct {
+		double               px, py;     /* pointer x, y */
+		double               vx, vy;     /* view    x, y */
+		int32_t              vw, vh;     /* view    w, h */
+		uint32_t             edges;
+		pepper_bool_t        resizing;
+	} resize;
 
-    int32_t                  last_width, last_height;
+	int32_t                  last_width, last_height;
 
-    /* Data structures per surface type */
-    shell_surface_type_t     type;          /* Current surface type */
-    shell_surface_type_t     next_type;     /* Requested surface type */
-    pepper_bool_t            type_changed;
+	/* Data structures per surface type */
+	shell_surface_type_t     type;          /* Current surface type */
+	shell_surface_type_t     next_type;     /* Requested surface type */
+	pepper_bool_t            type_changed;
 
-    struct
-    {
-        double               x, y;
-        uint32_t             flags;
-        pepper_seat_t       *seat;
-        uint32_t             serial;
-        pepper_bool_t        button_up;
-    } popup;
+	struct {
+		double               x, y;
+		uint32_t             flags;
+		pepper_seat_t       *seat;
+		uint32_t             serial;
+		pepper_bool_t        button_up;
+	} popup;
 
-    struct
-    {
-        double               x, y;
-        uint32_t             flags;
-    } transient;
+	struct {
+		double               x, y;
+		uint32_t             flags;
+	} transient;
 
-    struct
-    {
-        pepper_output_t     *output;
-    } maximized;
+	struct {
+		pepper_output_t     *output;
+	} maximized;
 
-    struct
-    {
-        uint32_t             method;
-        uint32_t             framerate;
-        pepper_output_t     *output;
-        double               scale;
-    } fullscreen;
+	struct {
+		uint32_t             method;
+		uint32_t             framerate;
+		pepper_output_t     *output;
+		double               scale;
+	} fullscreen;
 
-    struct
-    {
-        double               x, y;
-        int32_t              w, h;
-        pepper_output_mode_t mode;
-        shell_surface_type_t type;
-    } saved;
+	struct {
+		double               x, y;
+		int32_t              w, h;
+		pepper_output_mode_t mode;
+		shell_surface_type_t type;
+	} saved;
 
-    /* map */
-    void (*shell_surface_map)(shell_surface_t *shsurf);
+	/* map */
+	void (*shell_surface_map)(shell_surface_t *shsurf);
 
-    /* configure */
-    void (*send_configure)(shell_surface_t *shsurf, int32_t width, int32_t height);
+	/* configure */
+	void (*send_configure)(shell_surface_t *shsurf, int32_t width, int32_t height);
 
-    pepper_bool_t           ack_configure;
+	pepper_bool_t           ack_configure;
 
-    /* Focus */
-    pepper_bool_t           has_keyboard_focus;
+	/* Focus */
+	pepper_bool_t           has_keyboard_focus;
 
-    /* Listeners */
-    pepper_event_listener_t *surface_destroy_listener;
-    pepper_event_listener_t *surface_commit_listener;
+	/* Listeners */
+	pepper_event_listener_t *surface_destroy_listener;
+	pepper_event_listener_t *surface_commit_listener;
 
-    pepper_event_listener_t *focus_enter_listener;
-    pepper_event_listener_t *focus_leave_listener;
+	pepper_event_listener_t *focus_enter_listener;
+	pepper_event_listener_t *focus_leave_listener;
 
-    pepper_list_t            link;
+	pepper_list_t            link;
 };
 
 shell_client_t *
 shell_client_create(desktop_shell_t *shell, struct wl_client *client,
-             const struct wl_interface *interface, const void *implementation,
-             uint32_t version, uint32_t id);
+                    const struct wl_interface *interface, const void *implementation,
+                    uint32_t version, uint32_t id);
 
 shell_surface_t *
-shell_surface_create(shell_client_t *shell, pepper_surface_t *surface, struct wl_client *client,
+shell_surface_create(shell_client_t *shell, pepper_surface_t *surface,
+                     struct wl_client *client,
                      const struct wl_interface *interface,
                      const void *implemenetation, uint32_t version, uint32_t id);
 
@@ -237,7 +226,8 @@ void
 remove_ping_timer(shell_client_t *shell_client);
 
 void
-shell_surface_set_next_type(shell_surface_t *shsurf, shell_surface_type_t new_type);
+shell_surface_set_next_type(shell_surface_t *shsurf,
+                            shell_surface_type_t new_type);
 
 void
 shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent);
@@ -253,16 +243,17 @@ void
 set_shsurf_to_surface(pepper_surface_t *surface, shell_surface_t *shsurf);
 
 pepper_bool_t
-shell_surface_set_title(shell_surface_t *shsurf, const char* title);
+shell_surface_set_title(shell_surface_t *shsurf, const char *title);
 
 pepper_bool_t
-shell_surface_set_class(shell_surface_t *shsurf, const char* class_);
+shell_surface_set_class(shell_surface_t *shsurf, const char *class_);
 
 void
 shell_surface_set_toplevel(shell_surface_t *shsurf);
 
 void
-shell_surface_set_popup(shell_surface_t *shsurf, pepper_seat_t *seat, pepper_surface_t *parent,
+shell_surface_set_popup(shell_surface_t *shsurf, pepper_seat_t *seat,
+                        pepper_surface_t *parent,
                         double x, double y, uint32_t flags, uint32_t serial);
 
 void
@@ -273,7 +264,8 @@ void
 shell_surface_ack_configure(shell_surface_t *shsurf, uint32_t serial);
 
 void
-shell_surface_set_geometry(shell_surface_t *shsurf, double x, double y, int32_t w, int32_t h);
+shell_surface_set_geometry(shell_surface_t *shsurf, double x, double y,
+                           int32_t w, int32_t h);
 
 void
 shell_surface_set_maximized(shell_surface_t *shsurf, pepper_output_t *output);
@@ -309,10 +301,12 @@ void
 fini_xdg_shell(desktop_shell_t *shell);
 
 void
-shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial);
+shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat,
+                   uint32_t serial);
 
 void
-shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat, uint32_t serial, uint32_t edges);
+shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat,
+                     uint32_t serial, uint32_t edges);
 
 void
 shell_surface_set_position(shell_surface_t *shsurf, double x, double y);
@@ -320,16 +314,15 @@ shell_surface_set_position(shell_surface_t *shsurf, double x, double y);
 void
 shell_surface_place_fullscreen_surface(shell_surface_t *shsurf);
 
-struct pepper_shell
-{
-    desktop_shell_t    *shell;
+struct pepper_shell {
+	desktop_shell_t    *shell;
 
-    struct wl_resource *resource;
-    struct wl_client   *client;
+	struct wl_resource *resource;
+	struct wl_client   *client;
 
-    pepper_surface_t   *cursor;
+	pepper_surface_t   *cursor;
 
-    pepper_list_t       link;
+	pepper_list_t       link;
 };
 
 pepper_bool_t

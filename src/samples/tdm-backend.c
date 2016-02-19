@@ -41,92 +41,92 @@
 static void
 handle_signals(int s, siginfo_t *siginfo, void *context)
 {
-    raise(SIGTRAP);
+	raise(SIGTRAP);
 }
 
 static void
 init_signals()
 {
-    struct sigaction action;
+	struct sigaction action;
 
-    action.sa_flags = SA_SIGINFO | SA_RESETHAND;
-    action.sa_sigaction = handle_signals;
-    sigemptyset(&action.sa_mask);
+	action.sa_flags = SA_SIGINFO | SA_RESETHAND;
+	action.sa_sigaction = handle_signals;
+	sigemptyset(&action.sa_mask);
 
-    sigaction(SIGSEGV, &action, NULL);
-    sigaction(SIGABRT, &action, NULL);
+	sigaction(SIGSEGV, &action, NULL);
+	sigaction(SIGABRT, &action, NULL);
 }
 
 static int
 handle_sigint(int signal_number, void *data)
 {
-    struct wl_display *display = (struct wl_display *)data;
-    wl_display_terminate(display);
+	struct wl_display *display = (struct wl_display *)data;
+	wl_display_terminate(display);
 
-    return 0;
+	return 0;
 }
 
 int
 main(int argc, char **argv)
 {
-    pepper_compositor_t    *compositor = NULL;
-    pepper_tdm_t           *tdm = NULL;
-    pepper_libinput_t      *input = NULL;
+	pepper_compositor_t    *compositor = NULL;
+	pepper_tdm_t           *tdm = NULL;
+	pepper_libinput_t      *input = NULL;
 
-    struct udev            *udev = NULL;
+	struct udev            *udev = NULL;
 
-    struct wl_display      *display = NULL;
-    struct wl_event_loop   *loop = NULL;
-    struct wl_event_source *sigint = NULL;
+	struct wl_display      *display = NULL;
+	struct wl_event_loop   *loop = NULL;
+	struct wl_event_source *sigint = NULL;
 
-    init_signals();
+	init_signals();
 
-    compositor = pepper_compositor_create("wayland-0");
-    if (!compositor)
-        goto cleanup;
+	compositor = pepper_compositor_create("wayland-0");
+	if (!compositor)
+		goto cleanup;
 
-    udev = udev_new();
-    if (!udev)
-        goto cleanup;
+	udev = udev_new();
+	if (!udev)
+		goto cleanup;
 
-    input = pepper_libinput_create(compositor, udev);
-    if (!input)
-        goto cleanup;
+	input = pepper_libinput_create(compositor, udev);
+	if (!input)
+		goto cleanup;
 
-    tdm = pepper_tdm_create(compositor);
-    if (!tdm)
-        goto cleanup;
+	tdm = pepper_tdm_create(compositor);
+	if (!tdm)
+		goto cleanup;
 
-    if (!pepper_desktop_shell_init(compositor))
-        goto cleanup;
+	if (!pepper_desktop_shell_init(compositor))
+		goto cleanup;
 
-    display = pepper_compositor_get_display(compositor);
-    if (!display)
-        goto cleanup;
+	display = pepper_compositor_get_display(compositor);
+	if (!display)
+		goto cleanup;
 
-    loop = wl_display_get_event_loop(display);
-    sigint = wl_event_loop_add_signal(loop, SIGINT, handle_sigint, display);
-    if (!sigint)
-        goto cleanup;
+	loop = wl_display_get_event_loop(display);
+	sigint = wl_event_loop_add_signal(loop, SIGINT, handle_sigint, display);
+	if (!sigint)
+		goto cleanup;
 
-    wl_display_run(display);
+	wl_display_run(display);
 
 cleanup:
 
-    if (sigint)
-        wl_event_source_remove(sigint);
+	if (sigint)
+		wl_event_source_remove(sigint);
 
-    if (tdm)
-        pepper_drm_destroy(tdm);
+	if (tdm)
+		pepper_drm_destroy(tdm);
 
-    if (input)
-        pepper_libinput_destroy(input);
+	if (input)
+		pepper_libinput_destroy(input);
 
-    if (udev)
-        udev_unref(udev);
+	if (udev)
+		udev_unref(udev);
 
-    if (compositor)
-        pepper_compositor_destroy(compositor);
+	if (compositor)
+		pepper_compositor_destroy(compositor);
 
-    return 0;
+	return 0;
 }

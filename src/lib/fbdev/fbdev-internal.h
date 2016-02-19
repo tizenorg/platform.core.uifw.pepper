@@ -40,44 +40,42 @@
 
 typedef struct fbdev_output     fbdev_output_t;
 
-struct pepper_fbdev
-{
-    pepper_compositor_t        *compositor;
+struct pepper_fbdev {
+	pepper_compositor_t        *compositor;
 
-    pepper_list_t               output_list;
+	pepper_list_t               output_list;
 
-    uint32_t                    min_width, min_height;
-    uint32_t                    max_width, max_height;
+	uint32_t                    min_width, min_height;
+	uint32_t                    max_width, max_height;
 
-    struct udev                *udev;
+	struct udev                *udev;
 
-    pepper_renderer_t          *pixman_renderer;
+	pepper_renderer_t          *pixman_renderer;
 };
 
-struct fbdev_output
-{
-    pepper_fbdev_t             *fbdev;
-    pepper_output_t            *base;
-    pepper_list_t               link;
+struct fbdev_output {
+	pepper_fbdev_t             *fbdev;
+	pepper_output_t            *base;
+	pepper_list_t               link;
 
-    pepper_renderer_t          *renderer;
+	pepper_renderer_t          *renderer;
 
-    pepper_render_target_t     *render_target;
-    pepper_format_t             format;
-    int32_t                     subpixel;
-    int                         w, h;
-    int                         bpp;
-    int                         stride;
+	pepper_render_target_t     *render_target;
+	pepper_format_t             format;
+	int32_t                     subpixel;
+	int                         w, h;
+	int                         bpp;
+	int                         stride;
 
-    void                       *frame_buffer_pixels;
-    pixman_image_t             *frame_buffer_image;
-    pixman_image_t             *shadow_image;
-    pepper_bool_t               use_shadow;
+	void                       *frame_buffer_pixels;
+	pixman_image_t             *frame_buffer_image;
+	pixman_image_t             *shadow_image;
+	pepper_bool_t               use_shadow;
 
-    struct wl_event_source     *frame_done_timer;
+	struct wl_event_source     *frame_done_timer;
 
-    pepper_plane_t             *primary_plane;
-    /* TODO */
+	pepper_plane_t             *primary_plane;
+	/* TODO */
 };
 
 pepper_bool_t
