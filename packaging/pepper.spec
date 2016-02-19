@@ -162,6 +162,10 @@ This package includes doctor server files.
 %setup -q
 
 %build
+export CFLAGS="$(echo $CFLAGS | sed 's/-Wl,--as-needed//g')"
+export CXXFLAGS="$(echo $CXXFLAGS | sed 's/-Wl,--as-needed//g')"
+export FFLAGS="$(echo $FFLAGS | sed 's/-Wl,--as-needed//g')"
+
 %autogen \
 	--disable-x11 \
 %if "%{ENABLE_TDM}" == "0"
