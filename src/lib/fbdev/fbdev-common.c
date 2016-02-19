@@ -34,56 +34,52 @@
 
 PEPPER_API pepper_fbdev_t *
 pepper_fbdev_create(pepper_compositor_t *compositor, struct udev *udev,
-                    const char *device, const char *renderer)
+		    const char *device, const char *renderer)
 {
-    pepper_fbdev_t *fbdev;
+	pepper_fbdev_t *fbdev;
 
-    fbdev = (pepper_fbdev_t *)calloc(1, sizeof(pepper_fbdev_t));
-    if (!fbdev)
-    {
-        PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
-        goto error;
-    }
+	fbdev = (pepper_fbdev_t *)calloc(1, sizeof(pepper_fbdev_t));
+	if (!fbdev) {
+		PEPPER_ERROR("Failed to allocate memory in %s\n", __FUNCTION__);
+		goto error;
+	}
 
-    fbdev->pixman_renderer = pepper_pixman_renderer_create(compositor);
-    if (!fbdev->pixman_renderer)
-    {
-        PEPPER_ERROR("Failed to create pixman renderer.\n");
-        goto error;
-    }
+	fbdev->pixman_renderer = pepper_pixman_renderer_create(compositor);
+	if (!fbdev->pixman_renderer) {
+		PEPPER_ERROR("Failed to create pixman renderer.\n");
+		goto error;
+	}
 
-    fbdev->compositor = compositor;
-    fbdev->udev = udev;
-    pepper_list_init(&fbdev->output_list);
+	fbdev->compositor = compositor;
+	fbdev->udev = udev;
+	pepper_list_init(&fbdev->output_list);
 
-    if (!pepper_fbdev_output_create(fbdev, renderer))
-    {
-        PEPPER_ERROR("Failed to connect fbdev output in %s\n", __FUNCTION__);
-        goto error;
-    }
+	if (!pepper_fbdev_output_create(fbdev, renderer)) {
+		PEPPER_ERROR("Failed to connect fbdev output in %s\n", __FUNCTION__);
+		goto error;
+	}
 
-    return fbdev;
+	return fbdev;
 
 error:
-    if (fbdev)
-        pepper_fbdev_destroy(fbdev);
+	if (fbdev)
+		pepper_fbdev_destroy(fbdev);
 
-    return NULL;
+	return NULL;
 }
 
 PEPPER_API void
 pepper_fbdev_destroy(pepper_fbdev_t *fbdev)
 {
-    if (fbdev->pixman_renderer)
-        pepper_renderer_destroy(fbdev->pixman_renderer);
+	if (fbdev->pixman_renderer)
+		pepper_renderer_destroy(fbdev->pixman_renderer);
 
-    if (!pepper_list_empty(&fbdev->output_list))
-    {
-        fbdev_output_t *output, *tmp;
+	if (!pepper_list_empty(&fbdev->output_list)) {
+		fbdev_output_t *output, *tmp;
 
-        pepper_list_for_each_safe(output, tmp, &fbdev->output_list, link)
-            pepper_fbdev_output_destroy(output);
-    }
+		pepper_list_for_each_safe(output, tmp, &fbdev->output_list, link)
+		pepper_fbdev_output_destroy(output);
+	}
 
-    free(fbdev);
+	free(fbdev);
 }
