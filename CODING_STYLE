@@ -1,8 +1,72 @@
-set sw=4
-set sts=4
-set ts=8
-set tw=100
-set fo=tcroq
-set cindent
-set cino=\:0,(0
-set isk=a-z,A-Z,48-57,_,.,-,>
+== Coding style ==
+
+You should follow the style of the file you're editing. In general, we
+try to follow the rules below.
+
+- indent with tabs, and a tab is always 8 characters wide
+- opening braces are on the same line as the if statement;
+- no braces in an if-body with just one statement;
+- if one of the branches of an if-else codition has braces, than the
+  other branch should also have braces;
+- there is always an empty line between variable declarations and the
+  code;
+
+static int
+my_function(void)
+{
+   int a = 0;
+
+   if (a)
+      b();
+   else
+      c();
+
+   if (a) {
+      b();
+      c();
+   } else {
+      d();
+   }
+}
+
+- lines should be less than 80 characters wide;
+- when breaking lines with functions calls, the parameters are aligned
+  with the opening parenthesis;
+- when assigning a variable with the result of a function call, if the
+  line would be longer we break it around the equal '=' sign if it makes
+  sense;
+
+   long_variable_name =
+      function_with_a_really_long_name(parameter1, parameter2,
+                   parameter3, parameter4);
+
+   x = function_with_a_really_long_name(parameter1, parameter2,
+                    parameter3, parameter4);
+
+== astyle options ==
+#command line
+#astyle -A8 -t8 -p -z2 -H -k3 -W3 -xC80 -xL -n -r "./*.c"
+#or 
+#astyle -A8t8pz2Hk3W3xC80xLnrf "*.c"
+
+#default style : linux
+--style=linux
+--indent=tab=8
+
+#Padding Options
+--pad-oper
+--pad-header
+--align-pointer=name
+--align-reference=name
+
+#Formatting Options
+--max-code-length=80
+--break-after-logical
+
+#Other Options
+--suffix=none
+--recursive
+--lineend=linux
+
+== VI options ==
+TODO:
