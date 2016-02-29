@@ -101,6 +101,10 @@ typedef struct wl_buffer *(EGLAPIENTRYP PFNEGLCREATEWAYLANDBUFFERFROMIMAGEWL) (
 #define EGL_WAYLAND_Y_INVERTED_WL		0x31DB /* eglQueryWaylandBufferWL attribute */
 #endif
 
+#ifndef EGL_NATIVE_SURFACE_TIZEN
+#define EGL_NATIVE_SURFACE_TIZEN		0x32A1
+#endif
+
 /* Mesas gl2ext.h and probably Khronos upstream defined
  * GL_EXT_unpack_subimage with non _EXT suffixed GL_UNPACK_* tokens.
  * In case we're using that mess, manually define the _EXT versions
