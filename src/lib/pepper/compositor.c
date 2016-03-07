@@ -32,6 +32,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <errno.h>
 
 #include "pepper-internal.h"
 
@@ -122,7 +123,20 @@ compositor_bind_socket(pepper_compositor_t *compositor, int socket_fd,
 	if (name_size > (int)sizeof(compositor->addr.sun_path)) {
 		PEPPER_ERROR("socket path \"%s/%s\" plus null terminator"
 			     " exceeds 108 bytes\n", runtime_dir, name);
-		return PEPPER_FALSE;
+		goto err_addr;
+	}
+
+	if (stat(compositor->addr.sun_path, &buf) < 0) {
+		if (errno != ENOENT) {
+			PEPPER_ERROR("did not manage to stat file %s\n",
+				     compositor->addr.sun_path);
+			goto err_addr;
+		}
+	}
+	else if (buf.st_mode & S_IWUSR ||
+		 buf.st_mode & S_IWGRP)
+	{
+		unlink(compositor->addr.sun_path);
 	}
 
 	size = offsetof(struct sockaddr_un, sun_path) + name_size;
@@ -138,6 +152,10 @@ compositor_bind_socket(pepper_compositor_t *compositor, int socket_fd,
 	}
 
 	return PEPPER_TRUE;
+
+err_addr:
+	*compositor->addr.sun_path = 0;
+	return PEPPER_FALSE;
 }
 
 void
