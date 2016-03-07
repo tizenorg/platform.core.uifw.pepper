@@ -117,7 +117,7 @@ cleanup:
 		wl_event_source_remove(sigint);
 
 	if (tdm)
-		pepper_drm_destroy(tdm);
+		pepper_tdm_destroy(tdm);
 
 	if (input)
 		pepper_libinput_destroy(input);
