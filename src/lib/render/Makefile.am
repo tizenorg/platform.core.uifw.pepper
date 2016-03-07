@@ -8,6 +8,11 @@ libpepper_render_include_HEADERS = pepper-render.h
 libpepper_render_la_CFLAGS = $(AM_CFLAGS) $(PEPPER_RENDER_CFLAGS)
 libpepper_render_la_LIBADD = $(PEPPER_RENDER_LIBS)
 
+if HAVE_TBM
+libpepper_render_la_CFLAGS += $(TBM_CFLAGS)
+libpepper_render_la_LIBADD += $(TBM_LIBS)
+endif
+
 libpepper_render_la_SOURCES = pepper-render.h           \
 			      pepper-render-internal.h  \
 			      renderer.c

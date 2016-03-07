@@ -37,6 +37,8 @@ if test x$have_tbm = xyes; then
    PEPPER_REQUIRES="$PEPPER_REQUIRES libtbm wayland-tbm-server"
 fi
 
+AM_CONDITIONAL([HAVE_TBM], [test "x${have_tbm}" = "xyes"])
+
 PEPPER_DIR="-I\$(top_srcdir)/src/lib/pepper"
 PEPPER_LIB="\$(top_srcdir)/src/lib/pepper/libpepper.la"
 
