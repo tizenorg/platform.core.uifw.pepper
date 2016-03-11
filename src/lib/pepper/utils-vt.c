@@ -94,7 +94,7 @@ pepper_virtual_terminal_setup(int tty)
 	} else {
 		char tty_str[32];
 
-		sprintf(tty_str, "/dev/tty%d", tty);
+		snprintf(tty_str, 32, "/dev/tty%d", tty);
 		fd = open(tty_str, O_RDWR | O_CLOEXEC);
 		if (fd < 0)
 			return PEPPER_FALSE;

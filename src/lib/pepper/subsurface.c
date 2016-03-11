@@ -575,13 +575,24 @@ subsurface_destroy_children_views(pepper_subsurface_t *subsurface,
 		/* Except its own */
 		if (child && (child != subsurface)) {
 			pepper_view_t *view;
+			pepper_view_t *delete_view = NULL;
 
 			pepper_list_for_each(view, &subsurface->surface->view_list, surface_link) {
 				if (view->parent == parent_view) {
+#if 0
 					/* FIXME: need this ? */
 					pepper_view_set_surface(view, NULL);
 					pepper_view_destroy(view);
+#else
+					delete_view = view;
+#endif
 				}
+			}
+
+			/* FIXME: need this ? */
+			if (delete_view) {
+				pepper_view_set_surface(delete_view, NULL);
+				pepper_view_destroy(delete_view);
 			}
 		}
 	}
