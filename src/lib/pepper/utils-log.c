@@ -52,7 +52,7 @@ pepper_print_timestamp(void)
 
 	gettimeofday(&tv, NULL);
 
-	brokendown_time = localtime(&tv.tv_sec);
+	localtime_r(&tv.tv_sec, brokendown_time);
 	if (brokendown_time == NULL)
 		return fprintf(pepper_log_file, "[(NULL)localtime] ");
 
