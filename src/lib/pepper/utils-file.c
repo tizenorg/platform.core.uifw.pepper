@@ -84,7 +84,10 @@ pepper_create_anonymous_file(off_t size)
 	int fd;
 	int ret;
 
-	path = getenv("XDG_RUNTIME_DIR");
+	path = getenv("TIZEN_WAYLAND_SHM_DIR");
+	if (!path)
+		path = getenv("XDG_RUNTIME_DIR");
+
 	if (!path) {
 		errno = ENOENT;
 		return -1;
