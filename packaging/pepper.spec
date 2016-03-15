@@ -6,6 +6,7 @@ License:	MIT
 Group:		Graphics & UI Framework/Wayland Window System
 
 Source:		%{name}-%{version}.tar.xz
+source1001:     %name.manifest
 
 %define ENABLE_TDM	1
 
@@ -160,6 +161,7 @@ This package includes doctor server files.
 
 %prep
 %setup -q
+cp %{SOURCE1001} .
 
 %build
 export CFLAGS="$(echo $CFLAGS | sed 's/-Wl,--as-needed//g')"
@@ -200,10 +202,12 @@ make %{?_smp_mflags}
 %postun wayland -p /sbin/ldconfig
 
 %files -n %{name}
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper.so.*
 
 %files devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper.h
 %{_includedir}/pepper/pepper-utils.h
@@ -213,21 +217,25 @@ make %{?_smp_mflags}
 %{_libdir}/libpepper.so
 
 %files libinput
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-libinput.so.*
 
 %files libinput-devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-libinput.h
 %{_libdir}/pkgconfig/pepper-libinput.pc
 %{_libdir}/libpepper-libinput.so
 
 %files desktop-shell
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-desktop-shell.so.*
 %{_bindir}/shell-client
 
 %files desktop-shell-devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-desktop-shell.h
 %{_includedir}/pepper/pepper-shell-client-protocol.h
@@ -236,10 +244,12 @@ make %{?_smp_mflags}
 %{_libdir}/libpepper-desktop-shell.so
 
 %files render
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-render.so.*
 
 %files render-devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-render.h
 %{_includedir}/pepper/pepper-*-renderer.h
@@ -247,10 +257,12 @@ make %{?_smp_mflags}
 %{_libdir}/libpepper-render.so
 
 %files drm
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-drm.so.*
 
 %files drm-devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-drm.h
 %{_libdir}/pkgconfig/pepper-drm.pc
@@ -258,10 +270,12 @@ make %{?_smp_mflags}
 
 %if "%{ENABLE_TDM}" == "1"
 %files tdm
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-tdm.so.*
 
 %files tdm-devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-tdm.h
 %{_libdir}/pkgconfig/pepper-tdm.pc
@@ -269,25 +283,30 @@ make %{?_smp_mflags}
 %endif
 
 %files fbdev
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-fbdev.so.*
 
 %files fbdev-devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-fbdev.h
 %{_libdir}/pkgconfig/pepper-fbdev.pc
 %{_libdir}/libpepper-fbdev.so
 
 %files wayland
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_libdir}/libpepper-wayland.so.*
 
 %files wayland-devel
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_includedir}/pepper/pepper-wayland.h
 %{_libdir}/pkgconfig/pepper-wayland.pc
 %{_libdir}/libpepper-wayland.so
 
 %files doctor
+%manifest %{name}.manifest
 %defattr(-,root,root,-)
 %{_bindir}/doctor
