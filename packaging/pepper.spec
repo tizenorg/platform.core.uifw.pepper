@@ -173,7 +173,8 @@ export FFLAGS="$(echo $FFLAGS | sed 's/-Wl,--as-needed//g')"
 %if "%{ENABLE_TDM}" == "0"
 	--disable-tdm \
 %endif
-	--enable-socket-fd=yes
+	--enable-socket-fd=yes \
+	--disable-document
 
 make %{?_smp_mflags}
 
