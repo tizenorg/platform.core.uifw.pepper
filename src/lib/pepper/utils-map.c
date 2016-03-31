@@ -97,7 +97,7 @@ pepper_map_int32_init(pepper_map_t *map, int bucket_bits, void *buckets)
 static int
 int64_hash(const void *key, int key_length)
 {
-	return pepper_hash64((uint64_t)key);
+	return pepper_hash64((uint64_t)(uintptr_t)key);
 }
 
 static int
