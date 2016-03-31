@@ -47,7 +47,7 @@ static int
 pepper_print_timestamp(void)
 {
 	struct timeval tv;
-	struct tm *brokendown_time;
+	struct tm *brokendown_time = NULL;
 	char string[128];
 
 	gettimeofday(&tv, NULL);
