@@ -80,7 +80,7 @@ wayland_shm_buffer_create(wayland_output_t *output)
 	}
 
 	buffer->pixels = mmap(NULL, buffer->size, PROT_READ | PROT_WRITE, MAP_SHARED,
-			      fd, 0);
+						  fd, 0);
 	if (!buffer->pixels) {
 		PEPPER_ERROR("mmap() failed for fd=%d\n", fd);
 		goto error;
@@ -88,14 +88,14 @@ wayland_shm_buffer_create(wayland_output_t *output)
 
 	pool = wl_shm_create_pool(output->conn->shm, fd, buffer->size);
 	buffer->buffer = wl_shm_pool_create_buffer(pool, 0, buffer->w, buffer->h,
-			 buffer->stride, WL_SHM_FORMAT_ARGB8888);
+					 buffer->stride, WL_SHM_FORMAT_ARGB8888);
 	wl_buffer_add_listener(buffer->buffer, &buffer_listener, buffer);
 	wl_shm_pool_destroy(pool);
 	close(fd);
 
 	buffer->target = pepper_pixman_renderer_create_target(PEPPER_FORMAT_ARGB8888,
-			 buffer->pixels, buffer->stride,
-			 buffer->w, buffer->h);
+					 buffer->pixels, buffer->stride,
+					 buffer->w, buffer->h);
 
 	if (!buffer->target)
 		goto error;

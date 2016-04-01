@@ -38,13 +38,13 @@ struct display {
 
 static void
 handle_global(void *data, struct wl_registry *registry, uint32_t id,
-	      const char *interface, uint32_t version)
+			  const char *interface, uint32_t version)
 {
 	struct display *display = data;
 
 	if (strcmp(interface, "wl_compositor") == 0)
 		display->compositor = wl_registry_bind(registry, id, &wl_compositor_interface,
-						       1);
+											   1);
 	else if (strcmp(interface, "wl_shm") == 0)
 		display->shm = wl_registry_bind(registry, id, &wl_shm_interface, 1);
 	else if (strcmp(interface, "pepper_shell") == 0)
@@ -77,7 +77,7 @@ static const struct wl_callback_listener frame_listener = {
 
 static int
 create_shm_buffer(struct display *display, struct buffer *buffer, int w, int h,
-		  uint32_t format)
+				  uint32_t format)
 {
 	struct wl_shm_pool *pool;
 	int                 fd, size, stride;
@@ -122,7 +122,7 @@ init_cursor(struct cursor *cursor, struct display *display)
 	}
 
 	if (!create_shm_buffer(display, &cursor->buffers[0],
-			       CURSOR_WIDTH, CURSOR_HEIGHT, WL_SHM_FORMAT_XRGB8888)) {
+						   CURSOR_WIDTH, CURSOR_HEIGHT, WL_SHM_FORMAT_XRGB8888)) {
 		fprintf(stderr, "create_shm_buffer() failed.\n");
 		return -1;
 	}
@@ -133,7 +133,7 @@ init_cursor(struct cursor *cursor, struct display *display)
 	/* Update the surface with the initial buffer. */
 	wl_surface_attach(cursor->surface, cursor->buffers[0].buffer, 0, 0);
 	wl_surface_damage(cursor->surface, 0, 0, cursor->buffers[0].w,
-			  cursor->buffers[0].h);
+					  cursor->buffers[0].h);
 	cursor->frame_callback = wl_surface_frame(cursor->surface);
 	wl_callback_add_listener(cursor->frame_callback, &frame_listener, cursor);
 	wl_surface_commit(cursor->surface);

@@ -32,7 +32,7 @@ static void
 buffer_resource_destroy_handler(struct wl_listener *listener, void *data)
 {
 	pepper_buffer_t *buffer = pepper_container_of(listener, buffer,
-				  resource_destroy_listener);
+							  resource_destroy_listener);
 	pepper_object_fini(&buffer->base);
 	free(buffer);
 }
@@ -44,13 +44,13 @@ pepper_buffer_from_resource(struct wl_resource *resource)
 	struct wl_listener  *listener;
 
 	listener = wl_resource_get_destroy_listener(resource,
-			buffer_resource_destroy_handler);
+			   buffer_resource_destroy_handler);
 
 	if (listener)
 		return pepper_container_of(listener, buffer, resource_destroy_listener);
 
 	buffer = (pepper_buffer_t *)pepper_object_alloc(PEPPER_OBJECT_BUFFER,
-			sizeof(pepper_buffer_t));
+			 sizeof(pepper_buffer_t));
 	PEPPER_CHECK(buffer, return NULL, "pepper_object_alloc() failed.\n");
 
 	buffer->resource = resource;

@@ -205,8 +205,8 @@ typedef struct pepper_event_listener    pepper_event_listener_t;
  * @param data      data passed when adding the event listener.
  */
 typedef void (*pepper_event_callback_t)(pepper_event_listener_t *listener,
-					pepper_object_t *object,
-					uint32_t id, void *info, void *data);
+										pepper_object_t *object,
+										uint32_t id, void *info, void *data);
 
 /**
  * @typedef pepper_input_event_t
@@ -802,23 +802,23 @@ pepper_object_get_type(pepper_object_t *object);
 
 PEPPER_API void
 pepper_object_set_user_data(pepper_object_t *object, const void *key,
-			    void *data,
-			    pepper_free_func_t free_func);
+							void *data,
+							pepper_free_func_t free_func);
 
 PEPPER_API void *
 pepper_object_get_user_data(pepper_object_t *object, const void *key);
 
 PEPPER_API pepper_event_listener_t *
 pepper_object_add_event_listener(pepper_object_t *object, uint32_t id,
-				 int priority,
-				 pepper_event_callback_t callback, void *data);
+								 int priority,
+								 pepper_event_callback_t callback, void *data);
 
 PEPPER_API void
 pepper_event_listener_remove(pepper_event_listener_t *listener);
 
 PEPPER_API void
 pepper_event_listener_set_priority(pepper_event_listener_t *listener,
-				   int priority);
+								   int priority);
 
 PEPPER_API void
 pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info);
@@ -864,14 +864,14 @@ pepper_compositor_get_input_device_list(pepper_compositor_t *compositor);
 
 PEPPER_API pepper_view_t *
 pepper_compositor_pick_view(pepper_compositor_t *compositor,
-			    double x, double y, double *vx, double *vy);
+							double x, double y, double *vx, double *vy);
 
 PEPPER_API pepper_bool_t
 pepper_compositor_set_clock_id(pepper_compositor_t *compositor, clockid_t id);
 
 PEPPER_API pepper_bool_t
 pepper_compositor_get_time(pepper_compositor_t *compositor,
-			   struct timespec *ts);
+						   struct timespec *ts);
 
 PEPPER_API void
 pepper_output_destroy(pepper_output_t *output);
@@ -896,25 +896,25 @@ pepper_output_get_mode_count(pepper_output_t *output);
 
 PEPPER_API void
 pepper_output_get_mode(pepper_output_t *output, int index,
-		       pepper_output_mode_t *mode);
+					   pepper_output_mode_t *mode);
 
 PEPPER_API const pepper_output_mode_t *
 pepper_output_get_current_mode(pepper_output_t *output);
 
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output,
-		       const pepper_output_mode_t *mode);
+					   const pepper_output_mode_t *mode);
 
 PEPPER_API const char *
 pepper_output_get_name(pepper_output_t *output);
 
 PEPPER_API pepper_output_t *
 pepper_compositor_find_output(pepper_compositor_t *compositor,
-			      const char *name);
+							  const char *name);
 
 PEPPER_API pepper_seat_t *
 pepper_compositor_add_seat(pepper_compositor_t *compositor,
-			   const char *seat_name);
+						   const char *seat_name);
 
 PEPPER_API void
 pepper_seat_destroy(pepper_seat_t *seat);
@@ -939,15 +939,15 @@ pepper_seat_get_touch(pepper_seat_t *seat);
 
 PEPPER_API void
 pepper_seat_add_input_device(pepper_seat_t *seat,
-			     pepper_input_device_t *device);
+							 pepper_input_device_t *device);
 
 PEPPER_API void
 pepper_seat_remove_input_device(pepper_seat_t *seat,
-				pepper_input_device_t *device);
+								pepper_input_device_t *device);
 
 PEPPER_API const char *
 pepper_input_device_get_property(pepper_input_device_t *device,
-				 const char *key);
+								 const char *key);
 
 PEPPER_API pepper_compositor_t *
 pepper_input_device_get_compositor(pepper_input_device_t *device);
@@ -963,7 +963,7 @@ struct pepper_pointer_grab {
 	 * @param x         movement in y direction on global space
 	 **/
 	void (*motion)(pepper_pointer_t *pointer, void *data, uint32_t time, double x,
-		       double y);
+				   double y);
 
 	/**
 	 * Handler for pointer button event
@@ -975,8 +975,8 @@ struct pepper_pointer_grab {
 	 * @param state     button state (@see pepper_button_state)
 	 **/
 	void (*button)(pepper_pointer_t *pointer, void *data, uint32_t time,
-		       uint32_t button,
-		       uint32_t state);
+				   uint32_t button,
+				   uint32_t state);
 
 	/**
 	 * Handler for pointer axis event
@@ -988,7 +988,7 @@ struct pepper_pointer_grab {
 	 * @param value     amount of axis movement
 	 **/
 	void (*axis)(pepper_pointer_t *pointer, void *data, uint32_t time,
-		     uint32_t axis, double value);
+				 uint32_t axis, double value);
 
 	/**
 	 * Handler for the grab cancel
@@ -1013,11 +1013,11 @@ pepper_pointer_get_seat(pepper_pointer_t *pointer);
 
 PEPPER_API pepper_bool_t
 pepper_pointer_set_clamp(pepper_pointer_t *pointer, double x0, double y0,
-			 double x1, double y1);
+						 double x1, double y1);
 
 PEPPER_API void
 pepper_pointer_get_clamp(pepper_pointer_t *pointer, double *x0, double *y0,
-			 double *x1, double *y1);
+						 double *x1, double *y1);
 
 PEPPER_API void
 pepper_pointer_set_velocity(pepper_pointer_t *pointer, double vx, double vy);
@@ -1039,23 +1039,23 @@ pepper_pointer_send_leave(pepper_pointer_t *pointer, pepper_view_t *view);
 
 PEPPER_API void
 pepper_pointer_send_enter(pepper_pointer_t *pointer, pepper_view_t *view,
-			  double x, double y);
+						  double x, double y);
 
 PEPPER_API void
 pepper_pointer_send_motion(pepper_pointer_t *pointer, pepper_view_t *view,
-			   uint32_t time, double x, double y);
+						   uint32_t time, double x, double y);
 
 PEPPER_API void
 pepper_pointer_send_button(pepper_pointer_t *pointer, pepper_view_t *view,
-			   uint32_t time, uint32_t button, uint32_t state);
+						   uint32_t time, uint32_t button, uint32_t state);
 
 PEPPER_API void
 pepper_pointer_send_axis(pepper_pointer_t *pointer, pepper_view_t *view,
-			 uint32_t time, uint32_t axis, double value);
+						 uint32_t time, uint32_t axis, double value);
 
 PEPPER_API void
 pepper_pointer_set_grab(pepper_pointer_t *pointer,
-			const pepper_pointer_grab_t *grab, void *data);
+						const pepper_pointer_grab_t *grab, void *data);
 
 PEPPER_API const pepper_pointer_grab_t *
 pepper_pointer_get_grab(pepper_pointer_t *pointer);
@@ -1081,8 +1081,8 @@ struct pepper_keyboard_grab {
 	 * @param state     state flag (ex. WL_KEYBOARD_KEY_STATE_PRESSED)
 	 **/
 	void (*key)(pepper_keyboard_t *keyboard, void *data, uint32_t time,
-		    uint32_t key,
-		    uint32_t state);
+				uint32_t key,
+				uint32_t state);
 
 	/**
 	 * Handler for keyboard modifier event
@@ -1095,8 +1095,8 @@ struct pepper_keyboard_grab {
 	 * @param group             (none)
 	 **/
 	void (*modifiers)(pepper_keyboard_t *keyboard, void *data,
-			  uint32_t mods_depressed,
-			  uint32_t mods_latched, uint32_t mods_locked, uint32_t group);
+					  uint32_t mods_depressed,
+					  uint32_t mods_latched, uint32_t mods_locked, uint32_t group);
 
 	/**
 	 * Handler for grab cancel
@@ -1130,16 +1130,16 @@ pepper_keyboard_send_enter(pepper_keyboard_t *keyboard, pepper_view_t *view);
 
 PEPPER_API void
 pepper_keyboard_send_key(pepper_keyboard_t *keyboard, pepper_view_t *view,
-			 uint32_t time, uint32_t key, uint32_t state);
+						 uint32_t time, uint32_t key, uint32_t state);
 
 PEPPER_API void
 pepper_keyboard_send_modifiers(pepper_keyboard_t *keyboard, pepper_view_t *view,
-			       uint32_t depressed, uint32_t latched,
-			       uint32_t locked, uint32_t group);
+							   uint32_t depressed, uint32_t latched,
+							   uint32_t locked, uint32_t group);
 
 PEPPER_API void
 pepper_keyboard_set_grab(pepper_keyboard_t *keyboard,
-			 const pepper_keyboard_grab_t *grab, void *data);
+						 const pepper_keyboard_grab_t *grab, void *data);
 
 PEPPER_API const pepper_keyboard_grab_t *
 pepper_keyboard_get_grab(pepper_keyboard_t *keyboard);
@@ -1149,15 +1149,15 @@ pepper_keyboard_get_grab_data(pepper_keyboard_t *keyboard);
 
 PEPPER_API void
 pepper_keyboard_set_keymap(pepper_keyboard_t *keyboard,
-			   struct xkb_keymap *keymap);
+						   struct xkb_keymap *keymap);
 
 /* Touch. */
 struct pepper_touch_grab {
 	void    (*down)(pepper_touch_t *touch, void *data, uint32_t time, int32_t id,
-			double x, double y);
+					double x, double y);
 	void    (*up)(pepper_touch_t *touch, void *data, uint32_t time, uint32_t id);
 	void    (*motion)(pepper_touch_t *touch, void *data,
-			  uint32_t time, uint32_t id, double x, double y);
+					  uint32_t time, uint32_t id, double x, double y);
 	void    (*frame)(pepper_touch_t *touch, void *data);
 	void    (*cancel)(pepper_touch_t *touch, void *data);
 };
@@ -1179,30 +1179,30 @@ pepper_touch_remove_point(pepper_touch_t *touch, uint32_t id);
 
 PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, uint32_t id,
-		       pepper_view_t *focus);
+					   pepper_view_t *focus);
 
 PEPPER_API pepper_view_t *
 pepper_touch_get_focus(pepper_touch_t *touch, uint32_t id);
 
 PEPPER_API pepper_bool_t
 pepper_touch_get_position(pepper_touch_t *touch, uint32_t id, double *x,
-			  double *y);
+						  double *y);
 
 PEPPER_API pepper_bool_t
 pepper_touch_set_position(pepper_touch_t *touch, uint32_t id, double x,
-			  double y);
+						  double y);
 
 PEPPER_API void
 pepper_touch_send_down(pepper_touch_t *touch, pepper_view_t *view,
-		       uint32_t time, uint32_t id, double x, double y);
+					   uint32_t time, uint32_t id, double x, double y);
 
 PEPPER_API void
 pepper_touch_send_up(pepper_touch_t *touch, pepper_view_t *view, uint32_t time,
-		     uint32_t id);
+					 uint32_t id);
 
 PEPPER_API void
 pepper_touch_send_motion(pepper_touch_t *touch, pepper_view_t *view,
-			 uint32_t time, uint32_t id, double x, double y);
+						 uint32_t time, uint32_t id, double x, double y);
 
 PEPPER_API void
 pepper_touch_send_frame(pepper_touch_t *touch, pepper_view_t *view);
@@ -1212,7 +1212,7 @@ pepper_touch_send_cancel(pepper_touch_t *touch, pepper_view_t *view);
 
 PEPPER_API void
 pepper_touch_set_grab(pepper_touch_t *touch, const pepper_touch_grab_t *grab,
-		      void *data);
+					  void *data);
 
 PEPPER_API const pepper_touch_grab_t *
 pepper_touch_get_grab(pepper_touch_t *touch);
@@ -1238,7 +1238,7 @@ pepper_surface_get_buffer(pepper_surface_t *surface);
 
 PEPPER_API void
 pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x,
-				 int32_t *y);
+								 int32_t *y);
 
 PEPPER_API int32_t
 pepper_surface_get_buffer_scale(pepper_surface_t *surface);
@@ -1307,11 +1307,11 @@ pepper_view_get_transform_inherit(pepper_view_t *view);
 
 PEPPER_API pepper_bool_t
 pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below,
-			pepper_bool_t subtree);
+						pepper_bool_t subtree);
 
 PEPPER_API pepper_bool_t
 pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above,
-			pepper_bool_t subtree);
+						pepper_bool_t subtree);
 
 PEPPER_API void
 pepper_view_stack_top(pepper_view_t *view, pepper_bool_t subtree);
@@ -1363,20 +1363,20 @@ pepper_view_is_opaque(pepper_view_t *view);
 
 PEPPER_API void
 pepper_view_get_local_coordinate(pepper_view_t *view, double gx, double gy,
-				 double *lx, double *ly);
+								 double *lx, double *ly);
 
 PEPPER_API void
 pepper_view_get_global_coordinate(pepper_view_t *view, double lx, double ly,
-				  double *gx, double *gy);
+								  double *gx, double *gy);
 
 /* Misc */
 PEPPER_API void
 pepper_pixman_region_global_to_output(pixman_region32_t *region,
-				      pepper_output_t *output);
+									  pepper_output_t *output);
 
 PEPPER_API void
 pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
-				     double sx, double sy, double *bx, double *by);
+									 double sx, double sy, double *bx, double *by);
 
 #ifdef __cplusplus
 }

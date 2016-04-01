@@ -63,7 +63,7 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 
 	wl_list_insert(&seat->resource_list, wl_resource_get_link(resource));
 	wl_resource_set_implementation(resource, &seat_interface, data,
-				       unbind_resource);
+								   unbind_resource);
 
 	wl_seat_send_capabilities(resource, seat->caps);
 
@@ -83,7 +83,7 @@ bind_seat(struct wl_client *client, void *data, uint32_t version, uint32_t id)
  */
 PEPPER_API pepper_seat_t *
 pepper_compositor_add_seat(pepper_compositor_t *compositor,
-			   const char *seat_name)
+						   const char *seat_name)
 {
 	pepper_seat_t  *seat;
 
@@ -92,7 +92,7 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
 	seat = (pepper_seat_t *)pepper_object_alloc(PEPPER_OBJECT_SEAT,
 			sizeof(pepper_seat_t));
 	PEPPER_CHECK(seat, return NULL, "Failed to allocate memory in %s\n",
-		     __FUNCTION__);
+				 __FUNCTION__);
 
 	pepper_list_init(&seat->link);
 	wl_list_init(&seat->resource_list);
@@ -102,7 +102,7 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
 	PEPPER_CHECK(seat->name, goto error, "strdup() failed.\n");
 
 	seat->global = wl_global_create(compositor->display, &wl_seat_interface, 4,
-					seat, bind_seat);
+									seat, bind_seat);
 	PEPPER_CHECK(seat->global, goto error, "wl_global_create() failed.\n");
 
 	seat->compositor = compositor;
@@ -110,7 +110,7 @@ pepper_compositor_add_seat(pepper_compositor_t *compositor,
 	seat->link.item = seat;
 	pepper_list_insert(&compositor->seat_list, &seat->link);
 	pepper_object_emit_event(&seat->compositor->base,
-				 PEPPER_EVENT_COMPOSITOR_SEAT_ADD, seat);
+							 PEPPER_EVENT_COMPOSITOR_SEAT_ADD, seat);
 
 	return seat;
 
@@ -240,10 +240,10 @@ seat_update_pointer_cap(pepper_seat_t *seat)
 	if ((seat->caps & WL_SEAT_CAPABILITY_POINTER) && !seat->pointer) {
 		seat->pointer = pepper_pointer_create(seat);
 		pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_ADD,
-					 seat->pointer);
+								 seat->pointer);
 	} else if (!(seat->caps & WL_SEAT_CAPABILITY_POINTER) && seat->pointer) {
 		pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_POINTER_REMOVE,
-					 seat->pointer);
+								 seat->pointer);
 		pepper_pointer_destroy(seat->pointer);
 		seat->pointer = NULL;
 	}
@@ -255,10 +255,10 @@ seat_update_keyboard_cap(pepper_seat_t *seat)
 	if ((seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && !seat->keyboard) {
 		seat->keyboard = pepper_keyboard_create(seat);
 		pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_ADD,
-					 seat->keyboard);
+								 seat->keyboard);
 	} else if (!(seat->caps & WL_SEAT_CAPABILITY_KEYBOARD) && seat->keyboard) {
 		pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_KEYBOARD_REMOVE,
-					 seat->keyboard);
+								 seat->keyboard);
 		pepper_keyboard_destroy(seat->keyboard);
 		seat->keyboard = NULL;
 	}
@@ -272,7 +272,7 @@ seat_update_touch_cap(pepper_seat_t *seat)
 		pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_ADD, seat->touch);
 	} else if (!(seat->caps & WL_SEAT_CAPABILITY_TOUCH) && seat->touch) {
 		pepper_object_emit_event(&seat->base, PEPPER_EVENT_SEAT_TOUCH_REMOVE,
-					 seat->touch);
+								 seat->touch);
 		pepper_touch_destroy(seat->touch);
 		seat->touch = NULL;
 	}
@@ -303,8 +303,8 @@ seat_update_caps(pepper_seat_t *seat)
 
 static void
 seat_handle_device_event(pepper_event_listener_t *listener,
-			 pepper_object_t *object,
-			 uint32_t id, void *info, void *data)
+						 pepper_object_t *object,
+						 uint32_t id, void *info, void *data)
 {
 	pepper_input_device_entry_t *entry = data;
 	pepper_seat_t               *seat = entry->seat;
@@ -364,8 +364,8 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
 	seat_update_caps(seat);
 
 	entry->listener = pepper_object_add_event_listener(&device->base,
-			  PEPPER_EVENT_ALL, 0,
-			  seat_handle_device_event, entry);
+					  PEPPER_EVENT_ALL, 0,
+					  seat_handle_device_event, entry);
 }
 
 /**
@@ -380,7 +380,7 @@ pepper_seat_add_input_device(pepper_seat_t *seat, pepper_input_device_t *device)
  */
 PEPPER_API void
 pepper_seat_remove_input_device(pepper_seat_t *seat,
-				pepper_input_device_t *device)
+								pepper_input_device_t *device)
 {
 	pepper_input_device_entry_t *entry;
 
@@ -409,13 +409,13 @@ pepper_seat_remove_input_device(pepper_seat_t *seat,
  */
 PEPPER_API pepper_input_device_t *
 pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
-			   const pepper_input_device_backend_t *backend, void *data)
+						   const pepper_input_device_backend_t *backend, void *data)
 {
 	pepper_input_device_t  *device;
 
 	device = (pepper_input_device_t *)pepper_object_alloc(
-			 PEPPER_OBJECT_INPUT_DEVICE,
-			 sizeof(pepper_input_device_t));
+				 PEPPER_OBJECT_INPUT_DEVICE,
+				 sizeof(pepper_input_device_t));
 	PEPPER_CHECK(device, return NULL, "pepper_object_alloc() failed.\n");
 
 	device->compositor = compositor;
@@ -426,8 +426,8 @@ pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
 
 	pepper_list_insert(&compositor->input_device_list, &device->link);
 	pepper_object_emit_event(&compositor->base,
-				 PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
-				 device);
+							 PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
+							 device);
 	return device;
 }
 
@@ -442,7 +442,7 @@ PEPPER_API void
 pepper_input_device_destroy(pepper_input_device_t *device)
 {
 	pepper_object_emit_event(&device->compositor->base,
-				 PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE, device);
+							 PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_REMOVE, device);
 	pepper_list_remove(&device->link);
 	pepper_object_fini(&device->base);
 	free(device);

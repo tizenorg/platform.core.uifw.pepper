@@ -132,7 +132,7 @@ struct shell_surface {
 
 	struct {
 		double               dx,
-				     dy;     /* difference between pointer position and view position */
+							 dy;     /* difference between pointer position and view position */
 	} move;
 
 	struct {
@@ -204,14 +204,14 @@ struct shell_surface {
 
 shell_client_t *
 shell_client_create(desktop_shell_t *shell, struct wl_client *client,
-		    const struct wl_interface *interface, const void *implementation,
-		    uint32_t version, uint32_t id);
+					const struct wl_interface *interface, const void *implementation,
+					uint32_t version, uint32_t id);
 
 shell_surface_t *
 shell_surface_create(shell_client_t *shell, pepper_surface_t *surface,
-		     struct wl_client *client,
-		     const struct wl_interface *interface,
-		     const void *implemenetation, uint32_t version, uint32_t id);
+					 struct wl_client *client,
+					 const struct wl_interface *interface,
+					 const void *implemenetation, uint32_t version, uint32_t id);
 
 void
 shell_surface_ping(shell_surface_t *shsurf);
@@ -227,7 +227,7 @@ remove_ping_timer(shell_client_t *shell_client);
 
 void
 shell_surface_set_next_type(shell_surface_t *shsurf,
-			    shell_surface_type_t new_type);
+							shell_surface_type_t new_type);
 
 void
 shell_surface_set_parent(shell_surface_t *shsurf, pepper_surface_t *parent);
@@ -253,19 +253,19 @@ shell_surface_set_toplevel(shell_surface_t *shsurf);
 
 void
 shell_surface_set_popup(shell_surface_t *shsurf, pepper_seat_t *seat,
-			pepper_surface_t *parent,
-			double x, double y, uint32_t flags, uint32_t serial);
+						pepper_surface_t *parent,
+						double x, double y, uint32_t flags, uint32_t serial);
 
 void
 shell_surface_set_transient(shell_surface_t *shsurf, pepper_surface_t *parent,
-			    double x, double y, uint32_t flags);
+							double x, double y, uint32_t flags);
 
 void
 shell_surface_ack_configure(shell_surface_t *shsurf, uint32_t serial);
 
 void
 shell_surface_set_geometry(shell_surface_t *shsurf, double x, double y,
-			   int32_t w, int32_t h);
+						   int32_t w, int32_t h);
 
 void
 shell_surface_set_maximized(shell_surface_t *shsurf, pepper_output_t *output);
@@ -275,7 +275,7 @@ shell_surface_unset_maximized(shell_surface_t *shsurf);
 
 void
 shell_surface_set_fullscreen(shell_surface_t *shsurf, pepper_output_t *output,
-			     uint32_t method, uint32_t framerate);
+							 uint32_t method, uint32_t framerate);
 
 void
 shell_surface_unset_fullscreen(shell_surface_t *shsurf);
@@ -285,7 +285,7 @@ shell_surface_set_minimized(shell_surface_t *shsurf);
 
 void
 shell_get_output_workarea(desktop_shell_t *shell, pepper_output_t *output,
-			  pixman_rectangle32_t  *area);
+						  pixman_rectangle32_t  *area);
 
 
 pepper_bool_t
@@ -302,11 +302,11 @@ fini_xdg_shell(desktop_shell_t *shell);
 
 void
 shell_surface_move(shell_surface_t *shsurf, pepper_seat_t *seat,
-		   uint32_t serial);
+				   uint32_t serial);
 
 void
 shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat,
-		     uint32_t serial, uint32_t edges);
+					 uint32_t serial, uint32_t edges);
 
 void
 shell_surface_set_position(shell_surface_t *shsurf, double x, double y);

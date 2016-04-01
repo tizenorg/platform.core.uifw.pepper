@@ -38,8 +38,8 @@
 
 static void
 compositor_create_surface(struct wl_client   *client,
-			  struct wl_resource *resource,
-			  uint32_t            id)
+						  struct wl_resource *resource,
+						  uint32_t            id)
 {
 	pepper_compositor_t *compositor = wl_resource_get_user_data(resource);
 
@@ -49,8 +49,8 @@ compositor_create_surface(struct wl_client   *client,
 
 static void
 compositor_create_region(struct wl_client   *client,
-			 struct wl_resource *resource,
-			 uint32_t            id)
+						 struct wl_resource *resource,
+						 uint32_t            id)
 {
 	pepper_compositor_t *compositor = wl_resource_get_user_data(resource);
 
@@ -71,9 +71,9 @@ unbind_resource(struct wl_resource *resource)
 
 static void
 compositor_bind(struct wl_client *client,
-		void             *data,
-		uint32_t          version,
-		uint32_t          id)
+				void             *data,
+				uint32_t          version,
+				uint32_t          id)
 {
 	pepper_compositor_t *compositor = (pepper_compositor_t *)data;
 	struct wl_resource  *resource;
@@ -88,12 +88,12 @@ compositor_bind(struct wl_client *client,
 
 	wl_list_insert(&compositor->resource_list, wl_resource_get_link(resource));
 	wl_resource_set_implementation(resource, &compositor_interface, compositor,
-				       unbind_resource);
+								   unbind_resource);
 }
 
 static pepper_bool_t
 compositor_bind_socket(pepper_compositor_t *compositor, int socket_fd,
-		       const char *name)
+					   const char *name)
 {
 	struct stat buf;
 	socklen_t size, name_size;
@@ -107,8 +107,8 @@ compositor_bind_socket(pepper_compositor_t *compositor, int socket_fd,
 	PEPPER_CHECK((-1 != flags), return PEPPER_FALSE, "fcntl(F_GETFD) failed\n");
 
 	PEPPER_CHECK((-1 != fcntl(socket_fd, F_SETFD, flags | FD_CLOEXEC)),
-		     return PEPPER_FALSE,
-		     "fcntl(F_SETFD) failed\n");
+				 return PEPPER_FALSE,
+				 "fcntl(F_SETFD) failed\n");
 
 	runtime_dir = getenv("XDG_RUNTIME_DIR");
 	if (!runtime_dir) {
@@ -118,24 +118,22 @@ compositor_bind_socket(pepper_compositor_t *compositor, int socket_fd,
 
 	compositor->addr.sun_family = AF_LOCAL;
 	name_size = snprintf(compositor->addr.sun_path,
-			     sizeof compositor->addr.sun_path,
-			     "%s/%s", runtime_dir, name) + 1;
+						 sizeof compositor->addr.sun_path,
+						 "%s/%s", runtime_dir, name) + 1;
 	if (name_size > (int)sizeof(compositor->addr.sun_path)) {
 		PEPPER_ERROR("socket path \"%s/%s\" plus null terminator"
-			     " exceeds 108 bytes\n", runtime_dir, name);
+					 " exceeds 108 bytes\n", runtime_dir, name);
 		goto err_addr;
 	}
 
 	if (stat(compositor->addr.sun_path, &buf) < 0) {
 		if (errno != ENOENT) {
 			PEPPER_ERROR("did not manage to stat file %s\n",
-				     compositor->addr.sun_path);
+						 compositor->addr.sun_path);
 			goto err_addr;
 		}
-	}
-	else if (buf.st_mode & S_IWUSR ||
-		 buf.st_mode & S_IWGRP)
-	{
+	} else if (buf.st_mode & S_IWUSR ||
+			   buf.st_mode & S_IWGRP) {
 		unlink(compositor->addr.sun_path);
 	}
 
@@ -192,8 +190,8 @@ pepper_compositor_create_fd(const char *socket_name, int fd)
 	pepper_compositor_t *compositor;
 
 	compositor = (pepper_compositor_t *)pepper_object_alloc(
-			     PEPPER_OBJECT_COMPOSITOR,
-			     sizeof(pepper_compositor_t));
+					 PEPPER_OBJECT_COMPOSITOR,
+					 sizeof(pepper_compositor_t));
 	PEPPER_CHECK(compositor, goto error, "pepper_object_alloc() failed.\n");
 
 	wl_list_init(&compositor->resource_list);
@@ -211,21 +209,21 @@ pepper_compositor_create_fd(const char *socket_name, int fd)
 	if (socket_name) {
 		if (fd > 0) {
 			PEPPER_CHECK(PEPPER_TRUE == compositor_bind_socket(compositor, fd, socket_name),
-				     goto error,
-				     "compositor_bind_socket()");
+						 goto error,
+						 "compositor_bind_socket()");
 			ret = wl_display_add_socket_fd(compositor->display, fd);
 			PEPPER_CHECK(ret == 0, goto error,
-				     "wl_display_add_socket_fd(name = %s, fd = %d) failed.\n", socket_name, fd);
+						 "wl_display_add_socket_fd(name = %s, fd = %d) failed.\n", socket_name, fd);
 		} else {
 			ret = wl_display_add_socket(compositor->display, socket_name);
 			PEPPER_CHECK(ret == 0, goto error, "wl_display_add_socket(name = %s) failed.\n",
-				     socket_name);
+						 socket_name);
 		}
 	} else {
 		if (fd > 0) {
 			ret = wl_display_add_socket_fd(compositor->display, fd);
 			PEPPER_CHECK(ret == 0, goto error,
-				     "wl_display_add_socket_fd(name = %s, fd = %d) failed.\n", socket_name, fd);
+						 "wl_display_add_socket_fd(name = %s, fd = %d) failed.\n", socket_name, fd);
 		} else {
 			socket_name = wl_display_add_socket_auto(compositor->display);
 			PEPPER_CHECK(socket_name, goto error, "wl_display_add_socket_auto() failed.\n");
@@ -241,13 +239,13 @@ pepper_compositor_create_fd(const char *socket_name, int fd)
 	PEPPER_CHECK(ret == 0, goto error, "wl_display_init_shm() failed.\n");
 
 	compositor->global = wl_global_create(compositor->display,
-					      &wl_compositor_interface,
-					      3, compositor, compositor_bind);
+										  &wl_compositor_interface,
+										  3, compositor, compositor_bind);
 	PEPPER_CHECK(compositor->global, goto error, "wl_global_create() failed.\n");
 
 	compositor->subcomp = pepper_subcompositor_create(compositor);
 	PEPPER_CHECK(compositor->subcomp, goto error,
-		     "pepper_subcompositor_create() failed.\n");
+				 "pepper_subcompositor_create() failed.\n");
 
 	compositor->clock_id = CLOCK_MONOTONIC;
 	return compositor;
@@ -293,7 +291,7 @@ pepper_compositor_destroy(pepper_compositor_t *compositor)
 	pepper_region_t         *region, *next_region;
 
 	pepper_list_for_each_safe(surface, next_surface, &compositor->surface_list,
-				  link)
+							  link)
 	pepper_surface_destroy(surface);
 
 	pepper_list_for_each_safe(region, next_region, &compositor->region_list, link)
@@ -441,7 +439,7 @@ pepper_compositor_get_input_device_list(pepper_compositor_t *compositor)
  */
 PEPPER_API pepper_view_t *
 pepper_compositor_pick_view(pepper_compositor_t *compositor,
-			    double x, double y, double *vx, double *vy)
+							double x, double y, double *vx, double *vy)
 {
 	pepper_view_t  *view;
 	int             ix = (int)x;
@@ -466,7 +464,7 @@ pepper_compositor_pick_view(pepper_compositor_t *compositor,
 			continue;
 
 		if (!pixman_region32_contains_point(&view->surface->input_region, ilx, ily,
-						    NULL))
+											NULL))
 			continue;
 
 		if (vx)

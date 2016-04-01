@@ -34,7 +34,7 @@
 
 PEPPER_API pepper_fbdev_t *
 pepper_fbdev_create(pepper_compositor_t *compositor, struct udev *udev,
-		    const char *device, const char *renderer)
+					const char *device, const char *renderer)
 {
 	pepper_fbdev_t *fbdev;
 

@@ -54,11 +54,11 @@ pepper_tdm_create(pepper_compositor_t *compositor)
 	tdm->compositor = compositor;
 	tdm->disp = tdm_display_init(&ret);
 	PEPPER_CHECK(ret == TDM_ERROR_NONE, goto error,
-		     "tdm_display_init() failed %d\n", ret);
+				 "tdm_display_init() failed %d\n", ret);
 
 	ret = tdm_display_get_fd(tdm->disp, &tdm->fd);
 	PEPPER_CHECK(ret == TDM_ERROR_NONE, goto error,
-		     "tdm_display_get_fd() failed %d\n", ret);
+				 "tdm_display_get_fd() failed %d\n", ret);
 
 	tdm->bufmgr = tbm_bufmgr_init(tdm->fd);
 	PEPPER_CHECK(tdm->bufmgr, goto error, "tbm_bufmgr_init() failed \n");
@@ -69,8 +69,8 @@ pepper_tdm_create(pepper_compositor_t *compositor)
 	     */
 
 	tdm->wl_tbm_server = wayland_tbm_server_init(pepper_compositor_get_display(
-				     compositor),
-			     "/dev/dri/card0", tdm->fd, 0);
+							 compositor),
+						 "/dev/dri/card0", tdm->fd, 0);
 #endif
 
 	/*Setup outputs*/
@@ -80,9 +80,9 @@ pepper_tdm_create(pepper_compositor_t *compositor)
 	loop = wl_display_get_event_loop(pepper_compositor_get_display(compositor));
 
 	tdm->tdm_event_source = wl_event_loop_add_fd(loop, tdm->fd, WL_EVENT_READABLE,
-				__tdm_handle_event, tdm);
+							__tdm_handle_event, tdm);
 	PEPPER_CHECK(tdm->tdm_event_source, goto error,
-		     "wl_event_loop_add() failed.\n");
+				 "wl_event_loop_add() failed.\n");
 
 	if (!pepper_compositor_set_clock_id(compositor, CLOCK_MONOTONIC))
 		goto error;

@@ -3,7 +3,7 @@
 You should follow the style of the file you're editing. In general, we
 try to follow the rules below.
 
-- indent with tabs, and a tab is always 8 characters wide
+- indent with tabs, and a tab is always 4 characters wide
 - opening braces are on the same line as the if statement;
 - no braces in an if-body with just one statement;
 - if one of the branches of an if-else codition has braces, than the
@@ -45,7 +45,7 @@ my_function(void)
 
 == astyle options ==
 #command line
-#astyle -A8 -t8 -p -z2 -H -k3 -W3 -xC80 -xL -n -r "./*.c"
+#astyle -A8 -t4 -p -z2 -H -k3 -W3 -xC80 -xL -n -r "./*.c"
 #or 
 #astyle -A8t8pz2Hk3W3xC80xLnrf "*.c"
 

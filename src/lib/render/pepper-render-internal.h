@@ -45,19 +45,19 @@ struct pepper_renderer {
 	void            (*destroy)(pepper_renderer_t *renderer);
 
 	pepper_bool_t   (*attach_surface)(pepper_renderer_t *renderer,
-					  pepper_surface_t *surface, int *w, int *h);
+									  pepper_surface_t *surface, int *w, int *h);
 
 	pepper_bool_t   (*flush_surface_damage)(pepper_renderer_t *renderer,
-						pepper_surface_t *surface);
+											pepper_surface_t *surface);
 
 	pepper_bool_t   (*read_pixels)(pepper_renderer_t *renderer,
-				       int x, int y, int w, int h,
-				       void *pixels, pepper_format_t format);
+								   int x, int y, int w, int h,
+								   void *pixels, pepper_format_t format);
 
 	void            (*repaint_output)(pepper_renderer_t *renderer,
-					  pepper_output_t *output,
-					  const pepper_list_t *render_list,
-					  pixman_region32_t *damage);
+									  pepper_output_t *output,
+									  const pepper_list_t *render_list,
+									  pixman_region32_t *damage);
 };
 
 #endif /* PEPPER_RENDER_INTERNAL_H */

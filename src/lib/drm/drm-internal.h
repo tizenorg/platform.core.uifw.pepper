@@ -131,11 +131,11 @@ drm_buffer_create_dumb(pepper_drm_t *drm, uint32_t w, uint32_t h);
 
 drm_buffer_t *
 drm_buffer_create_gbm(pepper_drm_t *drm, struct gbm_surface *surface,
-		      struct gbm_bo *bo);
+					  struct gbm_bo *bo);
 
 drm_buffer_t *
 drm_buffer_create_client(pepper_drm_t *drm,
-			 struct gbm_bo *bo, pepper_buffer_t *buffer, uint32_t format);
+						 struct gbm_bo *bo, pepper_buffer_t *buffer, uint32_t format);
 
 void
 drm_buffer_release(drm_buffer_t *buffer);
@@ -197,11 +197,11 @@ drm_output_destroy(void *o);
 
 void
 drm_handle_vblank(int fd, unsigned int frame, unsigned int sec,
-		  unsigned int usec, void *data);
+				  unsigned int usec, void *data);
 
 void
 drm_handle_page_flip(int fd, unsigned int frame, unsigned int sec,
-		     unsigned int usec, void *data);
+					 unsigned int usec, void *data);
 
 struct drm_plane {
 	pepper_drm_t   *drm;

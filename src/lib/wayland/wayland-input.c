@@ -31,36 +31,36 @@
 
 static void
 pointer_handle_enter(void *data, struct wl_pointer *pointer,
-		     uint32_t serial, struct wl_surface *surface,
-		     wl_fixed_t surface_x, wl_fixed_t surface_y)
+					 uint32_t serial, struct wl_surface *surface,
+					 wl_fixed_t surface_x, wl_fixed_t surface_y)
 {
 	/* TODO */
 }
 
 static void
 pointer_handle_leave(void *data, struct wl_pointer *pointer,
-		     uint32_t serial, struct wl_surface *surface)
+					 uint32_t serial, struct wl_surface *surface)
 {
 	/* TODO */
 }
 
 static void
 pointer_handle_motion(void *data, struct wl_pointer *pointer,
-		      uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y)
+					  uint32_t time, wl_fixed_t surface_x, wl_fixed_t surface_y)
 {
 	/* TODO */
 }
 
 static void
 pointer_handle_button(void *data, struct wl_pointer *pointer,
-		      uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
+					  uint32_t serial, uint32_t time, uint32_t button, uint32_t state)
 {
 	/* TODO */
 }
 
 static void
 pointer_handle_axis(void *data, struct wl_pointer *pointer,
-		    uint32_t time, uint32_t axis, wl_fixed_t value)
+					uint32_t time, uint32_t axis, wl_fixed_t value)
 {
 	/* TODO */
 }
@@ -75,44 +75,44 @@ static const struct wl_pointer_listener pointer_listener = {
 
 static void
 keyboard_handle_keymap(void *data, struct wl_keyboard *keyboard,
-		       uint32_t format, int32_t fd, uint32_t size)
+					   uint32_t format, int32_t fd, uint32_t size)
 {
 	/* TODO */
 }
 
 static void
 keyboard_handle_enter(void *data, struct wl_keyboard *keyboard,
-		      uint32_t serial, struct wl_surface *surface,
-		      struct wl_array *keys)
+					  uint32_t serial, struct wl_surface *surface,
+					  struct wl_array *keys)
 {
 	/* TODO */
 }
 
 static void
 keyboard_handle_leave(void *data, struct wl_keyboard *keyboard,
-		      uint32_t serial, struct wl_surface *surface)
+					  uint32_t serial, struct wl_surface *surface)
 {
 	/* TODO */
 }
 
 static void
 keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
-		    uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
+					uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
 	/* TODO */
 }
 
 static void
 keyboard_handle_modifiers(void *data, struct wl_keyboard *keyboard,
-			  uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
-			  uint32_t mods_locked, uint32_t group)
+						  uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
+						  uint32_t mods_locked, uint32_t group)
 {
 	/* TODO */
 }
 
 static void
 keyboard_handle_repeat_info(void *data, struct wl_keyboard *keyboard,
-			    int32_t rate, int32_t delay)
+							int32_t rate, int32_t delay)
 {
 	/* TODO */
 }
@@ -128,22 +128,22 @@ static const struct wl_keyboard_listener keyboard_listener = {
 
 static void
 touch_handle_down(void *data, struct wl_touch *touch,
-		  uint32_t serial, uint32_t time, struct wl_surface *surface,
-		  int32_t id, wl_fixed_t x, wl_fixed_t y)
+				  uint32_t serial, uint32_t time, struct wl_surface *surface,
+				  int32_t id, wl_fixed_t x, wl_fixed_t y)
 {
 	/* TODO */
 }
 
 static void
 touch_handle_up(void *data, struct wl_touch *touch,
-		uint32_t serial, uint32_t time, int32_t id)
+				uint32_t serial, uint32_t time, int32_t id)
 {
 	/* TODO */
 }
 
 static void
 touch_handle_motion(void *data, struct wl_touch *touch,
-		    uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y)
+					uint32_t time, int32_t id, wl_fixed_t x, wl_fixed_t y)
 {
 	/* TODO */
 }
@@ -182,8 +182,8 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
 			wl_pointer_add_listener(seat->pointer.wl_pointer, &pointer_listener, seat);
 
 		seat->pointer.base = pepper_input_device_create(seat->conn->pepper,
-				     WL_SEAT_CAPABILITY_POINTER,
-				     NULL, NULL);
+							 WL_SEAT_CAPABILITY_POINTER,
+							 NULL, NULL);
 	} else if (!(caps & WL_SEAT_CAPABILITY_POINTER) && (seat->pointer.wl_pointer)) {
 		pepper_input_device_destroy(seat->pointer.base);
 		wl_pointer_release(seat->pointer.wl_pointer);
@@ -196,10 +196,10 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
 			wl_keyboard_add_listener(seat->keyboard.wl_keyboard, &keyboard_listener, seat);
 
 		seat->keyboard.base = pepper_input_device_create(seat->conn->pepper,
-				      WL_SEAT_CAPABILITY_KEYBOARD,
-				      NULL, NULL);
+							  WL_SEAT_CAPABILITY_KEYBOARD,
+							  NULL, NULL);
 	} else if (!(caps & WL_SEAT_CAPABILITY_KEYBOARD) &&
-		   (seat->keyboard.wl_keyboard)) {
+			   (seat->keyboard.wl_keyboard)) {
 		pepper_input_device_destroy(seat->keyboard.base);
 		wl_keyboard_release(seat->keyboard.wl_keyboard);
 		seat->keyboard.wl_keyboard = NULL;
@@ -211,8 +211,8 @@ seat_handle_caps(void *data, struct wl_seat *s, enum wl_seat_capability caps)
 			wl_touch_add_listener(seat->touch.wl_touch, &touch_listener, seat);
 
 		seat->touch.base = pepper_input_device_create(seat->conn->pepper,
-				   WL_SEAT_CAPABILITY_KEYBOARD,
-				   NULL, NULL);
+						   WL_SEAT_CAPABILITY_KEYBOARD,
+						   NULL, NULL);
 	} else if (!(caps & WL_SEAT_CAPABILITY_TOUCH) && (seat->touch.wl_touch)) {
 		pepper_input_device_destroy(seat->touch.base);
 		wl_touch_release(seat->touch.wl_touch);
@@ -233,7 +233,7 @@ static const struct wl_seat_listener seat_listener = {
 
 void
 wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
-			   uint32_t name, uint32_t version)
+						   uint32_t name, uint32_t version)
 {
 	wayland_seat_t  *seat;
 

@@ -59,7 +59,7 @@ drm_buffer_create_dumb(pepper_drm_t *drm, uint32_t w, uint32_t h)
 	buffer->size   = create_arg.size;
 
 	ret = drmModeAddFB(drm->fd, w, h, 24, 32, buffer->stride, buffer->handle,
-			   &buffer->id);
+					   &buffer->id);
 	PEPPER_CHECK(ret == 0, goto error, "drmModeAddFB() failed.\n");
 
 	memset(&map_arg, 0, sizeof(map_arg));
@@ -69,11 +69,11 @@ drm_buffer_create_dumb(pepper_drm_t *drm, uint32_t w, uint32_t h)
 	PEPPER_CHECK(ret == 0, goto error, "drmIoctl() failed.\n");
 
 	buffer->map = mmap(0, buffer->size, PROT_WRITE, MAP_SHARED, drm->fd,
-			   map_arg.offset);
+					   map_arg.offset);
 	PEPPER_CHECK(buffer->map != MAP_FAILED, goto error, "mmap() failed.\n");
 
 	buffer->image = pixman_image_create_bits(PIXMAN_x8r8g8b8, w, h, buffer->map,
-			buffer->stride);
+					buffer->stride);
 	PEPPER_CHECK(buffer->image, goto error, "pixman_image_create_bits() failed.\n");
 
 	return buffer;
@@ -102,7 +102,7 @@ error:
 
 static inline pepper_bool_t
 init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo,
-		uint32_t format)
+				uint32_t format)
 {
 	int         ret;
 	uint32_t    handles[4], strides[4], offsets[4];
@@ -119,12 +119,12 @@ init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo,
 	offsets[0] = 0;
 
 	ret = drmModeAddFB2(drm->fd, buffer->w, buffer->h,
-			    format ? format : gbm_bo_get_format(bo),
-			    handles, strides, offsets, &buffer->id , 0);
+						format ? format : gbm_bo_get_format(bo),
+						handles, strides, offsets, &buffer->id , 0);
 
 	if (ret != 0) {
 		ret = drmModeAddFB(drm->fd, buffer->w, buffer->h, 24, 32,
-				   buffer->stride, buffer->handle, &buffer->id);
+						   buffer->stride, buffer->handle, &buffer->id);
 		PEPPER_CHECK(ret, return PEPPER_FALSE, "drmModeAddFB() failed.\n");
 	}
 
@@ -136,7 +136,7 @@ init_buffer_gbm(drm_buffer_t *buffer, pepper_drm_t *drm, struct gbm_bo *bo,
 
 drm_buffer_t *
 drm_buffer_create_gbm(pepper_drm_t *drm, struct gbm_surface *surface,
-		      struct gbm_bo *bo)
+					  struct gbm_bo *bo)
 {
 	drm_buffer_t   *buffer;
 
@@ -157,8 +157,8 @@ drm_buffer_create_gbm(pepper_drm_t *drm, struct gbm_surface *surface,
 
 static void
 handle_client_buffer_destroy(pepper_event_listener_t *listener,
-			     pepper_object_t *object,
-			     uint32_t id, void *info, void *data)
+							 pepper_object_t *object,
+							 uint32_t id, void *info, void *data)
 {
 	drm_buffer_t *buffer = data;
 	buffer->client_buffer = NULL;
@@ -166,7 +166,7 @@ handle_client_buffer_destroy(pepper_event_listener_t *listener,
 
 drm_buffer_t *
 drm_buffer_create_client(pepper_drm_t *drm,
-			 struct gbm_bo *bo, pepper_buffer_t *client_buffer, uint32_t format)
+						 struct gbm_bo *bo, pepper_buffer_t *client_buffer, uint32_t format)
 {
 	drm_buffer_t *buffer;
 
@@ -183,8 +183,8 @@ drm_buffer_create_client(pepper_drm_t *drm,
 	pepper_buffer_reference(client_buffer);
 	buffer->client_buffer_destroy_listener =
 		pepper_object_add_event_listener((pepper_object_t *)client_buffer,
-				PEPPER_EVENT_OBJECT_DESTROY, 0,
-				handle_client_buffer_destroy, buffer);
+										 PEPPER_EVENT_OBJECT_DESTROY, 0,
+										 handle_client_buffer_destroy, buffer);
 
 	return buffer;
 }

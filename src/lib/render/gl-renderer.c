@@ -309,7 +309,7 @@ struct gl_surface_state {
 
 static pepper_bool_t
 init_gl_shader(gl_renderer_t *gr, gl_shader_t *shader, const char *vs,
-	       const char *fs)
+			   const char *fs)
 {
 	GLint status;
 	char msg[512];
@@ -381,7 +381,7 @@ init_gl_shaders(gl_renderer_t *gr)
 
 	for (i = 0; i < GL_SHADER_SAMPLER_NONE; i++) {
 		if (!init_gl_shader(gr, &gr->shaders[i], vertex_shaders[i],
-				    fragment_shaders[i])) {
+							fragment_shaders[i])) {
 			fini_gl_shaders(gr);
 			return PEPPER_FALSE;
 		}
@@ -412,7 +412,7 @@ gl_renderer_destroy(pepper_renderer_t *renderer)
 
 	if (gr->unbind_display)
 		gr->unbind_display(gr->display,
-				   pepper_compositor_get_display(gr->base.compositor));
+						   pepper_compositor_get_display(gr->base.compositor));
 
 	if (gr->display != EGL_NO_DISPLAY)
 		eglMakeCurrent(gr->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -476,10 +476,10 @@ surface_state_release_buffer(gl_surface_state_t *state)
 
 static void
 surface_state_handle_buffer_destroy(pepper_event_listener_t    *listener,
-				    pepper_object_t            *object,
-				    uint32_t                    id,
-				    void                       *info,
-				    void                       *data)
+									pepper_object_t            *object,
+									uint32_t                    id,
+									void                       *info,
+									void                       *data)
 {
 	gl_surface_state_t *state = data;
 	surface_state_release_buffer(state);
@@ -487,16 +487,16 @@ surface_state_handle_buffer_destroy(pepper_event_listener_t    *listener,
 
 static void
 surface_state_handle_surface_destroy(pepper_event_listener_t    *listener,
-				     pepper_object_t            *object,
-				     uint32_t                    id,
-				     void                       *info,
-				     void                       *data)
+									 pepper_object_t            *object,
+									 uint32_t                    id,
+									 void                       *info,
+									 void                       *data)
 {
 	gl_surface_state_t *state = data;
 	surface_state_release_buffer(state);
 	pepper_event_listener_remove(state->surface_destroy_listener);
 	pepper_object_set_user_data((pepper_object_t *)state->surface, state->renderer,
-				    NULL, NULL);
+								NULL, NULL);
 	free(state);
 }
 
@@ -504,7 +504,7 @@ static gl_surface_state_t *
 get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
 {
 	gl_surface_state_t *state = pepper_object_get_user_data((
-					    pepper_object_t *)surface, renderer);
+									pepper_object_t *)surface, renderer);
 
 	if (!state) {
 		state = (gl_surface_state_t *)calloc(1, sizeof(gl_surface_state_t));
@@ -515,8 +515,8 @@ get_surface_state(pepper_renderer_t *renderer, pepper_surface_t *surface)
 		state->surface = surface;
 		state->surface_destroy_listener =
 			pepper_object_add_event_listener((pepper_object_t *)surface,
-					PEPPER_EVENT_OBJECT_DESTROY, 0,
-					surface_state_handle_surface_destroy, state);
+											 PEPPER_EVENT_OBJECT_DESTROY, 0,
+											 surface_state_handle_surface_destroy, state);
 
 		pepper_object_set_user_data((pepper_object_t *)surface, renderer, state, NULL);
 	}
@@ -566,9 +566,9 @@ surface_state_attach_shm(gl_surface_state_t *state, pepper_buffer_t *buffer)
 	h = wl_shm_buffer_get_height(shm_buffer);
 
 	if (state->buffer_type != BUFFER_TYPE_SHM ||
-	    w != state->buffer_width || h != state->buffer_height ||
-	    pitch != state->shm.pitch || format != state->shm.format ||
-	    pixel_format != state->shm.pixel_format) {
+		w != state->buffer_width || h != state->buffer_height ||
+		pitch != state->shm.pitch || format != state->shm.format ||
+		pixel_format != state->shm.pixel_format) {
 		/* Don't use glTexSubImage2D() for shm buffers in this case. */
 		state->shm.need_full_upload = PEPPER_TRUE;
 	}
@@ -595,7 +595,7 @@ static pepper_bool_t
 surface_state_attach_tbm(gl_surface_state_t *state, pepper_buffer_t *buffer)
 {
 	tbm_surface_h   tbm_surface = wayland_tbm_server_get_surface(NULL,
-				      pepper_buffer_get_resource(buffer));
+								  pepper_buffer_get_resource(buffer));
 
 	if (!tbm_surface)
 		return PEPPER_FALSE;
@@ -620,7 +620,7 @@ surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
 	gr->query_buffer(display, resource, EGL_WIDTH, &state->buffer_width);
 	gr->query_buffer(display, resource, EGL_HEIGHT, &state->buffer_height);
 	if (!gr->query_buffer(display, resource, EGL_WAYLAND_Y_INVERTED_WL,
-			      &state->y_inverted))
+						  &state->y_inverted))
 		state->y_inverted = 1;
 
 	state->buffer_type = BUFFER_TYPE_EGL;
@@ -630,7 +630,7 @@ surface_state_attach_egl(gl_surface_state_t *state, pepper_buffer_t *buffer)
 
 static pepper_bool_t
 gl_renderer_attach_surface(pepper_renderer_t *renderer,
-			   pepper_surface_t *surface, int *w, int *h)
+						   pepper_surface_t *surface, int *w, int *h)
 {
 	gl_surface_state_t *state = get_surface_state(renderer, surface);
 	pepper_buffer_t    *buffer = pepper_surface_get_buffer(surface);
@@ -664,8 +664,8 @@ done:
 	if (state->buffer) {
 		state->buffer_destroy_listener =
 			pepper_object_add_event_listener((pepper_object_t *)buffer,
-					PEPPER_EVENT_OBJECT_DESTROY, 0,
-					surface_state_handle_buffer_destroy, state);
+											 PEPPER_EVENT_OBJECT_DESTROY, 0,
+											 surface_state_handle_buffer_destroy, state);
 	}
 
 	*w = state->buffer_width;
@@ -724,7 +724,7 @@ surface_state_flush_egl(gl_surface_state_t *state)
 	for (i = 0; i < num_planes; i++) {
 		attribs[1] = i;
 		state->images[i] = gr->create_image(display, NULL, EGL_WAYLAND_BUFFER_WL,
-						    resource, attribs);
+											resource, attribs);
 
 		PEPPER_ASSERT(state->images[i] != EGL_NO_IMAGE_KHR);
 
@@ -744,7 +744,7 @@ surface_state_flush_tbm(gl_surface_state_t *state)
 	gl_renderer_t      *gr = (gl_renderer_t *)state->renderer;
 	EGLDisplay          display = gr->display;
 	tbm_surface_h       tbm_surface = wayland_tbm_server_get_surface(NULL,
-					  pepper_buffer_get_resource(state->buffer));
+									  pepper_buffer_get_resource(state->buffer));
 	int                 sampler;
 
 	const EGLint image_attribs[] = {
@@ -772,7 +772,7 @@ surface_state_flush_tbm(gl_surface_state_t *state)
 
 	surface_state_ensure_textures(state, 1);
 	state->images[0] = gr->create_image(display, NULL, EGL_NATIVE_SURFACE_TIZEN,
-					    state->tbm_surface, image_attribs);
+										state->tbm_surface, image_attribs);
 	PEPPER_ASSERT(state->images[0] != EGL_NO_IMAGE_KHR);
 
 	glActiveTexture(GL_TEXTURE0 + 0);
@@ -796,9 +796,9 @@ surface_state_flush_shm(gl_surface_state_t *state)
 	if (!gr->has_unpack_subimage) {
 		wl_shm_buffer_begin_access(state->shm.buffer);
 		glTexImage2D(GL_TEXTURE_2D, 0, state->shm.format,
-			     state->buffer_width, state->buffer_height, 0,
-			     state->shm.format, state->shm.pixel_format,
-			     wl_shm_buffer_get_data(state->shm.buffer));
+					 state->buffer_width, state->buffer_height, 0,
+					 state->shm.format, state->shm.pixel_format,
+					 wl_shm_buffer_get_data(state->shm.buffer));
 		wl_shm_buffer_end_access(state->shm.buffer);
 	} else if (state->shm.need_full_upload) {
 		glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, state->shm.pitch);
@@ -807,9 +807,9 @@ surface_state_flush_shm(gl_surface_state_t *state)
 
 		wl_shm_buffer_begin_access(state->shm.buffer);
 		glTexImage2D(GL_TEXTURE_2D, 0, state->shm.format,
-			     state->buffer_width, state->buffer_height, 0,
-			     state->shm.format, state->shm.pixel_format,
-			     wl_shm_buffer_get_data(state->shm.buffer));
+					 state->buffer_width, state->buffer_height, 0,
+					 state->shm.format, state->shm.pixel_format,
+					 wl_shm_buffer_get_data(state->shm.buffer));
 		wl_shm_buffer_end_access(state->shm.buffer);
 		state->shm.need_full_upload = PEPPER_FALSE;
 	} else {
@@ -826,9 +826,9 @@ surface_state_flush_shm(gl_surface_state_t *state)
 			glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, rects[i].x1);
 			glPixelStorei(GL_UNPACK_SKIP_ROWS_EXT, rects[i].y1);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, rects[i].x1, rects[i].y1,
-					rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1,
-					state->shm.format, state->shm.pixel_format,
-					wl_shm_buffer_get_data(state->shm.buffer));
+							rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1,
+							state->shm.format, state->shm.pixel_format,
+							wl_shm_buffer_get_data(state->shm.buffer));
 		}
 		wl_shm_buffer_end_access(state->shm.buffer);
 	}
@@ -839,7 +839,7 @@ surface_state_flush_shm(gl_surface_state_t *state)
 
 static pepper_bool_t
 gl_renderer_flush_surface_damage(pepper_renderer_t *renderer,
-				 pepper_surface_t *surface)
+								 pepper_surface_t *surface)
 {
 	gl_surface_state_t *state = get_surface_state(renderer, surface);
 
@@ -858,8 +858,8 @@ gl_renderer_flush_surface_damage(pepper_renderer_t *renderer,
 
 static pepper_bool_t
 gl_renderer_read_pixels(pepper_renderer_t *renderer,
-			int x, int y, int w, int h,
-			void *pixels, pepper_format_t format)
+						int x, int y, int w, int h,
+						void *pixels, pepper_format_t format)
 {
 	gl_renderer_t  *gr = (gl_renderer_t *)renderer;
 	GLenum          gl_format;
@@ -905,7 +905,7 @@ output(pepper_vec2_t *vertex, int *out_len, pepper_vec2_t *out_vertices)
 
 static pepper_bool_t
 inside(pepper_vec2_t *vertex, pepper_vec2_t *clip_start,
-       pepper_vec2_t *clip_end)
+	   pepper_vec2_t *clip_end)
 {
 	if ((clip_start->y > clip_end->y) && (vertex->x >= clip_start->x))  /* left */
 		return PEPPER_TRUE;
@@ -924,25 +924,25 @@ inside(pepper_vec2_t *vertex, pepper_vec2_t *clip_start,
 
 static void
 intersect(pepper_vec2_t *vertex1, pepper_vec2_t *vertex2,
-	  pepper_vec2_t *clip_start, pepper_vec2_t *clip_end, pepper_vec2_t *out_vertex)
+		  pepper_vec2_t *clip_start, pepper_vec2_t *clip_end, pepper_vec2_t *out_vertex)
 {
 	if (clip_start->x == clip_end->x) {
 		out_vertex->x = clip_start->x;
 		out_vertex->y = vertex1->y + (clip_start->x - vertex1->x) *
-				(vertex2->y - vertex1->y)
-				/ (vertex2->x - vertex1->x);
+						(vertex2->y - vertex1->y)
+						/ (vertex2->x - vertex1->x);
 	} else {
 		out_vertex->x = vertex1->x + (clip_start->y - vertex1->y) *
-				(vertex2->x - vertex1->x)
-				/ (vertex2->y - vertex1->y);
+						(vertex2->x - vertex1->x)
+						/ (vertex2->y - vertex1->y);
 		out_vertex->y = clip_start->y;
 	}
 }
 
 static void
 clip_line(pepper_vec2_t *in_vertices, pepper_vec2_t *out_vertices, int in_len,
-	  int *out_len,
-	  pepper_vec2_t *clip_start, pepper_vec2_t *clip_end)
+		  int *out_len,
+		  pepper_vec2_t *clip_start, pepper_vec2_t *clip_end)
 {
 	int             i;
 	pepper_vec2_t  *vs, *ve;
@@ -973,13 +973,13 @@ clip_line(pepper_vec2_t *in_vertices, pepper_vec2_t *out_vertices, int in_len,
 
 static void
 clip(pepper_vec2_t *vertices, int *len, pixman_box32_t *clip_rect,
-     pepper_bool_t is_rect)
+	 pepper_bool_t is_rect)
 {
 	if (is_rect) {
 		int i;
 
 		if ((vertices[0].x >= clip_rect->x2) || (vertices[2].x <= clip_rect->x1) ||
-		    (vertices[0].y >= clip_rect->y2) || (vertices[2].y <= clip_rect->y1)) {
+			(vertices[0].y >= clip_rect->y2) || (vertices[2].y <= clip_rect->y1)) {
 			*len = 0;
 			return;
 		}
@@ -1043,8 +1043,8 @@ float_difference(float a, float b)
 
 static void
 calc_vertices(gl_renderer_t *gr, gl_surface_state_t *state,
-	      pepper_render_item_t *node,
-	      pixman_region32_t *region, pixman_region32_t *surface_region)
+			  pepper_render_item_t *node,
+			  pixman_region32_t *region, pixman_region32_t *surface_region)
 {
 	int             i, j, k, n;
 	int             len;
@@ -1061,7 +1061,7 @@ calc_vertices(gl_renderer_t *gr, gl_surface_state_t *state,
 	surface_rects = pixman_region32_rectangles(surface_region, &surface_nrects);
 	rects = pixman_region32_rectangles(region, &nrects);
 	vertex_array = wl_array_add(&gr->vertex_array,
-				    surface_nrects * nrects * (8 - 2) * 3 * 2 * 2 * sizeof(GLfloat));
+								surface_nrects * nrects * (8 - 2) * 3 * 2 * 2 * sizeof(GLfloat));
 	gr->triangles = 0;
 
 	for (n = 0; n < surface_nrects; n++) {
@@ -1088,7 +1088,7 @@ calc_vertices(gl_renderer_t *gr, gl_surface_state_t *state,
 				double x, y;
 				pepper_mat4_transform_vec2(inverse, &texcoords[j]);
 				pepper_coordinates_surface_to_buffer(pepper_view_get_surface(node->view),
-								     texcoords[j].x, texcoords[j].y, &x, &y);
+													 texcoords[j].x, texcoords[j].y, &x, &y);
 				if (!state->y_inverted)
 					y = state->buffer_height - y;
 				texcoords[j].x = x / state->buffer_width;
@@ -1097,8 +1097,8 @@ calc_vertices(gl_renderer_t *gr, gl_surface_state_t *state,
 
 			for (j = 1, k = 1; j < len; j++) {
 				if ((float_difference((float)vertices[j - 1].x,
-						      (float)vertices[j].x) == 0.0f) &&
-				    (float_difference((float)vertices[j - 1].y, (float)vertices[j].y) == 0.0f))
+									  (float)vertices[j].x) == 0.0f) &&
+					(float_difference((float)vertices[j - 1].y, (float)vertices[j].y) == 0.0f))
 					continue;
 
 				if (j != k) {
@@ -1111,8 +1111,8 @@ calc_vertices(gl_renderer_t *gr, gl_surface_state_t *state,
 			}
 
 			if ((float_difference((float)vertices[len - 1].x,
-					      (float)vertices[0].x) == 0.0f) &&
-			    (float_difference((float)vertices[len - 1].y, (float)vertices[0].y) == 0.0f))
+								  (float)vertices[0].x) == 0.0f) &&
+				(float_difference((float)vertices[len - 1].y, (float)vertices[0].y) == 0.0f))
 				k--;
 
 			for (j = 2; j < k; j++) {
@@ -1136,8 +1136,8 @@ calc_vertices(gl_renderer_t *gr, gl_surface_state_t *state,
 
 static void
 repaint_region_clip(gl_renderer_t *gr, gl_surface_state_t *state,
-		    pepper_render_item_t *node,
-		    pixman_region32_t *damage, pixman_region32_t *surface_region)
+					pepper_render_item_t *node,
+					pixman_region32_t *damage, pixman_region32_t *surface_region)
 {
 	GLfloat        *vertex_array;
 
@@ -1145,10 +1145,10 @@ repaint_region_clip(gl_renderer_t *gr, gl_surface_state_t *state,
 	vertex_array = gr->vertex_array.data;
 
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
-			      &vertex_array[0]);
+						  &vertex_array[0]);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
-			      &vertex_array[2]);
+						  &vertex_array[2]);
 	glEnableVertexAttribArray(1);
 
 	glDrawArrays(GL_TRIANGLES, 0, gr->triangles * 3);
@@ -1158,7 +1158,7 @@ repaint_region_clip(gl_renderer_t *gr, gl_surface_state_t *state,
 
 static void
 repaint_view_clip(pepper_renderer_t *renderer, pepper_output_t *output,
-		  pepper_render_item_t *node, pixman_region32_t *damage)
+				  pepper_render_item_t *node, pixman_region32_t *damage)
 {
 	gl_renderer_t      *gr = (gl_renderer_t *)renderer;
 	gl_render_target_t *gt = (gl_render_target_t *)renderer->target;
@@ -1188,7 +1188,7 @@ repaint_view_clip(pepper_renderer_t *renderer, pepper_output_t *output,
 			trans[i] = (float)gt->proj_mat.m[i];
 
 		filter = (node->transform.flags <= PEPPER_MATRIX_TRANSLATE) ? GL_NEAREST :
-			 GL_LINEAR;
+				 GL_LINEAR;
 		for (i = 0; i < state->num_planes; i++) {
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, state->textures[i]);
@@ -1237,7 +1237,7 @@ repaint_view_clip(pepper_renderer_t *renderer, pepper_output_t *output,
 
 static void
 set_vertex(gl_surface_state_t *state, int32_t sx, int32_t sy,
-	   GLfloat *vertex_array)
+		   GLfloat *vertex_array)
 {
 	double x, y;
 
@@ -1254,7 +1254,7 @@ set_vertex(gl_surface_state_t *state, int32_t sx, int32_t sy,
 
 static void
 repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
-		       pixman_region32_t *damage, pixman_region32_t *surface_region)
+					   pixman_region32_t *damage, pixman_region32_t *surface_region)
 {
 	int                 i, j;
 	int                 nrects, surface_nrects;
@@ -1271,16 +1271,16 @@ repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
 		set_vertex(state, surface_rects[i].x1, surface_rects[i].y2, &vertex_array[12]);
 
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
-				      &vertex_array[0]);
+							  &vertex_array[0]);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
-				      &vertex_array[2]);
+							  &vertex_array[2]);
 		glEnableVertexAttribArray(1);
 
 		rects = pixman_region32_rectangles(damage, &nrects);
 		for (j = 0; j < nrects; j++) {
 			glScissor(rects[j].x1, gt->height - rects[j].y2,
-				  rects[j].x2 - rects[j].x1, rects[j].y2 - rects[j].y1);
+					  rects[j].x2 - rects[j].x1, rects[j].y2 - rects[j].y1);
 			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 		}
 	}
@@ -1288,7 +1288,7 @@ repaint_region_scissor(gl_renderer_t *gr, gl_surface_state_t *state,
 
 static void
 repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
-		     pepper_render_item_t *node, pixman_region32_t *damage)
+					 pepper_render_item_t *node, pixman_region32_t *damage)
 {
 	gl_renderer_t      *gr = (gl_renderer_t *)renderer;
 	gl_render_target_t *gt = (gl_render_target_t *)renderer->target;
@@ -1333,7 +1333,7 @@ repaint_view_scissor(pepper_renderer_t *renderer, pepper_output_t *output,
 	}
 
 	filter = (node->transform.flags <= PEPPER_MATRIX_TRANSLATE) ? GL_NEAREST :
-		 GL_LINEAR;
+			 GL_LINEAR;
 	for (i = 0; i < state->num_planes; i++) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, state->textures[i]);
@@ -1387,7 +1387,7 @@ done:
 
 static void
 gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
-			   const pepper_list_t *list, pixman_region32_t *damage)
+						   const pepper_list_t *list, pixman_region32_t *damage)
 {
 	gl_renderer_t                  *gr = (gl_renderer_t *)renderer;
 	gl_render_target_t             *gt = (gl_render_target_t *)renderer->target;
@@ -1405,7 +1405,7 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
 
 	if (gr->has_buffer_age)
 		eglQuerySurface(gr->display, ((gl_render_target_t *)renderer->target)->surface,
-				EGL_BUFFER_AGE_EXT, &buffer_age);
+						EGL_BUFFER_AGE_EXT, &buffer_age);
 
 	if (!buffer_age || buffer_age - 1 > MAX_BUFFER_COUNT) {
 		pixman_region32_init_rect(&total_damage, geom->x, geom->y, geom->w, geom->h);
@@ -1417,7 +1417,7 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
 
 		for (i = 0; i < buffer_age - 1; i++)
 			pixman_region32_union(&total_damage, &total_damage,
-					      &gt->damages[(first + i) % MAX_BUFFER_COUNT]);
+								  &gt->damages[(first + i) % MAX_BUFFER_COUNT]);
 
 		pixman_region32_copy(&gt->damages[gt->damage_index], damage);
 
@@ -1440,7 +1440,7 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
 			glEnable(GL_SCISSOR_TEST);
 			for (i = 0; i < nrects; i++) {
 				glScissor(rects[i].x1, geom->h - rects[i].y2,
-					  rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
+						  rects[i].x2 - rects[i].x1, rects[i].y2 - rects[i].y1);
 				glClear(GL_COLOR_BUFFER_BIT);
 			}
 			glDisable(GL_SCISSOR_TEST);
@@ -1449,11 +1449,11 @@ gl_renderer_repaint_output(pepper_renderer_t *renderer, pepper_output_t *output,
 		if (gr->use_clipper)
 			pepper_list_for_each_list_reverse(l, list)
 			repaint_view_clip(renderer, output, (pepper_render_item_t *)l->item,
-					  &total_damage);
+							  &total_damage);
 		else
 			pepper_list_for_each_list_reverse(l, list)
 			repaint_view_scissor(renderer, output, (pepper_render_item_t *)l->item,
-					     &total_damage);
+								 &total_damage);
 	}
 
 	pixman_region32_fini(&total_damage);
@@ -1495,7 +1495,7 @@ setup_egl_extensions(gl_renderer_t *gr)
 		gr->query_buffer      = (void *)eglGetProcAddress("eglQueryWaylandBufferWL");
 
 		if (!gr->bind_display(gr->display,
-				      pepper_compositor_get_display(gr->base.compositor))) {
+							  pepper_compositor_get_display(gr->base.compositor))) {
 			gr->bind_display = NULL;
 			gr->unbind_display = NULL;
 			gr->query_buffer = NULL;
@@ -1529,7 +1529,7 @@ setup_gl_extensions(gl_renderer_t *gr)
 	}
 
 	gr->image_target_texture_2d = (void *)
-				      eglGetProcAddress("glEGLImageTargetTexture2DOES");
+								  eglGetProcAddress("glEGLImageTargetTexture2DOES");
 
 	if (!gr->image_target_texture_2d) {
 		PEPPER_ERROR("glEGLImageTargetTexture2DOES not supported.\n");
@@ -1633,7 +1633,7 @@ use_legacy:
 
 PEPPER_API pepper_renderer_t *
 pepper_gl_renderer_create(pepper_compositor_t *compositor, void *native_display,
-			  const char *platform)
+						  const char *platform)
 {
 	gl_renderer_t  *gr;
 	EGLint          major, minor;
@@ -1705,9 +1705,9 @@ gl_render_target_destroy(pepper_render_target_t *target)
 
 PEPPER_API pepper_render_target_t *
 pepper_gl_renderer_create_target(pepper_renderer_t *renderer,
-				 void *native_window,
-				 pepper_format_t format, const void *visual_id,
-				 int32_t width, int32_t height)
+								 void *native_window,
+								 pepper_format_t format, const void *visual_id,
+								 int32_t width, int32_t height)
 {
 	gl_renderer_t      *gr = (gl_renderer_t *)renderer;
 	gl_render_target_t *target;
@@ -1756,7 +1756,7 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer,
 		goto error;
 
 	if (!eglChooseConfig(gr->display, config_attribs, configs, config_size,
-			     &num_configs)) {
+						 &num_configs)) {
 		PEPPER_ERROR("eglChooseConfig() failed.\n");
 		goto error;
 	}
@@ -1770,7 +1770,7 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer,
 		if (visual_id) {
 			/* Native visual id have privilege. */
 			if (eglGetConfigAttrib(gr->display, configs[i], EGL_NATIVE_VISUAL_ID,
-					       &attrib)) {
+								   &attrib)) {
 				if (attrib == *((EGLint *)visual_id)) {
 					config = configs[i];
 					break;
@@ -1799,11 +1799,11 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer,
 	/* Try platform window surface creation first. */
 	if (gr->create_platform_window_surface)
 		surface = gr->create_platform_window_surface(gr->display, config, native_window,
-				NULL);
+				  NULL);
 
 	if (target->surface == EGL_NO_SURFACE) {
 		surface = eglCreateWindowSurface(gr->display, config,
-						 (EGLNativeWindowType)native_window, NULL);
+										 (EGLNativeWindowType)native_window, NULL);
 	}
 
 	if (surface == EGL_NO_SURFACE) {
@@ -1813,7 +1813,7 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer,
 
 	if (gr->context == EGL_NO_CONTEXT) {
 		context = eglCreateContext(gr->display, config, EGL_NO_CONTEXT,
-					   context_attribs);
+								   context_attribs);
 		if (context == EGL_NO_CONTEXT) {
 			PEPPER_ERROR("eglCreateContext() failed.\n");
 			goto error;
@@ -1846,9 +1846,9 @@ pepper_gl_renderer_create_target(pepper_renderer_t *renderer,
 	target->base.destroy = gl_render_target_destroy;
 
 	pepper_mat4_init_translate(&target->proj_mat, (double)width / -2,
-				   (double)height / -2, 0);
+							   (double)height / -2, 0);
 	pepper_mat4_scale(&target->proj_mat, (double)2 / width, (double)(-2) / height,
-			  1);
+					  1);
 
 	for (i = 0; i < MAX_BUFFER_COUNT; i++)
 		pixman_region32_init(&target->damages[i]);

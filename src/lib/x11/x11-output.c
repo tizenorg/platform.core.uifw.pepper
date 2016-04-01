@@ -110,11 +110,11 @@ static pepper_bool_t
 gl_renderer_init(x11_output_t *output)
 {
 	output->gl_target = pepper_gl_renderer_create_target(
-				    output->connection->gl_renderer,
-				    (void *)(intptr_t)output->window,
-				    PEPPER_FORMAT_ARGB8888,
-				    &output->connection->screen->root_visual,
-				    output->w, output->h);
+							output->connection->gl_renderer,
+							(void *)(intptr_t)output->window,
+							PEPPER_FORMAT_ARGB8888,
+							&output->connection->screen->root_visual,
+							output->w, output->h);
 
 	if (!output->gl_target) {
 		PEPPER_ERROR("Failed to create gl render target.\n");
@@ -152,7 +152,7 @@ x11_shm_image_deinit(xcb_connection_t *conn, x11_shm_image_t *shm)
 
 static pepper_bool_t
 x11_shm_image_init(x11_shm_image_t *shm, xcb_connection_t *conn, int w, int h,
-		   int bpp)
+				   int bpp)
 {
 	xcb_generic_error_t     *err = NULL;
 	xcb_void_cookie_t        cookie;
@@ -194,7 +194,7 @@ x11_shm_image_init(x11_shm_image_t *shm, xcb_connection_t *conn, int w, int h,
 
 	/* Now create pepper render target */
 	shm->target = pepper_pixman_renderer_create_target(format, shm->buf,
-			w * (bpp / 8), w, h);
+				  w * (bpp / 8), w, h);
 	if (!shm->target) {
 		PEPPER_ERROR("Failed to create pixman render target\n");
 		goto err;
@@ -242,14 +242,14 @@ x11_shm_init(x11_output_t *output)
 	/* Find root visual */
 	scr_iter = xcb_setup_roots_iterator(xcb_get_setup(xcb_conn));
 	visual_type = xcb_visualtype_get(scr_iter.data,
-					 scr_iter.data->root_visual);
+									 scr_iter.data->root_visual);
 	if (!visual_type) {
 		PEPPER_ERROR("Failed to lookup visual for root window\n");
 		return PEPPER_FALSE;;
 	}
 
 	output->depth = xcb_depth_get(scr_iter.data,
-				      scr_iter.data->root_visual);
+								  scr_iter.data->root_visual);
 
 	fmt_iter = xcb_setup_pixmap_formats_iterator(xcb_get_setup(xcb_conn));
 	for (; fmt_iter.rem; xcb_format_next(&fmt_iter)) {
@@ -387,19 +387,19 @@ x11_output_set_mode(void *o, const pepper_output_mode_t *mode)
 			hints.min_width  = hints.max_width  = output->w;
 			hints.min_height = hints.max_height = output->h;
 			xcb_change_property(conn,
-					    XCB_PROP_MODE_REPLACE,
-					    output->window,
-					    output->connection->atom.wm_normal_hints,
-					    output->connection->atom.wm_size_hints,
-					    32,
-					    sizeof(hints) / 4,
-					    (uint8_t *)&hints);
+								XCB_PROP_MODE_REPLACE,
+								output->window,
+								output->connection->atom.wm_normal_hints,
+								output->connection->atom.wm_size_hints,
+								32,
+								sizeof(hints) / 4,
+								(uint8_t *)&hints);
 
 			/* resize window */
 			xcb_configure_window (conn,
-					      output->window,
-					      XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-					      values);
+								  output->window,
+								  XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+								  values);
 
 			/* resize image */
 			if (output->shm.target) {
@@ -408,7 +408,7 @@ x11_output_set_mode(void *o, const pepper_output_mode_t *mode)
 
 				/* Init x11_shm_image */
 				if (!x11_shm_image_init(&output->shm, conn, output->w, output->h,
-							output->bpp)) {
+										output->bpp)) {
 					PEPPER_ERROR("x11_shm_image_init failed\n");
 					return PEPPER_FALSE;
 				}
@@ -461,7 +461,7 @@ x11_output_repaint(void *o, const pepper_list_t *plane_list)
 
 			pepper_renderer_set_target(output->renderer, output->target);
 			pepper_renderer_repaint_output(output->renderer, output->base, render_list,
-						       damage);
+										   damage);
 			pepper_plane_clear_damage_region(plane);
 
 			if (output->renderer == output->connection->pixman_renderer) {
@@ -469,21 +469,21 @@ x11_output_repaint(void *o, const pepper_list_t *plane_list)
 				xcb_generic_error_t *err;
 
 				cookie = xcb_shm_put_image_checked(output->connection->xcb_connection,
-								   output->window,
-								   output->gc,
-								   output->w,
-								   output->h,
-								   0,   /* src_x */
-								   0,   /* src_y */
-								   output->shm.w,  /* src_w */
-								   output->shm.h, /* src_h */
-								   0,   /* dst_x */
-								   0,   /* dst_y */
-								   output->depth,   /* depth */
-								   XCB_IMAGE_FORMAT_Z_PIXMAP,   /* format */
-								   0,   /* send_event */
-								   output->shm.segment, /* xcb shm segment */
-								   0);  /* offset */
+												   output->window,
+												   output->gc,
+												   output->w,
+												   output->h,
+												   0,   /* src_x */
+												   0,   /* src_y */
+												   output->shm.w,  /* src_w */
+												   output->shm.h, /* src_h */
+												   0,   /* dst_x */
+												   0,   /* dst_y */
+												   output->depth,   /* depth */
+												   XCB_IMAGE_FORMAT_Z_PIXMAP,   /* format */
+												   0,   /* send_event */
+												   output->shm.segment, /* xcb shm segment */
+												   0);  /* offset */
 
 				err = xcb_request_check(output->connection->xcb_connection, cookie);
 				if (err) {
@@ -508,7 +508,7 @@ x11_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 
 static void
 x11_output_flush_surface_damage(void *o, pepper_surface_t *surface,
-				pepper_bool_t *keep_buffer)
+								pepper_bool_t *keep_buffer)
 {
 	x11_output_t    *output = o;
 	pepper_buffer_t *buffer = pepper_surface_get_buffer(surface);
@@ -516,7 +516,7 @@ x11_output_flush_surface_damage(void *o, pepper_surface_t *surface,
 	pepper_renderer_flush_surface_damage(output->renderer, surface);
 
 	if (output->renderer == output->connection->pixman_renderer ||
-	    (buffer && !wl_shm_buffer_get(pepper_buffer_get_resource(buffer)))) {
+		(buffer && !wl_shm_buffer_get(pepper_buffer_get_resource(buffer)))) {
 		*keep_buffer = PEPPER_TRUE;
 	} else {
 		*keep_buffer = PEPPER_FALSE;
@@ -544,8 +544,8 @@ static const pepper_output_backend_t x11_output_backend = {
 
 PEPPER_API pepper_output_t *
 pepper_x11_output_create(pepper_x11_connection_t *connection,
-			 int x, int y, int w, int h, int transform, int scale,
-			 const char *renderer)
+						 int x, int y, int w, int h, int transform, int scale,
+						 const char *renderer)
 {
 	static const char       *window_name = "PePPer Compositor";
 	static const char       *class_name  = "pepper-1\0PePPer Compositor";
@@ -581,14 +581,14 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
 
 		output->window = xcb_generate_id(connection->xcb_connection);
 		xcb_create_window(connection->xcb_connection,
-				  XCB_COPY_FROM_PARENT,
-				  output->window,
-				  connection->screen->root,
-				  0, 0, w, h, 0,
-				  XCB_WINDOW_CLASS_INPUT_OUTPUT,
-				  connection->screen->root_visual,
-				  mask,
-				  values);
+						  XCB_COPY_FROM_PARENT,
+						  output->window,
+						  connection->screen->root,
+						  0, 0, w, h, 0,
+						  XCB_WINDOW_CLASS_INPUT_OUTPUT,
+						  connection->screen->root_visual,
+						  mask,
+						  values);
 
 		/* cannot resize */
 		memset(&hints, 0, sizeof(hints));
@@ -596,40 +596,40 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
 		hints.min_width  = hints.max_width  = w;
 		hints.min_height = hints.max_height = h;
 		xcb_change_property(connection->xcb_connection,
-				    XCB_PROP_MODE_REPLACE,
-				    output->window,
-				    connection->atom.wm_normal_hints,
-				    connection->atom.wm_size_hints,
-				    32,
-				    sizeof(hints) / 4,
-				    (uint8_t *)&hints);
+							XCB_PROP_MODE_REPLACE,
+							output->window,
+							connection->atom.wm_normal_hints,
+							connection->atom.wm_size_hints,
+							32,
+							sizeof(hints) / 4,
+							(uint8_t *)&hints);
 
 		/* set window name */
 		xcb_change_property(connection->xcb_connection, XCB_PROP_MODE_REPLACE,
-				    output->window,
-				    connection->atom.net_wm_name,
-				    connection->atom.utf8_string, 8,
-				    strlen(window_name), window_name);
+							output->window,
+							connection->atom.net_wm_name,
+							connection->atom.utf8_string, 8,
+							strlen(window_name), window_name);
 		xcb_change_property(connection->xcb_connection, XCB_PROP_MODE_REPLACE,
-				    output->window,
-				    connection->atom.wm_class,
-				    connection->atom.string, 8,
-				    strlen(class_name), class_name);
+							output->window,
+							connection->atom.wm_class,
+							connection->atom.string, 8,
+							strlen(class_name), class_name);
 
 		/* set property to receive wm_delete_window message */
 		list[0] = connection->atom.wm_delete_window;
 		xcb_change_property(connection->xcb_connection, XCB_PROP_MODE_REPLACE,
-				    output->window,
-				    connection->atom.wm_protocols,
-				    XCB_ATOM_ATOM, 32,
-				    1, list);
+							output->window,
+							connection->atom.wm_protocols,
+							XCB_ATOM_ATOM, 32,
+							1, list);
 
 
 		xcb_map_window(connection->xcb_connection, output->window);
 
 		if (connection->use_xinput)
 			x11_window_input_property_change(connection->xcb_connection,
-							 output->window);
+											 output->window);
 
 		pepper_list_insert(&connection->output_list, &output->link);
 		xcb_flush(connection->xcb_connection);
@@ -639,7 +639,7 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
 	wldisplay = pepper_compositor_get_display(connection->compositor);
 	loop = wl_display_get_event_loop(wldisplay);
 	output->frame_done_timer = wl_event_loop_add_timer(loop, frame_done_handler,
-				   output);
+							   output);
 
 	/* Init renderer */
 	renderer_init(output, renderer);
@@ -647,8 +647,8 @@ pepper_x11_output_create(pepper_x11_connection_t *connection,
 	/* Register output object */
 	snprintf(&output->name[0], 32, "x11-%p", output);
 	base = pepper_compositor_add_output(connection->compositor,
-					    &x11_output_backend, output->name, output,
-					    transform, scale);
+										&x11_output_backend, output->name, output,
+										transform, scale);
 	if (!base) {
 		PEPPER_ERROR("pepper_compositor_add_output failed\n");
 		x11_output_destroy(output);

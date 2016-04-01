@@ -59,7 +59,7 @@ surface_update_size(pepper_surface_t *surface)
 
 static void
 surface_state_handle_buffer_destroy(pepper_event_listener_t *listener,
-				    pepper_object_t *object, uint32_t id, void *info, void *data)
+									pepper_object_t *object, uint32_t id, void *info, void *data)
 {
 	pepper_surface_state_t *state = data;
 	state->buffer = NULL;
@@ -67,7 +67,7 @@ surface_state_handle_buffer_destroy(pepper_event_listener_t *listener,
 
 static void
 surface_handle_buffer_destroy(pepper_event_listener_t *listener,
-			      pepper_object_t *object, uint32_t id, void *info, void *data)
+							  pepper_object_t *object, uint32_t id, void *info, void *data)
 {
 	pepper_surface_t *surface = data;
 	surface->buffer.buffer = NULL;
@@ -86,7 +86,7 @@ pepper_surface_state_init(pepper_surface_state_t *state)
 	pixman_region32_init(&state->damage_region);
 	pixman_region32_init(&state->opaque_region);
 	pixman_region32_init_rect(&state->input_region, INT32_MIN, INT32_MIN,
-				  UINT32_MAX, UINT32_MAX);
+							  UINT32_MAX, UINT32_MAX);
 
 	wl_list_init(&state->frame_callback_list);
 }
@@ -122,10 +122,10 @@ surface_destroy(struct wl_client *client, struct wl_resource *resource)
 
 static void
 surface_attach(struct wl_client    *client,
-	       struct wl_resource  *resource,
-	       struct wl_resource  *buffer_resource,
-	       int32_t              x,
-	       int32_t              y)
+			   struct wl_resource  *resource,
+			   struct wl_resource  *buffer_resource,
+			   int32_t              x,
+			   int32_t              y)
 {
 	pepper_surface_t   *surface = wl_resource_get_user_data(resource);
 	pepper_buffer_t    *buffer = NULL;
@@ -152,21 +152,21 @@ surface_attach(struct wl_client    *client,
 	if (buffer) {
 		surface->pending.buffer_destroy_listener =
 			pepper_object_add_event_listener(&buffer->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
-					surface_state_handle_buffer_destroy, &surface->pending);
+											 surface_state_handle_buffer_destroy, &surface->pending);
 	}
 }
 
 static void
 surface_damage(struct wl_client    *client,
-	       struct wl_resource  *resource,
-	       int32_t              x,
-	       int32_t              y,
-	       int32_t              w,
-	       int32_t              h)
+			   struct wl_resource  *resource,
+			   int32_t              x,
+			   int32_t              y,
+			   int32_t              w,
+			   int32_t              h)
 {
 	pepper_surface_t *surface = wl_resource_get_user_data(resource);
 	pixman_region32_union_rect(&surface->pending.damage_region,
-				   &surface->pending.damage_region, x, y, w, h);
+							   &surface->pending.damage_region, x, y, w, h);
 }
 
 static void
@@ -177,8 +177,8 @@ frame_callback_resource_destroy_handler(struct wl_resource *resource)
 
 static void
 surface_frame(struct wl_client     *client,
-	      struct wl_resource   *resource,
-	      uint32_t              callback_id)
+			  struct wl_resource   *resource,
+			  uint32_t              callback_id)
 {
 	pepper_surface_t   *surface = wl_resource_get_user_data(resource);
 	struct wl_resource *callback;
@@ -191,15 +191,15 @@ surface_frame(struct wl_client     *client,
 	}
 
 	wl_resource_set_implementation(callback, NULL, NULL,
-				       frame_callback_resource_destroy_handler);
+								   frame_callback_resource_destroy_handler);
 	wl_list_insert(surface->pending.frame_callback_list.prev,
-		       wl_resource_get_link(callback));
+				   wl_resource_get_link(callback));
 }
 
 static void
 surface_set_opaque_region(struct wl_client   *client,
-			  struct wl_resource *resource,
-			  struct wl_resource *region_resource)
+						  struct wl_resource *resource,
+						  struct wl_resource *region_resource)
 {
 	pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
@@ -213,8 +213,8 @@ surface_set_opaque_region(struct wl_client   *client,
 
 static void
 surface_set_input_region(struct wl_client   *client,
-			 struct wl_resource *resource,
-			 struct wl_resource *region_resource)
+						 struct wl_resource *resource,
+						 struct wl_resource *region_resource)
 {
 	pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
@@ -223,7 +223,7 @@ surface_set_input_region(struct wl_client   *client,
 		pixman_region32_copy(&surface->pending.input_region, &region->pixman_region);
 	} else {
 		pixman_region32_init_rect(&surface->pending.input_region,
-					  INT32_MIN, INT32_MIN, UINT32_MAX, UINT32_MAX);
+								  INT32_MIN, INT32_MIN, UINT32_MAX, UINT32_MAX);
 	}
 }
 
@@ -242,14 +242,14 @@ surface_commit(struct wl_client *client, struct wl_resource *resource)
 
 static void
 surface_set_buffer_transform(struct wl_client   *client,
-			     struct wl_resource *resource,
-			     int                 transform)
+							 struct wl_resource *resource,
+							 int                 transform)
 {
 	pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
 	if (transform < 0 || transform > WL_OUTPUT_TRANSFORM_FLIPPED_270) {
 		wl_resource_post_error(resource, WL_SURFACE_ERROR_INVALID_TRANSFORM,
-				       "Invalid transform value : %d", transform);
+							   "Invalid transform value : %d", transform);
 		return;
 	}
 
@@ -258,14 +258,14 @@ surface_set_buffer_transform(struct wl_client   *client,
 
 static void
 surface_set_buffer_scale(struct wl_client   *client,
-			 struct wl_resource *resource,
-			 int32_t             scale)
+						 struct wl_resource *resource,
+						 int32_t             scale)
 {
 	pepper_surface_t *surface = wl_resource_get_user_data(resource);
 
 	if (scale < 1) {
 		wl_resource_post_error(resource, WL_SURFACE_ERROR_INVALID_SCALE,
-				       "Invalid scale value (should be >= 1): %d", scale);
+							   "Invalid scale value (should be >= 1): %d", scale);
 		return;
 	}
 
@@ -286,23 +286,23 @@ static const struct wl_surface_interface surface_implementation = {
 
 pepper_surface_t *
 pepper_surface_create(pepper_compositor_t *compositor,
-		      struct wl_client *client,
-		      struct wl_resource *resource,
-		      uint32_t id)
+					  struct wl_client *client,
+					  struct wl_resource *resource,
+					  uint32_t id)
 {
 	pepper_surface_t *surface = (pepper_surface_t *)pepper_object_alloc(
-					    PEPPER_OBJECT_SURFACE,
-					    sizeof(pepper_surface_t));
+									PEPPER_OBJECT_SURFACE,
+									sizeof(pepper_surface_t));
 	PEPPER_CHECK(surface, goto error, "pepper_object_alloc() failed.\n");
 
 	surface->compositor = compositor;
 	surface->resource = wl_resource_create(client, &wl_surface_interface,
-					       wl_resource_get_version(resource), id);
+										   wl_resource_get_version(resource), id);
 	PEPPER_CHECK(surface->resource, goto error, "wl_resource_create() failed\n");
 
 	wl_resource_set_implementation(surface->resource, &surface_implementation,
-				       surface,
-				       surface_resource_destroy_handler);
+								   surface,
+								   surface_resource_destroy_handler);
 
 	surface->link.item = surface;
 	pepper_list_insert(&compositor->surface_list, &surface->link);
@@ -314,13 +314,13 @@ pepper_surface_create(pepper_compositor_t *compositor,
 	pixman_region32_init(&surface->damage_region);
 	pixman_region32_init(&surface->opaque_region);
 	pixman_region32_init_rect(&surface->input_region, INT32_MIN, INT32_MIN,
-				  UINT32_MAX, UINT32_MAX);
+							  UINT32_MAX, UINT32_MAX);
 	surface->pickable = PEPPER_TRUE;
 
 	wl_list_init(&surface->frame_callback_list);
 	pepper_list_init(&surface->view_list);
 	pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_SURFACE_ADD,
-				 surface);
+							 surface);
 
 	return surface;
 
@@ -338,7 +338,7 @@ pepper_surface_destroy(pepper_surface_t *surface)
 	pepper_view_t      *view, *nv;
 
 	pepper_object_emit_event(&surface->compositor->base,
-				 PEPPER_EVENT_COMPOSITOR_SURFACE_REMOVE, surface);
+							 PEPPER_EVENT_COMPOSITOR_SURFACE_REMOVE, surface);
 	pepper_surface_state_fini(&surface->pending);
 	pepper_object_fini(&surface->base);
 
@@ -387,7 +387,7 @@ attach_surface_to_outputs(pepper_surface_t *surface)
 
 void
 pepper_surface_commit_state(pepper_surface_t *surface,
-			    pepper_surface_state_t *state)
+							pepper_surface_state_t *state)
 {
 	pepper_view_t *view;
 
@@ -407,8 +407,8 @@ pepper_surface_commit_state(pepper_surface_t *surface,
 
 			surface->buffer.destroy_listener =
 				pepper_object_add_event_listener(&state->buffer->base,
-						PEPPER_EVENT_OBJECT_DESTROY, 0,
-						surface_handle_buffer_destroy, surface);
+												 PEPPER_EVENT_OBJECT_DESTROY, 0,
+												 surface_handle_buffer_destroy, surface);
 		}
 
 		surface->buffer.buffer   = state->buffer;
@@ -459,7 +459,7 @@ pepper_surface_commit(pepper_surface_t *surface)
 
 void
 pepper_surface_send_frame_callback_done(pepper_surface_t *surface,
-					uint32_t time)
+										uint32_t time)
 {
 	struct wl_resource *callback, *next;
 
@@ -556,7 +556,7 @@ pepper_surface_get_buffer(pepper_surface_t *surface)
  */
 PEPPER_API void
 pepper_surface_get_buffer_offset(pepper_surface_t *surface, int32_t *x,
-				 int32_t *y)
+								 int32_t *y)
 {
 	if (x)
 		*x = surface->buffer.x;

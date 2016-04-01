@@ -167,7 +167,7 @@ x11_window_input_property_change(xcb_connection_t *conn, xcb_window_t window);
 
 void
 x11_handle_input_event(x11_seat_t *seat, uint32_t type,
-		       xcb_generic_event_t *xev);
+					   xcb_generic_event_t *xev);
 
 void
 x11_output_destroy(void *o);

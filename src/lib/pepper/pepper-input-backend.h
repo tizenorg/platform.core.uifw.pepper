@@ -56,7 +56,7 @@ struct pepper_input_device_backend {
 
 PEPPER_API pepper_input_device_t *
 pepper_input_device_create(pepper_compositor_t *compositor, uint32_t caps,
-			   const pepper_input_device_backend_t *backend, void *data);
+						   const pepper_input_device_backend_t *backend, void *data);
 
 PEPPER_API void
 pepper_input_device_destroy(pepper_input_device_t *device);

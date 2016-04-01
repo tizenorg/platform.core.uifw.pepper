@@ -96,18 +96,18 @@ fbdev_debug_print_var_screeninfo(const struct fb_var_screeninfo *info)
 {
 	printf("Bits per pixel:     %i\n", info->bits_per_pixel);
 	printf("Resolution:         %ix%i (virtual %ix%i)\n",
-	       info->xres, info->yres,
-	       info->xres_virtual, info->yres_virtual);
+		   info->xres, info->yres,
+		   info->xres_virtual, info->yres_virtual);
 	printf("Scrolling offset:   (%i,%i)\n",
-	       info->xoffset, info->yoffset);
+		   info->xoffset, info->yoffset);
 	printf("Trans channel:      %i bits at offset %i\n",
-	       info->transp.length, info->transp.offset);
+		   info->transp.length, info->transp.offset);
 	printf("Red channel:        %i bits at offset %i\n",
-	       info->red.length, info->red.offset);
+		   info->red.length, info->red.offset);
 	printf("Green channel:      %i bits at offset %i\n",
-	       info->red.length, info->green.offset);
+		   info->red.length, info->green.offset);
 	printf("Blue channel:       %i bits at offset %i\n",
-	       info->red.length, info->blue.offset);
+		   info->red.length, info->blue.offset);
 }
 
 static void
@@ -217,14 +217,14 @@ fbdev_output_repaint(void *o, const pepper_list_t *plane_list)
 			pixman_region32_t   *damage = pepper_plane_get_damage_region(plane);
 
 			pepper_renderer_repaint_output(output->renderer, output->base, render_list,
-						       damage);
+										   damage);
 			pepper_plane_clear_damage_region(plane);
 
 			/* FIXME: composite with damage? */
 			if (output->use_shadow)
 				pixman_image_composite32(PIXMAN_OP_SRC, output->shadow_image, NULL,
-							 output->frame_buffer_image, 0, 0, 0, 0, 0, 0,
-							 output->w, output->h);
+										 output->frame_buffer_image, 0, 0, 0, 0, 0, 0,
+										 output->w, output->h);
 		}
 	}
 
@@ -239,7 +239,7 @@ fbdev_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 
 static void
 fbdev_output_flush_surface_damage(void *o, pepper_surface_t *surface,
-				  pepper_bool_t *keep_buffer)
+								  pepper_bool_t *keep_buffer)
 {
 	pepper_renderer_flush_surface_damage(((fbdev_output_t *)o)->renderer, surface);
 	*keep_buffer = PEPPER_TRUE;
@@ -275,8 +275,8 @@ init_pixman_renderer(fbdev_output_t *output)
 		target = pepper_pixman_renderer_create_target_for_image(output->shadow_image);
 	else
 		target = pepper_pixman_renderer_create_target(output->format,
-				output->frame_buffer_pixels,
-				output->stride, output->w, output->h);
+				 output->frame_buffer_pixels,
+				 output->stride, output->w, output->h);
 
 	if (!target)
 		return PEPPER_FALSE;
@@ -355,7 +355,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 	output->stride = output->w * (output->bpp / 8);
 
 	output->frame_buffer_pixels = mmap(NULL, output->h * output->stride,
-					   PROT_WRITE, MAP_SHARED, fd, 0);
+									   PROT_WRITE, MAP_SHARED, fd, 0);
 	if (!output->frame_buffer_pixels) {
 		PEPPER_ERROR("mmap failed.\n");
 		goto error;
@@ -369,21 +369,21 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 		pixman_format_code_t pixman_format = get_pixman_format(output->format);
 
 		output->frame_buffer_image = pixman_image_create_bits(pixman_format,
-					     output->w, output->h,
-					     output->frame_buffer_pixels,
-					     output->stride);
+									 output->w, output->h,
+									 output->frame_buffer_pixels,
+									 output->stride);
 		if (!output->frame_buffer_image) {
 			PEPPER_ERROR("Failed to create pixman image in %s: pixels_image\n",
-				     __FUNCTION__);
+						 __FUNCTION__);
 			goto error;
 		}
 
 		output->shadow_image = pixman_image_create_bits(pixman_format, output->w,
-				       output->h,
-				       NULL, output->stride);
+							   output->h,
+							   NULL, output->stride);
 		if (!output->shadow_image) {
 			PEPPER_ERROR("Failed to create pixman image in %s: shadow_image\n",
-				     __FUNCTION__);
+						 __FUNCTION__);
 			goto error;
 		}
 	}
@@ -394,8 +394,8 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 	}
 
 	output->base = pepper_compositor_add_output(output->fbdev->compositor,
-			&fbdev_output_backend, "fbdev", output,
-			WL_OUTPUT_TRANSFORM_NORMAL, 1);
+				   &fbdev_output_backend, "fbdev", output,
+				   WL_OUTPUT_TRANSFORM_NORMAL, 1);
 	if (!output->base) {
 		PEPPER_ERROR("Failed to add output to compositor in %s\n", __FUNCTION__);
 		goto error;
@@ -407,7 +407,7 @@ pepper_fbdev_output_create(pepper_fbdev_t *fbdev, const char *renderer)
 	display = pepper_compositor_get_display(fbdev->compositor);
 	loop = wl_display_get_event_loop(display);
 	output->frame_done_timer = wl_event_loop_add_timer(loop, frame_done_handler,
-				   output);
+							   output);
 
 	return PEPPER_TRUE;
 

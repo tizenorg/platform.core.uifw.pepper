@@ -57,11 +57,11 @@ get_bucket(pepper_map_t *map, const void *key)
 
 PEPPER_API void
 pepper_map_init(pepper_map_t               *map,
-		int                         bucket_bits,
-		pepper_hash_func_t          hash_func,
-		pepper_key_length_func_t    key_length_func,
-		pepper_key_compare_func_t   key_compare_func,
-		void                       *buckets)
+				int                         bucket_bits,
+				pepper_hash_func_t          hash_func,
+				pepper_key_length_func_t    key_length_func,
+				pepper_key_compare_func_t   key_compare_func,
+				void                       *buckets)
 {
 	map->hash_func = hash_func;
 	map->key_length_func = key_length_func;
@@ -82,7 +82,7 @@ int32_hash(const void *key, int key_length)
 
 static int
 int32_key_compare(const void *key0, int key0_length,
-		  const void *key1, int key1_length)
+				  const void *key1, int key1_length)
 {
 	return (int)(key0 - key1);
 }
@@ -102,7 +102,7 @@ int64_hash(const void *key, int key_length)
 
 static int
 int64_key_compare(const void *key0, int key0_length,
-		  const void *key1, int key1_length)
+				  const void *key1, int key1_length)
 {
 	return (int)(key0 - key1);
 }
@@ -133,19 +133,19 @@ pepper_map_fini(pepper_map_t *map)
 
 PEPPER_API pepper_map_t *
 pepper_map_create(int                       bucket_bits,
-		  pepper_hash_func_t        hash_func,
-		  pepper_key_length_func_t  key_length_func,
-		  pepper_key_compare_func_t key_compare_func)
+				  pepper_hash_func_t        hash_func,
+				  pepper_key_length_func_t  key_length_func,
+				  pepper_key_compare_func_t key_compare_func)
 {
 	pepper_map_t   *map;
 	int             bucket_size = 1 << bucket_bits;
 
 	map = calloc(1, sizeof(pepper_map_t) + bucket_size * sizeof(
-			     pepper_map_entry_t *));
+					 pepper_map_entry_t *));
 	PEPPER_CHECK(map, return NULL, "calloc() failed.\n");
 
 	pepper_map_init(map, bucket_bits, hash_func, key_length_func, key_compare_func,
-			map + 1);
+					map + 1);
 	return map;
 }
 
@@ -232,7 +232,7 @@ pepper_map_get(pepper_map_t *map, const void *key)
 
 PEPPER_API void
 pepper_map_set(pepper_map_t *map, const void *key, void *data,
-	       pepper_free_func_t free_func)
+			   pepper_free_func_t free_func)
 {
 	pepper_map_entry_t    **bucket = get_bucket(map, key);
 	pepper_map_entry_t     *curr = *bucket;

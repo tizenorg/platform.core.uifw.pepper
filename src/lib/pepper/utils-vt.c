@@ -66,7 +66,7 @@ pepper_virtual_terminal_restore(void)
 		}
 
 		if ((vt_data.saved_tty_num > 0) &&
-		    (ioctl(fd, VT_ACTIVATE, vt_data.saved_tty_num) < 0)) {
+			(ioctl(fd, VT_ACTIVATE, vt_data.saved_tty_num) < 0)) {
 			PEPPER_ERROR("");
 		}
 

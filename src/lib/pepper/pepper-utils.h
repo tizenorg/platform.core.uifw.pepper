@@ -272,11 +272,11 @@ struct pepper_map {
 
 PEPPER_API void
 pepper_map_init(pepper_map_t               *map,
-		int                         bucket_bits,
-		pepper_hash_func_t          hash_func,
-		pepper_key_length_func_t    key_length_func,
-		pepper_key_compare_func_t   key_compare_func,
-		void                       *buckets);
+				int                         bucket_bits,
+				pepper_hash_func_t          hash_func,
+				pepper_key_length_func_t    key_length_func,
+				pepper_key_compare_func_t   key_compare_func,
+				void                       *buckets);
 
 PEPPER_API void
 pepper_map_int32_init(pepper_map_t *map, int bucket_bits, void *buckets);
@@ -292,9 +292,9 @@ pepper_map_fini(pepper_map_t *map);
 
 PEPPER_API pepper_map_t *
 pepper_map_create(int                       bucket_bits,
-		  pepper_hash_func_t        hash_func,
-		  pepper_key_length_func_t  key_length_func,
-		  pepper_key_compare_func_t key_compare_func);
+				  pepper_hash_func_t        hash_func,
+				  pepper_key_length_func_t  key_length_func,
+				  pepper_key_compare_func_t key_compare_func);
 
 PEPPER_API pepper_map_t *
 pepper_map_int32_create(int bucket_bits);
@@ -316,7 +316,7 @@ pepper_map_get(pepper_map_t *map, const void *key);
 
 PEPPER_API void
 pepper_map_set(pepper_map_t *map, const void *key, void *data,
-	       pepper_free_func_t free_func);
+			   pepper_free_func_t free_func);
 
 typedef struct pepper_id_allocator  pepper_id_allocator_t;
 
@@ -421,7 +421,7 @@ pepper_reciprocal_sqrt(double x)
 
 static inline void
 pepper_mat4_multiply(pepper_mat4_t *dst, const pepper_mat4_t *ma,
-		     const pepper_mat4_t *mb)
+					 const pepper_mat4_t *mb)
 {
 	pepper_mat4_t  tmp;
 	double          *d = tmp.m;
@@ -555,7 +555,7 @@ pepper_mat4_scale(pepper_mat4_t *matrix, double x, double y, double z)
 
 static inline void
 pepper_mat4_init_rotate(pepper_mat4_t *matrix, double x, double y, double z,
-			double angle)
+						double angle)
 {
 	double c;
 	double s;
@@ -638,7 +638,7 @@ pepper_mat4_init_rotate(pepper_mat4_t *matrix, double x, double y, double z,
 
 static inline void
 pepper_mat4_rotate(pepper_mat4_t *matrix, double x, double y, double z,
-		   double angle)
+				   double angle)
 {
 	pepper_mat4_t rotate;
 
@@ -661,7 +661,7 @@ pepper_mat4_inverse(pepper_mat4_t *dst, const pepper_mat4_t *src)
 	double          det;
 
 	if (!(src->flags & PEPPER_MATRIX_COMPLEX) &&
-	    !(src->flags & PEPPER_MATRIX_ROTATE)) {
+		!(src->flags & PEPPER_MATRIX_ROTATE)) {
 		pepper_mat4_copy(dst, src);
 
 		dst->m[12] = -m[12] / m[ 0];
@@ -676,116 +676,116 @@ pepper_mat4_inverse(pepper_mat4_t *dst, const pepper_mat4_t *src)
 	}
 
 	d[ 0] =  m[ 5] * m[10] * m[15] -
-		 m[ 5] * m[11] * m[14] -
-		 m[ 9] * m[ 6] * m[15] +
-		 m[ 9] * m[ 7] * m[14] +
-		 m[13] * m[ 6] * m[11] -
-		 m[13] * m[ 7] * m[10];
+			 m[ 5] * m[11] * m[14] -
+			 m[ 9] * m[ 6] * m[15] +
+			 m[ 9] * m[ 7] * m[14] +
+			 m[13] * m[ 6] * m[11] -
+			 m[13] * m[ 7] * m[10];
 
 	d[ 4] = -m[ 4] * m[10] * m[15] +
-		m[ 4] * m[11] * m[14] +
-		m[ 8] * m[ 6] * m[15] -
-		m[ 8] * m[ 7] * m[14] -
-		m[12] * m[ 6] * m[11] +
-		m[12] * m[ 7] * m[10];
+			m[ 4] * m[11] * m[14] +
+			m[ 8] * m[ 6] * m[15] -
+			m[ 8] * m[ 7] * m[14] -
+			m[12] * m[ 6] * m[11] +
+			m[12] * m[ 7] * m[10];
 
 	d[ 8] =  m[ 4] * m[ 9] * m[15] -
-		 m[ 4] * m[11] * m[13] -
-		 m[ 8] * m[ 5] * m[15] +
-		 m[ 8] * m[ 7] * m[13] +
-		 m[12] * m[ 5] * m[11] -
-		 m[12] * m[ 7] * m[ 9];
+			 m[ 4] * m[11] * m[13] -
+			 m[ 8] * m[ 5] * m[15] +
+			 m[ 8] * m[ 7] * m[13] +
+			 m[12] * m[ 5] * m[11] -
+			 m[12] * m[ 7] * m[ 9];
 
 	d[12] = -m[ 4] * m[ 9] * m[14] +
-		m[ 4] * m[10] * m[13] +
-		m[ 8] * m[ 5] * m[14] -
-		m[ 8] * m[ 6] * m[13] -
-		m[12] * m[ 5] * m[10] +
-		m[12] * m[ 6] * m[ 9];
+			m[ 4] * m[10] * m[13] +
+			m[ 8] * m[ 5] * m[14] -
+			m[ 8] * m[ 6] * m[13] -
+			m[12] * m[ 5] * m[10] +
+			m[12] * m[ 6] * m[ 9];
 
 	d[ 1] = -m[ 1] * m[10] * m[15] +
-		m[ 1] * m[11] * m[14] +
-		m[ 9] * m[ 2] * m[15] -
-		m[ 9] * m[ 3] * m[14] -
-		m[13] * m[ 2] * m[11] +
-		m[13] * m[ 3] * m[10];
+			m[ 1] * m[11] * m[14] +
+			m[ 9] * m[ 2] * m[15] -
+			m[ 9] * m[ 3] * m[14] -
+			m[13] * m[ 2] * m[11] +
+			m[13] * m[ 3] * m[10];
 
 	d[ 5] =  m[ 0] * m[10] * m[15] -
-		 m[ 0] * m[11] * m[14] -
-		 m[ 8] * m[ 2] * m[15] +
-		 m[ 8] * m[ 3] * m[14] +
-		 m[12] * m[ 2] * m[11] -
-		 m[12] * m[ 3] * m[10];
+			 m[ 0] * m[11] * m[14] -
+			 m[ 8] * m[ 2] * m[15] +
+			 m[ 8] * m[ 3] * m[14] +
+			 m[12] * m[ 2] * m[11] -
+			 m[12] * m[ 3] * m[10];
 
 	d[ 9] = -m[ 0] * m[ 9] * m[15] +
-		m[ 0] * m[11] * m[13] +
-		m[ 8] * m[ 1] * m[15] -
-		m[ 8] * m[ 3] * m[13] -
-		m[12] * m[ 1] * m[11] +
-		m[12] * m[ 3] * m[ 9];
+			m[ 0] * m[11] * m[13] +
+			m[ 8] * m[ 1] * m[15] -
+			m[ 8] * m[ 3] * m[13] -
+			m[12] * m[ 1] * m[11] +
+			m[12] * m[ 3] * m[ 9];
 
 	d[13] =  m[ 0] * m[ 9] * m[14] -
-		 m[ 0] * m[10] * m[13] -
-		 m[ 8] * m[ 1] * m[14] +
-		 m[ 8] * m[ 2] * m[13] +
-		 m[12] * m[ 1] * m[10] -
-		 m[12] * m[ 2] * m[ 9];
+			 m[ 0] * m[10] * m[13] -
+			 m[ 8] * m[ 1] * m[14] +
+			 m[ 8] * m[ 2] * m[13] +
+			 m[12] * m[ 1] * m[10] -
+			 m[12] * m[ 2] * m[ 9];
 
 	d[ 2] =  m[ 1] * m[ 6] * m[15] -
-		 m[ 1] * m[ 7] * m[14] -
-		 m[ 5] * m[ 2] * m[15] +
-		 m[ 5] * m[ 3] * m[14] +
-		 m[13] * m[ 2] * m[ 7] -
-		 m[13] * m[ 3] * m[ 6];
+			 m[ 1] * m[ 7] * m[14] -
+			 m[ 5] * m[ 2] * m[15] +
+			 m[ 5] * m[ 3] * m[14] +
+			 m[13] * m[ 2] * m[ 7] -
+			 m[13] * m[ 3] * m[ 6];
 
 	d[ 6] = -m[ 0] * m[ 6] * m[15] +
-		m[ 0] * m[ 7] * m[14] +
-		m[ 4] * m[ 2] * m[15] -
-		m[ 4] * m[ 3] * m[14] -
-		m[12] * m[ 2] * m[ 7] +
-		m[12] * m[ 3] * m[ 6];
+			m[ 0] * m[ 7] * m[14] +
+			m[ 4] * m[ 2] * m[15] -
+			m[ 4] * m[ 3] * m[14] -
+			m[12] * m[ 2] * m[ 7] +
+			m[12] * m[ 3] * m[ 6];
 
 	d[10] =  m[ 0] * m[ 5] * m[15] -
-		 m[ 0] * m[ 7] * m[13] -
-		 m[ 4] * m[ 1] * m[15] +
-		 m[ 4] * m[ 3] * m[13] +
-		 m[12] * m[ 1] * m[ 7] -
-		 m[12] * m[ 3] * m[ 5];
+			 m[ 0] * m[ 7] * m[13] -
+			 m[ 4] * m[ 1] * m[15] +
+			 m[ 4] * m[ 3] * m[13] +
+			 m[12] * m[ 1] * m[ 7] -
+			 m[12] * m[ 3] * m[ 5];
 
 	d[14] = -m[ 0] * m[ 5] * m[14] +
-		m[ 0] * m[ 6] * m[13] +
-		m[ 4] * m[ 1] * m[14] -
-		m[ 4] * m[ 2] * m[13] -
-		m[12] * m[ 1] * m[ 6] +
-		m[12] * m[ 2] * m[ 5];
+			m[ 0] * m[ 6] * m[13] +
+			m[ 4] * m[ 1] * m[14] -
+			m[ 4] * m[ 2] * m[13] -
+			m[12] * m[ 1] * m[ 6] +
+			m[12] * m[ 2] * m[ 5];
 
 	d[ 3] = -m[ 1] * m[ 6] * m[11] +
-		m[ 1] * m[ 7] * m[10] +
-		m[ 5] * m[ 2] * m[11] -
-		m[ 5] * m[ 3] * m[10] -
-		m[ 9] * m[ 2] * m[ 7] +
-		m[ 9] * m[ 3] * m[ 6];
+			m[ 1] * m[ 7] * m[10] +
+			m[ 5] * m[ 2] * m[11] -
+			m[ 5] * m[ 3] * m[10] -
+			m[ 9] * m[ 2] * m[ 7] +
+			m[ 9] * m[ 3] * m[ 6];
 
 	d[ 7] =  m[ 0] * m[ 6] * m[11] -
-		 m[ 0] * m[ 7] * m[10] -
-		 m[ 4] * m[ 2] * m[11] +
-		 m[ 4] * m[ 3] * m[10] +
-		 m[ 8] * m[ 2] * m[ 7] -
-		 m[ 8] * m[ 3] * m[ 6];
+			 m[ 0] * m[ 7] * m[10] -
+			 m[ 4] * m[ 2] * m[11] +
+			 m[ 4] * m[ 3] * m[10] +
+			 m[ 8] * m[ 2] * m[ 7] -
+			 m[ 8] * m[ 3] * m[ 6];
 
 	d[11] = -m[ 0] * m[ 5] * m[11] +
-		m[ 0] * m[ 7] * m[ 9] +
-		m[ 4] * m[ 1] * m[11] -
-		m[ 4] * m[ 3] * m[ 9] -
-		m[ 8] * m[ 1] * m[ 7] +
-		m[ 8] * m[ 3] * m[ 5];
+			m[ 0] * m[ 7] * m[ 9] +
+			m[ 4] * m[ 1] * m[11] -
+			m[ 4] * m[ 3] * m[ 9] -
+			m[ 8] * m[ 1] * m[ 7] +
+			m[ 8] * m[ 3] * m[ 5];
 
 	d[15] =  m[ 0] * m[ 5] * m[10] -
-		 m[ 0] * m[ 6] * m[ 9] -
-		 m[ 4] * m[ 1] * m[10] +
-		 m[ 4] * m[ 2] * m[ 9] +
-		 m[ 8] * m[ 1] * m[ 6] -
-		 m[ 8] * m[ 2] * m[ 5];
+			 m[ 0] * m[ 6] * m[ 9] -
+			 m[ 4] * m[ 1] * m[10] +
+			 m[ 4] * m[ 2] * m[ 9] +
+			 m[ 8] * m[ 1] * m[ 6] -
+			 m[ 8] * m[ 2] * m[ 5];
 
 	det = m[0] * d[0] + m[1] * d[4] + m[2] * d[8] + m[3] * d[12];
 

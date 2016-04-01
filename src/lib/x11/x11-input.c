@@ -52,7 +52,7 @@ get_standard_button(uint32_t xcb_button)
 
 void
 x11_handle_input_event(x11_seat_t *seat, uint32_t type,
-		       xcb_generic_event_t *xev)
+					   xcb_generic_event_t *xev)
 {
 	pepper_input_event_t event;
 
@@ -73,7 +73,7 @@ x11_handle_input_event(x11_seat_t *seat, uint32_t type,
 		event.state = PEPPER_KEY_STATE_PRESSED;
 
 		pepper_object_emit_event((pepper_object_t *)seat->keyboard,
-					 PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
+								 PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
 	}
 	break;
 	case XCB_KEY_RELEASE: {
@@ -84,7 +84,7 @@ x11_handle_input_event(x11_seat_t *seat, uint32_t type,
 		event.state = PEPPER_KEY_STATE_RELEASED;
 
 		pepper_object_emit_event((pepper_object_t *)seat->keyboard,
-					 PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
+								 PEPPER_EVENT_INPUT_DEVICE_KEYBOARD_KEY, &event);
 	}
 	break;
 	case XCB_BUTTON_PRESS: {
@@ -95,7 +95,7 @@ x11_handle_input_event(x11_seat_t *seat, uint32_t type,
 		event.button = get_standard_button(bp->detail);
 
 		pepper_object_emit_event((pepper_object_t *)seat->pointer,
-					 PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
+								 PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
 	}
 	break;
 	case XCB_BUTTON_RELEASE: {
@@ -106,7 +106,7 @@ x11_handle_input_event(x11_seat_t *seat, uint32_t type,
 		event.button = get_standard_button(br->detail);
 
 		pepper_object_emit_event((pepper_object_t *)seat->pointer,
-					 PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
+								 PEPPER_EVENT_INPUT_DEVICE_POINTER_BUTTON, &event);
 	}
 	break;
 	case XCB_MOTION_NOTIFY: {
@@ -117,7 +117,7 @@ x11_handle_input_event(x11_seat_t *seat, uint32_t type,
 		event.y    = motion->event_y;
 
 		pepper_object_emit_event((pepper_object_t *)seat->pointer,
-					 PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE, &event);
+								 PEPPER_EVENT_INPUT_DEVICE_POINTER_MOTION_ABSOLUTE, &event);
 	}
 	break;
 	default :
@@ -192,8 +192,8 @@ pepper_x11_input_create(pepper_x11_connection_t *conn)
 
 	/* Hard-coded: */
 	seat->pointer = pepper_input_device_create(conn->compositor,
-			WL_SEAT_CAPABILITY_POINTER,
-			NULL, NULL);
+					WL_SEAT_CAPABILITY_POINTER,
+					NULL, NULL);
 	if (!seat->pointer) {
 		PEPPER_ERROR("failed to create pepper pointer device\n");
 
@@ -202,8 +202,8 @@ pepper_x11_input_create(pepper_x11_connection_t *conn)
 	seat->caps |= WL_SEAT_CAPABILITY_POINTER;
 
 	seat->keyboard = pepper_input_device_create(conn->compositor,
-			 WL_SEAT_CAPABILITY_KEYBOARD,
-			 NULL, NULL);
+					 WL_SEAT_CAPABILITY_KEYBOARD,
+					 NULL, NULL);
 	if (!seat->keyboard) {
 		PEPPER_ERROR("failed to create pepper keyboard device\n");
 

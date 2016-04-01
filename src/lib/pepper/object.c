@@ -49,7 +49,7 @@ pepper_object_init(pepper_object_t *object, pepper_object_type_t type)
 	pepper_list_init(&object->event_listener_list);
 
 	pepper_map_pointer_init(&object->user_data_map, PEPPER_OBJECT_BUCKET_BITS,
-				&object->buckets[0]);
+							&object->buckets[0]);
 
 	if (!object_map) {
 		pepper_id_allocator_init(&id_allocator);
@@ -104,8 +104,8 @@ pepper_object_get_type(pepper_object_t *object)
  */
 PEPPER_API void
 pepper_object_set_user_data(pepper_object_t *object, const void *key,
-			    void *data,
-			    pepper_free_func_t free_func)
+							void *data,
+							pepper_free_func_t free_func)
 {
 	pepper_map_set(&object->user_data_map, key, data, free_func);
 }
@@ -158,8 +158,8 @@ insert_listener(pepper_object_t *object, pepper_event_listener_t *listener)
  */
 PEPPER_API pepper_event_listener_t *
 pepper_object_add_event_listener(pepper_object_t *object, uint32_t id,
-				 int priority,
-				 pepper_event_callback_t callback, void *data)
+								 int priority,
+								 pepper_event_callback_t callback, void *data)
 {
 	pepper_event_listener_t *listener;
 
@@ -200,7 +200,7 @@ pepper_event_listener_remove(pepper_event_listener_t *listener)
  */
 PEPPER_API void
 pepper_event_listener_set_priority(pepper_event_listener_t *listener,
-				   int priority)
+								   int priority)
 {
 	if (!listener->object)
 		return;
@@ -232,7 +232,7 @@ pepper_object_emit_event(pepper_object_t *object, uint32_t id, void *info)
 	pepper_event_listener_t *listener, *tmp;
 
 	PEPPER_CHECK(id != PEPPER_EVENT_ALL, return,
-		     "Cannot emit the PEPPER_EVENT_ALL event");
+				 "Cannot emit the PEPPER_EVENT_ALL event");
 
 	pepper_list_for_each_safe(listener, tmp, &object->event_listener_list, link) {
 		if (listener->id == PEPPER_EVENT_ALL || listener->id == id)

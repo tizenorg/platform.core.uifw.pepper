@@ -76,11 +76,11 @@ output_send_geometry(pepper_output_t *output)
 
 	wl_resource_for_each(resource, &output->resource_list) {
 		wl_output_send_geometry(resource,
-					output->geometry.x, output->geometry.y,
-					output->geometry.w, output->geometry.h,
-					output->geometry.subpixel,
-					output->geometry.maker, output->geometry.model,
-					output->geometry.transform);
+								output->geometry.x, output->geometry.y,
+								output->geometry.w, output->geometry.h,
+								output->geometry.subpixel,
+								output->geometry.maker, output->geometry.model,
+								output->geometry.transform);
 	}
 }
 
@@ -106,11 +106,11 @@ output_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id)
 	wl_resource_set_implementation(resource, NULL, NULL, output_destroy);
 
 	wl_output_send_geometry(resource,
-				output->geometry.x, output->geometry.y,
-				output->geometry.w, output->geometry.h,
-				output->geometry.subpixel,
-				output->geometry.maker, output->geometry.model,
-				output->geometry.transform);
+							output->geometry.x, output->geometry.y,
+							output->geometry.w, output->geometry.h,
+							output->geometry.subpixel,
+							output->geometry.maker, output->geometry.model,
+							output->geometry.transform);
 
 	wl_output_send_scale(resource, output->scale);
 	output_send_modes(output, resource);
@@ -143,7 +143,7 @@ output_repaint(pepper_output_t *output)
 	/* Build a list of views in sorted z-order that are visible on the given output. */
 	pepper_list_for_each(view, &output->compositor->view_list, compositor_link) {
 		if (!view->active || !(view->output_overlap & (1 << output->id)) ||
-		    !view->surface) {
+			!view->surface) {
 			/* Detach from the previously assigned plane. */
 			pepper_view_assign_plane(view, output, NULL);
 			continue;
@@ -162,8 +162,8 @@ output_repaint(pepper_output_t *output)
 	pepper_list_for_each(view, &output->view_list, link) {
 		/* TODO: Output time stamp and presentation feedback. */
 		pepper_surface_send_frame_callback_done(view->surface,
-							output->frame.time.tv_sec * 1000 +
-							output->frame.time.tv_nsec / 1000000);
+												output->frame.time.tv_sec * 1000 +
+												output->frame.time.tv_nsec / 1000000);
 	}
 }
 
@@ -202,7 +202,7 @@ pepper_output_schedule_repaint(pepper_output_t *output)
  */
 PEPPER_API void
 pepper_output_add_damage_region(pepper_output_t *output,
-				pixman_region32_t *region)
+								pixman_region32_t *region)
 {
 	pepper_plane_t *plane;
 	pepper_list_for_each(plane, &output->plane_list, link)
@@ -233,7 +233,7 @@ pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
 	if (output->frame.print_fps) {
 		if (output->frame.count > 0) {
 			uint32_t tick = (time.tv_sec - output->frame.time.tv_sec) * 1000 +
-					(time.tv_nsec - output->frame.time.tv_nsec) / 1000000;
+							(time.tv_nsec - output->frame.time.tv_nsec) / 1000000;
 			uint32_t tick_count;
 
 			output->frame.total_time += tick;
@@ -249,7 +249,7 @@ pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts)
 				tick_count = PEPPER_OUTPUT_MAX_TICK_COUNT;
 
 			PEPPER_TRACE("%s FPS : %.2f\n", output->name,
-				     (double)(tick_count * 1000) / (double)output->frame.total_time);
+						 (double)(tick_count * 1000) / (double)output->frame.total_time);
 		}
 	}
 
@@ -288,8 +288,8 @@ pepper_output_update_mode(pepper_output_t *output)
  */
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-			     const pepper_output_backend_t *backend, const char *name, void *data,
-			     int transform, int scale)
+							 const pepper_output_backend_t *backend, const char *name, void *data,
+							 int transform, int scale)
 {
 	pepper_output_t    *output;
 	uint32_t            id;
@@ -299,7 +299,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 
 	pepper_list_for_each(output, &compositor->output_list, link) {
 		PEPPER_CHECK(strcmp(output->name, name) != 0, return NULL,
-			     "Output with name = %s already exist.\n", name);
+					 "Output with name = %s already exist.\n", name);
 	}
 
 	id = ffs(~compositor->output_id_allocator);
@@ -308,7 +308,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 	id = id - 1;
 
 	output = (pepper_output_t *)pepper_object_alloc(PEPPER_OBJECT_OUTPUT,
-			sizeof(pepper_output_t));
+			 sizeof(pepper_output_t));
 	PEPPER_CHECK(output, return NULL, "pepper_object_alloc() failed.\n");
 
 	output->compositor = compositor;
@@ -317,8 +317,8 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 
 	/* Create global object for this output. */
 	output->global = wl_global_create(compositor->display, &wl_output_interface, 2,
-					  output,
-					  output_bind);
+									  output,
+									  output_bind);
 	if (!output->global) {
 		free(output);
 		return NULL;
@@ -367,7 +367,7 @@ pepper_compositor_add_output(pepper_compositor_t *compositor,
 		output->frame.print_fps = PEPPER_TRUE;
 
 	pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_OUTPUT_ADD,
-				 output);
+							 output);
 	return output;
 }
 
@@ -395,7 +395,7 @@ PEPPER_API void
 pepper_output_destroy(pepper_output_t *output)
 {
 	pepper_object_emit_event(&output->compositor->base,
-				 PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE, output);
+							 PEPPER_EVENT_COMPOSITOR_OUTPUT_REMOVE, output);
 	pepper_object_fini(&output->base);
 
 	output->compositor->output_id_allocator &= ~(1 << output->id);
@@ -491,7 +491,7 @@ pepper_output_get_mode_count(pepper_output_t *output)
  */
 PEPPER_API void
 pepper_output_get_mode(pepper_output_t *output, int index,
-		       pepper_output_mode_t *mode)
+					   pepper_output_mode_t *mode)
 {
 	return output->backend->get_mode(output->data, index, mode);
 }
@@ -522,10 +522,10 @@ pepper_output_get_current_mode(pepper_output_t *output)
  */
 PEPPER_API pepper_bool_t
 pepper_output_set_mode(pepper_output_t *output,
-		       const pepper_output_mode_t *mode)
+					   const pepper_output_mode_t *mode)
 {
 	if (output->current_mode.w == mode->w && output->current_mode.h == mode->h &&
-	    output->current_mode.refresh == mode->refresh)
+		output->current_mode.refresh == mode->refresh)
 		return PEPPER_TRUE;
 
 	if (output->backend->set_mode(output->data, mode)) {

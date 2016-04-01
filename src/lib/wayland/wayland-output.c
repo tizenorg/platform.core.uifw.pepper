@@ -41,15 +41,15 @@ static const char *model_name = "wayland";
 
 static void
 shell_surface_ping(void *data, struct wl_shell_surface *shell_surface,
-		   uint32_t serial)
+				   uint32_t serial)
 {
 	wl_shell_surface_pong(shell_surface, serial);
 }
 
 static void
 shell_surface_configure(void *data, struct wl_shell_surface *shell_surface,
-			uint32_t edges,
-			int32_t w, int32_t h)
+						uint32_t edges,
+						int32_t w, int32_t h)
 {
 	wayland_output_t       *output = data;
 	wayland_shm_buffer_t   *buffer, *tmp;
@@ -214,7 +214,7 @@ wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 				output->render_pre(output);
 
 			pepper_renderer_repaint_output(output->renderer, output->base, render_list,
-						       damage);
+										   damage);
 			pepper_plane_clear_damage_region(plane);
 
 			if (output->render_post)
@@ -230,15 +230,15 @@ wayland_output_repaint(void *o, const pepper_list_t *plane_list)
 
 static void
 wayland_output_attach_surface(void *o, pepper_surface_t *surface, int *w,
-			      int *h)
+							  int *h)
 {
 	pepper_renderer_attach_surface(((wayland_output_t *)o)->renderer, surface, w,
-				       h);
+								   h);
 }
 
 static void
 wayland_output_flush_surface_damage(void *o, pepper_surface_t *surface,
-				    pepper_bool_t *keep_buffer)
+									pepper_bool_t *keep_buffer)
 {
 	wayland_output_t   *output = o;
 	pepper_buffer_t    *buffer = pepper_surface_get_buffer(surface);
@@ -246,7 +246,7 @@ wayland_output_flush_surface_damage(void *o, pepper_surface_t *surface,
 	pepper_renderer_flush_surface_damage(output->renderer, surface);
 
 	if (output->renderer == output->conn->pixman_renderer ||
-	    (buffer && !wl_shm_buffer_get(pepper_buffer_get_resource(buffer)))) {
+		(buffer && !wl_shm_buffer_get(pepper_buffer_get_resource(buffer)))) {
 		*keep_buffer = PEPPER_TRUE;
 	} else {
 		*keep_buffer = PEPPER_FALSE;
@@ -308,15 +308,15 @@ init_gl_renderer(wayland_output_t *output)
 		return PEPPER_FALSE;
 
 	output->egl.window = wl_egl_window_create(output->surface, output->w,
-			     output->h);
+						 output->h);
 	if (!output->egl.window)
 		return PEPPER_FALSE;
 
 	output->gl_render_target = pepper_gl_renderer_create_target(
-					   output->conn->renderer,
-					   output->egl.window,
-					   PEPPER_FORMAT_ARGB8888, NULL,
-					   output->w, output->h);
+								   output->conn->renderer,
+								   output->egl.window,
+								   PEPPER_FORMAT_ARGB8888, NULL,
+								   output->w, output->h);
 
 	if (!output->gl_render_target) {
 		wl_egl_window_destroy(output->egl.window);
@@ -360,7 +360,7 @@ init_renderer(wayland_output_t *output, const char *name)
 
 PEPPER_API pepper_output_t *
 pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h,
-			     const char *renderer)
+							 const char *renderer)
 {
 	wayland_output_t   *output;
 
@@ -378,16 +378,16 @@ pepper_wayland_output_create(pepper_wayland_t *conn, int32_t w, int32_t h,
 	/* Create wayland resources. */
 	output->surface = wl_compositor_create_surface(conn->compositor);
 	output->shell_surface = wl_shell_get_shell_surface(conn->shell,
-				output->surface);
+							output->surface);
 	wl_shell_surface_add_listener(output->shell_surface, &shell_surface_listener,
-				      output);
+								  output);
 	wl_shell_surface_set_toplevel(output->shell_surface);
 	snprintf(&output->name[0], 32, "wayland-%p", output);
 
 	/* Add compositor base class output object for this output. */
 	output->base = pepper_compositor_add_output(conn->pepper,
-			&wayland_output_backend,
-			output->name, output, WL_OUTPUT_TRANSFORM_NORMAL, 1);
+				   &wayland_output_backend,
+				   output->name, output, WL_OUTPUT_TRANSFORM_NORMAL, 1);
 	if (!output->base) {
 		wayland_output_destroy(output);
 		return NULL;

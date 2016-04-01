@@ -86,7 +86,7 @@ struct pepper_output_backend {
 	 * Return mode info for the given mode index.
 	 */
 	void            (*get_mode)(void *output, int index,
-				    pepper_output_mode_t *mode);
+								pepper_output_mode_t *mode);
 
 	/**
 	 * Change output mode to the given mode. return PEPPER_TRUE on success.
@@ -117,20 +117,20 @@ struct pepper_output_backend {
 	 * allocate resources for the surface.
 	 */
 	void            (*attach_surface)(void *output, pepper_surface_t *surface,
-					  int *w, int *h);
+									  int *w, int *h);
 
 	/**
 	 * Update the surface content. Called before repaint. Backend should handle damage region
 	 * of the given surface if it is maintaining a copy of the surface.
 	 */
 	void            (*flush_surface_damage)(void *output, pepper_surface_t *surface,
-						pepper_bool_t *keep_buffer);
+											pepper_bool_t *keep_buffer);
 };
 
 PEPPER_API pepper_output_t *
 pepper_compositor_add_output(pepper_compositor_t *compositor,
-			     const pepper_output_backend_t *backend, const char *name, void *data,
-			     int transform, int scale);
+							 const pepper_output_backend_t *backend, const char *name, void *data,
+							 int transform, int scale);
 
 struct pepper_render_item {
 	pepper_view_t       *view;          /**< view to render */
@@ -157,18 +157,18 @@ pepper_plane_get_render_list(pepper_plane_t *plane);
 
 PEPPER_API void
 pepper_plane_subtract_damage_region(pepper_plane_t *plane,
-				    pixman_region32_t *damage);
+									pixman_region32_t *damage);
 
 PEPPER_API void
 pepper_plane_clear_damage_region(pepper_plane_t *plane);
 
 PEPPER_API void
 pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output,
-			 pepper_plane_t *plane);
+						 pepper_plane_t *plane);
 
 PEPPER_API void
 pepper_output_add_damage_region(pepper_output_t *output,
-				pixman_region32_t *region);
+								pixman_region32_t *region);
 
 PEPPER_API void
 pepper_output_finish_frame(pepper_output_t *output, struct timespec *ts);

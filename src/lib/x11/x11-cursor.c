@@ -57,9 +57,9 @@ x11_output_cursor_set(void *o, void *c)
 		uint32_t mask       = XCB_CW_CURSOR;
 		uint32_t value_list = cursor->xcb_cursor;
 		xcb_change_window_attributes(conn->xcb_connection,
-					     output->window,
-					     mask,
-					     &value_list);
+									 output->window,
+									 mask,
+									 &value_list);
 	}
 
 	return current_cursor;
@@ -83,7 +83,7 @@ x11_output_cursor_create(void *output, int32_t w, int32_t h, void *image)
 	}
 	if (w < 0 || h < 0) {
 		PEPPER_ERROR("x11:output:cursor:%s: width(%d) or height(%d) is invalid\n",
-			     __FUNCTION__, w, h);
+					 __FUNCTION__, w, h);
 		return NULL;
 	}
 
@@ -102,10 +102,10 @@ x11_output_cursor_create(void *output, int32_t w, int32_t h, void *image)
 	gc = xcb_generate_id(conn->xcb_connection);
 
 	xcb_create_pixmap(conn->xcb_connection, 1/*depth?*/,
-			  pixmap, conn->screen->root, w, h);
+					  pixmap, conn->screen->root, w, h);
 	xcb_create_gc(conn->xcb_connection, gc, pixmap, 0, NULL);
 	xcb_put_image(conn->xcb_connection, XCB_IMAGE_FORMAT_XY_PIXMAP, pixmap,
-		      gc, w, h, 0, 0, 0, 32, w * h * sizeof(uint8_t), cursor->data);
+				  gc, w, h, 0, 0, 0, 32, w * h * sizeof(uint8_t), cursor->data);
 	cursor->xcb_cursor = xcb_generate_id(conn->xcb_connection);
 	/*
 	 * cb_void_cookie_t xcb_create_cursor(xcb_connection_t *conn,
@@ -122,7 +122,7 @@ x11_output_cursor_create(void *output, int32_t w, int32_t h, void *image)
 	 *                                    uint16_t y);
 	 */
 	xcb_create_cursor(conn->xcb_connection, cursor->xcb_cursor,
-			  pixmap, pixmap, 0, 0, 0,  0, 0, 0,  1, 1);
+					  pixmap, pixmap, 0, 0, 0,  0, 0, 0,  1, 1);
 
 	xcb_free_gc(conn->xcb_connection, gc);
 	xcb_free_pixmap(conn->xcb_connection, pixmap);

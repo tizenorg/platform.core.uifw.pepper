@@ -75,8 +75,8 @@ pepper_view_surface_damage(pepper_view_t *view)
 
 			pepper_transform_pixman_region(&damage, &view->global_transform);
 			pixman_region32_translate(&damage,
-						  -entry->plane->output->geometry.x,
-						  -entry->plane->output->geometry.y);
+									  -entry->plane->output->geometry.x,
+									  -entry->plane->output->geometry.y);
 			pixman_region32_intersect(&damage, &damage, &entry->base.visible_region);
 			pepper_plane_add_damage_region(entry->plane, &damage);
 		}
@@ -134,10 +134,10 @@ plane_entry_set_plane(pepper_plane_entry_t *entry, pepper_plane_t *plane)
  */
 PEPPER_API void
 pepper_view_assign_plane(pepper_view_t *view, pepper_output_t *output,
-			 pepper_plane_t *plane)
+						 pepper_plane_t *plane)
 {
 	PEPPER_CHECK(!plane ||
-		     plane->output == output, return, "Plane output mismatch.\n");
+				 plane->output == output, return, "Plane output mismatch.\n");
 	plane_entry_set_plane(&view->plane_entries[output->id], plane);
 }
 
@@ -197,11 +197,11 @@ pepper_view_update(pepper_view_t *view)
 		/* Transform. */
 		pepper_mat4_init_translate(&view->global_transform, view->x, view->y, 0.0);
 		pepper_mat4_multiply(&view->global_transform, &view->global_transform,
-				     &view->transform);
+							 &view->transform);
 
 		if (view->inherit_transform && view->parent) {
 			pepper_mat4_multiply(&view->global_transform,
-					     &view->parent->global_transform, &view->global_transform);
+								 &view->parent->global_transform, &view->global_transform);
 		}
 
 		pepper_mat4_inverse(&view->global_transform_inverse, &view->global_transform);
@@ -215,7 +215,7 @@ pepper_view_update(pepper_view_t *view)
 		if (view->surface && pepper_mat4_is_translation(&view->global_transform)) {
 			pixman_region32_copy(&view->opaque_region, &view->surface->opaque_region);
 			pixman_region32_translate(&view->opaque_region,
-						  view->global_transform.m[12], view->global_transform.m[13]);
+									  view->global_transform.m[12], view->global_transform.m[13]);
 		} else {
 			pixman_region32_clear(&view->opaque_region);
 		}
@@ -233,7 +233,7 @@ pepper_view_update(pepper_view_t *view)
 			};
 
 			if (pixman_region32_contains_rectangle(&view->bounding_region,
-							       &box) != PIXMAN_REGION_OUT) {
+												   &box) != PIXMAN_REGION_OUT) {
 				view->output_overlap |= (1 << output->id);
 				if (!(output_overlap_prev & (1 << output->id)))
 					pepper_surface_send_enter(view->surface, output);
@@ -289,7 +289,7 @@ PEPPER_API pepper_view_t *
 pepper_compositor_add_view(pepper_compositor_t *compositor)
 {
 	pepper_view_t *view = (pepper_view_t *)pepper_object_alloc(PEPPER_OBJECT_VIEW,
-			      sizeof(pepper_view_t));
+						  sizeof(pepper_view_t));
 	PEPPER_CHECK(view, return NULL, "pepper_object_alloc() failed.\n");
 
 	view_init(view, compositor);
@@ -300,7 +300,7 @@ pepper_compositor_add_view(pepper_compositor_t *compositor)
 	view->h = 0;
 
 	pepper_object_emit_event(&compositor->base, PEPPER_EVENT_COMPOSITOR_VIEW_ADD,
-				 view);
+							 view);
 	return view;
 }
 
@@ -362,7 +362,7 @@ pepper_view_destroy(pepper_view_t *view)
 	pepper_view_t  *child, *tmp;
 
 	pepper_object_emit_event(&view->compositor->base,
-				 PEPPER_EVENT_COMPOSITOR_VIEW_REMOVE, view);
+							 PEPPER_EVENT_COMPOSITOR_VIEW_REMOVE, view);
 	pepper_object_fini(&view->base);
 
 	for (i = 0; i < PEPPER_MAX_OUTPUT_COUNT; i++)
@@ -445,7 +445,7 @@ pepper_view_set_parent(pepper_view_t *view, pepper_view_t *parent)
 		pepper_list_insert(view->parent->children_list.prev, &view->parent_link);
 
 	pepper_view_mark_dirty(view,
-			       PEPPER_VIEW_ACTIVE_DIRTY | PEPPER_VIEW_GEOMETRY_DIRTY);
+						   PEPPER_VIEW_ACTIVE_DIRTY | PEPPER_VIEW_GEOMETRY_DIRTY);
 }
 
 /**
@@ -497,7 +497,7 @@ pepper_view_set_transform_inherit(pepper_view_t *view, pepper_bool_t inherit)
 			/* Get transform matrix on the parent local coordinate space. */
 			pepper_mat4_inverse(&view->transform, &view->parent->global_transform);
 			pepper_mat4_multiply(&view->transform, &view->global_transform,
-					     &view->transform);
+								 &view->transform);
 
 			/* Set position of the (x, y) translation term of the matrix. */
 			view->x = view->transform.m[12];
@@ -545,7 +545,7 @@ pepper_view_get_transform_inherit(pepper_view_t *view)
  */
 PEPPER_API pepper_bool_t
 pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below,
-			pepper_bool_t subtree)
+						pepper_bool_t subtree)
 {
 	view_insert(view, below->compositor_link.prev, subtree);
 	return PEPPER_TRUE;
@@ -566,7 +566,7 @@ pepper_view_stack_above(pepper_view_t *view, pepper_view_t *below,
  */
 PEPPER_API pepper_bool_t
 pepper_view_stack_below(pepper_view_t *view, pepper_view_t *above,
-			pepper_bool_t subtree)
+						pepper_bool_t subtree)
 {
 	view_insert(view, &above->compositor_link, subtree);
 	return PEPPER_TRUE;
@@ -868,7 +868,7 @@ pepper_view_is_opaque(pepper_view_t *view)
 	extent.y2 = view->surface->h;
 
 	if (pixman_region32_contains_rectangle(&surface->opaque_region,
-					       &extent) == PIXMAN_REGION_IN)
+										   &extent) == PIXMAN_REGION_IN)
 		return PEPPER_TRUE;
 
 	return PEPPER_FALSE;
@@ -885,7 +885,7 @@ pepper_view_is_opaque(pepper_view_t *view)
  */
 PEPPER_API void
 pepper_view_get_local_coordinate(pepper_view_t *view, double gx, double gy,
-				 double *lx, double *ly)
+								 double *lx, double *ly)
 {
 	pepper_vec4_t pos = { gx, gy, 0.0, 1.0 };
 
@@ -908,7 +908,7 @@ pepper_view_get_local_coordinate(pepper_view_t *view, double gx, double gy,
  */
 PEPPER_API void
 pepper_view_get_global_coordinate(pepper_view_t *view, double lx, double ly,
-				  double *gx, double *gy)
+								  double *gx, double *gy)
 {
 	pepper_vec4_t pos = { lx, ly, 0.0, 1.0 };
 

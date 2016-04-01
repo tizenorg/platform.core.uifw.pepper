@@ -119,7 +119,7 @@ drm_update_connectors(pepper_drm_t *drm)
 				conn->connected = PEPPER_FALSE;
 			}
 		} else if (!conn->connected &&
-			   conn->connector->connection == DRM_MODE_CONNECTED) {
+				   conn->connector->connection == DRM_MODE_CONNECTED) {
 			/* Newly connected. */
 			PEPPER_ASSERT(conn->output == NULL);
 			drm_output_create(conn);

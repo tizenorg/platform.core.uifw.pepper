@@ -219,9 +219,9 @@ struct pepper_surface {
 
 pepper_surface_t *
 pepper_surface_create(pepper_compositor_t *compositor,
-		      struct wl_client *client,
-		      struct wl_resource *resource,
-		      uint32_t id);
+					  struct wl_client *client,
+					  struct wl_resource *resource,
+					  uint32_t id);
 
 void
 pepper_surface_destroy(pepper_surface_t *surface);
@@ -231,11 +231,11 @@ pepper_surface_commit(pepper_surface_t *surface);
 
 void
 pepper_surface_commit_state(pepper_surface_t *surface,
-			    pepper_surface_state_t *state);
+							pepper_surface_state_t *state);
 
 void
 pepper_surface_send_frame_callback_done(pepper_surface_t *surface,
-					uint32_t time);
+										uint32_t time);
 
 struct pepper_region {
 	pepper_object_t         base;
@@ -248,16 +248,16 @@ struct pepper_region {
 
 pepper_region_t *
 pepper_region_create(pepper_compositor_t *compositor,
-		     struct wl_client *client,
-		     struct wl_resource *resource,
-		     uint32_t id);
+					 struct wl_client *client,
+					 struct wl_resource *resource,
+					 uint32_t id);
 
 void
 pepper_region_destroy(pepper_region_t *region);
 
 void
 pepper_transform_pixman_region(pixman_region32_t *region,
-			       const pepper_mat4_t *matrix);
+							   const pepper_mat4_t *matrix);
 
 /* Subcompositor */
 struct pepper_subcompositor {
@@ -310,7 +310,7 @@ struct pepper_subsurface {
 
 pepper_subsurface_t *
 pepper_subsurface_create(pepper_surface_t *surface, pepper_surface_t *parent,
-			 struct wl_client *client, struct wl_resource *resource, uint32_t id);
+						 struct wl_client *client, struct wl_resource *resource, uint32_t id);
 
 pepper_bool_t
 pepper_subsurface_commit(pepper_subsurface_t *subsurface);
@@ -320,11 +320,11 @@ pepper_subsurface_destroy(pepper_subsurface_t *subsurface);
 
 void
 subsurface_destroy_children_views(pepper_subsurface_t *subsurface,
-				  pepper_view_t *parent_view);
+								  pepper_view_t *parent_view);
 
 void
 subsurface_create_children_views(pepper_subsurface_t *subsurface,
-				 pepper_view_t *parent_view);
+								 pepper_view_t *parent_view);
 
 /* Input */
 struct pepper_pointer {
@@ -364,11 +364,11 @@ pepper_pointer_destroy(pepper_pointer_t *pointer);
 
 void
 pepper_pointer_bind_resource(struct wl_client *client,
-			     struct wl_resource *resource, uint32_t id);
+							 struct wl_resource *resource, uint32_t id);
 
 void
 pepper_pointer_handle_event(pepper_pointer_t *pointer, uint32_t id,
-			    pepper_input_event_t *event);
+							pepper_input_event_t *event);
 
 struct pepper_keyboard {
 	pepper_object_t                 base;
@@ -404,11 +404,11 @@ pepper_keyboard_destroy(pepper_keyboard_t *keyboard);
 
 void
 pepper_keyboard_bind_resource(struct wl_client *client,
-			      struct wl_resource *resource, uint32_t id);
+							  struct wl_resource *resource, uint32_t id);
 
 void
 pepper_keyboard_handle_event(pepper_keyboard_t *keyboard, uint32_t id,
-			     pepper_input_event_t *event);
+							 pepper_input_event_t *event);
 
 struct pepper_touch_point {
 	pepper_touch_t             *touch;
@@ -442,11 +442,11 @@ pepper_touch_destroy(pepper_touch_t *touch);
 
 void
 pepper_touch_bind_resource(struct wl_client *client,
-			   struct wl_resource *resource, uint32_t id);
+						   struct wl_resource *resource, uint32_t id);
 
 void
 pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id,
-			  pepper_input_event_t *event);
+						  pepper_input_event_t *event);
 
 struct pepper_seat {
 	pepper_object_t             base;
@@ -560,11 +560,11 @@ pepper_plane_create(pepper_object_t *output, pepper_object_t *above_plane);
 
 void
 pepper_plane_add_damage_region(pepper_plane_t *plane,
-			       pixman_region32_t *region);
+							   pixman_region32_t *region);
 
 void
 pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list,
-		    pixman_region32_t *clip);
+					pixman_region32_t *clip);
 
 void
 pepper_surface_flush_damage(pepper_surface_t *surface);
@@ -572,10 +572,10 @@ pepper_surface_flush_damage(pepper_surface_t *surface);
 /* Misc. */
 void
 pepper_pixman_region_global_to_output(pixman_region32_t *region,
-				      pepper_output_t *output);
+									  pepper_output_t *output);
 
 void
 pepper_transform_global_to_output(pepper_mat4_t *transform,
-				  pepper_output_t *output);
+								  pepper_output_t *output);
 
 #endif /* PEPPER_INTERNAL_H */

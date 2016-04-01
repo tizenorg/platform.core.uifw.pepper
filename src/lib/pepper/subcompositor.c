@@ -36,23 +36,23 @@ subcompositor_destroy(struct wl_client *client, struct wl_resource *resource)
 
 static void
 subcompositor_get_subsurface(struct wl_client   *client,
-			     struct wl_resource *resource,
-			     uint32_t            id,
-			     struct wl_resource *surface_resource,
-			     struct wl_resource *parent_resource)
+							 struct wl_resource *resource,
+							 uint32_t            id,
+							 struct wl_resource *surface_resource,
+							 struct wl_resource *parent_resource)
 {
 	pepper_surface_t        *surface = wl_resource_get_user_data(surface_resource);
 	pepper_surface_t        *parent  = wl_resource_get_user_data(parent_resource);
 
 	if (surface->sub) {
 		wl_resource_post_error(resource, WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
-				       "wl_subcompositor::get_subsurface() already requested");
+							   "wl_subcompositor::get_subsurface() already requested");
 		return ;
 	}
 
 	if (surface == parent) {
 		wl_resource_post_error(resource, WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
-				       "wl_subcompositor::get_subsurface() cannot assign parent for its own");
+							   "wl_subcompositor::get_subsurface() cannot assign parent for its own");
 		return ;
 	}
 
@@ -73,9 +73,9 @@ unbind_resource(struct wl_resource *resource)
 
 static void
 subcompositor_bind(struct wl_client *client,
-		   void             *data,
-		   uint32_t          version,
-		   uint32_t          id)
+				   void             *data,
+				   uint32_t          version,
+				   uint32_t          id)
 {
 	pepper_subcompositor_t  *subcompositor = (pepper_subcompositor_t *)data;
 	struct wl_resource      *resource;
@@ -90,7 +90,7 @@ subcompositor_bind(struct wl_client *client,
 
 	wl_list_insert(&subcompositor->resource_list, wl_resource_get_link(resource));
 	wl_resource_set_implementation(resource, &subcompositor_interface,
-				       subcompositor, unbind_resource);
+								   subcompositor, unbind_resource);
 }
 
 pepper_subcompositor_t *
@@ -99,14 +99,14 @@ pepper_subcompositor_create(pepper_compositor_t *compositor)
 	pepper_subcompositor_t *subcompositor;
 
 	subcompositor = (pepper_subcompositor_t *)pepper_object_alloc(
-				PEPPER_OBJECT_SUBCOMPOSITOR,
-				sizeof(pepper_subcompositor_t));
+						PEPPER_OBJECT_SUBCOMPOSITOR,
+						sizeof(pepper_subcompositor_t));
 	PEPPER_CHECK(subcompositor, goto error, "pepper_object_alloc() failed.\n");
 
 	subcompositor->compositor = compositor;
 	subcompositor->global = wl_global_create(compositor->display,
-				&wl_subcompositor_interface, 1,
-				subcompositor, subcompositor_bind);
+							&wl_subcompositor_interface, 1,
+							subcompositor, subcompositor_bind);
 	PEPPER_CHECK(subcompositor->global, goto error, "wl_global_create() failed.\n");
 
 	wl_list_init(&subcompositor->resource_list);

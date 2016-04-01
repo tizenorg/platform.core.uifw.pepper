@@ -109,7 +109,7 @@ drm_sprd_init(int fd)
 	drmFreeVersion(drm_info);
 
 	PEPPER_CHECK(!drmCtlInstHandler(fd, drmIRQ), return,
-		     "drmCtlInstHandler() failed.\n");
+				 "drmCtlInstHandler() failed.\n");
 
 	sprd_dev = sprd_device_create(fd);
 	PEPPER_CHECK(sprd_dev, return, "sprd_device_create() failed.\n");
@@ -164,7 +164,7 @@ done:
 
 PEPPER_API pepper_drm_t *
 pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev,
-		  const char *device)
+				  const char *device)
 {
 	pepper_drm_t           *drm = NULL;
 	struct udev_device     *udev_device = NULL;
@@ -203,7 +203,7 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev,
 	/* Open DRM device file and check validity. */
 	drm->fd = open(filepath, O_RDWR | O_CLOEXEC);
 	PEPPER_CHECK(drm->fd != -1, goto error,
-		     "open(%s, O_RDWR | O_CLOEXEC) failed.\n", filepath);
+				 "open(%s, O_RDWR | O_CLOEXEC) failed.\n", filepath);
 
 #ifdef HAVE_DRM_SPRD
 	/*If drm is sprd, this fuction MUST call before other drm function*/
@@ -225,29 +225,29 @@ pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev,
 	/* Create udev event monitor. */
 	drm->udev_monitor = udev_monitor_new_from_netlink(udev, "udev");
 	PEPPER_CHECK(drm->udev_monitor, goto error,
-		     "udev_monitor_new_from_netlink() failed.\n");
+				 "udev_monitor_new_from_netlink() failed.\n");
 	udev_monitor_filter_add_match_subsystem_devtype(drm->udev_monitor, "drm", NULL);
 
 #ifdef HAVE_TBM
 	/* Create wayland-tbm*/
 	drm->wl_tbm_server = wayland_tbm_server_init(pepper_compositor_get_display(
-				     compositor),
-			     filepath, drm->fd, 0);
+							 compositor),
+						 filepath, drm->fd, 0);
 #endif
 
 	/* Add DRM event FDs to the compositor's display. */
 	loop = wl_display_get_event_loop(pepper_compositor_get_display(compositor));
 
 	drm->drm_event_source = wl_event_loop_add_fd(loop, drm->fd, WL_EVENT_READABLE,
-				handle_drm_event, drm);
+							handle_drm_event, drm);
 	PEPPER_CHECK(drm->drm_event_source, goto error,
-		     "wl_event_loop_add() failed.\n");
+				 "wl_event_loop_add() failed.\n");
 
 	drm->udev_event_source = wl_event_loop_add_fd(loop,
-				 udev_monitor_get_fd(drm->udev_monitor),
-				 WL_EVENT_READABLE, handle_udev_event, drm);
+							 udev_monitor_get_fd(drm->udev_monitor),
+							 WL_EVENT_READABLE, handle_udev_event, drm);
 	PEPPER_CHECK(drm->udev_event_source, goto error,
-		     "wl_event_loop_add() failed.\n");
+				 "wl_event_loop_add() failed.\n");
 
 	drm->drm_event_context.version = DRM_EVENT_CONTEXT_VERSION;
 	drm->drm_event_context.vblank_handler = drm_handle_vblank;

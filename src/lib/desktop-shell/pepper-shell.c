@@ -37,7 +37,7 @@ pepper_shell_destroy(struct wl_client *client, struct wl_resource *resource)
 
 static void
 pepper_shell_set_cursor(struct wl_client *client, struct wl_resource *resource,
-			struct wl_resource *surface_resource)
+						struct wl_resource *surface_resource)
 {
 	desktop_shell_t  *shell = wl_resource_get_user_data(resource);
 	pepper_surface_t *surface = wl_resource_get_user_data(surface_resource);
@@ -77,7 +77,7 @@ unbind_resource(struct wl_resource *resource)
 
 static void
 bind_pepper_shell(struct wl_client *client, void *data, uint32_t version,
-		  uint32_t id)
+				  uint32_t id)
 {
 	desktop_shell_t     *shell = data;
 	struct wl_resource  *resource;
@@ -90,7 +90,7 @@ bind_pepper_shell(struct wl_client *client, void *data, uint32_t version,
 
 	wl_list_insert(&shell->pepper_shell_list, wl_resource_get_link(resource));
 	wl_resource_set_implementation(resource, &pepper_shell_implementation, shell,
-				       unbind_resource);
+								   unbind_resource);
 	wl_resource_set_user_data(resource, shell);
 }
 

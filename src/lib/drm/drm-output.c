@@ -82,14 +82,14 @@ static uint32_t
 get_refresh_rate(const drmModeModeInfo *info)
 {
 	return (info->clock * 1000000LL / info->vtotal + info->vtotal / 2) /
-	       info->vtotal;
+		   info->vtotal;
 }
 
 static pepper_bool_t
 same_mode(const drmModeModeInfo *info, const pepper_output_mode_t *mode)
 {
 	return info->hdisplay == mode->w && info->vdisplay == mode->h &&
-	       get_refresh_rate(info) == (uint32_t)mode->refresh;
+		   get_refresh_rate(info) == (uint32_t)mode->refresh;
 }
 
 static void
@@ -209,7 +209,7 @@ assign_fb_plane(drm_output_t *output, pepper_view_t *view)
 		return NULL;
 
 	if (pepper_output_get_scale(output->base) != pepper_surface_get_buffer_scale(
-		    surface))
+			surface))
 		return NULL;
 
 	buffer = pepper_surface_get_buffer(surface);
@@ -221,7 +221,7 @@ assign_fb_plane(drm_output_t *output, pepper_view_t *view)
 		return NULL;
 
 	bo = gbm_bo_import(output->drm->gbm_device,
-			   GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
+					   GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
 	if (!bo)
 		return NULL;
 
@@ -245,7 +245,7 @@ assign_fb_plane(drm_output_t *output, pepper_view_t *view)
 
 	/* TODO: Hard-coded XRGB8888 */
 	output->back = drm_buffer_create_client(output->drm, bo, buffer,
-						GBM_FORMAT_XRGB8888);
+											GBM_FORMAT_XRGB8888);
 	if (!output->back) {
 		gbm_bo_destroy(bo);
 		return NULL;
@@ -307,7 +307,7 @@ assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
 		return NULL;
 
 	bo = gbm_bo_import(output->drm->gbm_device,
-			   GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
+					   GBM_BO_IMPORT_WL_BUFFER, resource, GBM_BO_USE_SCANOUT);
 	if (!bo)
 		return NULL;
 
@@ -397,13 +397,13 @@ static void
 drm_output_render_gl(drm_output_t *output)
 {
 	const pepper_list_t *render_list = pepper_plane_get_render_list(
-			output->primary_plane);
+										   output->primary_plane);
 	pixman_region32_t   *damage = pepper_plane_get_damage_region(
-					      output->primary_plane);
+									  output->primary_plane);
 	struct gbm_bo       *bo;
 
 	pepper_renderer_repaint_output(output->renderer, output->base, render_list,
-				       damage);
+								   damage);
 
 	bo = gbm_surface_lock_front_buffer(output->gbm_surface);
 	PEPPER_CHECK(bo, return, "gbm_surface_lock_front_buffer() failed.\n");
@@ -420,9 +420,9 @@ static void
 drm_output_render_pixman(drm_output_t *output)
 {
 	const pepper_list_t *render_list = pepper_plane_get_render_list(
-			output->primary_plane);
+										   output->primary_plane);
 	pixman_region32_t   *damage = pepper_plane_get_damage_region(
-					      output->primary_plane);
+									  output->primary_plane);
 	pixman_region32_t    total_damage;
 
 	output->back_fb_index ^= 1;
@@ -434,20 +434,20 @@ drm_output_render_pixman(drm_output_t *output)
 
 	if (output->use_shadow) {
 		pepper_renderer_repaint_output(output->renderer, output->base, render_list,
-					       damage);
+									   damage);
 
 		/* Copy shadow image to the back frame buffer. */
 		pixman_image_set_clip_region32(output->back->image, &total_damage);
 		pixman_image_composite32(PIXMAN_OP_SRC,
-					 output->shadow_image, NULL, output->back->image,
-					 0, 0, 0, 0, 0, 0,
-					 output->back->w, output->back->h);
+								 output->shadow_image, NULL, output->back->image,
+								 0, 0, 0, 0, 0, 0,
+								 output->back->w, output->back->h);
 	} else {
 		output->render_target = output->fb_target[output->back_fb_index];
 		pepper_renderer_set_target(output->renderer,
-					   output->fb_target[output->back_fb_index]);
+								   output->fb_target[output->back_fb_index]);
 		pepper_renderer_repaint_output(output->renderer, output->base, render_list,
-					       &total_damage);
+									   &total_damage);
 	}
 
 	pixman_region32_fini(&total_damage);
@@ -470,7 +470,7 @@ drm_output_start_repaint_loop(void *o)
 	struct timespec     ts;
 
 	if (output->front && drmModePageFlip(output->drm->fd, output->crtc_id,
-					     output->front->id, DRM_MODE_PAGE_FLIP_EVENT, output) >= 0) {
+										 output->front->id, DRM_MODE_PAGE_FLIP_EVENT, output) >= 0) {
 		return;
 	}
 
@@ -524,7 +524,7 @@ drm_output_set_cursor(drm_output_t *output)
 		gbm_bo_write(bo, buf, sizeof(buf));
 
 		if (drmModeSetCursor(drm->fd, output->crtc_id, gbm_bo_get_handle(bo).s32,
-				     drm->cursor_width, drm->cursor_height)) {
+							 drm->cursor_width, drm->cursor_height)) {
 			PEPPER_TRACE("failed to set cursor\n");
 			drm->cursor_broken = PEPPER_TRUE;
 		}
@@ -562,11 +562,11 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
 	if (output->back) {
 		if (!output->front) {
 			ret = drmModeSetCrtc(output->drm->fd, output->crtc_id, output->back->id, 0, 0,
-					     &output->conn->id, 1, output->mode);
+								 &output->conn->id, 1, output->mode);
 		}
 
 		ret = drmModePageFlip(output->drm->fd, output->crtc_id, output->back->id,
-				      DRM_MODE_PAGE_FLIP_EVENT, output);
+							  DRM_MODE_PAGE_FLIP_EVENT, output);
 		PEPPER_CHECK(ret == 0, , "page flip failed.\n");
 
 		output->page_flip_pending = PEPPER_TRUE;
@@ -583,16 +583,16 @@ drm_output_repaint(void *o, const pepper_list_t *plane_list)
 		vbl.request.type = DRM_VBLANK_RELATIVE | DRM_VBLANK_EVENT;
 
 		ret = drmModeSetPlane(output->drm->fd, plane->id,
-				      output->crtc_id, plane->back->id, 0,
-				      plane->dx, plane->dy, plane->dw, plane->dh,
-				      plane->sx, plane->sy, plane->sw, plane->sh);
+							  output->crtc_id, plane->back->id, 0,
+							  plane->dx, plane->dy, plane->dw, plane->dh,
+							  plane->sx, plane->sy, plane->sw, plane->sh);
 
 		PEPPER_CHECK(ret == 0, continue, "drmModeSetPlane() failed.\n");
 		pepper_plane_clear_damage_region(plane->base);
 
 		if (output->crtc_index > 1) {
 			vbl.request.type |= (output->crtc_index << DRM_VBLANK_HIGH_CRTC_SHIFT) &
-					    DRM_VBLANK_HIGH_CRTC_MASK;
+								DRM_VBLANK_HIGH_CRTC_MASK;
 		} else if (output->crtc_index > 0) {
 			vbl.request.type |= DRM_VBLANK_SECONDARY;
 		}
@@ -616,7 +616,7 @@ drm_output_attach_surface(void *o, pepper_surface_t *surface, int *w, int *h)
 
 static void
 drm_output_flush_surface_damage(void *o, pepper_surface_t *surface,
-				pepper_bool_t *keep_buffer)
+								pepper_bool_t *keep_buffer)
 {
 	drm_output_t    *output = o;
 	pepper_buffer_t *buffer = pepper_surface_get_buffer(surface);
@@ -670,7 +670,7 @@ find_crtc_for_connector(drm_connector_t *conn)
 	for (i = 0; i < conn->connector->count_encoders; i++) {
 		int32_t         possible_crtcs;
 		drmModeEncoder *encoder = drmModeGetEncoder(conn->drm->fd,
-					  conn->connector->encoders[i]);
+								  conn->connector->encoders[i]);
 
 		PEPPER_CHECK(encoder, continue, "drmModeGetEncoder() failed.\n");
 
@@ -732,7 +732,7 @@ init_pixman_renderer(drm_output_t *output)
 	if (!drm->pixman_renderer) {
 		drm->pixman_renderer = pepper_pixman_renderer_create(drm->compositor);
 		PEPPER_CHECK(drm->pixman_renderer, return,
-			     "pepper_pixman_renderer_create() failed.\n");
+					 "pepper_pixman_renderer_create() failed.\n");
 	}
 
 	output->renderer = drm->pixman_renderer;
@@ -748,12 +748,12 @@ init_pixman_renderer(drm_output_t *output)
 	if (output->use_shadow) {
 		output->shadow_image = pixman_image_create_bits(PIXMAN_x8r8g8b8, w, h, NULL, 0);
 		PEPPER_CHECK(output->shadow_image, goto error,
-			     "pixman_image_create_bits() failed.\n");
+					 "pixman_image_create_bits() failed.\n");
 
 		output->render_target = pepper_pixman_renderer_create_target_for_image(
-						output->shadow_image);
+									output->shadow_image);
 		PEPPER_CHECK(output->render_target, goto error,
-			     "pixman target creation failed.\n");
+					 "pixman target creation failed.\n");
 
 		pepper_renderer_set_target(output->renderer, output->render_target);
 	} else {
@@ -761,7 +761,7 @@ init_pixman_renderer(drm_output_t *output)
 			output->fb_target[i] =
 				pepper_pixman_renderer_create_target_for_image(output->fb[i]->image);
 			PEPPER_CHECK(output->fb_target[i], goto error,
-				     "pixman target creation failed.\n");
+						 "pixman target creation failed.\n");
 		}
 	}
 
@@ -800,23 +800,23 @@ init_gl_renderer(drm_output_t *output)
 		}
 
 		drm->gl_renderer = pepper_gl_renderer_create(drm->compositor, drm->gbm_device,
-				   "gbm");
+						   "gbm");
 		PEPPER_CHECK(drm->gl_renderer, return, "pepper_gl_renderer_create() failed.\n");
 	}
 
 	output->renderer = drm->gl_renderer;
 
 	output->gbm_surface = gbm_surface_create(drm->gbm_device, w, h,
-			      GBM_FORMAT_XRGB8888,
-			      GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+						  GBM_FORMAT_XRGB8888,
+						  GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 	PEPPER_CHECK(output->gbm_surface, goto error, "gbm_surface_create() failed.\n");
 
 	output->render_target = pepper_gl_renderer_create_target(drm->gl_renderer,
-				output->gbm_surface,
-				PEPPER_FORMAT_XRGB8888,
-				&native_visual_id, w, h);
+							output->gbm_surface,
+							PEPPER_FORMAT_XRGB8888,
+							&native_visual_id, w, h);
 	PEPPER_CHECK(output->render_target, goto error,
-		     "pepper_gl_renderer_create_target() failed.\n");
+				 "pepper_gl_renderer_create_target() failed.\n");
 	output->render_type = DRM_RENDER_TYPE_GL;
 
 	pepper_renderer_set_target(output->renderer, output->render_target);
@@ -838,7 +838,7 @@ drm_output_create(drm_connector_t *conn)
 	const char     *use_overlay_env = getenv("PEPPER_DRM_USE_OVERLAY");
 
 	PEPPER_CHECK(conn->output == NULL, return NULL,
-		     "The connector already has an output.\n");
+				 "The connector already has an output.\n");
 
 	output = calloc(1, sizeof(drm_output_t));
 	PEPPER_CHECK(output, return NULL, "calloc() failed.\n");
@@ -851,10 +851,10 @@ drm_output_create(drm_connector_t *conn)
 	output->mode = &conn->connector->modes[0];
 
 	output->base = pepper_compositor_add_output(drm->compositor,
-			&drm_output_backend,
-			conn->name, output, WL_OUTPUT_TRANSFORM_NORMAL, 1);
+				   &drm_output_backend,
+				   conn->name, output, WL_OUTPUT_TRANSFORM_NORMAL, 1);
 	PEPPER_CHECK(output->base, goto error,
-		     "pepper_compositor_add_output() failed.\n");
+				 "pepper_compositor_add_output() failed.\n");
 
 	if (render_env && strcmp(render_env, "gl") == 0)
 		init_gl_renderer(output);
@@ -880,9 +880,9 @@ drm_output_create(drm_connector_t *conn)
 
 		for (i = 0; i < 2; i++)
 			output->cursor_bo[i] = gbm_bo_create(drm->gbm_device,
-							     drm->cursor_width, drm->cursor_height,
-							     GBM_FORMAT_ARGB8888,
-							     GBM_BO_USE_CURSOR | GBM_BO_USE_WRITE);
+												 drm->cursor_width, drm->cursor_height,
+												 GBM_FORMAT_ARGB8888,
+												 GBM_BO_USE_CURSOR | GBM_BO_USE_WRITE);
 		if (!output->cursor_bo[0] || !output->cursor_bo[1]) {
 			PEPPER_TRACE("failed to create cursor bo\n");
 			drm->cursor_broken = PEPPER_TRUE;
@@ -891,20 +891,20 @@ drm_output_create(drm_connector_t *conn)
 
 	output->primary_plane = pepper_output_add_plane(output->base, NULL);
 	PEPPER_CHECK(output->primary_plane, goto error,
-		     "pepper_output_add_plane() failed.\n");
+				 "pepper_output_add_plane() failed.\n");
 
 	output->cursor_plane = pepper_output_add_plane(output->base,
-			       output->primary_plane);
+						   output->primary_plane);
 	PEPPER_CHECK(output->cursor_plane, goto error,
-		     "pepper_output_add_plane() failed.\n");
+				 "pepper_output_add_plane() failed.\n");
 
 	output->fb_plane = pepper_output_add_plane(output->base, output->primary_plane);
 	PEPPER_CHECK(output->fb_plane, goto error,
-		     "pepper_output_add_plane() failed.\n");
+				 "pepper_output_add_plane() failed.\n");
 
 	pepper_list_for_each_safe(plane, tmp, &output->drm->plane_list, link) {
 		if (plane->output == NULL &&
-		    (plane->plane->possible_crtcs & (1 << output->crtc_index))) {
+			(plane->plane->possible_crtcs & (1 << output->crtc_index))) {
 			plane->base = pepper_output_add_plane(output->base, output->primary_plane);
 
 			if (plane->base)
@@ -953,10 +953,10 @@ drm_output_destroy(void *o)
 
 	if (output->saved_crtc) {
 		drmModeSetCrtc(output->conn->drm->fd,
-			       output->saved_crtc->crtc_id,
-			       output->saved_crtc->buffer_id,
-			       output->saved_crtc->x, output->saved_crtc->y,
-			       &output->conn->connector->connector_id, 1, &output->saved_crtc->mode);
+					   output->saved_crtc->crtc_id,
+					   output->saved_crtc->buffer_id,
+					   output->saved_crtc->x, output->saved_crtc->y,
+					   &output->conn->connector->connector_id, 1, &output->saved_crtc->mode);
 		drmModeFreeCrtc(output->saved_crtc);
 	}
 
@@ -972,7 +972,7 @@ drm_output_destroy(void *o)
 			plane->output = NULL;
 			pepper_plane_destroy(plane->base);
 			drmModeSetPlane(output->drm->fd, plane->id, output->crtc_id,
-					0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+							0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		}
 	}
 
@@ -982,7 +982,7 @@ drm_output_destroy(void *o)
 
 void
 drm_handle_vblank(int fd, unsigned int frame, unsigned int sec,
-		  unsigned int usec, void *data)
+				  unsigned int usec, void *data)
 {
 	drm_plane_t        *plane = data;
 	struct timespec     ts;
@@ -996,7 +996,7 @@ drm_handle_vblank(int fd, unsigned int frame, unsigned int sec,
 	plane->back = NULL;
 
 	if (plane->output->vblank_pending_count == 0 &&
-	    !plane->output->page_flip_pending) {
+		!plane->output->page_flip_pending) {
 		if (plane->output->destroy_pending) {
 			drm_output_destroy(plane->output);
 		} else {
@@ -1009,7 +1009,7 @@ drm_handle_vblank(int fd, unsigned int frame, unsigned int sec,
 
 void
 drm_handle_page_flip(int fd, unsigned int frame, unsigned int sec,
-		     unsigned int usec, void *data)
+					 unsigned int usec, void *data)
 {
 	drm_output_t       *output = data;
 	struct timespec     ts;

@@ -40,7 +40,7 @@ typedef struct pepper_drm pepper_drm_t;
 
 PEPPER_API pepper_drm_t *
 pepper_drm_create(pepper_compositor_t *compositor, struct udev *udev,
-		  const char *device);
+				  const char *device);
 
 PEPPER_API void
 pepper_drm_destroy(pepper_drm_t *drm);

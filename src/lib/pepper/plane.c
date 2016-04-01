@@ -30,7 +30,7 @@
 
 void
 pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list,
-		    pixman_region32_t *clip)
+					pixman_region32_t *clip)
 {
 	int                 x = plane->output->geometry.x;
 	int                 y = plane->output->geometry.y;
@@ -57,11 +57,11 @@ pepper_plane_update(pepper_plane_t *plane, const pepper_list_t *view_list,
 
 			/* Calculate visible region (output space). */
 			pixman_region32_subtract(&entry->base.visible_region,
-						 &view->bounding_region, &plane_clip);
+									 &view->bounding_region, &plane_clip);
 			pixman_region32_intersect_rect(&entry->base.visible_region,
-						       &entry->base.visible_region, x, y, w, h);
+										   &entry->base.visible_region, x, y, w, h);
 			pepper_pixman_region_global_to_output(&entry->base.visible_region,
-							      plane->output);
+												  plane->output);
 
 			/* Accumulate opaque region of this view (global space). */
 			pixman_region32_union(&plane_clip, &plane_clip, &view->opaque_region);
@@ -101,7 +101,7 @@ pepper_output_add_plane(pepper_output_t *output, pepper_plane_t *above)
 	pepper_plane_t *plane;
 
 	PEPPER_CHECK(!above ||
-		     above->output == output, return NULL, "Output mismatch.\n");
+				 above->output == output, return NULL, "Output mismatch.\n");
 
 	plane = (pepper_plane_t *)pepper_object_alloc(PEPPER_OBJECT_PLANE,
 			sizeof(pepper_plane_t));
@@ -149,7 +149,7 @@ pepper_plane_add_damage_region(pepper_plane_t *plane, pixman_region32_t *damage)
 {
 	if (!damage) {
 		pixman_region32_union_rect(&plane->damage_region, &plane->damage_region,
-					   0, 0, plane->output->geometry.w, plane->output->geometry.h);
+								   0, 0, plane->output->geometry.w, plane->output->geometry.h);
 		pepper_output_schedule_repaint(plane->output);
 	} else if (pixman_region32_not_empty(damage)) {
 		pixman_region32_union(&plane->damage_region, &plane->damage_region, damage);
@@ -206,7 +206,7 @@ pepper_plane_get_render_list(pepper_plane_t *plane)
  */
 PEPPER_API void
 pepper_plane_subtract_damage_region(pepper_plane_t *plane,
-				    pixman_region32_t *damage)
+									pixman_region32_t *damage)
 {
 	pixman_region32_subtract(&plane->damage_region, &plane->damage_region, damage);
 }

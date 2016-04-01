@@ -152,7 +152,7 @@ struct wayland_seat {
 
 void
 wayland_handle_global_seat(pepper_wayland_t *conn, struct wl_registry *registry,
-			   uint32_t name, uint32_t version);
+						   uint32_t name, uint32_t version);
 
 wayland_shm_buffer_t *
 wayland_shm_buffer_create(wayland_output_t *output);

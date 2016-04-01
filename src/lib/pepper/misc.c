@@ -36,7 +36,7 @@
  */
 PEPPER_API void
 pepper_pixman_region_global_to_output(pixman_region32_t *region,
-				      pepper_output_t *output)
+									  pepper_output_t *output)
 {
 	pixman_box32_t *box, b;
 	int             num_rects, i;
@@ -148,7 +148,7 @@ pepper_pixman_region_global_to_output(pixman_region32_t *region,
  */
 PEPPER_API void
 pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
-				     double sx, double sy, double *bx, double *by)
+									 double sx, double sy, double *bx, double *by)
 {
 	int32_t             scale, w, h;
 
@@ -222,9 +222,9 @@ pepper_coordinates_surface_to_buffer(pepper_surface_t *surface,
  */
 static inline void
 make_output_transform(pepper_mat4_t *mat,
-		      double s, /* scale */
-		      double a, double b, double c, double d, double e, double f, /* transform */
-		      double x, double y /* translate */)
+					  double s, /* scale */
+					  double a, double b, double c, double d, double e, double f, /* transform */
+					  double x, double y /* translate */)
 {
 	double *m = &mat->m[0];
 
@@ -247,7 +247,7 @@ make_output_transform(pepper_mat4_t *mat,
 
 void
 pepper_transform_global_to_output(pepper_mat4_t *transform,
-				  pepper_output_t *output)
+								  pepper_output_t *output)
 {
 	pepper_mat4_t   mat;
 	double          x = output->geometry.x;
@@ -261,35 +261,35 @@ pepper_transform_global_to_output(pepper_mat4_t *transform,
 	default:
 	case WL_OUTPUT_TRANSFORM_NORMAL:
 		make_output_transform(&mat, (double)output->scale, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-				      x, y);
+							  x, y);
 		break;
 	case WL_OUTPUT_TRANSFORM_FLIPPED:
 		make_output_transform(&mat, (double)output->scale, -1.0, 0.0, 0.0, 1.0, w, 0.0,
-				      x, y);
+							  x, y);
 		break;
 	case WL_OUTPUT_TRANSFORM_90:
 		make_output_transform(&mat, (double)output->scale, 0.0, -1.0, 1.0, 0.0, h, 0.0,
-				      x, y);
+							  x, y);
 		break;
 	case WL_OUTPUT_TRANSFORM_FLIPPED_90:
 		make_output_transform(&mat, (double)output->scale, 0.0, -1.0, -1.0, 0.0, h, w,
-				      x, y);
+							  x, y);
 		break;
 	case WL_OUTPUT_TRANSFORM_180:
 		make_output_transform(&mat, (double)output->scale, -1.0, 0.0, 0.0, -1.0, w, h,
-				      x, y);
+							  x, y);
 		break;
 	case WL_OUTPUT_TRANSFORM_FLIPPED_180:
 		make_output_transform(&mat, (double)output->scale, 1.0, 0.0, 0.0, -1.0, 0.0, h,
-				      x, y);
+							  x, y);
 		break;
 	case WL_OUTPUT_TRANSFORM_270:
 		make_output_transform(&mat, (double)output->scale, 0.0, 1.0, -1.0, 0.0, 0.0,  w,
-				      x, y);
+							  x, y);
 		break;
 	case WL_OUTPUT_TRANSFORM_FLIPPED_270:
 		make_output_transform(&mat, (double)output->scale, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
-				      x, y);
+							  x, y);
 		break;
 	}
 

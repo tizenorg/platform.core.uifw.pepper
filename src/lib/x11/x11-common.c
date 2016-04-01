@@ -42,7 +42,7 @@
 
 static inline pepper_bool_t
 x11_get_next_event(xcb_connection_t *xcb_conn, xcb_generic_event_t **event,
-		   uint32_t mask)
+				   uint32_t mask)
 {
 	*event = xcb_poll_for_event(xcb_conn);
 	return *event != NULL;
@@ -189,8 +189,8 @@ x11_init_atoms(pepper_x11_connection_t *conn)
 
 	for (i = 0; i < ARRAY_LENGTH(atoms); i++) {
 		cookies[i] = xcb_intern_atom(conn->xcb_connection, 0,
-					     strlen(atoms[i].name),
-					     atoms[i].name);
+									 strlen(atoms[i].name),
+									 atoms[i].name);
 	}
 
 	for (i = 0; i < ARRAY_LENGTH(atoms); i++) {
@@ -214,7 +214,7 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 	}
 
 	connection = (pepper_x11_connection_t *)calloc(1,
-			sizeof(pepper_x11_connection_t));
+				 sizeof(pepper_x11_connection_t));
 	if (!connection) {
 		PEPPER_ERROR("Memory allocation failed\n");
 		return NULL;
@@ -238,10 +238,10 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 	connection->compositor = compositor;
 
 	connection->gl_renderer = pepper_gl_renderer_create(connection->compositor,
-				  connection->display, "x11");
+							  connection->display, "x11");
 
 	connection->pixman_renderer = pepper_pixman_renderer_create(
-					      connection->compositor);
+									  connection->compositor);
 	if (!connection->pixman_renderer) {
 		PEPPER_ERROR("Failed to create pixman renderer.\n");
 		free(connection);
@@ -263,10 +263,10 @@ pepper_x11_connect(pepper_compositor_t *compositor, const char *display_name)
 	loop = wl_display_get_event_loop(wdisplay);
 
 	connection->xcb_event_source = wl_event_loop_add_fd(loop,
-				       connection->fd,
-				       WL_EVENT_READABLE,
-				       x11_handle_event,
-				       connection);
+								   connection->fd,
+								   WL_EVENT_READABLE,
+								   x11_handle_event,
+								   connection);
 
 	wl_event_source_check(connection->xcb_event_source);
 	pepper_list_init(&connection->output_list);

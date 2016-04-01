@@ -66,7 +66,7 @@ main(int argc, char **argv)
 	PEPPER_ASSERT(conn);
 
 	output = pepper_x11_output_create(conn, 0, 0, 1024, 768,
-					  WL_OUTPUT_TRANSFORM_90, 1, renderer);
+									  WL_OUTPUT_TRANSFORM_90, 1, renderer);
 	PEPPER_ASSERT(output);
 
 	if (!pepper_x11_input_create(conn))

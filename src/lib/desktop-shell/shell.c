@@ -31,8 +31,8 @@
 
 void
 shell_get_output_workarea(desktop_shell_t       *shell,
-			  pepper_output_t       *output,
-			  pixman_rectangle32_t  *area)
+						  pepper_output_t       *output,
+						  pixman_rectangle32_t  *area)
 {
 	const pepper_output_geometry_t *geom;
 
@@ -55,7 +55,7 @@ static void
 handle_shell_client_destroy(struct wl_listener *listener, void *data)
 {
 	shell_client_t *shell_client = pepper_container_of(listener, shell_client,
-				       client_destroy_listener);
+								   client_destroy_listener);
 
 	remove_ping_timer(shell_client);
 	pepper_list_remove(&shell_client->link);
@@ -64,8 +64,8 @@ handle_shell_client_destroy(struct wl_listener *listener, void *data)
 
 shell_client_t *
 shell_client_create(desktop_shell_t *shell, struct wl_client *client,
-		    const struct wl_interface *interface, const void *implementation,
-		    uint32_t version, uint32_t id)
+					const struct wl_interface *interface, const void *implementation,
+					uint32_t version, uint32_t id)
 {
 	shell_client_t  *shell_client;
 
@@ -90,7 +90,7 @@ shell_client_create(desktop_shell_t *shell, struct wl_client *client,
 
 	pepper_list_insert(&shell->shell_client_list, &shell_client->link);
 	wl_resource_set_implementation(shell_client->resource, implementation,
-				       shell_client, NULL);
+								   shell_client, NULL);
 
 	return shell_client;
 }
@@ -123,12 +123,12 @@ shell_add_input_device(desktop_shell_t *shell, pepper_input_device_t *device)
 
 static void
 default_pointer_grab_motion(pepper_pointer_t *pointer, void *data,
-			    uint32_t time, double x, double y)
+							uint32_t time, double x, double y)
 {
 	double               vx, vy;
 	pepper_compositor_t *compositor = pepper_pointer_get_compositor(pointer);
 	pepper_view_t       *view = pepper_compositor_pick_view(compositor, x, y, &vx,
-				    &vy);
+								&vy);
 	pepper_view_t       *focus = pepper_pointer_get_focus(pointer);
 
 	if (focus != view) {
@@ -142,7 +142,7 @@ default_pointer_grab_motion(pepper_pointer_t *pointer, void *data,
 
 static void
 default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
-			    uint32_t time, uint32_t button, uint32_t state)
+							uint32_t time, uint32_t button, uint32_t state)
 {
 	pepper_seat_t       *seat = pepper_pointer_get_seat(pointer);
 	pepper_keyboard_t   *keyboard = pepper_seat_get_keyboard(seat);
@@ -172,10 +172,10 @@ default_pointer_grab_button(pepper_pointer_t *pointer, void *data,
 
 static void
 default_pointer_grab_axis(pepper_pointer_t *pointer, void *data,
-			  uint32_t time, uint32_t axis, double value)
+						  uint32_t time, uint32_t axis, double value)
 {
 	pepper_pointer_send_axis(pointer, pepper_pointer_get_focus(pointer), time, axis,
-				 value);
+							 value);
 }
 
 static void
@@ -193,8 +193,8 @@ static const pepper_pointer_grab_t default_pointer_grab = {
 
 static void
 pointer_add_callback(pepper_event_listener_t *listener, pepper_object_t *object,
-		     uint32_t id,
-		     void *info, void *data)
+					 uint32_t id,
+					 void *info, void *data)
 {
 	pepper_pointer_t *pointer = info;
 	pepper_pointer_set_grab(pointer, &default_pointer_grab, data);
@@ -202,27 +202,27 @@ pointer_add_callback(pepper_event_listener_t *listener, pepper_object_t *object,
 
 static void
 pointer_remove_callback(pepper_event_listener_t *listener,
-			pepper_object_t *object, uint32_t id,
-			void *info, void *data)
+						pepper_object_t *object, uint32_t id,
+						void *info, void *data)
 {
 	/* Nothing to do. */
 }
 
 static void
 default_keyboard_grab_key(pepper_keyboard_t *keyboard, void *data,
-			  uint32_t time, uint32_t key, uint32_t state)
+						  uint32_t time, uint32_t key, uint32_t state)
 {
 	pepper_keyboard_send_key(keyboard, pepper_keyboard_get_focus(keyboard), time,
-				 key, state);
+							 key, state);
 }
 
 static void
 default_keyboard_grab_modifiers(pepper_keyboard_t *keyboard, void *data,
-				uint32_t mods_depressed,
-				uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
+								uint32_t mods_depressed,
+								uint32_t mods_latched, uint32_t mods_locked, uint32_t group)
 {
 	pepper_keyboard_send_modifiers(keyboard, pepper_keyboard_get_focus(keyboard),
-				       mods_depressed, mods_latched, mods_locked, group);
+								   mods_depressed, mods_latched, mods_locked, group);
 }
 
 static void
@@ -239,8 +239,8 @@ static const pepper_keyboard_grab_t default_keyboard_grab = {
 
 static void
 keyboard_add_callback(pepper_event_listener_t *listener,
-		      pepper_object_t *object, uint32_t id,
-		      void *info, void *data)
+					  pepper_object_t *object, uint32_t id,
+					  void *info, void *data)
 {
 	pepper_keyboard_t *keyboard = info;
 	pepper_keyboard_set_grab(keyboard, &default_keyboard_grab, NULL);
@@ -248,24 +248,24 @@ keyboard_add_callback(pepper_event_listener_t *listener,
 
 static void
 keyboard_remove_callback(pepper_event_listener_t *listener,
-			 pepper_object_t *object, uint32_t id,
-			 void *info, void *data)
+						 pepper_object_t *object, uint32_t id,
+						 void *info, void *data)
 {
 	/* Nothing to do. */
 }
 
 static void
 touch_add_callback(pepper_event_listener_t *listener, pepper_object_t *object,
-		   uint32_t id,
-		   void *info, void *data)
+				   uint32_t id,
+				   void *info, void *data)
 {
 	/* TODO: */
 }
 
 static void
 touch_remove_callback(pepper_event_listener_t *listener,
-		      pepper_object_t *object, uint32_t id,
-		      void *info, void *data)
+					  pepper_object_t *object, uint32_t id,
+					  void *info, void *data)
 {
 	/* TODO: */
 }
@@ -294,33 +294,33 @@ shell_add_seat(desktop_shell_t *shell, pepper_seat_t *seat)
 
 	shseat->pointer_add_listener =
 		pepper_object_add_event_listener((pepper_object_t *)seat,
-				PEPPER_EVENT_SEAT_POINTER_ADD,
-				0, pointer_add_callback, shseat);
+										 PEPPER_EVENT_SEAT_POINTER_ADD,
+										 0, pointer_add_callback, shseat);
 
 	shseat->pointer_remove_listener =
 		pepper_object_add_event_listener((pepper_object_t *)seat,
-				PEPPER_EVENT_SEAT_POINTER_REMOVE,
-				0, pointer_remove_callback, shseat);
+										 PEPPER_EVENT_SEAT_POINTER_REMOVE,
+										 0, pointer_remove_callback, shseat);
 
 	shseat->keyboard_add_listener =
 		pepper_object_add_event_listener((pepper_object_t *)seat,
-				PEPPER_EVENT_SEAT_KEYBOARD_ADD,
-				0, keyboard_add_callback, shseat);
+										 PEPPER_EVENT_SEAT_KEYBOARD_ADD,
+										 0, keyboard_add_callback, shseat);
 
 	shseat->keyboard_remove_listener =
 		pepper_object_add_event_listener((pepper_object_t *)seat,
-				PEPPER_EVENT_SEAT_KEYBOARD_REMOVE,
-				0, keyboard_remove_callback, shseat);
+										 PEPPER_EVENT_SEAT_KEYBOARD_REMOVE,
+										 0, keyboard_remove_callback, shseat);
 
 	shseat->touch_add_listener =
 		pepper_object_add_event_listener((pepper_object_t *)seat,
-				PEPPER_EVENT_SEAT_TOUCH_ADD,
-				0, touch_add_callback, shseat);
+										 PEPPER_EVENT_SEAT_TOUCH_ADD,
+										 0, touch_add_callback, shseat);
 
 	shseat->touch_remove_listener =
 		pepper_object_add_event_listener((pepper_object_t *)seat,
-				PEPPER_EVENT_SEAT_TOUCH_REMOVE,
-				0, touch_remove_callback, shseat);
+										 PEPPER_EVENT_SEAT_TOUCH_REMOVE,
+										 0, touch_remove_callback, shseat);
 }
 
 static void
@@ -339,30 +339,30 @@ shell_remove_seat(desktop_shell_t *shell, pepper_seat_t *seat)
 
 static void
 input_device_add_callback(pepper_event_listener_t    *listener,
-			  pepper_object_t            *object,
-			  uint32_t                    id,
-			  void                       *info,
-			  void                       *data)
+						  pepper_object_t            *object,
+						  uint32_t                    id,
+						  void                       *info,
+						  void                       *data)
 {
 	shell_add_input_device(data, info);
 }
 
 static void
 seat_add_callback(pepper_event_listener_t    *listener,
-		  pepper_object_t            *object,
-		  uint32_t                    id,
-		  void                       *info,
-		  void                       *data)
+				  pepper_object_t            *object,
+				  uint32_t                    id,
+				  void                       *info,
+				  void                       *data)
 {
 	shell_add_seat(data, info);
 }
 
 static void
 seat_remove_callback(pepper_event_listener_t    *listener,
-		     pepper_object_t            *object,
-		     uint32_t                    id,
-		     void                       *info,
-		     void                       *data)
+					 pepper_object_t            *object,
+					 uint32_t                    id,
+					 void                       *info,
+					 void                       *data)
 {
 	shell_remove_seat(data, info);
 }
@@ -375,17 +375,17 @@ init_listeners(desktop_shell_t *shell)
 	/* input_device_add */
 	shell->input_device_add_listener =
 		pepper_object_add_event_listener(compositor,
-				PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
-				0, input_device_add_callback, shell);
+										 PEPPER_EVENT_COMPOSITOR_INPUT_DEVICE_ADD,
+										 0, input_device_add_callback, shell);
 
 	shell->seat_add_listener =
 		pepper_object_add_event_listener(compositor, PEPPER_EVENT_COMPOSITOR_SEAT_ADD,
-				0, seat_add_callback, shell);
+										 0, seat_add_callback, shell);
 
 	shell->seat_remove_listener =
 		pepper_object_add_event_listener(compositor,
-				PEPPER_EVENT_COMPOSITOR_SEAT_REMOVE,
-				0, seat_remove_callback, shell);
+										 PEPPER_EVENT_COMPOSITOR_SEAT_REMOVE,
+										 0, seat_remove_callback, shell);
 }
 
 static void

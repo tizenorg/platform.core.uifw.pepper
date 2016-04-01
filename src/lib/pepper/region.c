@@ -43,16 +43,16 @@ region_destroy(struct wl_client *client, struct wl_resource *resource)
 
 static void
 region_add(struct wl_client *client, struct wl_resource *resource,
-	   int32_t x, int32_t y, int32_t w, int32_t h)
+		   int32_t x, int32_t y, int32_t w, int32_t h)
 {
 	pepper_region_t *region = wl_resource_get_user_data(resource);
 	pixman_region32_union_rect(&region->pixman_region, &region->pixman_region,
-				   x, y, w, h);
+							   x, y, w, h);
 }
 
 static void
 region_subtract(struct wl_client *client, struct wl_resource *resource,
-		int32_t x, int32_t y, int32_t w, int32_t h)
+				int32_t x, int32_t y, int32_t w, int32_t h)
 {
 	pepper_region_t    *region = wl_resource_get_user_data(resource);
 	pixman_region32_t   rect;
@@ -70,9 +70,9 @@ static const struct wl_region_interface region_implementation = {
 
 pepper_region_t *
 pepper_region_create(pepper_compositor_t   *compositor,
-		     struct wl_client      *client,
-		     struct wl_resource    *resource,
-		     uint32_t               id)
+					 struct wl_client      *client,
+					 struct wl_resource    *resource,
+					 uint32_t               id)
 {
 	pepper_region_t *region = calloc(1, sizeof(pepper_region_t));
 	PEPPER_CHECK(region, return NULL, "calloc(0 failed.\n");
@@ -82,7 +82,7 @@ pepper_region_create(pepper_compositor_t   *compositor,
 
 	region->compositor = compositor;
 	wl_resource_set_implementation(region->resource, &region_implementation,
-				       region, region_resource_destroy_handler);
+								   region, region_resource_destroy_handler);
 
 	region->link.item = region;
 	pepper_list_insert(&compositor->region_list, &region->link);
@@ -136,7 +136,7 @@ transform_bounding_box(pixman_box32_t *box, const pepper_mat4_t *matrix)
 
 void
 pepper_transform_pixman_region(pixman_region32_t *region,
-			       const pepper_mat4_t *matrix)
+							   const pepper_mat4_t *matrix)
 
 {
 	pixman_region32_t   result;
@@ -151,7 +151,7 @@ pepper_transform_pixman_region(pixman_region32_t *region,
 
 		transform_bounding_box(&box, matrix);
 		pixman_region32_union_rect(&result, &result,
-					   box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+								   box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
 	}
 
 	pixman_region32_copy(region, &result);

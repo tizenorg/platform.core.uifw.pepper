@@ -30,16 +30,16 @@
 
 static void
 subsurface_destroy(struct wl_client     *client,
-		   struct wl_resource   *resource)
+				   struct wl_resource   *resource)
 {
 	wl_resource_destroy(resource);
 }
 
 static void
 subsurface_set_position(struct wl_client    *client,
-			struct wl_resource  *resource,
-			int32_t              x,
-			int32_t              y)
+						struct wl_resource  *resource,
+						int32_t              x,
+						int32_t              y)
 {
 	pepper_subsurface_t *subsurface = wl_resource_get_user_data(resource);
 
@@ -60,7 +60,7 @@ subsurface_is_sibling(pepper_subsurface_t *subsurface, pepper_surface_t *sib)
 
 static void
 subsurface_stack_above(pepper_subsurface_t *subsurface,
-		       pepper_subsurface_t *sibling)
+					   pepper_subsurface_t *sibling)
 {
 	pepper_subsurface_t *parent;
 	pepper_list_t       *pos;
@@ -81,15 +81,15 @@ subsurface_stack_above(pepper_subsurface_t *subsurface,
 
 static void
 subsurface_place_above(struct wl_client     *client,
-		       struct wl_resource   *resource,
-		       struct wl_resource   *sibling_resource)
+					   struct wl_resource   *resource,
+					   struct wl_resource   *sibling_resource)
 {
 	pepper_subsurface_t *sub = wl_resource_get_user_data(resource);
 	pepper_surface_t    *sibling;
 
 	if (!sibling_resource) {
 		wl_resource_post_error(resource, WL_SUBSURFACE_ERROR_BAD_SURFACE,
-				       "reference surface cannot be null");
+							   "reference surface cannot be null");
 		return ;
 	}
 
@@ -97,13 +97,13 @@ subsurface_place_above(struct wl_client     *client,
 
 	if (sub->surface == sibling) {
 		wl_resource_post_error(resource, WL_SUBSURFACE_ERROR_BAD_SURFACE,
-				       "cannot place above of its own for itself");
+							   "cannot place above of its own for itself");
 		return ;
 	}
 
 	if (!subsurface_is_sibling(sub, sibling)) {
 		wl_resource_post_error(resource, WL_SUBSURFACE_ERROR_BAD_SURFACE,
-				       "reference surface is not sibling");
+							   "reference surface is not sibling");
 		return ;
 	}
 
@@ -112,7 +112,7 @@ subsurface_place_above(struct wl_client     *client,
 
 static void
 subsurface_stack_below(pepper_subsurface_t *subsurface,
-		       pepper_subsurface_t *sibling)
+					   pepper_subsurface_t *sibling)
 {
 	pepper_subsurface_t *parent;
 	pepper_list_t       *pos;
@@ -133,15 +133,15 @@ subsurface_stack_below(pepper_subsurface_t *subsurface,
 
 static void
 subsurface_place_below(struct wl_client     *client,
-		       struct wl_resource   *resource,
-		       struct wl_resource   *sibling_resource)
+					   struct wl_resource   *resource,
+					   struct wl_resource   *sibling_resource)
 {
 	pepper_subsurface_t *sub = wl_resource_get_user_data(resource);
 	pepper_surface_t    *sibling;
 
 	if (!sibling_resource) {
 		wl_resource_post_error(resource, WL_SUBSURFACE_ERROR_BAD_SURFACE,
-				       "reference surface cannot be null");
+							   "reference surface cannot be null");
 		return ;
 	}
 
@@ -149,13 +149,13 @@ subsurface_place_below(struct wl_client     *client,
 
 	if (sub->surface == sibling) {
 		wl_resource_post_error(resource, WL_SUBSURFACE_ERROR_BAD_SURFACE,
-				       "cannot place below of its own for itself");
+							   "cannot place below of its own for itself");
 		return ;
 	}
 
 	if (!subsurface_is_sibling(sub, sibling)) {
 		wl_resource_post_error(resource, WL_SUBSURFACE_ERROR_BAD_SURFACE,
-				       "reference surface is not sibling");
+							   "reference surface is not sibling");
 		return ;
 	}
 
@@ -164,7 +164,7 @@ subsurface_place_below(struct wl_client     *client,
 
 static void
 subsurface_set_sync(struct wl_client    *client,
-		    struct wl_resource  *resource)
+					struct wl_resource  *resource)
 {
 	pepper_subsurface_t *subsurface = wl_resource_get_user_data(resource);
 
@@ -232,7 +232,7 @@ surface_commit_from_cache(pepper_subsurface_t *subsurface)
 
 	/* Subsurface emit commit event in here */
 	pepper_object_emit_event(&subsurface->surface->base,
-				 PEPPER_EVENT_SURFACE_COMMIT, NULL);
+							 PEPPER_EVENT_SURFACE_COMMIT, NULL);
 }
 
 static pepper_bool_t
@@ -275,8 +275,8 @@ subsurface_restack_view(pepper_subsurface_t *subsurface)
 		}
 
 		EACH_LIST_FOR_EACH(view1, &child1->surface->view_list,
-				   view2, &child2->surface->view_list,
-				   surface_link) {
+						   view2, &child2->surface->view_list,
+						   surface_link) {
 			pepper_view_stack_above(view1, view2, PEPPER_TRUE);
 		}
 
@@ -337,7 +337,7 @@ subsurface_apply_pending_state(pepper_subsurface_t *subsurface)
 
 static void
 subsurface_set_desync(struct wl_client      *client,
-		      struct wl_resource    *resource)
+					  struct wl_resource    *resource)
 {
 	pepper_subsurface_t *subsurface = wl_resource_get_user_data(resource);
 
@@ -382,7 +382,7 @@ subsurface_resource_destroy_handler(struct wl_resource *resource)
 
 static void
 handle_parent_destroy(pepper_event_listener_t *listener,
-		      pepper_object_t *object, uint32_t id, void *info, void *data)
+					  pepper_object_t *object, uint32_t id, void *info, void *data)
 {
 	pepper_subsurface_t *subsurface = data;
 
@@ -408,7 +408,7 @@ subsurface_parent_commit(pepper_subsurface_t *subsurface)
 
 static void
 handle_parent_commit(pepper_event_listener_t *listener,
-		     pepper_object_t *object, uint32_t id, void *info, void *data)
+					 pepper_object_t *object, uint32_t id, void *info, void *data)
 {
 	pepper_subsurface_t *subsurface = data;
 
@@ -423,7 +423,7 @@ pepper_subsurface_create_views(pepper_subsurface_t *subsurface)
 	pepper_list_for_each(parent_view, &parent->view_list, surface_link) {
 		pepper_view_t *subview = pepper_compositor_add_view(parent->compositor);
 		PEPPER_CHECK(subview, return PEPPER_FALSE,
-			     "pepper_compositor_add_view() failed.\n");
+					 "pepper_compositor_add_view() failed.\n");
 
 		pepper_view_set_surface(subview, subsurface->surface);
 		pepper_view_set_parent(subview, parent_view);
@@ -453,24 +453,24 @@ pepper_dummy_subsurface_create_for_parent(pepper_surface_t *parent)
 
 	pepper_list_init(&subsurface->pending.children_list);
 	pepper_list_insert(&subsurface->pending.children_list,
-			   &subsurface->pending.self_link);
+					   &subsurface->pending.self_link);
 
 	return subsurface;
 }
 
 pepper_subsurface_t *
 pepper_subsurface_create(pepper_surface_t   *surface,
-			 pepper_surface_t   *parent,
-			 struct wl_client   *client,
-			 struct wl_resource *resource,
-			 uint32_t            id)
+						 pepper_surface_t   *parent,
+						 struct wl_client   *client,
+						 struct wl_resource *resource,
+						 uint32_t            id)
 {
 	pepper_subsurface_t *subsurface = NULL;
 	pepper_bool_t        ret;
 
 	if (!pepper_surface_set_role(surface, "wl_subsurface")) {
 		wl_resource_post_error(resource, WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE,
-				       "cannot assign wl_subsurface role");
+							   "cannot assign wl_subsurface role");
 		return NULL;
 	}
 
@@ -482,12 +482,12 @@ pepper_subsurface_create(pepper_surface_t   *surface,
 	PEPPER_CHECK(subsurface, goto error, "calloc() failed.\n");
 
 	subsurface->resource = wl_resource_create(client, &wl_subsurface_interface,
-			       wl_resource_get_version(resource), id);
+						   wl_resource_get_version(resource), id);
 	PEPPER_CHECK(subsurface->resource, goto error, "wl_resource_create() failed\n");
 
 	wl_resource_set_implementation(subsurface->resource, &subsurface_implementation,
-				       subsurface,
-				       subsurface_resource_destroy_handler);
+								   subsurface,
+								   subsurface_resource_destroy_handler);
 
 	subsurface->surface      = surface;
 	subsurface->parent       = parent;
@@ -505,18 +505,18 @@ pepper_subsurface_create(pepper_surface_t   *surface,
 
 	subsurface->parent_destroy_listener =
 		pepper_object_add_event_listener(&parent->base, PEPPER_EVENT_OBJECT_DESTROY, 0,
-				handle_parent_destroy, subsurface);
+										 handle_parent_destroy, subsurface);
 
 	subsurface->parent_commit_listener =
 		pepper_object_add_event_listener(&parent->base, PEPPER_EVENT_SURFACE_COMMIT, 0,
-				handle_parent_commit, subsurface);
+										 handle_parent_commit, subsurface);
 
 	pepper_surface_state_init(&subsurface->cache);
 
 	if (!parent->sub)
 		parent->sub = pepper_dummy_subsurface_create_for_parent(parent);
 	PEPPER_CHECK(parent->sub, goto error,
-		     "pepper_dummy_subsurface_create_for_parent() failed\n");
+				 "pepper_dummy_subsurface_create_for_parent() failed\n");
 
 	/* children_list is z-order sorted, youngest child is top-most */
 	pepper_list_init(&subsurface->children_list);
@@ -525,12 +525,12 @@ pepper_subsurface_create(pepper_surface_t   *surface,
 	/* link to myself */
 	pepper_list_insert(&subsurface->children_list, &subsurface->self_link);
 	pepper_list_insert(&subsurface->pending.children_list,
-			   &subsurface->pending.self_link);
+					   &subsurface->pending.self_link);
 
 	/* link to parent */
 	pepper_list_insert(&parent->sub->children_list, &subsurface->parent_link);
 	pepper_list_insert(&parent->sub->pending.children_list,
-			   &subsurface->pending.parent_link);
+					   &subsurface->pending.parent_link);
 
 	/* create views that corresponding to parent's views */
 	ret = pepper_subsurface_create_views(subsurface);
@@ -562,7 +562,7 @@ pepper_subsurface_commit(pepper_subsurface_t *subsurface)
 
 void
 subsurface_destroy_children_views(pepper_subsurface_t *subsurface,
-				  pepper_view_t *parent_view)
+								  pepper_view_t *parent_view)
 {
 	pepper_list_t *list;
 
@@ -600,7 +600,7 @@ subsurface_destroy_children_views(pepper_subsurface_t *subsurface,
 
 void
 subsurface_create_children_views(pepper_subsurface_t *subsurface,
-				 pepper_view_t *parent_view)
+								 pepper_view_t *parent_view)
 {
 	pepper_list_t *list;
 
@@ -613,7 +613,7 @@ subsurface_create_children_views(pepper_subsurface_t *subsurface,
 		/* Except its own */
 		if (child && (child != subsurface)) {
 			pepper_view_t *view = pepper_compositor_add_view(
-						      subsurface->surface->compositor);
+									  subsurface->surface->compositor);
 			pepper_view_set_surface(view, child->surface);
 			pepper_view_set_parent(view, parent_view);
 			pepper_view_set_transform_inherit(view, PEPPER_TRUE);
