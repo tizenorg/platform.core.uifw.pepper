@@ -224,24 +224,26 @@ pepper_view_update(pepper_view_t *view)
 		output_overlap_prev = view->output_overlap;
 		view->output_overlap = 0;
 
-		pepper_list_for_each(output, &view->compositor->output_list, link) {
-			pixman_box32_t   box = {
-				output->geometry.x,
-				output->geometry.y,
-				output->geometry.x + output->geometry.w,
-				output->geometry.y + output->geometry.h
-			};
+                if (view->surface) {
+			pepper_list_for_each(output, &view->compositor->output_list, link) {
+				pixman_box32_t   box = {
+					output->geometry.x,
+					output->geometry.y,
+					output->geometry.x + output->geometry.w,
+					output->geometry.y + output->geometry.h
+				};
 
-			if (pixman_region32_contains_rectangle(&view->bounding_region,
-												   &box) != PIXMAN_REGION_OUT) {
-				view->output_overlap |= (1 << output->id);
-				if (!(output_overlap_prev & (1 << output->id)))
-					pepper_surface_send_enter(view->surface, output);
-			} else {
-				if (view->surface && (output_overlap_prev & (1 << output->id)))
-					pepper_surface_send_leave(view->surface, output);
+				if (pixman_region32_contains_rectangle(&view->bounding_region,
+													   &box) != PIXMAN_REGION_OUT) {
+					view->output_overlap |= (1 << output->id);
+					if (!(output_overlap_prev & (1 << output->id)))
+						pepper_surface_send_enter(view->surface, output);
+				} else {
+					if (view->surface && (output_overlap_prev & (1 << output->id)))
+						pepper_surface_send_leave(view->surface, output);
+				}
 			}
-		}
+                }
 	}
 
 	/* Mark the plane entries as damaged. */

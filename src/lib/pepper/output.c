@@ -161,6 +161,7 @@ output_repaint(pepper_output_t *output)
 
 	pepper_list_for_each(view, &output->view_list, link) {
 		/* TODO: Output time stamp and presentation feedback. */
+		PEPPER_CHECK(view->surface, continue, "view->surface is null");
 		pepper_surface_send_frame_callback_done(view->surface,
 												output->frame.time.tv_sec * 1000 +
 												output->frame.time.tv_nsec / 1000000);
