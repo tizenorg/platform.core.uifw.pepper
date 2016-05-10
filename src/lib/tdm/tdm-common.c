@@ -48,9 +48,9 @@ pepper_tdm_create(pepper_compositor_t *compositor)
 	struct wl_event_loop   *loop;
 
 	tdm = calloc(1, sizeof(pepper_tdm_t));
-	tdm->fd = -1;
-	PEPPER_CHECK(tdm, goto error, "calloc() failed.\n");
+	PEPPER_CHECK(tdm, return NULL, "calloc() failed.\n");
 
+	tdm->fd = -1;
 	tdm->compositor = compositor;
 	tdm->disp = tdm_display_init(&ret);
 	PEPPER_CHECK(ret == TDM_ERROR_NONE, goto error,
@@ -90,8 +90,7 @@ pepper_tdm_create(pepper_compositor_t *compositor)
 	return tdm;
 
 error:
-	if (tdm)
-		pepper_tdm_destroy(tdm);
+	pepper_tdm_destroy(tdm);
 
 	return NULL;
 }
