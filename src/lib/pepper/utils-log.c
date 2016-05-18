@@ -52,6 +52,10 @@ pepper_print_timestamp(void)
 
 	gettimeofday(&tv, NULL);
 
+	brokendown_time = calloc(1, sizeof(*brokendown_time));
+	if (!brokendown_time)
+		return fprintf(pepper_log_file, "failed to calloc for brokendown_time\n");
+
 	localtime_r(&tv.tv_sec, brokendown_time);
 	if (brokendown_time == NULL)
 		return fprintf(pepper_log_file, "[(NULL)localtime] ");
@@ -64,6 +68,8 @@ pepper_print_timestamp(void)
 	}
 
 	strftime(string, sizeof string, "%H:%M:%S", brokendown_time);
+
+	free(brokendown_time);
 
 	return fprintf(pepper_log_file, "[%s.%03li] ", string, tv.tv_usec / 1000);
 }
