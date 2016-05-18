@@ -149,7 +149,7 @@ update_keymap(pepper_keyboard_t *keyboard)
 						  keyboard->keymap_fd, 0);
 		PEPPER_CHECK(keymap_map, goto error, "failed to mmap for keymap\n");
 
-		strcpy(keymap_map, keymap_str);
+		strncpy(keymap_map, keymap_str, keyboard->keymap_len);
 
 		state = xkb_state_new(keyboard->keymap);
 		PEPPER_CHECK(state, goto error, "failed to create xkb state\n");

@@ -97,8 +97,8 @@ pepper_create_anonymous_file(off_t size)
 	if (!name)
 		return -1;
 
-	strcpy(name, path);
-	strcat(name, template);
+	strncpy(name, path, strlen(path) + 1);
+	strncat(name, template, sizeof(template));
 
 	fd = create_tmpfile_cloexec(name);
 
