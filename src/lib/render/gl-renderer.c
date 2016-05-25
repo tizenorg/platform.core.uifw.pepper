@@ -27,6 +27,8 @@
 */
 #include "config.h"
 
+#define GL_GLEXT_PROTOTYPES
+
 #include "pepper-gl-renderer.h"
 #include "pepper-render-internal.h"
 #include <pepper-output-backend.h>
