@@ -164,6 +164,8 @@ This package includes doctor server files.
 cp %{SOURCE1001} .
 
 %build
+export CFLAGS+=" -Werror "
+
 %autogen \
 	--disable-x11 \
 %if "%{ENABLE_TDM}" == "0"
