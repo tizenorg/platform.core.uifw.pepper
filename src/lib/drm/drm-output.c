@@ -279,6 +279,9 @@ assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
 	if (!surface)
 		return NULL;
 
+	pepper_view_get_position(view, &x, &y);
+	pepper_view_get_size(view, &w, &h);
+
 	buffer = pepper_surface_get_buffer(surface);
 	if (!buffer)
 		return NULL;
@@ -350,8 +353,6 @@ assign_overlay_plane(drm_output_t *output, pepper_view_t *view)
 	}
 
 	/* set position  */
-	pepper_view_get_position(view, &x, &y);
-	pepper_view_get_size(view, &w, &h);
 	plane->dx = (int)x;
 	plane->dy = (int)y;
 	plane->dw = w;

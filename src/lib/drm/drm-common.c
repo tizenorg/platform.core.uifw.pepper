@@ -87,7 +87,7 @@ find_primary_gpu(struct udev *udev) /* FIXME: copied from weston */
 static void
 drm_sprd_init(int fd)
 {
-	drmVersionPtr drm_info;
+	drmVersionPtr drm_info=NULL;
 	int drmIRQ = 78;
 	int length = 0;
 
@@ -96,6 +96,8 @@ drm_sprd_init(int fd)
 	}
 
 	drm_info = drmGetVersion(fd);
+	PEPPER_CHECK(drm_info, return, "drmGetVersion() failed.\n");
+
 	length = drm_info->name_len;
 
 	if (length != 4) {
