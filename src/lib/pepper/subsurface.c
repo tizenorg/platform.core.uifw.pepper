@@ -614,6 +614,9 @@ subsurface_create_children_views(pepper_subsurface_t *subsurface,
 		if (child && (child != subsurface)) {
 			pepper_view_t *view = pepper_compositor_add_view(
 									  subsurface->surface->compositor);
+
+			PEPPER_CHECK(view, continue, "pepper_compositor_add_view() failed\n");
+
 			pepper_view_set_surface(view, child->surface);
 			pepper_view_set_parent(view, parent_view);
 			pepper_view_set_transform_inherit(view, PEPPER_TRUE);

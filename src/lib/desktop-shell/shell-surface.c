@@ -1368,6 +1368,8 @@ shell_surface_resize(shell_surface_t *shsurf, pepper_seat_t *seat,
 {
 	pepper_pointer_t   *pointer = pepper_seat_get_pointer(seat);
 
+	PEPPER_CHECK(pointer, return, "pointer does not exist.\n");
+
 	if (shsurf->type == SHELL_SURFACE_TYPE_FULLSCREEN ||
 		shsurf->type == SHELL_SURFACE_TYPE_MAXIMIZED  ||
 		shsurf->type == SHELL_SURFACE_TYPE_MINIMIZED) {

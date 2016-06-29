@@ -35,7 +35,12 @@ main(int argc, char **argv)
 	pepper_compositor_t *compositor;
 
 	compositor = pepper_compositor_create("wayland-0");
+	if (!compositor)
+		return -1;
+
 	display = pepper_compositor_get_display(compositor);
+	if (!display)
+		return -1;
 
 	/* Enter main loop. */
 	wl_display_run(display);

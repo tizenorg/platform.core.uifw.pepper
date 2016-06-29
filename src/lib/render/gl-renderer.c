@@ -1496,7 +1496,7 @@ setup_egl_extensions(gl_renderer_t *gr)
 		gr->unbind_display    = (void *)eglGetProcAddress("eglUnbindWaylandDisplayWL");
 		gr->query_buffer      = (void *)eglGetProcAddress("eglQueryWaylandBufferWL");
 
-		if (!gr->bind_display(gr->display,
+		if (!gr->bind_display || !gr->bind_display(gr->display,
 							  pepper_compositor_get_display(gr->base.compositor))) {
 			gr->bind_display = NULL;
 			gr->unbind_display = NULL;

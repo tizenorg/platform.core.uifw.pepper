@@ -56,8 +56,7 @@ pepper_print_timestamp(void)
 	if (!brokendown_time)
 		return fprintf(pepper_log_file, "failed to calloc for brokendown_time\n");
 
-	localtime_r(&tv.tv_sec, brokendown_time);
-	if (brokendown_time == NULL)
+	if (!localtime_r(&tv.tv_sec, brokendown_time))
 		return fprintf(pepper_log_file, "[(NULL)localtime] ");
 
 	if (brokendown_time->tm_mday != cached_tm_mday) {
