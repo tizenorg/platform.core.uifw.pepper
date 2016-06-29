@@ -111,6 +111,8 @@ pepper_touch_handle_event(pepper_touch_t *touch, uint32_t id,
 	case PEPPER_EVENT_TOUCH_MOTION: {
 		pepper_touch_point_t *point = get_touch_point(touch, event->slot);
 
+		PEPPER_CHECK(point, return, "get_touch_point() failed.\n");
+
 		point->x = event->x;
 		point->y = event->y;
 
@@ -295,6 +297,8 @@ PEPPER_API void
 pepper_touch_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus)
 {
 	pepper_touch_point_t *point = get_touch_point(touch, id);
+
+	PEPPER_CHECK(point, return, "Touch point %d does not exist.\n", id);
 
 	if (focus) {
 		if (!point)
