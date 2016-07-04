@@ -337,6 +337,8 @@ view_link_to_surface(pepper_view_t *view)
 PEPPER_API pepper_bool_t
 pepper_view_set_surface(pepper_view_t *view, pepper_surface_t *surface)
 {
+        PEPPER_CHECK(view, return PEPPER_FALSE, "invalid parameter.\n");
+
 	if (view->surface == surface)
 		return PEPPER_TRUE;
 

@@ -298,13 +298,13 @@ pepper_touch_set_focus(pepper_touch_t *touch, uint32_t id, pepper_view_t *focus)
 {
 	pepper_touch_point_t *point = get_touch_point(touch, id);
 
-	PEPPER_CHECK(point, return, "Touch point %d does not exist.\n", id);
-
 	if (focus) {
 		if (!point)
 			pepper_touch_add_point(touch, id, 0, 0);
 
-		touch_point_set_focus(get_touch_point(touch, id), focus);
+                point = get_touch_point(touch, id);
+                if (point)
+			touch_point_set_focus(point, focus);
 	} else {
 		if (point)
 			pepper_touch_remove_point(touch, id);
